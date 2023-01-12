@@ -94,7 +94,7 @@ Section with_cpp.
 
   #[global] Instance primR_observe_cfrac_valid resolve ty :
     CFracValid1 (primR ty).
-  Proof. rewrite primR_eq. apply _. Qed.
+  Proof. rewrite primR_eq. solve_cfrac_valid. Qed.
 
   Section TEST.
     Context {σ : genv} (p : ptr).
@@ -194,7 +194,7 @@ Section with_cpp.
 
   #[global] Instance uninitR_observe_frac_valid resolve ty :
     CFracValid0 (uninitR ty).
-  Proof. rewrite uninitR_eq. apply _. Qed.
+  Proof. rewrite uninitR_eq. solve_cfrac_valid. Qed.
 
   Lemma test:
     forall σ ty v v',
@@ -416,7 +416,7 @@ Section with_cpp.
   Proof.
     rewrite TCLt_N blockR_eq/blockR_def. intros.
     destruct (N.to_nat sz) eqn:?; [ lia | ] => /=.
-    refine _.
+    solve_cfrac_valid.
   Qed.
 
   (* [tblockR ty] is a [blockR] that is the size of [ty] and properly aligned.
@@ -444,7 +444,7 @@ Section with_cpp.
     SizeOf ty n -> TCLt (0 ?= n)%N ->
     CFracValid0 (tblockR ty).
   Proof.
-    rewrite/tblockR=>-> ?. case_match; by apply _.
+    rewrite/tblockR=>-> ?. case_match; solve_cfrac_valid.
   Qed.
 
   #[global] Instance identityR_timeless cls mdc q : Timeless (identityR cls mdc q) := _.

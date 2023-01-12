@@ -1097,14 +1097,14 @@ Section with_cpp.
     rewrite {1}tptsto_nonnull. exact: bi.False_elim.
   Qed.
 
-  Lemma tptsto_disjoint : forall ty q_cv p v1 v2,
-    tptsto ty (cQp.mk q_cv 1) p v1 ** tptsto ty (cQp.mk q_cv 1) p v2 |-- False.
+  Lemma tptsto_disjoint ty c1 c2 q p v1 v2 :
+    tptsto ty (cQp.mk c1 1) p v1 ** tptsto ty (cQp.mk c2 q) p v2 |-- False.
   Proof.
-    intros *; iIntros "[T1 T2]".
-    iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs.
-    iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T2'".
-    iCombine "T2 T2'" as "T".
-    iDestruct (tptsto_cfrac_valid with "T") as %L => //.
+    iIntros "[T1 T2]".
+    iDestruct (tptsto_agree with "T1 T2") as %Hvs.
+    iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T1".
+    iCombine "T1 T2" as "T".
+    by iDestruct (cfrac_valid_2 with "T") as %?%Qp.not_add_le_l.
   Qed.
 
   (** *** Just wrappers. *)

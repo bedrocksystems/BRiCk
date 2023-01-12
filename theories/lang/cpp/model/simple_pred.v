@@ -66,15 +66,20 @@ Section fractional.
     by iIntros "!%" => /cfrac_valid [].
   Qed.
 
-  Global Instance gmap_own_cfrac_valid γ
+  (**
+  We keep this instance local because guarding it with [CFracValid2]
+  prevents it from firing. (Perhaps due to the let binding.)
+  *)
+  Instance gmap_own_cfrac_valid γ
     `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (cfractionalR V))} :
-    CFracValid2 (gmap_own γ).
+    ∀ q k v, Observe [| cQp.frac q ≤ 1 |]%Qp (gmap_own γ q k v).
   Proof.
-    intros ?? <-%frac_eq *. apply: observe_intro_only_provable.
+    intros. apply: observe_intro_only_provable.
     rewrite /gmap_own own_valid !discrete_valid singleton_valid.
     by iIntros "!%" => /pair_valid [? _].
   Qed.
 End fractional.
+#[local] Existing Instance gmap_own_cfrac_valid.
 
 From bedrock.lang.cpp.model Require Import inductive_pointers.
 (* Stand-in for actual models.
@@ -561,7 +566,8 @@ Module SimpleCPP.
       Observe2 [| v1 = v2 |] (val_ a v1 q1) (val_ a v2 q2) := _.
 
     Global Instance val_cfrac_valid a v :
-      CFracValid0 (val_ a v) := _.
+      CFracValid0 (val_ a v).
+    Proof. solve_cfrac_valid. Qed.
 
     Instance val_cfractional a rv : CFractional (val_ a rv) := _.
     Instance val_as_cfractional a rv q :
@@ -700,7 +706,7 @@ Module SimpleCPP.
     Global Instance addr_encodes_cfrac_valid {σ} ty :
       CFracValid3 (addr_encodes σ ty).
     Proof.
-      intros ?? <-%frac_eq *. apply: observe_intro_persistent.
+      constructor. intros. apply: observe_intro_persistent.
       iDestruct 1 as (Hen%length_encodes_pos) "[B _]".
       by iApply (bytes_cfrac_valid with "B").
     Qed.
@@ -724,7 +730,7 @@ Module SimpleCPP.
     Proof. destruct oa; apply _. Qed.
     Local Instance oaddr_encodes_cfrac_valid {σ} t :
       CFracValid3 (oaddr_encodes σ t).
-    Proof. intros ??? oa ??. destruct oa; apply _. Qed.
+    Proof. constructor. intros ? oa ??. destruct oa; apply _. Qed.
 
     (** the pointer points to the code
 
@@ -976,7 +982,8 @@ Module SimpleCPP.
       Observe [| ty <> Tvoid |] (@tptsto' σ ty q p v) := _.
 
     #[local] Instance tptsto'_cfrac_valid {σ} ty :
-      CFracValid2 (@tptsto' σ ty) := _.
+      CFracValid2 (@tptsto' σ ty).
+    Proof. solve_cfrac_valid. Qed.
 
     #[local] Instance tptsto'_agree σ ty q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto' σ ty q1 p v1) (@tptsto' σ ty q2 p v2).
@@ -1038,7 +1045,8 @@ Module SimpleCPP.
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
 
     #[global] Instance tptsto_cfrac_valid {σ} ty :
-      CFracValid2 (tptsto ty) := _.
+      CFracValid2 (tptsto ty).
+    Proof. solve_cfrac_valid. Qed.
 
     #[global] Instance tptsto_agree σ ty q1 q2 p v1 v2 :
       Observe2 [| val_related σ ty v1 v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2).

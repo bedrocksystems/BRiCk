@@ -6,12 +6,14 @@
  *)
 
 Require Export bedrock.lang.cpp.algebra.cfrac.
-From bedrock.lang.bi Require Import prelude observe fractional.
+
+From bedrock.lang.bi Require Import prelude observe split_frac.
 From bedrock.lang.cpp.bi Require Import split_cfrac.
 Require Import iris.proofmode.proofmode.
 Import ChargeNotation.
 
 #[local] Set Printing Coercions.
+#[local] Set Primitive Projections.
 
 (** * Fractional predicates at type [cQp.t] *)
 (**
@@ -22,8 +24,11 @@ are fractional at type [cQp.t]
 
 - Tactic [solve_as_cfrac] for solving [AsCFractional]
 
-- [CFractionalN], [AsCFractionalN], [CFracValidN], [CFrac2ValidN],
-[AgreeCF1] notation to save typing
+- [CFractionalN], [AsCFractionalN], [AgreeCF1] notation to save typing
+
+- [CFracValidN] classes enabling observations about validity
+
+- Tactic [solve_cfrac_valid] for solving [CFracValidN]
 
 - [IntoSep], [FromSep] instances teaching the IPM to split and combine
 [CFractional] predicates
@@ -39,6 +44,7 @@ Class CFractional {PROP : bi} (P : cQp.t -> PROP) : Prop :=
 [CFractionalN] states that predicate [P] taking a const/mutable
 fraction and then [N] arguments is [CFractional]
 *)
+Notation CFractional0 := CFractional (only parsing).
 Notation CFractional1 P := (∀ a, CFractional (fun q => P q a)) (only parsing).
 Notation CFractional2 P := (∀ a b, CFractional (fun q => P q a b)) (only parsing).
 Notation CFractional3 P := (∀ a b c, CFractional (fun q => P q a b c)) (only parsing).
@@ -46,7 +52,6 @@ Notation CFractional4 P := (∀ a b c d, CFractional (fun q => P q a b c d)) (on
 Notation CFractional5 P := (∀ a b c d e, CFractional (fun q => P q a b c d e)) (only parsing).
 
 (** [CFractional] wrapper suited to avoiding HO unification. *)
-#[projections(primitive)]
 Class AsCFractional {PROP : bi} (P : PROP) (Q : cQp.t -> PROP) (q : cQp.t) : Prop := {
   as_cfractional : P -|- Q q;
   as_cfractional_cfractional :> CFractional Q;
@@ -72,54 +77,46 @@ regardless of const/mutable fraction [q].
 Notation AgreeCF1 P := (∀ (q1 q2 : cQp.t) a1 a2, Observe2 [| a1 = a2 |] (P q1 a1) (P q2 a2)) (only parsing).
 
 (**
-[FracEq cq q] sets [q = cQp.frac cq] with normalization.
-
-This helps TC search reduce TC-opaque [cQp.frac] in a controlled way.
-Used to state [CFracValidN].
+[CFracValidN P] encapsulates the observation [cQp.frac q ≤ 1] from [P]
+applied to const/mutable fraction [q] and then [N] arguments. The
+[CFracValidN] enable easier to use observations about validity.
 *)
+Class CFracValid0 {PROP : bi} (P : cQp.t -> PROP) : Prop :=
+  { cfrac_valid_0 q : Observe [| cQp.frac q ≤ 1 |]%Qp (P q) }.
+#[global] Hint Mode CFracValid0 - + : typeclass_instances.
+#[global] Arguments CFracValid0 {_} _%I : assert.
 
-#[projections(primitive=yes)]
-Class FracEq (cq : cQp.t) (q : Qp) : Prop := MkFracEq { frac_eq : cQp.frac cq = q }.
-#[global] Hint Mode FracEq + - : typeclass_instances.
-#[global] Arguments MkFracEq {_ _} _ : assert.
-#[global] Arguments frac_eq {_ _} _ : assert.
+Class CFracValid1 {A} {PROP : bi} (P : cQp.t -> A -> PROP) : Prop :=
+  { cfrac_valid_1 q a : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a) }.
+#[global] Hint Mode CFracValid1 - - + : typeclass_instances.
+#[global] Arguments CFracValid1 {_ _} _%I : assert.
 
-#[global] Instance frac_eq_frac cq q :
-  cQpTC.FRAC cq q -> FracEq cq q | 50.
-Proof. by case. Qed.
+Class CFracValid2 {A B} {PROP : bi} (P : cQp.t -> A -> B -> PROP) : Prop :=
+  { cfrac_valid_2 q a b : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b) }.
+#[global] Hint Mode CFracValid2 - - - + : typeclass_instances.
+#[global] Arguments CFracValid2 {_ _ _} _%I : assert.
 
-Lemma frac_eq_iff cq q : FracEq cq q <-> cQp.frac cq = q.
-Proof. split. by inversion_clear 1. by intros <-. Qed.
+Class CFracValid3 {A B C} {PROP : bi} (P : cQp.t -> A -> B -> C -> PROP) : Prop :=
+  { cfrac_valid_3 q a b c : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b c) }.
+#[global] Hint Mode CFracValid3 - - - - + : typeclass_instances.
+#[global] Arguments CFracValid3 {_ _ _ _} _%I : assert.
 
-(**
-[CFracValidN P] observes [cQp.frac q ≤ 1] from [P] applied to
-const/mutable fraction [q] and then [N] arguments.
-*)
-Notation CFracValid0 P := (∀ q p, FracEq q p ->
-  Observe [| p ≤ 1 |]%Qp (P q)) (only parsing).
-Notation CFracValid1 P := (∀ q p, FracEq q p ->
-  ∀ a, Observe [| p ≤ 1 |]%Qp (P q a)) (only parsing).
-Notation CFracValid2 P := (∀ q p, FracEq q p ->
-  ∀ a b, Observe [| p ≤ 1 |]%Qp (P q a b)) (only parsing).
-Notation CFracValid3 P := (∀ q p, FracEq q p ->
-  ∀ a b c, Observe [| p ≤ 1 |]%Qp (P q a b c)) (only parsing).
-Notation CFracValid4 P := (∀ q p, FracEq q p ->
-  ∀ a b c d, Observe [| p ≤ 1 |]%Qp (P q a b c d)) (only parsing).
-Notation CFracValid5 P := (∀ q p, FracEq q p ->
-  ∀ a b c d e, Observe [| p ≤ 1 |]%Qp (P q a b c d e)) (only parsing).
+Class CFracValid4 {A B C D} {PROP : bi} (P : cQp.t -> A -> B -> C -> D -> PROP) : Prop :=
+  { cfrac_valid_4 q a b c d : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b c d) }.
+#[global] Hint Mode CFracValid4 - - - - - + : typeclass_instances.
+#[global] Arguments CFracValid4 {_ _ _ _ _} _%I : assert.
 
-(**
-[CFrac2ValidN P] is a useful corollary of [CFracValidN], observing
-[cQp.frac q1 + cQp.frac q2 ≤ 1] given [P q1 a1 .. aN ** P q2 b1 .. bN].
-*)
-Notation CFrac2Valid0 P := (∀ q1 q2, Observe2 [| cQp.frac q1 + cQp.frac q2 ≤ 1 |]%Qp (P q1) (P q2)) (only parsing).
-Notation CFrac2Valid1 P := (∀ q1 q2 a1 a2, Observe2 [| cQp.frac q1 + cQp.frac q2 ≤ 1 |]%Qp (P q1 a1) (P q2 a2)) (only parsing).
+Class CFracValid5 {A B C D E} {PROP : bi} (P : cQp.t -> A -> B -> C -> D -> E -> PROP) : Prop :=
+  { cfrac_valid_5 q a b c d e : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b c d e) }.
+#[global] Hint Mode CFracValid5 - - - - - - + : typeclass_instances.
+#[global] Arguments CFracValid5 {_ _ _ _ _ _} _%I : assert.
 
+Ltac solve_cfrac_valid := solve [intros; constructor; apply _].
+
+(** ** Properties of [CFractional] *)
 Section cfractional.
   Context {PROP : bi}.
   Implicit Types (P Q : PROP).
-
-  (** ** Properties of [CFractional] *)
 
   #[global] Instance: Params (@CFractional) 1 := {}.
   #[global] Instance CFractional_proper :
@@ -129,7 +126,7 @@ Section cfractional.
     by rewrite -EQ Frac. by rewrite EQ Frac.
   Qed.
 
-  (** ** Compatiblity for [CFractional] *)
+  (** *** Compatiblity for [CFractional] *)
 
   #[global] Instance persistent_cfractional `{!Persistent P, !TCOr (Affine P) (Absorbing P)} :
     CFractional (fun _ => P).
@@ -244,13 +241,6 @@ Temporary support for the [cQp._mut] coercion.
 *)
 Module cQp_compat.
   Export cfrac.cQp_compat.
-
-  #[export] Instance frac_eq_mut q p :
-    FracEq q p ->
-    FracEq (cQp._mut (cQp.frac q)) p | 20.
-  Proof.
-    by rewrite !frac_eq_iff=><-.
-  Qed.
 
   Section cfractional.
     Context {PROP : bi}.
@@ -404,3 +394,118 @@ Section proofmode.
   Qed.
 
 End proofmode.
+
+(** ** Observations from validity *)
+(**
+The [CFracValidN] enable several related, but easier to apply,
+observations.
+*)
+
+Notation CFrac0Valid P := (∀ q p,
+  cQpTC.FRAC q p -> Observe [| p ≤ 1 |]%Qp (P q)) (only parsing).
+Notation CFrac0Valid2 P := (∀ q1 q2 p1 p2 q,
+  cQpTC.FRAC q1 p1 -> cQpTC.FRAC q2 p2 -> QpTC.ADD p1 p2 q ->
+  Observe2 [| q ≤ 1 |]%Qp (P q1) (P q2)) (only parsing).
+Notation CFrac0Exclusive P := (∀ q1,
+  cQpTC.FRAC q1 1 -> ∀ q2, Observe2 False (P q1) (P q2)) (only parsing).
+Section valid_0.
+  #[local] Set Default Proof Using "Type*".
+  Context {PROP : bi} (P : cQp.t -> PROP) `{!CFracValid0 P}.
+
+  #[global] Instance cfrac_0_valid : CFrac0Valid P.
+  Proof. intros ?? [<-]. apply cfrac_valid_0. Qed.
+
+  Section examples.
+    Lemma mut q : Observe [| q ≤ 1 |]%Qp (P (cQp.mut q)).
+    Proof. apply _. Abort.
+
+    Lemma scale_mut p q :
+      Observe [| p * q ≤ 1 |]%Qp (P (cQp.scale p (cQp.mut q))).
+    Proof. apply _. Abort.
+
+    Lemma scale_mut p1 p2 q :
+      Observe [| p1 * (p2 * q) ≤ 1 |]%Qp
+        (P (cQp.scale p1 (cQp.scale p2 (cQp.mut q)))).
+    Proof. apply _. Abort.
+  End examples.
+
+  #[global] Instance cfrac_0_valid_2 : CFractional0 P -> CFrac0Valid2 P.
+  Proof.
+    intros Hfrac ????? [Hq1] [Hq2] [Hq]. rewrite -{}Hq -{}Hq1 -{}Hq2.
+    apply observe_uncurry. rewrite -{}Hfrac. apply: cfrac_0_valid.
+  Qed.
+
+  #[global] Instance cfrac_0_exclusive : CFractional0 P -> CFrac0Exclusive P.
+  Proof.
+    intros. iIntros "P1 P2".
+    by iDestruct (cfrac_0_valid_2 with "P1 P2") as %?%Qp.not_add_le_l.
+  Qed.
+End valid_0.
+
+Notation CFrac1Valid P := (∀ q p,
+  cQpTC.FRAC q p -> ∀ a, Observe [| p ≤ 1 |]%Qp (P q a)) (only parsing).
+Notation CFrac1Valid2 P := (∀ q1 q2 p1 p2 q,
+  cQpTC.FRAC q1 p1 -> cQpTC.FRAC q2 p2 -> QpTC.ADD p1 p2 q ->
+  ∀ a1 a2, Observe2 [| q ≤ 1 |]%Qp (P q1 a1) (P q2 a2)) (only parsing).
+Notation CFrac1Exclusive P := (∀ q1,
+  cQpTC.FRAC q1 1 -> ∀ q2 a1 a2, Observe2 False (P q1 a1) (P q2 a2)) (only parsing).
+Section valid_1.
+  #[local] Set Default Proof Using "Type*".
+  Context {A} {PROP : bi} (P : cQp.t -> A -> PROP) `{!CFracValid1 P}.
+
+  #[global] Instance cfrac_1_valid : CFrac1Valid P.
+  Proof. intros ?? [<-] *. apply cfrac_valid_1. Qed.
+
+  #[global] Instance cfrac_1_valid_2 : CFractional1 P -> AgreeCF1 P -> CFrac1Valid2 P.
+  Proof.
+    intros Hfrac Hagree ????? [Hq1] [Hq2] [Hq] *. rewrite -{}Hq -{}Hq1 -{}Hq2.
+    iIntros "P1 P2". iDestruct (Hagree with "P1 P2") as %<-.
+    iCombine "P1 P2" as "P". rewrite -Hfrac. iApply (cfrac_1_valid with "P").
+  Qed.
+
+  #[global] Instance cfrac_1_exclusive : CFractional1 P -> AgreeCF1 P -> CFrac1Exclusive P.
+  Proof.
+    intros. iIntros "P1 P2".
+    by iDestruct (cfrac_1_valid_2 with "P1 P2") as %?%Qp.not_add_le_l.
+  Qed.
+End valid_1.
+
+Notation CFrac2Valid P := (∀ q p,
+  cQpTC.FRAC q p -> ∀ a b, Observe [| p ≤ 1 |]%Qp (P q a b)) (only parsing).
+Section valid_2.
+  #[local] Set Default Proof Using "Type*".
+  Context {A B} {PROP : bi} (P : cQp.t -> A -> B -> PROP) `{!CFracValid2 P}.
+
+  #[global] Instance cfrac_2_valid : CFrac2Valid P.
+  Proof. intros ?? [<-] *. apply cfrac_valid_2. Qed.
+End valid_2.
+
+Notation CFrac3Valid P := (∀ q p,
+  cQpTC.FRAC q p -> ∀ a b c, Observe [| p ≤ 1 |]%Qp (P q a b c)) (only parsing).
+Section valid_3.
+  #[local] Set Default Proof Using "Type*".
+  Context {A B C} {PROP : bi} (P : cQp.t -> A -> B -> C -> PROP) `{!CFracValid3 P}.
+
+  #[global] Instance cfrac_3_valid : CFrac3Valid P.
+  Proof. intros ?? [<-] *. apply cfrac_valid_3. Qed.
+End valid_3.
+
+Notation CFrac4Valid P := (∀ q p,
+  cQpTC.FRAC q p -> ∀ a b c d, Observe [| p ≤ 1 |]%Qp (P q a b c d)) (only parsing).
+Section valid_4.
+  #[local] Set Default Proof Using "Type*".
+  Context {A B C D} {PROP : bi} (P : cQp.t -> A -> B -> C -> D -> PROP) `{!CFracValid4 P}.
+
+  #[global] Instance cfrac_4_valid : CFrac4Valid P.
+  Proof. intros ?? [<-] *. apply cfrac_valid_4. Qed.
+End valid_4.
+
+Notation CFrac5Valid P := (∀ q p,
+  cQpTC.FRAC q p -> ∀ a b c d e, Observe [| p ≤ 1 |]%Qp (P q a b c d e)) (only parsing).
+Section valid_5.
+  #[local] Set Default Proof Using "Type*".
+  Context {A B C D E} {PROP : bi} (P : cQp.t -> A -> B -> C -> D -> E -> PROP) `{!CFracValid5 P}.
+
+  #[global] Instance cfrac_5_valid : CFrac5Valid P.
+  Proof. intros ?? [<-] *. apply cfrac_valid_5. Qed.
+End valid_5.
