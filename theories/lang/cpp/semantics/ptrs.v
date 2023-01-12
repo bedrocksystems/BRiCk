@@ -430,10 +430,6 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
     same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
   Proof. by rewrite same_address_eq same_property_iff. Qed.
 
-  Lemma same_address_pinned p1 p2 :
-    same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va /\ ptr_vaddr p2 = Some va.
-  Proof. by rewrite same_address_iff. Qed.
-
   Lemma same_address_intro p1 p2 va :
     ptr_vaddr p1 = Some va -> ptr_vaddr p2 = Some va -> same_address p1 p2.
   Proof. rewrite same_address_eq; exact: same_property_intro. Qed.
