@@ -7,7 +7,8 @@ Require Import iris.proofmode.proofmode.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred destroy wp initializers call.
+     pred path_pred heap_pred destroy
+     wp initializers.
 Require Import bedrock.lang.bi.errors.
 
 Module Type Stmt.
@@ -69,9 +70,8 @@ Module Type Stmt.
                (k : region -> FreeTemp -> epred)
       : mpred :=
       Forall (addr : ptr),
-        let rty := erase_qualifiers ty in
         let destroy frees :=
-            interp frees (k (Rbind x addr ρ) (FreeTemps.delete rty addr))
+            interp frees (k (Rbind x addr ρ) (FreeTemps.delete ty addr))
         in
         match init with
         | Some init => wp_initialize ρ_init ty addr init $ fun frees => destroy frees
@@ -112,7 +112,7 @@ Module Type Stmt.
         if ts then
           UNSUPPORTED (thread_safe_initializer d)
         else
-          _global nm |-> tblockR ty 1 ** do_init
+          _global nm |-> tblockR ty (cQp.mut 1) ** do_init
       end.
 
     Lemma wp_decl_frame : forall ds ρ ρ_init m m',

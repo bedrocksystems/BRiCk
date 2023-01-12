@@ -37,7 +37,7 @@ Section with_cpp.
           | inl cls =>
               wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]))
           | inr t =>
-              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr (_at pr (primR t 1 rv))))
+              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr (_at pr (primR t (cQp.mut 1) rv))))
           end
         in
         match ar with
@@ -51,7 +51,7 @@ Section with_cpp.
             add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar (args ++ [Vptr pv]) wpp))
         | inr t =>
             add_with (fun pv : ptr => add_with (fun v : val => add_arg pv (
-                                           add_pre (_at pv (primR t 1 v)) (add_post (Exists v, _at pv (primR t 1 v))
+                                           add_pre (_at pv (primR t (cQp.mut 1) v)) (add_post (Exists v, _at pv (primR t (cQp.mut 1) v))
                                                                                     (elaborate ret ts ar (args ++ [v]) wpp)))))
         end
     end.

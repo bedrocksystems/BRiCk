@@ -7,7 +7,7 @@
  * Semantics of expressions
  * (expressed in weakest pre-condition style)
  *)
-Require Export bedrock.prelude.numbers.
+Require Import bedrock.prelude.numbers.
 Require Import iris.proofmode.tactics.
 
 From bedrock.lang.cpp Require Import ast semantics.
@@ -139,8 +139,8 @@ Module Type Expr.
           match drop_qualifiers ty with
           | Tarray ty' _ =>
             Forall (p : ptr) (q : Qp),
-              (p |-> cstring.R q bytes **
-               (p |-> cstring.R q bytes ={⊤}=∗ emp)) -*
+              p |-> cstring.R (cQp.c q) bytes -*
+              (p |-> cstring.R (cQp.c q) bytes ={⊤}=∗ emp) -*
               Q p FreeTemps.id
           | _ => False
           end
@@ -287,8 +287,8 @@ Module Type Expr.
          | Some cty =>
           wp_lval e (fun a free => Exists v' v'',
               (eval_binop tu Badd eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR eety 1 v' **
-                (a |-> primR eety 1 v'' -* Q a free)))
+              (a |-> primR eety (cQp.mut 1) v' **
+                (a |-> primR eety (cQp.mut 1) v'' -* Q a free)))
          | None => False
          end)
         |-- wp_lval (Epreinc e ty) Q.
@@ -303,8 +303,8 @@ Module Type Expr.
          | Some cty =>
           wp_lval e (fun a free => Exists v' v'',
               (eval_binop tu Bsub eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR eety 1 v' **
-                (a |-> primR eety 1 v'' -* Q a free)))
+              (a |-> primR eety (cQp.mut 1) v' **
+                (a |-> primR eety (cQp.mut 1) v'' -* Q a free)))
          | None => False
          end)
         |-- wp_lval (Epredec e ty) Q.
@@ -320,8 +320,8 @@ Module Type Expr.
              wp_lval e (fun a free => Exists v', Exists v'',
                           (eval_binop tu Badd eety cty
                              (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-                            (a |-> primR eety 1 v' **
-                               (a |-> primR eety 1 v'' -* Q v' free)))
+                            (a |-> primR eety (cQp.mut 1) v' **
+                               (a |-> primR eety (cQp.mut 1) v'' -* Q v' free)))
          | None => False
          end)
       |-- wp_operand (Epostinc e ty) Q.
@@ -337,8 +337,8 @@ Module Type Expr.
              wp_lval e (fun a free => Exists v', Exists v'',
                           (eval_binop tu Bsub eety cty
                              (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-                            (a |-> primR eety 1 v' **
-                               (a |-> primR eety 1 v'' -* Q v' free)))
+                            (a |-> primR eety (cQp.mut 1) v' **
+                               (a |-> primR eety (cQp.mut 1) v'' -* Q v' free)))
          | None => False
          end)
      |-- wp_operand (Epostdec e ty) Q.
@@ -359,8 +359,8 @@ Module Type Expr.
      *)
     Axiom wp_lval_assign : forall ty l r Q,
         nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
-            la |-> anyR (erase_qualifiers ty) 1 **
-           (la |-> primR (erase_qualifiers ty) 1 rv -* Q la free))
+            la |-> anyR (erase_qualifiers ty) (cQp.mut 1) **
+           (la |-> primR (erase_qualifiers ty) (cQp.mut 1) rv -* Q la free))
         |-- wp_lval (Eassign l r ty) Q.
 
     (* Assignemnt operators are *almost* like regular assignments except that they
@@ -369,9 +369,9 @@ Module Type Expr.
      *)
     Axiom wp_lval_bop_assign : forall ty o l r Q,
         nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
-             (Exists v v', la |-> primR (erase_qualifiers ty) 1 v **
+             (Exists v v', la |-> primR (erase_qualifiers ty) (cQp.mut 1) v **
                  ((eval_binop tu o (erase_qualifiers (type_of l)) (erase_qualifiers (type_of r)) (erase_qualifiers (type_of l)) v rv v' ** True) //\\
-                 (la |-> primR (erase_qualifiers ty) 1 v' -* Q la free))))
+                 (la |-> primR (erase_qualifiers ty) (cQp.mut 1) v' -* Q la free))))
         |-- wp_lval (Eassign_op o l r ty) Q.
 
     (** The comma operator can be both an lvalue and a prvalue
@@ -945,8 +945,8 @@ Module Type Expr.
         the destructor would potentially do. *)
     Axiom end_provides_storage : forall storage_ptr obj_ptr aty sz,
        size_of aty = Some sz ->
-       provides_storage storage_ptr obj_ptr aty ** obj_ptr |-> anyR aty 1
-         ={⊤}=∗ (storage_ptr |-> blockR sz 1).
+       provides_storage storage_ptr obj_ptr aty ** obj_ptr |-> anyR aty (cQp.mut 1)
+         ={⊤}=∗ (storage_ptr |-> blockR sz (cQp.m 1)).
 
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
@@ -1012,7 +1012,7 @@ Module Type Expr.
         out of scope.
      *)
     Axiom wp_operand_pseudo_destructor : forall e ty Q,
-        wp_lval e (fun v free => v |-> anyR ty 1 ** (v |-> tblockR ty 1 -* Q Vvoid free))
+        wp_lval e (fun v free => v |-> anyR ty (cQp.mut 1) ** (v |-> tblockR ty (cQp.mut 1) -* Q Vvoid free))
         |-- wp_operand (Epseudo_destructor ty e) Q.
 
     (* `Eimplicit_init` nodes reflect implicit /value initializations/ which are inserted
@@ -1041,11 +1041,11 @@ Module Type Expr.
          *)
            match tu !! cnd with
            | Some cv =>
-             addr |-> tblockR (Tnamed cls) 1 -*
+             addr |-> tblockR (Tnamed cls) (cQp.mut 1) -*
              (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
              wp_mcall (Vptr $ _global cnd) addr (Tnamed cls) (type_of_value cv) es (fun p free =>
                (* in the semantics, constructors return [void] *)
-               p |-> primR Tvoid 1 Vvoid ** Q (Tnamed cls) free)
+               p |-> primR Tvoid (cQp.mut 1) Vvoid ** Q (Tnamed cls) free)
            | _ => False
            end
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
@@ -1227,8 +1227,8 @@ Module Type Expr.
             let fs :=
               map base_to_li s.(s_bases) ++ map mem_to_li s.(s_fields) in
             init_fields cls base fs es
-               (base |-> struct_paddingR 1 cls **
-                (if has_vtable s then base |-> identityR cls [cls] 1 else emp) -*
+               (base |-> struct_paddingR (cQp.mut 1) cls **
+                (if has_vtable s then base |-> identityR cls [cls] (cQp.mut 1) else emp) -*
                 Q (Tnamed cls) FreeTemps.id)
 
         | Some (Gunion u) =>
@@ -1239,7 +1239,7 @@ Module Type Expr.
             [| length es = 1 |] **
             let fs := map mem_to_li $ firstn 1 u.(u_fields) in
             init_fields cls base fs es
-               (base |-> union_paddingR 1 cls (Some 0) -*
+               (base |-> union_paddingR (cQp.mut 1) cls (Some 0) -*
                 Q (Tnamed cls) FreeTemps.id)
         | _ => False
         end
@@ -1352,10 +1352,10 @@ Module Type Expr.
                            to the program to make it read-only.
                          NOTE that no "correct" program will ever modify this variable
                            anyways. *)
-                      loop_index |-> primR Tu64 (1/2) idx -*
+                      loop_index |-> primR Tu64 (cQp.c 1) idx -*
                       wp_initialize tu ρ ty (targetp .[ ty ! idx ]) init
                               (fun free => interp free $
-                                 loop_index |-> primR Tu64 (1/2) idx **
+                                 loop_index |-> primR Tu64 (cQp.c 1) idx **
                                  rest (N.succ idx))) sz idx.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ety ty Q,
@@ -1379,3 +1379,4 @@ End Expr.
 Declare Module E : Expr.
 
 Export E.
+Export cfrac.

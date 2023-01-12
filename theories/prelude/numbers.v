@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2021
+ * Copyright (C) BedRock Systems Inc. 2021-2022
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -492,6 +492,32 @@ End with_Z.
 
 (** [Qp] *)
 
-#[global] Instance Qp_mul_left_id : LeftId (=) 1%Qp Qp.mul := Qp.mul_1_l.
-#[global] Instance Qp_mul_right_id : RightId (=) 1%Qp Qp.mul := Qp.mul_1_r.
-#[global] Instance Qp_div_right_id : RightId (=) 1%Qp Qp.div := Qp.div_1.
+Module Qp.
+  Export stdpp.numbers.Qp.
+  #[local] Open Scope Qp_scope.
+
+  #[global] Instance mul_left_id : LeftId (=) 1 Qp.mul := Qp.mul_1_l.
+  #[global] Instance mul_right_id : RightId (=) 1 Qp.mul := Qp.mul_1_r.
+  #[global] Instance div_right_id : RightId (=) 1 Qp.div := Qp.div_1.
+
+  Lemma mul_2_2 : 2 * 2 = 4.
+  Proof. exact: (bool_decide_unpack _). Qed.
+
+  Lemma div_4 q : q / 4 + q / 4 = q / 2.
+  Proof.
+    rewrite -Qp.div_add_distr Qp.add_diag -Qp.mul_2_2.
+    by rewrite Qp.div_mul_cancel_l.
+  Qed.
+
+  Lemma third_two_thirds : 1/3 + 2/3 = 1.
+  Proof. exact: (bool_decide_unpack _). Qed.
+  Lemma two_thirds_third : 2/3 + 1/3 = 1.
+  Proof. exact: (bool_decide_unpack _). Qed.
+
+End Qp.
+#[deprecated(since="20221223", note="use [Qp.mul_left_id]")]
+Notation Qp_mul_left_id := Qp.mul_left_id (only parsing).
+#[deprecated(since="20221223", note="use [Qp.mul_right_id]")]
+Notation Qp_mul_right_id := Qp.mul_right_id (only parsing).
+#[deprecated(since="20221223", note="use [Qp.div_right_id]")]
+Notation Qp_div_right_id := Qp.div_right_id (only parsing).

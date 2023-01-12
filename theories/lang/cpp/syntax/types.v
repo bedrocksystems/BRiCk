@@ -332,7 +332,7 @@ Section qual_norm.
 
   Fixpoint qual_norm' (q : type_qualifiers) (t : type) : A :=
     match t with
-    | Tqualified q' t => qual_norm' (merge_tq q q') t
+    | Tqualified q' t => qual_norm' (merge_tq q' q) t
     | _ => f q t
     end.
 
@@ -340,6 +340,34 @@ Section qual_norm.
     qual_norm' QM.
 
 End qual_norm.
+
+Definition decompose_type : type -> type_qualifiers * type :=
+  qual_norm (fun q t => (q, t)).
+
+Fixpoint decompose_type_alt (t : type) : type_qualifiers * type :=
+  match t with
+  | Tqualified q t => let '(cv, t) := decompose_type_alt t in (merge_tq q cv, t)
+  | _ => (QM, t)
+  end.
+
+Lemma qual_norm_decompose_type_eq : forall {A} t (f : _ -> _ -> A) q,
+    qual_norm' f q t = let '(cv, t) := decompose_type_alt t in
+                       f (merge_tq cv q) t.
+Proof.
+  induction t; simpl; intros; try rewrite merge_tq_QM; eauto.
+  rewrite IHt. case_match.
+  f_equal. rewrite merge_tq_assoc. f_equal. rewrite merge_tq_comm. done.
+Qed.
+
+Lemma decompose_type_qual : forall q t,
+    decompose_type (Tqualified q t) = let '(cv, t) := decompose_type t in
+                                      (merge_tq q cv, t).
+Proof.
+  intros. rewrite /decompose_type/qual_norm.
+  rewrite !qual_norm_decompose_type_eq. simpl.
+  repeat case_match. inversion H; subst. f_equal.
+  rewrite merge_tq_assoc. done.
+Qed.
 
 Definition tqualified (q : type_qualifiers) (t : type) : type :=
   match q with
@@ -396,7 +424,7 @@ Section normalize_type_idempotent.
       - rewrite map_map /qual_norm !IHty /merge_tq/=;
           erewrite map_ext_Forall; eauto; eapply Forall_impl; eauto;
           intros * HForall; simpl in HForall; apply HForall.
-      - now rewrite IHty merge_tq_assoc.
+      - rewrite IHty !merge_tq_assoc. f_equal. f_equal. apply merge_tq_comm.
     }
     { (* _qual_norm_involutive *)
       intros *; generalize dependent q;
@@ -421,10 +449,6 @@ Section normalize_type_idempotent.
     }
   Qed.
 End normalize_type_idempotent.
-
-Definition decompose_type : type -> type_qualifiers * type :=
-  qual_norm (fun q t => (q, t)).
-
 
 (** ** Types with explicit size information. *)
 

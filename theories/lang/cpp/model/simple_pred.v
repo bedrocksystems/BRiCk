@@ -10,10 +10,12 @@ From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import proofmode.
 
 From bedrock.lang.bi Require Import fractional cancelable_invariants.
+From bedrock.lang.cpp.bi Require Import cfractional.
 Require Import bedrock.lang.cpp.logic.own_instances.
 
 From bedrock.prelude Require Import base option.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
+From bedrock.lang.cpp.algebra Require Import cfrac.
 From bedrock.lang.cpp.syntax Require Import
      names
      types
@@ -22,52 +24,53 @@ From bedrock.lang.cpp.syntax Require Import
 From bedrock.lang.cpp.semantics Require Import values subtyping.
 From bedrock.lang.cpp.logic Require Import mpred pred.
 
-Implicit Types (vt : validity_type) (σ resolve : genv).
+#[local] Set Printing Coercions.
+
+Implicit Types (vt : validity_type) (σ resolve : genv) (q : cQp.t).
 
 (* todo: does this not exist as a library somewhere? *)
-Definition fractionalR (V : Type) : cmra :=
-  prodR fracR (agreeR (leibnizO V)).
-Definition frac {V : Type} (q : Qp) (v : V) : fractionalR V :=
+Definition cfractionalR (V : Type) : cmra :=
+  prodR cQp.tR (agreeR (leibnizO V)).
+Definition cfrac {V : Type} q (v : V) : cfractionalR V :=
   (q, to_agree v).
 
-Lemma frac_op {V} (l : V) (p q : Qp) :
-  frac p l ⋅ frac q l ≡ frac (p + q) l.
+Lemma cfrac_op {V} (l : V) q1 q2 :
+  cfrac q1 l ⋅ cfrac q2 l ≡ cfrac (q1 ⋅ q2) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
 
-Lemma frac_valid {A : Type} {q1 q2} {v1 v2 : A} :
-  ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
+Lemma cfrac_valid {A : Type} {q1 q2} {v1 v2 : A} :
+  ✓ (cfrac q1 v1 ⋅ cfrac q2 v2) → ✓ (q1 ⋅ q2)%Qp ∧ v1 = v2.
 Proof. by move /pair_valid => /= []? /to_agree_op_inv_L. Qed.
 
 Section fractional.
-  Context {K V : Type} `{Countable K} `{!HasOwn PROP (gmapR K (fractionalR V))}.
+  Context {K V : Type} `{Countable K} `{!HasOwn PROP (gmapR K (cfractionalR V))}.
 
   Let gmap_own γ q k v :=
-    own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}.
-  Global Instance fractional_own_frac γ k v :
-    Fractional (λ q, gmap_own γ q k v).
-  Proof. intros q1 q2. by rewrite -own_op singleton_op frac_op. Qed.
+    own (A := gmapR K (cfractionalR V)) γ {[ k := cfrac q v ]}.
+  Global Instance cfractional_own_frac γ k v :
+    CFractional (λ q, gmap_own γ q k v).
+  Proof. intros q1 q2. by rewrite -own_op singleton_op cfrac_op. Qed.
 
   Global Instance fractional_own_frac_as_fractional γ k v q :
-    AsFractional (gmap_own γ q k v) (λ q, gmap_own γ q k v) q.
-  Proof. exact: Build_AsFractional. Qed.
+    AsCFractional (gmap_own γ q k v) (λ q, gmap_own γ q k v) q.
+  Proof. solve_as_cfrac. Qed.
 
   Global Instance gmap_own_agree
-    `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (fractionalR V))}
+    `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (cfractionalR V))}
     v1 v2 γ q1 q2 k :
     Observe2 [| v1 = v2 |] (gmap_own γ q1 k v1) (gmap_own γ q2 k v2).
   Proof.
     apply: observe_2_intro_only_provable.
     apply bi.wand_intro_r; rewrite /gmap_own -own_op singleton_op.
     rewrite own_valid discrete_valid singleton_valid.
-    by iIntros "!%" => /frac_valid [].
+    by iIntros "!%" => /cfrac_valid [].
   Qed.
 
-  Global Instance gmap_own_frac_valid
-    `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (fractionalR V))}
-    γ (q : Qp) k v :
-    Observe [| q ≤ 1 |]%Qp (gmap_own γ q k v).
+  Global Instance gmap_own_cfrac_valid γ
+    `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (cfractionalR V))} :
+    CFracValid2 (gmap_own γ).
   Proof.
-    apply: observe_intro_only_provable.
+    intros ?? <-%frac_eq *. apply: observe_intro_only_provable.
     rewrite /gmap_own own_valid !discrete_valid singleton_valid.
     by iIntros "!%" => /pair_valid [? _].
   Qed.
@@ -111,9 +114,9 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Definition _cpp_ghost := cpp_ghost.
 
   Record cppG' (Σ : gFunctors) : Type :=
-    { heapGS : inG Σ (gmapR addr (fractionalR runtime_val'))
+    { heapGS : inG Σ (gmapR addr (cfractionalR runtime_val'))
       (* ^ this represents the contents of physical memory *)
-    ; ghost_memG : inG Σ (gmapR ptr (fractionalR val))
+    ; ghost_memG : inG Σ (gmapR ptr (cfractionalR val))
       (* ^ this represents the contents of the C++ runtime that might
          not be represented in physical memory, e.g. values stored in
          registers or temporaries on the stack *)
@@ -149,12 +152,12 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     #[local] Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
     #[local] Existing Instances heapGS ghost_memG mem_injG blocksG codeG.
 
-    Definition heap_own (a : addr) (q : Qp) (r : runtime_val') : mpred :=
-      own (A := gmapR addr (fractionalR runtime_val'))
-      _ghost.(heap_name) {[ a := frac q r ]}.
-    Definition ghost_mem_own (p : ptr) (q : Qp) (v : val) : mpred :=
-      own (A := gmapR ptr (fractionalR val))
-        _ghost.(ghost_mem_name) {[ p := frac q v ]}.
+    Definition heap_own (a : addr) q (r : runtime_val') : mpred :=
+      own (A := gmapR addr (cfractionalR runtime_val'))
+      _ghost.(heap_name) {[ a := cfrac q r ]}.
+    Definition ghost_mem_own (p : ptr) q (v : val) : mpred :=
+      own (A := gmapR ptr (cfractionalR val))
+        _ghost.(ghost_mem_name) {[ p := cfrac q v ]}.
     Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (option addr))))
         _ghost.(mem_inj_name) {[ p := to_agree va ]}.
@@ -551,37 +554,37 @@ Module SimpleCPP.
         try case_decide; rewrite ?Heq //.
     Qed.
 
-    Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
+    Definition val_ (a : ptr) (v : val) q : mpred :=
       ghost_mem_own a q v.
 
     Global Instance val_agree a v1 v2 q1 q2 :
-      Observe2 [|v1 = v2|] (val_ a v1 q1) (val_ a v2 q2) := _.
+      Observe2 [| v1 = v2 |] (val_ a v1 q1) (val_ a v2 q2) := _.
 
-    Global Instance val_frac_valid a v (q : Qp) :
-      Observe ([| q ≤ 1 |])%Qp (val_ a v q) := _.
+    Global Instance val_cfrac_valid a v :
+      CFracValid0 (val_ a v) := _.
 
-    Instance val_fractional a rv : Fractional (val_ a rv) := _.
-    Instance val_as_fractional a rv q :
-      AsFractional (val_ a rv q) (val_ a rv) q := _.
+    Instance val_cfractional a rv : CFractional (val_ a rv) := _.
+    Instance val_as_cfractional a rv q :
+      AsCFractional (val_ a rv q) (val_ a rv) q := _.
     Instance val_timeless a rv q : Timeless (val_ a rv q) := _.
     Typeclasses Opaque val_.
 
 
-    Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
+    Definition byte_ (a : addr) (rv : runtime_val) q : mpred :=
       heap_own a q rv.
 
     Global Instance byte_agree a v1 v2 q1 q2 :
       Observe2 [|v1 = v2|] (byte_ a v1 q1) (byte_ a v2 q2) := _.
-    Global Instance byte_frac_valid a rv (q : Qp) :
-      Observe ([| q ≤ 1 |])%Qp (byte_ a rv q) := _.
+    Global Instance byte_cfrac_valid a rv q :
+      Observe [| q ≤ 1 |]%Qp (byte_ a rv q) := _.
 
-    Instance byte_fractional {a rv} : Fractional (byte_ a rv) := _.
+    Instance byte_cfractional {a rv} : CFractional (byte_ a rv) := _.
     Instance byte_as_fractional a rv q :
-      AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q := _.
+      AsCFractional (byte_ a rv q) (fun q => byte_ a rv q) q := _.
     Instance byte_timeless {a rv q} : Timeless (byte_ a rv q) := _.
 
     Theorem byte_consistent a b b' q q' :
-      byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
+      byte_ a b q ** byte_ a b' q' |-- byte_ a b (q ⋅ q') ** [| b = b' |].
     Proof.
       iIntros "[Hb Hb']".
       iDestruct (byte_agree with "Hb Hb'") as %->.
@@ -589,17 +592,17 @@ Module SimpleCPP.
     Qed.
 
     Lemma byte_update (a : addr) (rv rv' : runtime_val) :
-      byte_ a rv 1 |-- |==> byte_ a rv' 1.
+      byte_ a rv (cQp.mut 1)|-- |==> byte_ a rv' (cQp.mut 1).
     Proof. by apply own_update, singleton_update, cmra_update_exclusive. Qed.
 
-    Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred :=
+    Definition bytes (a : addr) (vs : list runtime_val) q : mpred :=
       [∗list] o ↦ v ∈ vs, byte_ (a+N.of_nat o)%N v q.
 
     Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
-    Instance bytes_fractional a vs : Fractional (bytes a vs) := _.
+    Instance bytes_fractional a vs : CFractional (bytes a vs) := _.
     Instance bytes_as_fractional a vs q :
-      AsFractional (bytes a vs q) (bytes a vs) q.
-    Proof. exact: Build_AsFractional. Qed.
+      AsCFractional (bytes a vs q) (bytes a vs) q.
+    Proof. solve_as_cfrac. Qed.
     Lemma bytes_nil a q : bytes a [] q -|- emp.
     Proof. done. Qed.
 
@@ -623,17 +626,17 @@ Module SimpleCPP.
       by iDestruct (IH _ _ Hlen with "Hvs1 Hvs2") as %->.
     Qed.
 
-    Lemma bytes_frac_valid a vs (q : Qp) :
+    Lemma bytes_cfrac_valid a vs q :
       length vs > 0 ->
       bytes a vs q |-- [| q ≤ 1 |]%Qp.
     Proof.
       rewrite /bytes; case: vs => [ |v vs _] /=; first by lia.
-      rewrite byte_frac_valid. by iIntros "[% _]".
+      rewrite byte_cfrac_valid. by iIntros "[% _]".
     Qed.
 
     Lemma bytes_update {a : addr} {vs} vs' :
       length vs = length vs' →
-      bytes a vs 1 |-- |==> bytes a vs' 1.
+      bytes a vs (cQp.mut 1) |-- |==> bytes a vs' (cQp.mut 1).
     Proof.
       rewrite /bytes -big_sepL_bupd.
       revert a vs'.
@@ -666,11 +669,11 @@ Module SimpleCPP.
       They're not exported, so we don't give them a complete theory;
       however, some of their proofs can be done via TC inference *)
     Local Definition addr_encodes
-        (σ : genv) (t : type) (q : Qp) (a : addr) (v : val) (vs : list runtime_val) :=
+        (σ : genv) (t : type) q (a : addr) (v : val) (vs : list runtime_val) :=
       encodes σ t v vs ** bytes a vs q ** vbytes a vs q.
 
     Local Instance addr_encodes_fractional {σ} ty a v vs :
-      Fractional (λ q, addr_encodes σ ty q a v vs) := _.
+      CFractional (λ q, addr_encodes σ ty q a v vs) := _.
 
     Local Instance addr_encodes_agree_dst σ t a v1 v2 vs1 vs2 q1 q2 :
       Observe2 [| vs1 = vs2 |]
@@ -694,16 +697,16 @@ Module SimpleCPP.
       iApply (observe_2 with "H1 H2").
     Qed.
 
-    Global Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
-      Observe [| q ≤ 1 |]%Qp (addr_encodes σ ty q a v vs).
+    Global Instance addr_encodes_cfrac_valid {σ} ty :
+      CFracValid3 (addr_encodes σ ty).
     Proof.
-      apply: observe_intro_persistent.
+      intros ?? <-%frac_eq *. apply: observe_intro_persistent.
       iDestruct 1 as (Hen%length_encodes_pos) "[B _]".
-      by iApply (bytes_frac_valid with "B").
+      by iApply (bytes_cfrac_valid with "B").
     Qed.
 
     Local Definition oaddr_encodes
-        (σ : genv) (t : type) (q : Qp) (oa : option addr) p (v : val) :=
+        (σ : genv) (t : type) q (oa : option addr) p (v : val) :=
         match oa with
         | Some a =>
           Exists vs,
@@ -711,16 +714,17 @@ Module SimpleCPP.
         | None => [| t <> Tvoid |] ** val_ p v q
         end.
 
+    (* Needed by tptsto'_cfractional *)
     Local Instance oaddr_encodes_fractional {σ} t oa p v :
-      Fractional (λ q, oaddr_encodes σ t q oa p v).
+      CFractional (λ q, oaddr_encodes σ t q oa p v).
     Proof. rewrite /oaddr_encodes; destruct oa; apply _. Qed.
 
     Local Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
       Observe [| ty <> Tvoid |] (oaddr_encodes σ ty q oa p v).
     Proof. destruct oa; apply _. Qed.
-    Local Instance oaddr_encodes_frac_valid {σ} t (q : Qp) oa p v :
-      Observe [| q ≤ 1 |]%Qp (oaddr_encodes σ t q oa p v).
-    Proof. destruct oa; apply _. Qed.
+    Local Instance oaddr_encodes_cfrac_valid {σ} t :
+      CFracValid3 (oaddr_encodes σ t).
+    Proof. intros ??? oa ??. destruct oa; apply _. Qed.
 
     (** the pointer points to the code
 
@@ -901,23 +905,24 @@ Module SimpleCPP.
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
     Definition identity {σ : genv} (this : globname) (most_derived : list globname)
-               (q : Qp) (p : ptr) : mpred := strict_valid_ptr p.
+               (q : cQp.t) (p : ptr) : mpred := strict_valid_ptr p.
 
-    Instance identity_fractional σ this mdc p : Fractional (λ q, identity this mdc q p).
-    Proof. move =>q1 q2. rewrite /identity. iSplit; [ iIntros "#P" | iIntros "[#P ?]" ]; iFrame "#". Qed.
-    (* No frac_valid. *)
-    Instance identity_timeless σ this mdc q p : Timeless (identity this mdc q p) := _.
-    Instance identity_strict_valid σ this mdc q p : Observe (strict_valid_ptr p) (identity this mdc q p).
+    Instance identity_cfractional {σ} this mdc : CFractional1 (identity this mdc).
+    Proof. move =>p q1 q2. rewrite /identity. iSplit; [ iIntros "#P" | iIntros "[#P ?]" ]; iFrame "#". Qed.
+    Axiom identity_cfrac_valid : forall {σ} cls path,
+      CFracValid1 (identity cls path).
+    Instance identity_timeless {σ} this mdc q p : Timeless (identity this mdc q p) := _.
+    Instance identity_strict_valid {σ} this mdc q p : Observe (strict_valid_ptr p) (identity this mdc q p).
     Proof. refine _. Qed.
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.
      *)
     Theorem identity_forget : forall σ mdc this p,
-        @identity σ this mdc 1 p |-- |={↑pred_ns}=> @identity σ this nil 1 p.
+        @identity σ this mdc (cQp.mut 1) p |-- |={↑pred_ns}=> @identity σ this nil (cQp.mut 1) p.
     Proof. rewrite /identity. eauto. Qed.
 
-    Definition tptsto' {σ : genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
+    Definition tptsto' {σ : genv} (t : type) (q : cQp.t) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
       Exists (oa : option addr),
         type_ptr t p ** (* use the appropriate ghost state instead *)
@@ -931,7 +936,7 @@ Module SimpleCPP.
         Observe (type_ptr ty p) (tptsto' ty q p v) := _.
 
     (* TODO (JH): We shouldn't be axiomatizing this in our model in the long-run *)
-    Axiom tptsto'_live : forall {σ} ty (q : Qp) p v,
+    Axiom tptsto'_live : forall {σ} ty (q : cQp.t) p v,
       @tptsto' σ ty q p v |-- live_ptr p ** True.
 
     #[local] Instance tptsto'_nonnull_obs {σ} ty q a :
@@ -961,17 +966,17 @@ Module SimpleCPP.
       by split'; apply tptsto'_mono.
     Qed.
 
-    #[local] Instance tptsto'_fractional {σ} ty p v :
-      Fractional (λ q, @tptsto' σ ty q p v) := _.
+    (* Relies on [oaddr_encodes_fractional] *)
+    #[local] Instance tptsto'_cfractional {σ} ty : CFractional2 (@tptsto' σ ty) := _.
 
     #[local] Instance tptsto'_timeless {σ} ty q p v :
       Timeless (@tptsto' σ ty q p v) := _.
 
-    #[local] Instance tptsto'_nonvoid {σ} ty (q : Qp) p v :
+    #[local] Instance tptsto'_nonvoid {σ} ty (q : cQp.t) p v :
       Observe [| ty <> Tvoid |] (@tptsto' σ ty q p v) := _.
 
-    #[local] Instance tptsto'_frac_valid {σ} ty (q : Qp) p v :
-      Observe [| q ≤ 1 |]%Qp (@tptsto' σ ty q p v) := _.
+    #[local] Instance tptsto'_cfrac_valid {σ} ty :
+      CFracValid2 (@tptsto' σ ty) := _.
 
     #[local] Instance tptsto'_agree σ ty q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto' σ ty q1 p v1) (@tptsto' σ ty q2 p v2).
@@ -985,13 +990,13 @@ Module SimpleCPP.
       by iPureIntro.
     Qed.
 
-    Definition tptsto {σ : genv} (ty : type) (q : Qp) (p : ptr) (v : val) : mpred :=
+    Definition tptsto {σ : genv} (ty : type) (q : cQp.t) (p : ptr) (v : val) : mpred :=
       Exists v', [| val_related σ ty v v' |] ** @tptsto' σ ty q p v'.
 
     #[global] Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v) := _.
 
-    Lemma tptsto_live : forall {σ} ty (q : Qp) p v,
+    Lemma tptsto_live : forall {σ} ty (q : cQp.t) p v,
       @tptsto σ ty q p v |-- live_ptr p ** True.
     Proof.
       intros *; rewrite /tptsto.
@@ -1023,17 +1028,17 @@ Module SimpleCPP.
       by split'; apply tptsto_mono.
     Qed.
 
-    #[global] Instance tptsto_fractional {σ} ty p v :
-      Fractional (λ q, @tptsto σ ty q p v) := _.
+    #[global] Instance tptsto_cfractional {σ} ty :
+      CFractional2 (@tptsto σ ty) := _.
 
     #[global] Instance tptsto_timeless {σ} ty q p v :
       Timeless (@tptsto σ ty q p v) := _.
 
-    #[global] Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
+    #[global] Instance tptsto_nonvoid {σ} ty (q : cQp.t) p v :
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
 
-    #[global] Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
-      Observe [| q ≤ 1 |]%Qp (@tptsto σ ty q p v) := _.
+    #[global] Instance tptsto_cfrac_valid {σ} ty :
+      CFracValid2 (tptsto ty) := _.
 
     #[global] Instance tptsto_agree σ ty q1 q2 p v1 v2 :
       Observe2 [| val_related σ ty v1 v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2).
@@ -1057,10 +1062,10 @@ Module SimpleCPP.
 
     (* This is now internal to the C++ abstract machine. *)
     Local Lemma pinned_ptr_borrow {σ} ty p v va :
-      @tptsto σ ty 1 p v ** pinned_ptr va p |--
-        |={↑pred_ns}=> Exists v' vs, @encodes σ ty v' vs ** vbytes va vs 1 **
-                (Forall v'' vs', @encodes σ ty v'' vs' -* vbytes va vs' 1 -*
-                                |={↑pred_ns}=> @tptsto σ ty 1 p v'').
+      @tptsto σ ty (cQp.mut 1) p v ** pinned_ptr va p |--
+        |={↑pred_ns}=> Exists v' vs, @encodes σ ty v' vs ** vbytes va vs (cQp.mut 1) **
+                (Forall v'' vs', @encodes σ ty v'' vs' -* vbytes va vs' (cQp.mut 1) -*
+                                |={↑pred_ns}=> @tptsto σ ty (cQp.mut 1) p v'').
     Proof.
       iIntros "(TP & PI)".
       iDestruct "PI" as "[_ [[-> %]|[[%%] MJ]]]"; first by rewrite tptsto_nonnull.
@@ -1068,7 +1073,7 @@ Module SimpleCPP.
       iDestruct "TP" as (v') "(%Hval_related & TP')";
         iDestruct "TP'" as (_ ma) "[TP [MJ' OA]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
-      iDestruct "OA" as (vs) "(#EN & Bys & VBys)".
+      iDestruct "OA" as (vs) "(#EN & Bys & VBys) /=".
       iIntros "!>".
       iExists v', vs. iFrame "EN VBys".
       iIntros (v'' vs') "#EN' VBys".
@@ -1076,7 +1081,11 @@ Module SimpleCPP.
       iMod (bytes_update vs' Heq with "Bys") as "Bys'".
       iModIntro. iExists v''.
       do 2 (iSplit; first done). iExists (Some va). iFrame "TP MJ".
-      simpl; iExists vs'; iFrame "#∗".
+      iExists vs'; iFrame "#∗".
+      (* TODO AUTO:
+      [iFrame] does not frame assumption [vbytes va vs' 1] against goal
+      [vbytes va vs' (cQp.frac (cQp.mut 1))]. *)
+      solve [simpl; iFrame].
     Qed.
 
     Axiom same_address_eq_type_ptr : forall resolve ty p1 p2 n,

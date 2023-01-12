@@ -7,6 +7,7 @@ Require Import bedrock.prelude.base.
 Require Import iris.proofmode.proofmode.
 From iris.bi.lib Require Import fractional.
 
+Require Import bedrock.lang.cpp.bi.cfractional.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
@@ -17,21 +18,21 @@ Section with_Σ.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   (** [rawR q rs]: the argument pointer points to [raw_byte] [r] within the C++ abstract machine. *)
-  Definition rawR_def (q : Qp) (r : raw_byte) : Rep :=
+  Definition rawR_def (q : cQp.t) (r : raw_byte) : Rep :=
     as_Rep (fun p => tptsto Tuchar q p (Vraw r)).
   Definition rawR_aux : seal (@rawR_def). Proof. by eexists. Qed.
   Definition rawR := rawR_aux.(unseal).
   Definition rawR_eq : @rawR = _ := rawR_aux.(seal_eq).
   #[global] Arguments rawR q raw : rename.
 
-  Lemma _at_rawR_ptr_congP_transport (p1 p2 : ptr) (q : Qp) (r : raw_byte) :
+  Lemma _at_rawR_ptr_congP_transport (p1 p2 : ptr) (q : cQp.t) (r : raw_byte) :
     ptr_congP σ p1 p2 |-- p1 |-> rawR q r -* p2 |-> rawR q r.
   Proof.
     rewrite rawR_eq/rawR_def !_at_as_Rep.
     iApply tptsto_ptr_congP_transport.
   Qed.
 
-  Lemma _at_rawR_offset_congP_transport (p : ptr) (o1 o2 : offset) (q : Qp) (r : raw_byte) :
+  Lemma _at_rawR_offset_congP_transport (p : ptr) (o1 o2 : offset) (q : cQp.t) (r : raw_byte) :
         offset_congP σ o1 o2 ** type_ptr Tu8 (p ,, o2)
     |-- p ,, o1 |-> rawR q r -* p ,, o2 |-> rawR q r.
   Proof.
@@ -44,7 +45,7 @@ Section with_Σ.
     unfold ptr_cong; exists p, o1, o2; intuition.
   Qed.
 
-  Definition rawsR (q : Qp) (rs : list raw_byte) : Rep := arrayR Tuchar (rawR q) rs.
+  Definition rawsR (q : cQp.t) (rs : list raw_byte) : Rep := arrayR Tuchar (rawR q) rs.
 
   Section Theory.
     Section primR_Axiom.
@@ -150,21 +151,17 @@ Section with_Σ.
         Timeless (rawR q raw).
       Proof. rewrite rawR_eq. apply _. Qed.
 
-      #[global] Instance rawR_fractional raw :
-        Fractional (λ q, rawR q raw).
+      #[global] Instance rawR_cfractional : CFractional1 rawR.
       Proof. rewrite rawR_eq. apply _. Qed.
-      #[global] Instance rawR_as_fractional q raw :
-        AsFractional (rawR q raw) (λ q, rawR q raw) q.
-      Proof. constructor. done. apply _. Qed.
+      #[global] Instance rawR_as_cfractional : AsCFractional1 rawR.
+      Proof. solve_as_cfrac. Qed.
 
-      #[global] Instance rawR_observe_frac_valid (q : Qp) raw :
-        Observe [| q ≤ 1 |]%Qp (rawR q raw).
+      #[global] Instance rawR_observe_frac_valid : CFracValid1 rawR.
       Proof. rewrite rawR_eq. apply _. Qed.
 
-      #[global] Instance rawR_observe_agree q1 q2 raw1 raw2 :
-        Observe2 [| raw1 = raw2 |] (rawR q1 raw1) (rawR q2 raw2).
+      #[global] Instance rawR_observe_agree : AgreeCF1 rawR.
       Proof.
-        rewrite rawR_eq/rawR_def.
+        intros. rewrite rawR_eq/rawR_def.
         apply: as_Rep_only_provable_observe_2=> p.
         iIntros "Hptsto1 Hptsto2".
         iPoseProof (tptsto_agree with "Hptsto1 Hptsto2") as "%Hraws"; eauto.
@@ -184,16 +181,15 @@ Section with_Σ.
         Timeless (rawsR q rs).
       Proof. apply _. Qed.
 
-      #[global] Instance rawsR_fractional rs :
-        Fractional (λ q, rawsR q rs).
+      #[global] Instance rawsR_cfractional : CFractional1 rawsR.
       Proof. apply _. Qed.
-      #[global] Instance rawsR_as_fractional q rs :
-        AsFractional (rawsR q rs) (λ q, rawsR q rs) q.
-      Proof. constructor. done. apply _. Qed.
+      #[global] Instance rawsR_as_fractional : AsCFractional1 rawsR.
+      Proof. solve_as_cfrac. Qed.
 
-      Lemma rawsR_observe_frac_valid (q : Qp) rs :
+      Lemma rawsR_observe_frac_valid (q : cQp.t) (q_f : Qp) rs :
         (0 < length rs) ->
-        Observe [| q ≤ 1 |]%Qp (rawsR q rs).
+        FracEq q q_f ->
+        Observe [| q_f ≤ 1 |]%Qp (rawsR q rs).
       Proof.
         intros Hlen; rewrite /rawsR; induction rs;
           by [ simpl in Hlen; lia

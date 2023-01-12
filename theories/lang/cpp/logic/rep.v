@@ -9,14 +9,14 @@ For an introduction see
 [fmdeps/cpp2v-core/theories/noimport/doc/cpp/howto_sequential.v]. *)
 
 From iris.proofmode Require Import proofmode.
-Require Import iris.bi.lib.fractional.
+From bedrock.lang.bi Require Import fractional.
 
 From bedrock.lang.bi Require Import prelude only_provable observe laterable.
 From bedrock.lang.bi Require Export monpred.
 (** ^^ Delicate; export canonical structure (CS) for [monPred].
 Export order can affect CS inference. *)
 
-From bedrock.lang.cpp Require Import semantics.values logic.mpred.
+From bedrock.lang.cpp Require Import semantics.values logic.mpred bi.cfractional.
 From bedrock.lang.cpp Require Export logic.rep_defs heap_notations.
 (** ^^ Delicate; export canonical structure (CS) for [Rep].
 Export order can affect CS inference. *)
@@ -71,6 +71,15 @@ Section with_cpp.
     (∀ p, AsFractional (P q p) (λ q, P q p) q) →
     AsFractional (as_Rep (P q)) (λ q, as_Rep (P q)) q.
   Proof. constructor. done. apply _. Qed.
+
+  #[global] Instance as_Rep_cfractional {P : cQp.t -> ptr -> mpred} :
+    CFractional1 P ->
+    CFractional (fun q => as_Rep (P q)).
+  Proof. intros HP q1 q2. constructor =>p. by rewrite monPred_at_sep /= HP. Qed.
+  #[global] Instance as_Rep_as_cfractional (P : cQp.t -> ptr -> mpred) q :
+    AsCFractional1 P ->
+    AsCFractional (as_Rep (P q)) (λ q, as_Rep (P q)) q.
+  Proof. solve_as_cfrac. Qed.
 
   #[global] Instance as_Rep_laterable (R : ptr -> mpred) :
     (∀ p, Laterable (R p)) -> Laterable (as_Rep R).
@@ -315,6 +324,15 @@ Section with_cpp.
     AsFractional (o |-> R) (λ q, o |-> r q) q.
   Proof. constructor. by rewrite -as_fractional. apply _. Qed.
 
+  #[global] Instance _offsetR_cfractional {R : cQp.t -> Rep} o :
+    CFractional R ->
+    CFractional (fun q => _offsetR o (R q)).
+  Proof. intros HR q1 q2. constructor =>p. by rewrite cfractional _offsetR_sep. Qed.
+  #[global] Instance _offsetR_as_cfractional o (P : Rep) (R : cQp.t -> Rep) q :
+    AsCFractional P R q ->
+    AsCFractional (_offsetR o P) (λ q, _offsetR o (R q)) q.
+  Proof. constructor. by rewrite -as_cfractional. apply _. Qed.
+
   #[global] Instance _offsetR_observe {o} {Q R : Rep} :
     Observe Q R ->
     Observe (o |-> Q) (o |-> R).
@@ -495,6 +513,15 @@ Section with_cpp.
     AsFractional (p |-> R) (λ q, p |-> r q) q.
   Proof. constructor. by rewrite -as_fractional. apply _. Qed.
 
+  #[global] Instance _at_cfractional {R : cQp.t -> Rep} p :
+    CFractional R ->
+    CFractional (fun q => _at p (R q)).
+  Proof. intros HR q1 q2. by rewrite cfractional _at_sep. Qed.
+  #[global] Instance _at_as_cfractional p (P : Rep) (R : cQp.t -> Rep) q :
+    AsCFractional P R q ->
+    AsCFractional (_at p P) (λ q, _at p (R q)) q.
+  Proof. constructor. by rewrite -as_cfractional. apply _. Qed.
+
   #[global] Instance _at_observe {p} {Q R : Rep} :
     Observe Q R ->
     Observe (p |-> Q) (p |-> R).
@@ -556,6 +583,13 @@ Section with_cpp.
   #[global] Instance pureR_as_fractional P Φ q :
     AsFractional P Φ q →
     AsFractional (pureR P) (λ q, pureR (Φ q)) q.
+  Proof. intros [??]. constructor. done. apply _. Qed.
+  #[global] Instance pureR_cfractional (P : cQp.t → mpred) :
+    CFractional P -> CFractional (fun q => pureR (P q)).
+  Proof. apply _. Qed.
+  #[global] Instance pureR_as_cfractional (P : mpred) (F : cQp.t -> mpred) q :
+    AsCFractional P F q →
+    AsCFractional (pureR P) (fun q => pureR (F q)) q.
   Proof. intros [??]. constructor. done. apply _. Qed.
 
   #[global] Instance pureR_objective P : Objective (pureR P).

@@ -8,7 +8,7 @@ Require Import ZArith.
 From bedrock.lang.cpp Require Import notations code_notations logic logic.builtins.
 
 Module WpTestDefns.
-  Context (ti : biIndex) (Σ : cpp_logic ti) (σ : genv) (tu : translation_unit) (ρ : region)
+  Context (ti : biIndex) (Σ : cpp_logic ti) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)
           (v : val) (p p' p'' p''' this : ptr) (vc : expr.ValCat)
           (free : FreeTemps) (E : epred) (K : Kpred).
   #[local] Notation ty := (types.Tptr types.Tvoid).

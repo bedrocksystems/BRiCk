@@ -1,0 +1,240 @@
+(*
+ * Copyright (c) 2022-2023 BedRock Systems, Inc.
+ *
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
+ *)
+From iris.proofmode Require Import proofmode monpred.
+
+Require Import bedrock.prelude.base.
+
+From bedrock.lang.cpp Require Import semantics ast heap_notations.
+From bedrock.lang.cpp.logic Require Import
+  pred path_pred rep rep_defs
+  heap_pred layout wp.
+
+Section defs.
+  Context `{Σ : cpp_logic}  {σ : genv}.
+
+  (* [wp_make_cv from to addr ty Q] replaces the [from] ownership of [ty] at [addr] with
+     [to] ownership and then proceeds as [Q].
+
+     This is used to implement [wp_downcast_to_const] and [wp_upcast_to_const].
+   *)
+  Parameter wp_const : forall (tu : translation_unit) {σ : genv} (from to : cQp.t) (addr : ptr) (ty : type) (Q : mpred), mpred.
+  Axiom wp_const_frame : forall tu tu' f t a ty Q Q',
+      type_table_le tu.(globals) tu'.(globals) ->
+      Q -* Q' |-- wp_const tu f t a ty Q -* wp_const tu' f t a ty Q'.
+
+  (* TODO this needs to be extended because if it is casting [volatile],
+     then it needs to descend under [const] *)
+  Definition wp_const_body (wp_const : forall (from to : cQp.t) (addr : ptr) (ty : type) (Q : epred), mpred)
+    (tu : translation_unit) (from to : cQp.t)  (addr : ptr) (ty : type) (Q : epred) : mpred :=
+    let '(cv, rty) := decompose_type ty in
+    if q_const cv then Q
+    else
+      let UNSUPPORTED Q := wp_const from to addr ty Q in
+      match rty with
+      | Tptr _
+      | Tnum _ _
+      | Tbool
+      | Tnullptr
+      | Tenum _
+      | Tmember_pointer _ _
+      | Tfloat _
+      | Tvoid =>
+        let rty := erase_qualifiers rty in
+        (Exists v, addr |-> primR rty from v ** (addr |-> primR rty to v -* Q)) ∨
+        (          addr |-> uninitR rty from ** (addr |-> uninitR rty to -* Q))
+
+      | Tref rty
+      | Trv_ref rty =>
+        let rty := erase_qualifiers rty in
+        (Exists v, addr |-> primR (Tref rty) from v ** (addr |-> primR (Tref rty) to v -* Q))
+        (* ^ References must be initialized *)
+
+      | Tarray ety sz =>
+        (* NOTE the order here is irrelevant because the operation is "atomic" *)
+        fold_left (fun Q i =>
+            wp_const from to (addr .[ erase_qualifiers ety ! sz ]) ty Q)
+                    (seqN 0 sz) Q
+
+      | Tnamed cls =>
+          match tu.(globals) !! cls with
+          | Some gd =>
+              match gd with
+              | Gunion u =>
+                Exists br, addr |-> union_paddingR from cls br ** (addr |-> union_paddingR to cls br -*
+                match br with
+                | None =>  Q
+                | Some br => match u.(u_fields) !! br with
+                            | None => UNSUPPORTED Q
+                            | Some m =>
+                                if m.(mem_mutable)
+                                then Q
+                                else
+                                  wp_const from to (addr ,, _field {| f_type := cls ; f_name := m.(mem_name) |}) m.(mem_type) Q
+                            end
+                end)
+              | Gstruct st =>
+                  let do_identity Q :=
+                    if has_vtable st then
+                      Exists path, addr |-> identityR cls path from ** (addr |-> identityR cls path to -* Q)
+                    else Q
+                  in
+                  (* TODO this is missing a change to [identity] *)
+                  fold_left (fun Q '(b, _) =>
+                              wp_const from to (addr ,, _base cls b) (Tnamed b) Q)
+                    (s_bases st) $
+                    fold_left (fun Q m =>
+                                if m.(mem_mutable)
+                                then Q
+                                else wp_const from to
+                                        (addr ,, _field {| f_type := cls; f_name := m.(mem_name) |})
+                                        m.(mem_type) Q)
+                    (s_fields st)
+                    (addr |-> struct_paddingR from cls ** (addr |-> struct_paddingR to cls -* do_identity Q))
+              | Gtype
+              | Genum _ _
+              | Gconstant _ _
+              | Gtypedef _ => UNSUPPORTED Q
+              end
+          | None => UNSUPPORTED Q
+          end
+      | Tfunction _ _
+      | Tarch _ _ => UNSUPPORTED Q
+      | Tqualified cv ty' => False (* unreachable *)
+      end%I.
+
+  (* NOTE: we prefer an entailment ([|--]) to a bi-entailment ([-|-]) or an equality
+     to be conservative.
+   *)
+  Axiom wp_const_intro : forall tu f t a ty Q, wp_const_body (wp_const tu) tu f t a ty Q |-- wp_const tu f t a ty Q.
+
+  (* Sanity check the [_frame] property *)
+  Lemma fold_left_frame : forall B (l : list B) (f f' : epred -> B -> epred)  (Q Q' : epred),
+    (Q -* Q') |-- □ (Forall Q1 Q1' a, (Q1 -* Q1') -* (f Q1 a -* f' Q1' a)) -*  fold_left f l Q -* fold_left f' l Q'.
+  Proof.
+    move=>B l.
+    induction l; iIntros (????) "W #F"; first done.
+    iDestruct ("F" $! Q Q' a with "W") as "W".
+    iApply (IHl with "W"). eauto.
+  Qed.
+
+  (* Sanity check *)
+  Lemma wp_const_body_frame_uniform : forall CAST tu q q' p ty (Q Q' : epred),
+    Q -* Q'
+    |-- □ (Forall a b p ty Q Q', (Q -* Q') -* CAST a b p ty Q -* CAST a b p ty Q') -*
+        wp_const_body CAST tu q q' p ty Q -* wp_const_body CAST tu q q' p ty Q'.
+  Proof.
+    rewrite /wp_const_body/=; intros.
+    destruct (decompose_type ty) as [cv t].
+    case_match.
+    { iIntros "$ _"; eauto. }
+    destruct t; eauto.
+
+    (* unsupported *)
+    all: try by iIntros "X C"; iApply "C"; eauto.
+
+    (* primitives *)
+    all: try solve [ iIntros "F #C X"; iDestruct "X" as "[X | X]";
+        [ iLeft; iDestruct "X" as (v) "[? X]"; iExists v; iFrame; iIntros "?"; iApply "F"; iApply "X"; eauto
+        | iRight; iDestruct "X" as "[$ X]"; iIntros "Y"; iApply "F"; iApply "X"; eauto ] ].
+
+    (* references *)
+    all: try solve [ iIntros "F #C X";
+                     iDestruct "X" as (v) "[? X]"; iExists v; iFrame; iIntros "?"; iApply "F"; iApply "X"; eauto ].
+
+    { (* arrays *)
+      iIntros "F #C"; iApply (fold_left_frame with "F"); iModIntro. iIntros (???) "F"; iApply "C"; eauto.
+    }
+
+    { (* aggregates *)
+      case_match; last by iIntros "X C"; iApply "C"; eauto.
+      case_match; try by iIntros "X C"; iApply "C"; eauto.
+      { (* unions *)
+        iIntros "F #C X"; iDestruct "X" as (?) "X".
+        iExists _; iDestruct "X" as "[$ X]".
+        iIntros "Y"; iSpecialize ("X" with "Y").
+        case_match; last by iApply "F".
+        case_match; last by iRevert "X"; iApply "C"; eauto.
+        case_match; first by iApply "F".
+        iRevert "X"; iApply "C"; eauto. }
+      { (* struct *)
+        iIntros "F #C".
+        iApply (fold_left_frame with "[F]").
+        { iApply (fold_left_frame with "[F]").
+          { case_match; iIntros "[$ X] Y".
+            { iDestruct ("X" with "Y") as (path) "X"; iExists path; iDestruct "X" as "[$ X]"; iIntros "Y"; iApply "F".
+              iApply "X"; eauto. }
+            { iApply "F". iApply "X"; eauto. } }
+          { iModIntro.
+            iIntros (???) "F". case_match; eauto.
+            iApply "C"; eauto. } }
+        { iModIntro.
+          iIntros (???) "F". case_match; eauto.
+          iApply "C"; eauto. } } }
+  Qed.
+
+  (*
+  Lemma cv_cast_body_frame : forall CAST CAST' tu tu' q q' p ty (Q Q' : epred),
+    sub_module tu tu' ->
+        Q -* Q'
+    |-- □ (Forall a b p ty Q Q', (Q -* Q') -* CAST a b p ty Q -* CAST' a b p ty Q') -*
+        cv_cast_body CAST tu q q' p ty Q -* cv_cast_body CAST' tu' q q' p ty Q'.
+  Proof.
+    rewrite /cv_cast_body/=; intros.
+    destruct (decompose_type ty) as [cv t].
+    case_match.
+    { iIntros "$ _"; eauto. }
+    destruct t; eauto.
+
+    (* unsupported *)
+    all: try by iIntros "X C"; iApply "C"; eauto.
+
+    (* primitives *)
+    all: try solve [ iIntros "F #C X"; iDestruct "X" as "[X | X]";
+        [ iLeft; iDestruct "X" as (v) "[? X]"; iExists v; iFrame; iIntros "?"; iApply "F"; iApply "X"; eauto
+        | iRight; iDestruct "X" as "[$ X]"; iIntros "Y"; iApply "F"; iApply "X"; eauto ] ].
+
+    (* references *)
+    all: try solve [ iIntros "F #C X";
+                     iDestruct "X" as (v) "[? X]"; iExists v; iFrame; iIntros "?"; iApply "F"; iApply "X"; eauto ].
+
+    { (* arrays *)
+      iIntros "F #C"; iApply (fold_left_frame with "F"); iModIntro. iIntros (???) "F"; iApply "C"; eauto.
+    }
+
+    { (* aggregates *)
+      case_match; last first.
+      { (* this case does not work out because i would need to go back to CAST' *)
+
+      }
+      case_match; last by iIntros "X C"; iApply "C"; eauto.
+      case_match; try by iIntros "X C"; iApply "C"; eauto.
+      { (* unions *)
+        iIntros "F #C X"; iDestruct "X" as (?) "X".
+        iExists _; iDestruct "X" as "[$ X]".
+        iIntros "Y"; iSpecialize ("X" with "Y").
+        case_match; last by iApply "F".
+        case_match; eauto.
+        case_match; first by iApply "F".
+        iRevert "X"; iApply "C"; eauto. }
+      { (* struct *)
+        iIntros "F #C".
+        iApply (fold_left_frame with "[F]").
+        { iApply (fold_left_frame with "[F]").
+          { iIntros "[$ X] Y"; iApply "F"; iApply "X"; eauto. }
+          { iModIntro.
+            iIntros (???) "F". case_match; eauto.
+            iApply "C"; eauto. } }
+        { iModIntro.
+          iIntros (???) "F". case_match; eauto.
+          iApply "C"; eauto. } } }
+  Qed.
+  *)
+
+End defs.
+
+Notation wp_make_const tu := (wp_const tu (cQp.m 1) (cQp.c 1)).
+Notation wp_make_mutable tu := (wp_const tu (cQp.c 1) (cQp.m 1)).

@@ -39,7 +39,7 @@ Section with_Σ.
              (ls : list ptr) (Q : ptr -> mpred) : mpred :=
     match fty with
     | Tfunction rty targs =>
-      read_args targs ls $ fun vs => wp_builtin b fty vs $ fun v => Forall p, _at p (primR rty 1 v) -* Q p
+      read_args targs ls $ fun vs => wp_builtin b fty vs $ fun v => Forall p, _at p (primR rty (cQp.mut 1) v) -* Q p
     | _ => False
     end.
 

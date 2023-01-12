@@ -288,6 +288,8 @@ public:
             print.output() << fmt::nbsp;
             cprint.printQualType(field->getType(), print);
             print.output() << fmt::nbsp;
+            print.boolean(field->isMutable());
+            print.output() << fmt::nbsp;
             printFieldInitializer(field, print, cprint);
             print.output() << fmt::nbsp;
             print.ctor("Build_LayoutInfo", false)

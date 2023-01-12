@@ -69,6 +69,7 @@ theories/lang/algebra/coGset.v
 theories/lang/algebra/gset_bij.v
 theories/lang/algebra/big_op.v
 theories/lang/algebra/monoid.v
+theories/lang/cpp/algebra/cfrac.v
 
 # BI-polymorphic modules
 theories/lang/bi/entailsN.v
@@ -91,6 +92,14 @@ theories/lang/bi/ChargeCompat.v
 theories/lang/bi/errors.v
 theories/lang/bi/linearity.v
 theories/lang/bi/big_op.v
+theories/lang/bi/split_andb.v
+theories/lang/bi/split_andb_tests.v
+theories/lang/bi/split_frac.v
+theories/lang/bi/split_frac_tests.v
+theories/lang/cpp/bi/split_cfrac.v
+theories/lang/cpp/bi/split_cfrac_tests.v
+theories/lang/cpp/bi/cfractional.v
+theories/lang/cpp/bi/cfractional_tests.v
 
 # Spec building blocks
 theories/lang/bi/spec.v
@@ -154,6 +163,7 @@ theories/lang/cpp/logic/rep_defs.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/cptr.v
 theories/lang/cpp/logic/wp.v
+theories/lang/cpp/logic/const.v
 theories/lang/cpp/logic/wp_notations.v
 theories/lang/cpp/logic/destroy.v
 theories/lang/cpp/logic/initializers.v

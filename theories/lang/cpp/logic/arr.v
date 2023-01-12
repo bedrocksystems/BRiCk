@@ -5,11 +5,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris.algebra Require Import list.
-From iris.bi Require Import monpred big_op.
-From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import proofmode.
 From bedrock.prelude Require Import numbers.
-From bedrock.lang Require Import bi.observe bi.big_op.
+From bedrock.lang.bi Require Import observe fractional big_op.
+From bedrock.lang.cpp Require Import bi.cfractional.
 From bedrock.lang.cpp.semantics Require Import types genv.
 From bedrock.lang.cpp.logic Require Import pred path_pred heap_pred.
 From bedrock.lang.cpp.semantics Require Import values.
@@ -468,9 +467,9 @@ Section with_array_Rs.
   Qed.
 End with_array_Rs.
 
-Section with_array_frac.
-  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : type).
-  Context (R : Qp -> X -> Rep).
+Section arrayR_agree.
+  Context `{Σ : cpp_logic, resolve : genv} {X T : Type} (ty : type).
+  Context (R : T -> X -> Rep).
 
   (** This is not phrased as an instance because TC resolution cannot
       always solve the unification problem for [R]. *)
@@ -490,6 +489,11 @@ Section with_array_frac.
     iDestruct (observe_2 [| x = y |] with "X Y") as %->.
     rewrite !_offsetR_dot. iDestruct ("IH" with "[] L K") as %->; auto.
   Qed.
+End arrayR_agree.
+
+Section with_array_frac.
+  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : type).
+  Context (R : Qp -> X -> Rep).
 
   #[global] Instance arrayR_fractional l
   `{HF : !∀ x, Fractional (λ q, R q x)} :
@@ -505,5 +509,24 @@ Section with_array_frac.
     AsFractional (arrayR ty (R q) l) (λ q, arrayR ty (R q) l) q.
   Proof. exact: Build_AsFractional. Qed.
 End with_array_frac.
+
+Section with_array_cfrac.
+  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : type).
+  Context (R : cQp.t -> X -> Rep).
+
+  #[global] Instance arrayR_cfractional l `{HF : CFractional1 R} :
+    CFractional (λ q, arrayR ty (R q) l).
+  Proof.
+    red. intros.
+    induction l.
+    { rewrite !arrayR_nil. iSplit; iCancel. }
+    { rewrite !arrayR_cons IHl HF !_offsetR_sep. iSplit; iCancel. }
+  Qed.
+
+  #[global] Instance arrayR_as_cfractional l `{!CFractional1 R} q :
+    AsCFractional (arrayR ty (R q) l) (λ q, arrayR ty (R q) l) q.
+  Proof. solve_as_cfrac. Qed.
+
+End with_array_cfrac.
 
 #[global] Hint Opaque arrR arrayR : typeclass_instances.

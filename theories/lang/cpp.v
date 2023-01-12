@@ -6,8 +6,8 @@
 Require Export
         bedrock.lang.cpp.ast
         bedrock.lang.cpp.semantics
-        bedrock.lang.cpp.logic
-        bedrock.lang.cpp.parser.
+        bedrock.lang.cpp.parser
+        bedrock.lang.cpp.logic.
 Require Export
         bedrock.lang.cpp.notations
         bedrock.lang.cpp.primitives

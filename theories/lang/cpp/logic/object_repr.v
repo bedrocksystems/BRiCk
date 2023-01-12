@@ -80,7 +80,7 @@ End Utilities.
 Section rawsR_transport.
   Context `{Σ : cpp_logic} {σ : genv}.
 
-  Lemma _at_rawsR_ptr_congP_transport (p1 p2 : ptr) (q : Qp) (rs : list raw_byte) :
+  Lemma _at_rawsR_ptr_congP_transport (p1 p2 : ptr) (q : cQp.t) (rs : list raw_byte) :
         ptr_congP σ p1 p2 ** ([∗list] i ∈ seqN 0 (lengthN rs), type_ptr Tu8 (p2 .[ Tu8 ! Z.of_N i ]))
     |-- p1 |-> rawsR q rs -* p2 |-> rawsR q rs.
   Proof.
@@ -236,7 +236,7 @@ Section raw_type_ptrs.
 
       #[global]
       Instance raw_type_ptrs_blockR_obs (ty : type) :
-        forall (p : ptr) (sz : N) (q : Qp),
+        forall (p : ptr) (sz : N) q,
           size_of σ ty = Some sz ->
           Observe (raw_type_ptrs ty p) (p |-> blockR sz q).
       Proof.
@@ -481,7 +481,7 @@ End primR_transport.
 (* [Rep]s which can be encoded as [raw] bytes enjoy certain transport and cancellation properties *)
 Section with_rawable.
   Context `{Σ : cpp_logic} {σ : genv}.
-  Context {X : Type} (R : Qp -> X -> Rep).
+  Context {X : Type} (R : cQp.t -> X -> Rep).
   Context (decode : list raw_byte -> X -> Prop) (encode : X -> list raw_byte -> Prop).
   Context (enc_dec_uniq : forall (x x' : X) (raws : list raw_byte),
               encode x raws -> decode raws x' -> x = x').
@@ -493,18 +493,18 @@ Section with_rawable.
   Context (ty : type) (sz : N) (Hsz : size_of σ ty = Some sz) (Hnonzero : (sz <> 0)%N).
   Context (Hdecode_sz : forall (x : X) (rs : list raw_byte), decode rs x -> lengthN rs = sz).
   Context (Hencode_sz : forall (x : X) (rs : list raw_byte), encode x rs -> lengthN rs = sz).
-  Context (HR_decode : forall (rs : list raw_byte) (p : ptr) (q : Qp),
+  Context (HR_decode : forall (rs : list raw_byte) (p : ptr) q,
                              p |-> rawsR q rs ** type_ptr ty p
                          |-- Exists (x : X),
                                 [| decode rs x |] ** p |-> R q x).
-  Context (HR_encode : forall (x : X) (p : ptr) (q : Qp),
+  Context (HR_encode : forall (x : X) (p : ptr) q,
                              p |-> R q x
                          |-- type_ptr ty p **
                              Exists (rs : list raw_byte),
                                [| encode x rs |] ** p |-> rawsR q rs).
 
   #[local] Lemma _at_rawable_R_obj_repr_aux (i : N) :
-    forall (p : ptr) (q : Qp) (rs : list raw_byte),
+    forall (p : ptr) q (rs : list raw_byte),
           p .[ Tu8 ! i ] |-> rawsR q (dropN i rs)
       |-- p .[ Tu8 ! i ] |-> arrayR Tu8 (fun tt => anyR Tu8 q)
                                         (replicateN (lengthN rs - i) ()).
@@ -542,7 +542,7 @@ Section with_rawable.
   Qed.
 
   Lemma _at_rawable_R_arrayR_anyR :
-    forall (p : ptr) (q : Qp) (x : X),
+    forall (p : ptr) q (x : X),
           p |-> R q x
       |-- p |-> arrayR Tu8 (fun tt => anyR Tu8 q) (replicateN sz ()).
   Proof using encode ty Hsz Hencode_sz Hnonzero HR_encode.
@@ -556,7 +556,7 @@ Section with_rawable.
   Qed.
 
   Lemma _at_rawable_R_anyR :
-    forall (p : ptr) (q : Qp) (x : X),
+    forall (p : ptr) q (x : X),
           p |-> R q x
       |-- p |-> anyR (Tarray Tu8 sz) q.
   Proof using encode ty Hsz Hencode_sz Hnonzero HR_encode.
@@ -565,7 +565,7 @@ Section with_rawable.
   Qed.
 
   Lemma R_ptr_congP_transport_via_rawsR :
-    forall (p p' : ptr) (q : Qp) (x : X),
+    forall (p p' : ptr) q (x : X),
       ptr_congP σ p p' ** type_ptr ty p' |-- p |-> R q x -* p' |-> R q x.
   Proof using decode encode enc_dec_uniq sz Hdecode_sz Hencode_sz Hsz HR_decode HR_encode Hnonzero.
     intros p p' q x; rewrite HR_encode.
@@ -590,7 +590,7 @@ Section blockR_transport.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   Lemma blockR_ptr_congP_transport_raw (sz : N) :
-    forall (p p' : ptr) (ty : type) (q : Qp),
+    forall (p p' : ptr) (ty : type) q,
       size_of σ ty = Some sz ->
           ptr_congP σ p p' ** raw_type_ptrs ty p'
       |-- p |-> blockR sz q -* p' |-> blockR sz q.
@@ -676,7 +676,7 @@ Section blockR_transport.
      [type_ptr ty p'] obligation.
    *)
   Lemma blockR_ptr_congP_transport (sz : N) :
-    forall (p p' : ptr) (ty : type) (q : Qp),
+    forall (p p' : ptr) (ty : type) q,
       size_of σ ty = Some sz ->
           ptr_congP σ p p' ** type_ptr ty p ** type_ptr ty p'
       |-- p |-> blockR sz q -* p' |-> blockR sz q.

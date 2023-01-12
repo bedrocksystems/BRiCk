@@ -18,6 +18,7 @@ In the html, identifiers are hyperlinked to their definition.
 Your Coq editor may also provide a facility to jump to definition (M-. in emacs (company-coq mode))
 *)
 Require Import bedrock.lang.cpp.
+Import cQp_compat.
 
 Section with_Sigma.
 Context `{Sigma: cpp_logic} {CU:genv}.
@@ -72,7 +73,7 @@ Example e8 : Rep := longlongR q z. (** similarly, [ulonglongR] and [slonglongR] 
 Example e9 : Rep  := i8R q z. (** similarly, [int16], [int32], [uni64]. Prefix 'u' for the unsigned variants *)
 Variable b: bool.
 Example e11: bool:=true.
-Example e10 : Rep := boolR (1/2) b.
+Example e10 : Rep := boolR (cQp.m (1/2)) b.
 
 (**
 Some locations (e.g. the "next" field of linked list) store pointers.
@@ -117,10 +118,10 @@ Lemma l1: e13 |-- [| False |].
 Abort.
 
 (** However, the following is fine: *)
-Example e14 : mpred := x |-> intR (1/2) 4 ** x |-> intR (1/2) 4.
+Example e14 : mpred := x |-> intR ((cQp.m (1/2))) 4 ** x |-> intR ((cQp.m (1/2))) 4.
 
 (** if [x] and [y] are different locations, the following is also fine *)
-Example e15 : mpred := x |-> intR 1 4 ** y |-> intR (1/2) 4.
+Example e15 : mpred := x |-> intR 1 4 ** y |-> intR (cQp.m (1/2)) 4.
 
 (** This separateness part of the [**] (instead of vanilla conjunction) gives the main modularity properties of separation logic.
 For example, if a thread [t1] has precondition [P1] and postcondition [Q2],
