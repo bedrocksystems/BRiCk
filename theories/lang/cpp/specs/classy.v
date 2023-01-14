@@ -62,6 +62,7 @@ End with_prop.
 #[global] Hint Mode SpecGen - ! : typeclass_instances.
 #[global] Hint Mode WithArg ! - : typeclass_instances.
 #[global] Hint Mode WithPost - ! - : typeclass_instances.
+#[global] Hint Mode HasVoid ! : typeclass_instances.
 Arguments SpecGen : clear implicits.
 Arguments WithArg : clear implicits.
 Arguments WithPost : clear implicits.
