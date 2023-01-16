@@ -34,7 +34,7 @@ Elpi Accumulate derive lp:{{
 }}.
 Elpi Typecheck derive.
 
-Module BasicTests.
+Module Type BasicTests.
   Variant T1 := A1 | B1 | C1.
   #[only(eq_dec)] derive T1.
   #[only(inhabited)] derive T1.
@@ -53,7 +53,7 @@ Module BasicTests.
 End BasicTests.
 
 (*Test interop of manual and generated definitions*)
-Module InteropTests.
+Module Type InteropTests.
   Variant T1 := A1 | B1 | C1.
   (*Test: Manual EqDecision + generated Finite:*)
   #[local] Instance T1_eq_dec : EqDecision T1.
@@ -78,7 +78,7 @@ End InteropTests.
   | |- _ => fail
   end.
 
-Module DerivingTest.
+Module Type DerivingTest.
   (*This example uses the default unfolding rule.
     It's motivated by functor use cases.*)
   Variant _t := A | B | C.
@@ -101,7 +101,7 @@ Module DerivingTest.
 End DerivingTest.
 
 (*** Test derivation using Finite. *)
-Module Deriving2Test.
+Module Type Deriving2Test.
   Variant _t := A | B | C (_ : bool) | D (_ : option bool) (_ : bool).
   Definition t := _t.
   #[global] Instance: EqDecision t.
@@ -155,7 +155,7 @@ Module Deriving2Test.
   Qed.
 End Deriving2Test.
 
-Module SimpleFiniteTest.
+Module Type SimpleFiniteTest.
   (*#[only(finite_type)] derive
     Variant feature := A | B | C | D.*) (*TODO: potential derive bug? Anomaly/split_dirpath*)
   Variant feature := A | B | C | D.
@@ -166,7 +166,7 @@ Module SimpleFiniteTest.
   Proof. by rewrite feature.of_to_N. Qed.
 End SimpleFiniteTest.
 
-Module FiniteTest.
+Module Type FiniteTest.
   Variant feature := A | B | C | D.
   #[local] Instance: ToN feature (fun (x : feature) =>
     match x with
@@ -186,7 +186,7 @@ Module FiniteTest.
   Proof. reflexivity. Qed.
 End FiniteTest.
 
-Module SimpleBitsetTest.
+Module Type SimpleBitsetTest.
   Variant feature := A | B | C | D.
   #[only(bitset)] derive feature.
   Goal feature_set.to_bits {[ A ]} = 1%N.
@@ -197,7 +197,7 @@ Module SimpleBitsetTest.
   Proof. reflexivity. Qed.
 End SimpleBitsetTest.
 
-Module BitsetTest.
+Module Type BitsetTest.
   Variant feature := A | B | C | D.
   #[local] Instance: ToBit feature (fun (x : feature) =>
     match x with
