@@ -157,60 +157,60 @@ End Deriving2Test.
 
 Module SimpleFiniteTest.
   (*#[only(finite_type)] derive
-    Variant feature := CSUM | TSO4 | TSO6 | UFO.*) (*TODO: potential derive bug: Anomaly/split_dirpath*)
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+    Variant feature := A | B | C | D.*) (*TODO: potential derive bug? Anomaly/split_dirpath*)
+  Variant feature := A | B | C | D.
   #[only(finite_type)] derive feature.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N A) = Some A.
   Proof. reflexivity. Qed.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N B) = Some B.
   Proof. by rewrite feature.of_to_N. Qed.
 End SimpleFiniteTest.
 
 Module FiniteTest.
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+  Variant feature := A | B | C | D.
   #[local] Instance: ToN feature (fun (x : feature) =>
     match x with
-    | CSUM => 0
-    | TSO4 => 1
-    | TSO6 => 3
-    | UFO => 5
+    | A => 0
+    | B => 1
+    | C => 3
+    | D => 5
     end)%N := {}.
   #[only(finite_type)] derive feature.
   #[export] Instance feature_to_N_inj : Inj eq eq feature.to_N.
   Proof. case; case => //. Qed.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N C) = Some C.
   Proof. reflexivity. Qed.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N D) = Some D.
   Proof. by rewrite feature.of_to_N. Qed.
-  Goal feature.of_N 3 = Some TSO6.
+  Goal feature.of_N 3 = Some C.
   Proof. reflexivity. Qed.
 End FiniteTest.
 
 Module SimpleBitsetTest.
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+  Variant feature := A | B | C | D.
   #[only(bitset)] derive feature.
-  Goal feature_set.to_bits {[ CSUM ]} = 1%N.
+  Goal feature_set.to_bits {[ A ]} = 1%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ TSO6 ]} = 4%N.
+  Goal feature_set.to_bits {[ C ]} = 4%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ CSUM; TSO6 ]} = 5%N.
+  Goal feature_set.to_bits {[ A; C ]} = 5%N.
   Proof. reflexivity. Qed.
 End SimpleBitsetTest.
 
 Module BitsetTest.
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+  Variant feature := A | B | C | D.
   #[local] Instance: ToBit feature (fun (x : feature) =>
     match x with
-    | CSUM => 0
-    | TSO4 => 1
-    | TSO6 => 3
-    | UFO => 5
+    | A => 0
+    | B => 1
+    | C => 3
+    | D => 5
     end)%N := {}.
   #[only(bitset)] derive feature.
-  Goal feature_set.to_bits {[ CSUM ]} = 1%N.
+  Goal feature_set.to_bits {[ A ]} = 1%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ TSO6 ]} = 8%N.
+  Goal feature_set.to_bits {[ C ]} = 8%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ CSUM; TSO6 ]} = 9%N.
+  Goal feature_set.to_bits {[ A; C ]} = 9%N.
   Proof. reflexivity. Qed.
 End BitsetTest.
