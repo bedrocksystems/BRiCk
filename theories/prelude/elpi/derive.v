@@ -34,7 +34,7 @@ Elpi Accumulate derive lp:{{
 }}.
 Elpi Typecheck derive.
 
-Module BasicTests.
+Module Type BasicTests.
   Variant T1 := A1 | B1 | C1.
   #[only(eq_dec)] derive T1.
   #[only(inhabited)] derive T1.
@@ -53,7 +53,7 @@ Module BasicTests.
 End BasicTests.
 
 (*Test interop of manual and generated definitions*)
-Module InteropTests.
+Module Type InteropTests.
   Variant T1 := A1 | B1 | C1.
   (*Test: Manual EqDecision + generated Finite:*)
   #[local] Instance T1_eq_dec : EqDecision T1.
@@ -78,7 +78,7 @@ End InteropTests.
   | |- _ => fail
   end.
 
-Module DerivingTest.
+Module Type DerivingTest.
   (*This example uses the default unfolding rule.
     It's motivated by functor use cases.*)
   Variant _t := A | B | C.
@@ -101,7 +101,7 @@ Module DerivingTest.
 End DerivingTest.
 
 (*** Test derivation using Finite. *)
-Module Deriving2Test.
+Module Type Deriving2Test.
   Variant _t := A | B | C (_ : bool) | D (_ : option bool) (_ : bool).
   Definition t := _t.
   #[global] Instance: EqDecision t.
@@ -155,62 +155,62 @@ Module Deriving2Test.
   Qed.
 End Deriving2Test.
 
-Module SimpleFiniteTest.
+Module Type SimpleFiniteTest.
   (*#[only(finite_type)] derive
-    Variant feature := CSUM | TSO4 | TSO6 | UFO.*) (*TODO: potential derive bug: Anomaly/split_dirpath*)
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+    Variant feature := A | B | C | D.*) (*TODO: potential derive bug? Anomaly/split_dirpath*)
+  Variant feature := A | B | C | D.
   #[only(finite_type)] derive feature.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N A) = Some A.
   Proof. reflexivity. Qed.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N B) = Some B.
   Proof. by rewrite feature.of_to_N. Qed.
 End SimpleFiniteTest.
 
-Module FiniteTest.
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+Module Type FiniteTest.
+  Variant feature := A | B | C | D.
   #[local] Instance: ToN feature (fun (x : feature) =>
     match x with
-    | CSUM => 0
-    | TSO4 => 1
-    | TSO6 => 3
-    | UFO => 5
+    | A => 0
+    | B => 1
+    | C => 3
+    | D => 5
     end)%N := {}.
   #[only(finite_type)] derive feature.
   #[export] Instance feature_to_N_inj : Inj eq eq feature.to_N.
   Proof. case; case => //. Qed.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N C) = Some C.
   Proof. reflexivity. Qed.
-  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Goal feature.of_N (feature.to_N D) = Some D.
   Proof. by rewrite feature.of_to_N. Qed.
-  Goal feature.of_N 3 = Some TSO6.
+  Goal feature.of_N 3 = Some C.
   Proof. reflexivity. Qed.
 End FiniteTest.
 
-Module SimpleBitsetTest.
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+Module Type SimpleBitsetTest.
+  Variant feature := A | B | C | D.
   #[only(bitset)] derive feature.
-  Goal feature_set.to_bits {[ CSUM ]} = 1%N.
+  Goal feature_set.to_bits {[ A ]} = 1%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ TSO6 ]} = 4%N.
+  Goal feature_set.to_bits {[ C ]} = 4%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ CSUM; TSO6 ]} = 5%N.
+  Goal feature_set.to_bits {[ A; C ]} = 5%N.
   Proof. reflexivity. Qed.
 End SimpleBitsetTest.
 
-Module BitsetTest.
-  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+Module Type BitsetTest.
+  Variant feature := A | B | C | D.
   #[local] Instance: ToBit feature (fun (x : feature) =>
     match x with
-    | CSUM => 0
-    | TSO4 => 1
-    | TSO6 => 3
-    | UFO => 5
+    | A => 0
+    | B => 1
+    | C => 3
+    | D => 5
     end)%N := {}.
   #[only(bitset)] derive feature.
-  Goal feature_set.to_bits {[ CSUM ]} = 1%N.
+  Goal feature_set.to_bits {[ A ]} = 1%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ TSO6 ]} = 8%N.
+  Goal feature_set.to_bits {[ C ]} = 8%N.
   Proof. reflexivity. Qed.
-  Goal feature_set.to_bits {[ CSUM; TSO6 ]} = 9%N.
+  Goal feature_set.to_bits {[ A; C ]} = 9%N.
   Proof. reflexivity. Qed.
 End BitsetTest.
