@@ -21,6 +21,8 @@ Overview:
 
 - Tactic [solve_frac] for solving [FracSplittable_N]
 
+- [FracLaterAgree1] for higher-order predicates
+
 [FracSplittable_N R], where [N] counts the number of arguments taken
 by [R] after its fraction, is short-hand for:
 
@@ -247,3 +249,60 @@ Module example.
     my_thing x (q1 + q2) y ⊣⊢ my_thing x q1 y ∗ my_thing x q2 y.
   Proof. exact: fractional. Qed.
 End example.
+
+
+(**
+Fractional ghost state with agreement on one higher-order argument.
+Compared to [FracSplittable_1], we
+
+- drop [Timeless] because higher-order ghost state depends on the
+step-index, and
+
+- add [Contractive] and [LaterAgreeF1] to enable agreement lemmas.
+*)
+Class FracLaterAgree1 {A : ofe} {PROP} `{!BiInternalEq PROP}
+    (R : Qp -> A -> PROP) : Prop := {
+  frac_later_agree_1_fractional a :> Fractional (fun q => R q a);
+  frac_later_agree_1_valid q a :> Observe [| q ≤ 1 |]%Qp (R q a);
+  frac_later_agree_1_contractive q :> Contractive (R q);
+  frac_later_agree_1_agree :> LaterAgreeF1 R;
+}.
+#[global] Hint Mode FracLaterAgree1 - - - ! : typeclass_instances.
+
+Section frac_later_agree.
+  Context {A : ofe} `{!BiInternalEq PROP}.
+  Context (R : Qp -> A -> PROP).
+  Context `{!frac_splittable.FracLaterAgree1 R}.
+  #[local] Set Default Proof Using "Type*".
+  #[local] Notation PROPO := (bi_ofeO PROP).
+
+  #[global] Instance frac_later_agree_1_ne q : NonExpansive (R q).
+  Proof. exact: contractive_ne. Qed.
+  #[global] Instance frac_later_agree_1_proper q :
+    Proper (equiv ==> equiv) (R q).
+  Proof. exact: ne_proper. Qed.
+
+  #[global] Instance frac_later_agree_1_as_fractional q a :
+    AsFractional (R q a) (fun q => R q a) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  #[global] Instance frac_later_agree_1_equivI q1 q2 a1 a2 :
+    Observe2 (R q1 a1 ≡@{PROPO} R q1 a2) (R q1 a1) (R q2 a2).
+  Proof.
+    iIntros "R1 R2". iDestruct (observe_2 (▷ (_ ≡ _)) with "R1 R2") as "#Eq".
+    rewrite (f_equivI_contractive (R q1)). auto.
+  Qed.
+
+  #[global] Instance frac_later_agree_1_valid_2 q1 q2 a1 a2 :
+    Observe2 [| q1 + q2 ≤ 1 |]%Qp (R q1 a1) (R q2 a2).
+  Proof.
+    iIntros "R1 R2". iDestruct (observe_2 (_ ≡ _) with "R1 R2") as "#Eq".
+    iRewrite "Eq" in "R1". iCombine "R1 R2" as "R". iApply (observe with "R").
+  Qed.
+
+  #[global] Instance frac_later_agree_1_exclusive : Exclusive1 (R 1).
+  Proof.
+    intros. iIntros "R1 R2".
+    by iDestruct (frac_later_agree_1_valid_2 with "R1 R2") as %?.
+  Qed.
+End frac_later_agree.
