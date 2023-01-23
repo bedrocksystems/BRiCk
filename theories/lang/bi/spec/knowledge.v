@@ -6,6 +6,8 @@
  *)
 
 Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
+Require Import iris.proofmode.proofmode.
 
 #[local] Set Primitive Projections.
 
@@ -37,3 +39,39 @@ Notation Knowledge2 P := (∀ a, Knowledge1 (P a)).
 Notation Knowledge3 P := (∀ a, Knowledge2 (P a)).
 Notation Knowledge4 P := (∀ a, Knowledge3 (P a)).
 Notation Knowledge5 P := (∀ a, Knowledge4 (P a)).
+
+
+(**
+Persistent ghost state with agreement on one higher-order argument.
+Compared to [Knowledge], we
+
+- add [Contractive] and [LaterAgreeF1] to enable agreement lemmas.
+*)
+Class KnowLaterAgree1 {A : ofe} {PROP} `{!BiInternalEq PROP}
+    (R : A -> PROP) : Prop := {
+  know_later_agree_1_persistent :> Persistent1 R;
+  know_later_agree_1_affine :> Affine1 R;
+  know_later_agree_1_contractive :> Contractive R;
+  know_later_agree_1_agree :> LaterAgree1 R;
+}.
+#[global] Hint Mode KnowLaterAgree1 - - - ! : typeclass_instances.
+
+Section know_later_agree.
+  Context {A : ofe} `{!BiInternalEq PROP}.
+  Context (R : A -> PROP).
+  Context `{!knowledge.KnowLaterAgree1 R}.
+  #[local] Set Default Proof Using "Type*".
+  #[local] Notation PROPO := (bi_ofeO PROP).
+
+  #[global] Instance know_later_agree_1_ne : NonExpansive R.
+  Proof. exact: contractive_ne. Qed.
+  #[global] Instance know_later_agree_1_proper : Proper (equiv ==> equiv) R.
+  Proof. exact: ne_proper. Qed.
+
+  #[global] Instance know_later_agree_1_equivI a1 a2 :
+    Observe2 (R a1 ≡@{PROPO} R a2) (R a1) (R a2).
+  Proof.
+    iIntros "R1 R2". iDestruct (observe_2 (▷ (_ ≡ _)) with "R1 R2") as "#Eq".
+    rewrite (f_equivI_contractive R). auto.
+  Qed.
+End know_later_agree.
