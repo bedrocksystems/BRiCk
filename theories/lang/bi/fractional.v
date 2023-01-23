@@ -14,7 +14,7 @@ Overview:
 
 - Tactic [solve_as_frac] for solving [AsFractional]
 
-- [FractionalN], [AsFractionalN], [AgreeF1] notation to save typing
+- [FractionalN], [AsFractionalN], [AgreeF1], [LaterAgreeF1] notation to save typing
 
 - Some properties of fractional predicates
 *)
@@ -46,6 +46,11 @@ Module Export nary.
   (** [AgreeF1 P] states that [P q a] can only holds for one possible [a],
   regardless of the fraction [q]. *)
   Notation AgreeF1 P := (∀ (q1 q2 : Qp) a1 a2, Observe2 [| a1 = a2 |] (P q1 a1) (P q2 a2)).
+
+  (** [LaterAgreeF1 P] is similar to [AgreeF1 P], but only provides equivalence
+  under a later. This is typically used for higher-order agreement. *)
+  Notation LaterAgreeF1 P :=
+    (∀ (q1 q2 : Qp) a1 a2, Observe2 (▷ (a1 ≡ a2)) (P q1 a1) (P q2 a2)).
 End nary.
 
 #[global] Instance fractional_exist {PROP : bi} {A} (P : A → Qp → PROP)
