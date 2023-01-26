@@ -171,6 +171,13 @@ Section bi.
   Lemma intuitionistically_only_provable P : □ [| P |] ⊣⊢@{PROP} [| P |].
   Proof. by rewrite /bi_intuitionistically persistently_only_provable. Qed.
 
+  Lemma pure_impl_only_provable_wand (φ : Prop) (Q : PROP) :
+    (⌜ φ ⌝ → Q) ⊣⊢ ([| φ |] -∗ Q).
+  Proof.
+    rewrite -(bi.intuitionistic_intuitionistically [| φ |]).
+    by rewrite -bi.impl_wand_intuitionistically persistently_only_provable.
+  Qed.
+
   Global Instance only_provable_True_left_id :
     LeftId (≡@{PROP}) [| True |] bi_sep.
   Proof. intros P. by rewrite only_provable_emp left_id. Qed.
