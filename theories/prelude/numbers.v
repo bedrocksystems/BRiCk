@@ -501,7 +501,7 @@ Module Qp.
   #[global] Instance div_right_id : RightId (=) 1 Qp.div := Qp.div_1.
 
   Lemma mul_2_2 : 2 * 2 = 4.
-  Proof. exact: (bool_decide_unpack _). Qed.
+  Proof. compute_done. Qed.
 
   Lemma div_4 q : q / 4 + q / 4 = q / 2.
   Proof.
@@ -512,7 +512,13 @@ Module Qp.
   Lemma third_two_thirds : 1/3 + 2/3 = 1.
   Proof. exact: (bool_decide_unpack _). Qed.
   Lemma two_thirds_third : 2/3 + 1/3 = 1.
-  Proof. exact: (bool_decide_unpack _). Qed.
+  Proof. compute_done. Qed.
+
+  Lemma quarter_half : 1/4 + 1/2 = 3/4.
+  Proof. compute_done. Qed.
+
+  Lemma half_half_quarter : (1/2/2 = 1/4)%Qp.
+  Proof. compute_done. Qed.
 
 End Qp.
 #[deprecated(since="20221223", note="use [Qp.mul_left_id]")]
