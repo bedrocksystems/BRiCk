@@ -488,19 +488,37 @@ Section with_cpp.
       _at p (_offsetR o r) -|- _at (p ,, o) r.
   Proof. rewrite !_at_loc /flip. by unfold_at. Qed.
 
-  Lemma _at_sepSPs p (xs : list Rep) : p |-> ([∗] xs) -|- [∗] map (_at p) xs.
-  Proof.
-    induction xs => /=.
-    - by rewrite _at_emp.
-    - by rewrite _at_sep IHxs.
-  Qed.
-
+  (** Big ops *)
   Lemma _at_big_sepL A p : forall (xs : list A) (Φ : nat -> A -> Rep),
       p |-> ([∗ list] i↦x∈xs, Φ i x) -|- ([∗ list] i↦x∈xs, p |-> (Φ i x)).
   Proof.
     elim => /=.
     - move => ?; by rewrite _at_emp.
     - move => x xs IH ?. by rewrite _at_sep IH.
+  Qed.
+
+  Lemma _at_sepSPs p (xs : list Rep) : p |-> ([∗] xs) -|- [∗] map (_at p) xs.
+  Proof. by rewrite _at_big_sepL big_sepL_fmap. Qed.
+
+  Lemma _at_big_sepS `{Countable A} p (X : gset A) (Φ : A -> Rep) :
+    p |-> ([∗ set] x ∈ X, Φ x) -|- [∗ set] x ∈ X, p |-> Φ x.
+  Proof.
+    rewrite _at_eq/_at_def monPred_at_big_sepS.
+    by apply big_opS_proper => x _; rewrite _at_eq. (*TODO: AUTO(gs) missing proper instance*)
+  Qed.
+
+  Lemma _at_big_sepM `{Countable K} {A} p (m : gmap K A) (Φ : K → A → Rep) :
+    p |-> ([∗ map] k↦x ∈ m, Φ k x) -|- [∗ map] k↦x ∈ m, p |-> Φ k x.
+  Proof.
+    rewrite _at_eq/_at_def monPred_at_big_sepM.
+    by apply big_opM_proper => k x _; rewrite _at_eq.
+  Qed.
+
+  Lemma _at_big_sepMS `{Countable A} p (X : gmultiset A) (Φ : A → Rep) :
+    p |-> ([∗ mset] x ∈ X, Φ x) -|- [∗ mset] x ∈ X, p |-> Φ x.
+  Proof.
+    rewrite _at_eq/_at_def monPred_at_big_sepMS.
+    by apply big_opMS_proper => x _; rewrite _at_eq.
   Qed.
 
   #[global] Instance _at_fractional (r : Qp → Rep)  p `{!Fractional r} :
