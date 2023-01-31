@@ -157,7 +157,7 @@ Section with_Σ.
       Proof. solve_as_cfrac. Qed.
 
       #[global] Instance rawR_observe_frac_valid : CFracValid1 rawR.
-      Proof. rewrite rawR_eq. apply _. Qed.
+      Proof. rewrite rawR_eq. solve_cfrac_valid. Qed.
 
       #[global] Instance rawR_observe_agree : AgreeCF1 rawR.
       Proof.
@@ -186,10 +186,9 @@ Section with_Σ.
       #[global] Instance rawsR_as_fractional : AsCFractional1 rawsR.
       Proof. solve_as_cfrac. Qed.
 
-      Lemma rawsR_observe_frac_valid (q : cQp.t) (q_f : Qp) rs :
+      Lemma rawsR_observe_frac_valid q rs :
         (0 < length rs) ->
-        FracEq q q_f ->
-        Observe [| q_f ≤ 1 |]%Qp (rawsR q rs).
+        Observe [| cQp.frac q ≤ 1 |]%Qp (rawsR q rs).
       Proof.
         intros Hlen; rewrite /rawsR; induction rs;
           by [ simpl in Hlen; lia
