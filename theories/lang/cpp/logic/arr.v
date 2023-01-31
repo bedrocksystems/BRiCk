@@ -489,6 +489,29 @@ Section arrayR_agree.
     iDestruct (observe_2 [| x = y |] with "X Y") as %->.
     rewrite !_offsetR_dot. iDestruct ("IH" with "[] L K") as %->; auto.
   Qed.
+
+  (** This is *not* an instance because TC resolution cannot
+      always solve the unification problem for [R]. *)
+  Lemma arrayR_agree_prefix  q1 q2 l k :
+    (∀ q1 q2 x1 x2, Observe2 [| x1 = x2 |] (R q1 x1) (R q2 x2)) ->
+    length l <= length k ->
+    Observe2 [| l = take (length l) k |] (arrayR ty (R q1) l) (arrayR ty (R q2) k).
+  Proof.
+    intros ? Hlen.
+    rewrite -(_offsetR_id (arrayR _ _ l)) -(_offsetR_id (arrayR _ _ k));
+      move: o_id => o.
+    iIntros "L K". iInduction k as [|y k IH] "IH" forall (o l Hlen).
+    { move: Hlen=>/Nat.le_0_r/nil_length_inv->.
+      by iIntros "!>//=". }
+    destruct l as [|x l]; first by iIntros "!>".
+    rewrite !arrayR_cons !_offsetR_sep.
+    iDestruct "L" as "(_ & X & L)". iDestruct "K" as "(_ & Y & K)".
+    iDestruct (observe_2 [| x = y |] with "X Y") as %->.
+    rewrite !_offsetR_dot. iDestruct ("IH" with "[] L K") as %Hlen';
+        first by move: Hlen=>//= /le_S_n ?.
+    by rewrite cons_length /= -Hlen'; iIntros "!>".
+  Qed.
+
 End arrayR_agree.
 
 Section with_array_frac.

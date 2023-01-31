@@ -85,6 +85,24 @@ Module cstring.
   Definition to_zstring (cstr : cstring.t) : zstring.t := to_zstring' cstr ["000"].
   #[global] Arguments to_zstring cstr : simpl never.
 
+  #[global] Instance to_zstring_Inj : Inj eq eq cstring.to_zstring.
+  Proof.
+    move=>x y.
+    rewrite /cstring.to_zstring/cstring._to_zstring'
+    !map_app=>/(Inj_instance_1) /map_Inj H.
+
+    have: BS.print x = BS.print y.
+    { apply: H=>x' y' /N2Z.inj.
+      rewrite !ascii_of_byte_via_N !N_ascii_embedding ?byte_to_N_inj //.
+      move: (Byte.to_N_bounded y'). lia.
+      move: (Byte.to_N_bounded x'). lia. }
+
+    move: y {H}; induction x; first by move=>[].
+    move: x IHx=>y; induction y; first by move=>?[] //= ?[] //= [<-].
+    move=>IHx [] // b' bs [->] H; f_equal.
+    by apply: IHx; rewrite -H.
+  Qed.
+
   (* Use [rewrite to_zstring_unfold/=] to reduce away a [to_zstring] application to a
      concrete string.
    *)
@@ -985,6 +1003,29 @@ Module cstring.
             (0 <= z <= size cstr)%Z ->
             Observe (.[Tuchar ! z] |-> validR) (R q cstr).
         Proof. refine _. Qed.
+
+        #[local] Lemma observe_2_aux q1 q2 a1 a2 :
+          (length (to_zstring a1) <= length (to_zstring a2))%nat
+          -> Observe2 [| a1 = a2 |] (R q1 a1) (R q2 a2).
+        Proof.
+          rewrite /R/zstring.R.
+          iIntros (Hlen) "[L %] [K %]".
+          iDestruct (arrayR_agree_prefix _ (fun q (c : Z) => primR Tu8 q c) with "L K") as %Heq;
+            first done;
+            iIntros "!>"; iPureIntro.
+          by apply: to_zstring_Inj; apply: zstring.WF_eq_prefix_eq.
+        Qed.
+
+        #[global] Instance observe_2 q1 q2 a1 a2 :
+          Observe2 [| a1 = a2 |] (R q1 a1) (R q2 a2).
+        Proof.
+          case: (bool_decide_reflect
+                   (length (cstring.to_zstring a1) <= length (cstring.to_zstring a2))%nat).
+          - by apply: observe_2_aux.
+          - rewrite -Nat.lt_nge Observe2_comm eq_comm=>/Nat.lt_le_incl.
+            by apply: observe_2_aux.
+        Qed.
+
       End R.
 
       Section R'.
