@@ -123,6 +123,27 @@ Module zstring.
           * intro CONTRA; apply Hin; by inversion CONTRA.
           * by constructor.
     Qed.
+
+    (* WF is prefix-free predicate *)
+    Lemma WF_eq_prefix_eq a1 a2 :
+      zstring.WF a1
+      -> zstring.WF a2
+      -> a1 = take (length a1) a2
+      -> a1 = a2.
+    Proof.
+      move=>[xs [-> [Nin _]]] [xs' [-> [Nin' _]]] H.
+      f_equal; move: xs' H Nin'.
+      rewrite app_length //= Nat.add_1_r.
+      induction xs.
+      - by case=>[//|??[<-][]];left.
+      - rewrite -app_comm_cons.
+        case; first by case: (xs).
+        move=>a' l' [<-] ? Hin'; f_equal.
+        apply: IHxs=>//= ?.
+        + by apply: Nin; right.
+        + by apply: Hin'; right.
+    Qed.
+
   End WF_Theory.
 
   Section size_Theory.
