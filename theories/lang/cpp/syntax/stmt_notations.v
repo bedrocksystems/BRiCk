@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2019-2022 BedRock Systems, Inc.
+ * Copyright (c) 2019-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -160,7 +160,7 @@ Module StmtNotations.
          , format "'[hv' for  (;  cond ;)  { '//'   body '//' } ']'"
          , only printing).
   Notation "'for' '(;;' incr ) { body }"
-      := (Sfor None None (Some (_, incr)) body)
+      := (Sfor None None (Some incr) body)
          ( in custom CPP_stmt at level 200
          , incr custom CPP_expr at level 200
          , body custom CPP_stmt at level 200
@@ -177,7 +177,7 @@ Module StmtNotations.
          , only printing).
   (* NOTE (JH): init will insert a semicolon since it will be a terminal stmt in realistic ASTs *)
   Notation "'for' ( init ; incr ) { body }"
-      := (Sfor (Some init) None (Some (_, incr)) body)
+      := (Sfor (Some init) None (Some incr) body)
          ( in custom CPP_stmt at level 200
          , init custom CPP_stmt at level 200
          , incr custom CPP_expr at level 200
@@ -185,7 +185,7 @@ Module StmtNotations.
          , format "'[hv' for  ( init ;  incr )  { '//'   body '//' } ']'"
          , only printing).
   Notation "'for' (; cond ; incr ) { body }"
-      := (Sfor None (Some cond) (Some (_, incr)) body)
+      := (Sfor None (Some cond) (Some incr) body)
          ( in custom CPP_stmt at level 200
          , cond custom CPP_expr at level 200
          , incr custom CPP_expr at level 200
@@ -194,7 +194,7 @@ Module StmtNotations.
          , only printing).
   (* NOTE (JH): init will insert a semicolon since it will be a terminal stmt in realistic ASTs *)
   Notation "'for' ( init cond ; incr ) { body }"
-      := (Sfor (Some init) (Some cond) (Some (_, incr)) body)
+      := (Sfor (Some init) (Some cond) (Some incr) body)
          ( in custom CPP_stmt at level 200
          , init custom CPP_stmt at level 200
          , cond custom CPP_expr at level 200
@@ -238,7 +238,7 @@ Module StmtNotations.
          , only printing).
 
   Notation "e ;"
-      := (Sexpr _ e)
+      := (Sexpr e)
          ( in custom CPP_stmt at level 0
          , e custom CPP_expr at level 200
          , format "'[' e ; ']'"

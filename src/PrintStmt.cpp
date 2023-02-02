@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -86,7 +86,7 @@ public:
         print.output() << fmt::nbsp;
         if (auto v = stmt->getInc()) {
             print.some();
-            cprint.printExprAndValCat(v, print);
+            cprint.printExpr(v, print);
             print.end_ctor();
         } else {
             print.none();
@@ -123,7 +123,7 @@ public:
         print.output() << fmt::nbsp;
         if (auto v = stmt->getInc()) {
             print.some();
-            cprint.printExprAndValCat(v, print);
+            cprint.printExpr(v, print);
             print.end_ctor();
         } else {
             print.none();
@@ -230,8 +230,6 @@ public:
     void VisitExpr(const Expr *expr, CoqPrinter &print, ClangPrinter &cprint,
                    ASTContext &) {
         print.ctor("Sexpr");
-        cprint.printValCat(expr, print);
-        print.output() << fmt::nbsp;
         cprint.printExpr(expr, print);
         print.end_ctor();
     }

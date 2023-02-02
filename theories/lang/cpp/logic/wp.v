@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -821,32 +821,75 @@ Section with_cpp.
 
   (* evaluate an expression as a generalized lvalue *)
 
-  (* in some cases we need to evaluate a glvalue but we know the
-     the underlying primitive value category. This makes some weakest
-     pre-condition axioms a bit shorter
+  (* In some cases we need to evaluate a glvalue.
+     This makes some weakest pre-condition axioms a bit shorter.
    *)
-  Definition wp_glval {σ} (tu : translation_unit) ρ (vc : ValCat) (e : Expr) : M ptr :=
-      match vc with
+  Definition wp_glval {σ} (tu : translation_unit) ρ (e : Expr) : M ptr :=
+      match valcat_of e with
       | Lvalue => wp_lval (resolve:=σ) tu ρ e
       | Xvalue => wp_xval (resolve:=σ) tu ρ e
-      | _ => wp_glval_mismatch ρ vc e
+      | vc => wp_glval_mismatch ρ vc e
       end%I.
 
-  Theorem wp_glval_frame {σ : genv} tu1 tu2 r vc e Q Q' :
+  (**
+  Note:
+
+  - [wp_glval_shift] and [fupd_wp_glval] are not sound without a later
+  credit in the [Prvalue] case
+
+  - [wp_glval_models] isn't sound without [denoteModule tu] in the
+  [Prvalue] case
+  *)
+
+  Lemma wp_glval_frame {σ : genv} tu1 tu2 r e Q Q' :
     sub_module tu1 tu2 ->
-    (Forall v free, Q v free -* Q' v free) |-- wp_glval tu1 r vc e Q -* wp_glval tu2 r vc e Q'.
+    (Forall v free, Q v free -* Q' v free) |-- wp_glval tu1 r e Q -* wp_glval tu2 r e Q'.
   Proof.
-    destruct vc; simpl.
-    - apply wp_lval_frame; reflexivity.
-    - eauto.
-    - apply wp_xval_frame; reflexivity.
+    rewrite /wp_glval. case_match.
+    - by apply wp_lval_frame.
+    - auto.
+    - by apply wp_xval_frame.
   Qed.
 
-  Theorem wp_glval_wand {σ : genv} tu r vc e Q Q' :
-    wp_glval tu r vc e Q |-- (Forall v free, Q v free -* Q' v free) -* wp_glval tu r vc e Q'.
+  #[global] Instance Proper_wp_glval σ :
+    Proper (sub_module ==> eq ==> eq ==> Mrel _) (@wp_glval σ).
   Proof.
-    iIntros "A B"; iRevert "A"; iApply wp_glval_frame; eauto. reflexivity.
+    solve_proper_prepare. case_match; solve_proper.
   Qed.
+
+  Section wp_glval.
+    Context {σ : genv} (tu : translation_unit) (ρ : region).
+    Local Notation wp_glval := (wp_glval tu ρ) (only parsing).
+    Local Notation wp_lval := (wp_lval tu ρ) (only parsing).
+    Local Notation wp_xval := (wp_xval tu ρ) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types Q : ptr → FreeTemps → epred.
+
+    Lemma wp_glval_lval e Q :
+      valcat_of e = Lvalue -> wp_glval e Q -|- wp_lval e Q.
+    Proof. by rewrite /wp_glval=>->. Qed.
+
+    Lemma wp_glval_xval e Q :
+      valcat_of e = Xvalue -> wp_glval e Q -|- wp_xval e Q.
+    Proof. by rewrite /wp_glval=>->. Qed.
+
+    Lemma wp_glval_prval e Q :
+      valcat_of e = Prvalue -> wp_glval e Q -|- False.
+    Proof. by rewrite /wp_glval=>->. Qed.
+
+    Lemma wp_glval_wand e Q Q' :
+      wp_glval e Q |-- (Forall v free, Q v free -* Q' v free) -* wp_glval e Q'.
+    Proof.
+      iIntros "A B". iRevert "A". by iApply wp_glval_frame.
+    Qed.
+
+    Lemma wp_glval_fupd e Q :
+      wp_glval e (fun v f => |={top}=> Q v f) |-- wp_glval e Q.
+    Proof.
+      rewrite /wp_glval/wp_glval_mismatch. case_match;
+      auto using wp_lval_fupd, wp_xval_fupd.
+    Qed.
+  End wp_glval.
 
   (** Discarded values.
       Sometimes expressions are evaluated only for their side-effects.
@@ -861,8 +904,8 @@ Section with_cpp.
     Context {σ : genv} (tu : translation_unit).
     Variable (ρ : region).
 
-    Definition wp_discard (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
-      match vc with
+    Definition wp_discard (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
+      match valcat_of e with
       | Lvalue => wp_lval tu ρ e (fun _ => Q)
       | Prvalue =>
         if is_value_type (type_of e) then
@@ -874,11 +917,12 @@ Section with_cpp.
 
   End wp_discard.
 
-  Lemma wp_discard_frame {σ : genv} tu1 tu2 ρ vc e k1 k2:
+  Lemma wp_discard_frame {σ : genv} tu1 tu2 ρ e k1 k2:
     sub_module tu1 tu2 ->
-    Forall f, k1 f -* k2 f |-- wp_discard tu1 ρ vc e k1 -* wp_discard tu2 ρ vc e k2.
+    Forall f, k1 f -* k2 f |-- wp_discard tu1 ρ e k1 -* wp_discard tu2 ρ e k2.
   Proof.
-    destruct vc => /=.
+    rewrite /wp_discard.
+    destruct (valcat_of e) => /=.
     - intros. rewrite -wp_lval_frame; eauto.
       iIntros "h" (v f) "x"; iApply "h"; iFrame.
     - intros. case_match.
@@ -893,21 +937,21 @@ Section with_cpp.
   Qed.
 
   #[global] Instance Proper_wpe σ :
-    Proper (sub_module ==> eq ==> eq ==> eq ==> ((≡) ==> (⊢)) ==> (⊢))
+    Proper (sub_module ==> eq ==> eq ==> ((≡) ==> (⊢)) ==> (⊢))
            (@wp_discard σ).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_discard_frame; eauto.
-    iIntros (?); iApply H3; reflexivity.
+    iIntros (?); iApply H2; reflexivity.
   Qed.
 
   #[global] Instance Proper_wpe' σ :
-    Proper (sub_module ==> eq ==> eq ==> eq ==> (pointwise_relation _ lentails) ==> lentails)
+    Proper (sub_module ==> eq ==> eq ==> (pointwise_relation _ lentails) ==> lentails)
            (@wp_discard σ).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_discard_frame; eauto.
-    iIntros (?); iApply H3; reflexivity.
+    iIntros (?); iApply H2; reflexivity.
   Qed.
 
   (** * Statements *)

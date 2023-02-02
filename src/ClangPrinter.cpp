@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -434,29 +434,6 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
         assert(false);
         //fatal("unknown value category");
     }
-}
-
-void
-ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print) {
-    __attribute__((unused)) auto depth = print.output().get_depth();
-    print.output() << fmt::lparen;
-    printValCat(d, print);
-    print.output() << "," << fmt::nbsp;
-    printExpr(d, print);
-    print.output() << fmt::rparen;
-    assert(depth == print.output().get_depth());
-}
-
-void
-ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print,
-                                 OpaqueNames &li) {
-    __attribute__((unused)) auto depth = print.output().get_depth();
-    print.output() << fmt::lparen;
-    printValCat(d, print);
-    print.output() << "," << fmt::nbsp;
-    printExpr(d, print, li);
-    print.output() << fmt::rparen;
-    assert(depth == print.output().get_depth());
 }
 
 void

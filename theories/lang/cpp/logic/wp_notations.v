@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2019-2022 BedRock Systems, Inc.
+ * Copyright (c) 2019-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -160,15 +160,15 @@ Module Export Compact.
            ( at level 0
            , format "'[hv  ' ::wpX  '/' '[hv' ρ  '/' e ']' ']'"
            , only printing).
-  Notation "'::wpGL' ρ '(ValCat' ↦ vc ) e"
-        := (wp_glval _ ρ vc e _)
+  Notation "'::wpGL' ρ e"
+        := (wp_glval _ ρ e _)
            ( at level 0
-           , format "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']' ']'"
+           , format "'[hv  ' ::wpGL  '/' '[hv' ρ '/' e ']' ']'"
            , only printing).
-  Notation "'::wpGLₓ' ρ '(ValCat' ↦ vc ) e"
-        := (wp_discard _ ρ vc e _)
+  Notation "'::wpGLₓ' ρ e"
+        := (wp_discard _ ρ e _)
            ( at level 0
-           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']' ']'"
+           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ '/' e ']' ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Func] since the name was erased *)
   Notation "'::wpFunc'"
@@ -305,15 +305,15 @@ Module Verbose.
            ( at level 0
            , format "'[hv  ' ::wpX  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"
            , only printing).
-  Notation "'::wpGL' ρ '(ValCat' ↦ vc ) e Q"
-        := (wp_glval _ ρ vc e Q)
+  Notation "'::wpGL' ρ e Q"
+        := (wp_glval _ ρ e Q)
            ( at level 0
-           , format "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']'  '/' Q ']'"
+           , format "'[hv  ' ::wpGL  '/' '[hv' ρ '/' e ']'  '/' Q ']'"
            , only printing).
-  Notation "'::wpGLₓ' ρ '(ValCat' ↦ vc ) e Q"
-        := (wp_discard _ ρ vc e Q)
+  Notation "'::wpGLₓ' ρ e Q"
+        := (wp_discard _ ρ e Q)
            ( at level 0
-           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']'  '/' Q ']'"
+           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ '/' e ']'  '/' Q ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Func] since the name was erased *)
   Notation "'::wpFunc' Q"

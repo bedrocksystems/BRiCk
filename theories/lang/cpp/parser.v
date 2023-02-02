@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -35,7 +35,7 @@ Definition Nanon (ty : globname) : globname :=
 Definition Cenum_const (e : globname) (x : ident) : obj_name :=
   e ++ "::" ++ x.
 Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
-  Ecast Cintegral Prvalue (Econst_ref (Gname e) ety) ty.
+  Ecast Cintegral (Econst_ref (Gname e) ety) Prvalue ty.
 
 Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
   (x, None).
@@ -45,7 +45,7 @@ Definition impl_virt (x : obj_name) : obj_name * option obj_name :=
 Definition Sreturn_void : Stmt := Sreturn None.
 Definition Sreturn_val (e : Expr) : Stmt := Sreturn (Some e).
 Definition Sforeach (range ibegin iend : Stmt)
-  (init : option Stmt) (cond : option Expr) (inc : option (ValCat * Expr))
+  (init : option Stmt) (cond : option Expr) (inc : option Expr)
   (decl body : Stmt) : Stmt :=
   Sseq [range; ibegin; iend; Sfor init cond inc
         (Sseq [decl; body])].
@@ -147,7 +147,7 @@ Definition Dconstant    (name : globname) (t : type) (e : Expr) : translation_un
 Definition Dconstant_undef  (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms $ <[ name := Gconstant t None ]> tys.
 Definition Denum_constant (name : globname) (t ut : type) (v : Z) (init : option Expr) : translation_unitK :=
-  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Ecast Cintegral Prvalue (Eint v ut) t)) ]> tys.
+  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Ecast Cintegral (Eint v ut) Prvalue t)) ]> tys.
 Definition Dtypedef     (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms $ <[ name := Gtypedef t ]> tys.
 Definition Dtype (name : globname) : translation_unitK :=

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -60,7 +60,7 @@ Inductive Stmt : Set :=
 
 | Sif     (_ : option VarDecl) (_ : Expr) (_ _ : Stmt)
 | Swhile  (_ : option VarDecl) (_ : Expr) (_ : Stmt)
-| Sfor    (_ : option Stmt) (_ : option Expr) (_ : option (ValCat * Expr)) (_ : Stmt)
+| Sfor    (_ : option Stmt) (_ : option Expr) (_ : option Expr) (_ : Stmt)
 | Sdo     (_ : Stmt) (_ : Expr)
 
 | Sswitch (_ : option VarDecl) (_ : Expr) (_ : Stmt)
@@ -72,7 +72,7 @@ Inductive Stmt : Set :=
 
 | Sreturn (_ : option Expr)
 
-| Sexpr   (_ : ValCat) (_ : Expr)
+| Sexpr   (_ : Expr)
 
 | Sattr (_ : list ident) (_ : Stmt)
 

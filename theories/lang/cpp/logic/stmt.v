@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -52,9 +52,9 @@ Module Type Stmt.
 
     (** * Expression Evaluation *)
 
-    Axiom wp_expr : forall ρ vc e Q,
-        |> wp_discard tu ρ vc e (fun free => interp free (Q Normal))
-        |-- wp ρ (Sexpr vc e) Q.
+    Axiom wp_expr : forall ρ e Q,
+        |> wp_discard tu ρ e (fun free => interp free (Q Normal))
+        |-- wp ρ (Sexpr e) Q.
 
     (** * Declarations *)
 
@@ -238,7 +238,7 @@ Module Type Stmt.
         let incr_I :=
           match incr with
           | None => I
-          | Some (vc,incr) => wp_discard tu ρ vc incr (fun free => interp free I)
+          | Some incr => wp_discard tu ρ incr (fun free => interp free I)
           end
         in
         match test with
@@ -335,7 +335,7 @@ Module Type Stmt.
       | Sbreak
       | Scontinue
       | Sreturn _
-      | Sexpr _ _
+      | Sexpr _
       | Sasm _ _ _ _ _ => true
       | Slabeled _ s => no_case s
       | Sgoto _ => true

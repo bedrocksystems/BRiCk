@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -59,10 +59,6 @@ public:
 
     void printQualifier(bool is_const, bool is_volatile,
                         CoqPrinter& print) const;
-
-    void printExprAndValCat(const clang::Expr* expr, CoqPrinter& print);
-    void printExprAndValCat(const clang::Expr* expr, CoqPrinter& print,
-                            OpaqueNames&);
 
     void printField(const clang::ValueDecl*, CoqPrinter&);
 

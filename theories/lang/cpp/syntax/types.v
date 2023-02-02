@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -101,6 +101,14 @@ Inductive type : Set :=
 | Tptr (_ : type)
 | Tref (_ : type)
 | Trv_ref (_ : type)
+  (**
+  Note: cpp2v (really, clang's parser) handles so-called "reference
+  collapsing": We do not see references to references.
+
+  Background:
+  https://en.cppreference.com/w/cpp/language/reference#Reference_collapsing
+  https://www.eel.is/c++draft/dcl.ref#5
+  *)
 | Tnum (size : bitsize) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)

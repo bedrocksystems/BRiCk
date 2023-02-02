@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -9,35 +9,35 @@ From bedrock.lang.cpp.syntax Require Import names types.
 Set Primitive Projections.
 
 Variant UnOp : Set :=
-| Uminus
-| Uplus
-| Unot
-| Ubnot
-| Uother (_ : bs).
+| Uminus	(* - *)
+| Uplus	(* + *)
+| Unot	(* ! *)
+| Ubnot	(* ~ *)
+| Uunsupported (_ : bs).
 #[global] Instance: EqDecision UnOp.
 Proof. solve_decision. Defined.
 
 Variant BinOp : Set :=
-| Badd
-| Band (* & *)
-| Bcmp (* <=> *)
-| Bdiv (* / *)
-| Beq
-| Bge
-| Bgt
-| Ble
-| Blt
-| Bmul
-| Bneq
-| Bor  (* | *)
-| Bmod
-| Bshl
-| Bshr
-| Bsub
-| Bxor (* ^ *)
-| Bdotp (* .* *)
-| Bdotip (* ->* *)
-.
+| Badd	(* + *)
+| Band	(* & *)
+| Bcmp	(* <=> *)
+| Bdiv	(* / *)
+| Beq	(* == *)
+| Bge	(* >= *)
+| Bgt	(* > *)
+| Ble	(* <= *)
+| Blt	(* < *)
+| Bmul	(* * *)
+| Bneq	(* != *)
+| Bor	(* | *)
+| Bmod	(* % *)
+| Bshl	(* << *)
+| Bshr	(* >> *)
+| Bsub	(* - *)
+| Bxor	(* ^ *)
+| Bdotp	(* .* *)
+| Bdotip	(* ->* *)
+| Bunsupported (_ : bs).
 #[global] Instance: EqDecision BinOp.
 Proof. solve_decision. Defined.
 
@@ -98,8 +98,8 @@ Proof. solve_decision. Defined.
 (** * Casts *)
 Inductive Cast : Set :=
 | Cdependent (* this doesn't have any semantics *)
-| Cbitcast
-| Clvaluebitcast
+| Cbitcast	(** TODO (FM-3431): This explicit cast expression could carry the type as written *)
+| Clvaluebitcast	(** TODO (FM-3431): Drop this constructor? *)
 | Cl2r
 | Cnoop
 | Carray2ptr
@@ -130,11 +130,16 @@ Inductive Cast : Set :=
 | Cbuiltin2fun
 | Cctor
 | C2void
-| Cuser        (conversion_function : obj_name)
+| Cuser        (conversion_function : obj_name)	(** TODO (FM-3431): Consider just emitting the method call *)
 | Creinterpret (_ : type)
 | Cstatic      (_ : Cast)
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type).
+(**
+TODO (FM-3431): For the explicit casts, we could embed the type as
+written and compute the value category (rather than annote `Ecast`
+with a value category).
+*)
 #[global] Instance Cast_eq_dec: EqDecision Cast.
 Proof. solve_decision. Defined.
 
@@ -191,24 +196,24 @@ Inductive Expr : Set :=
 
 | Eseqand (_ _ : Expr) (* type = Tbool *)
 | Eseqor  (_ _ : Expr) (* type = Tbool *)
-| Ecomma (vc : ValCat) (e1 e2 : Expr) (* type = type_of e2 *)
+| Ecomma (e1 e2 : Expr) (* type = type_of e2 *)
   (* ^ these are specialized because they have special control flow semantics *)
 
 | Ecall    (_ : Expr) (_ : list Expr) (_ : type)
-| Ecast    (_ : Cast) (_ : ValCat) (e : Expr) (_ : type)
+| Ecast    (_ : Cast) (e : Expr) (_ : ValCat) (_ : type)
 
-| Emember  (_ : ValCat) (obj : Expr) (_ : field) (_ : type)
+| Emember  (obj : Expr) (_ : field) (_ : type)
   (* TODO: maybe replace the left branch use [Expr] here? *)
-| Emember_call (method : (obj_name * call_type * type) + Expr) (_ : ValCat) (obj : Expr) (_ : list Expr) (_ : type)
+| Emember_call (method : (obj_name * call_type * type) + Expr) (obj : Expr) (_ : list Expr) (_ : type)
 
-| Esubscript (_ : Expr) (_ : Expr) (_ : type)
+| Esubscript (_ : Expr) (_ : Expr) (_ : ValCat) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
 | Eoffset_of (_ : OffsetInfo) (_ : type)
 | Econstructor (_ : obj_name) (_ : list Expr) (_ : type)
 | Eimplicit (_ : Expr)
 | Eimplicit_init (_ : type)
-| Eif       (_ _ _ : Expr) (_ : type)
+| Eif       (_ _ _ : Expr) (_ : ValCat) (_ : type)
 
 | Ethis (_ : type)
 | Enull
@@ -224,18 +229,16 @@ Inductive Expr : Set :=
           (arg : Expr) (deleted_type : type) (* type = Tvoid *)
 
 | Eandclean (_ : Expr)
-| Ematerialize_temp (_ : Expr)
+| Ematerialize_temp (_ : Expr) (_ : ValCat)
 
-| Ebuiltin (_ : BuiltinFn) (_ : type)
 | Eatomic (_ : AtomicOp) (_ : list Expr) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr)
 
-| Earrayloop_init (oname : N) (src_vc : ValCat) (src : Expr) (level : N) (length : N) (init : Expr) (_ : type)
+| Earrayloop_init (oname : N) (src : Expr) (level : N) (length : N) (init : Expr) (_ : type)
 | Earrayloop_index (level : N) (_ : type)
-| Eopaque_ref (name : N) (_ : type)
-
-| Eunsupported (_ : bs) (_ : type).
+| Eopaque_ref (name : N) (_ : ValCat) (_ : type)
+| Eunsupported (_ : bs) (_ : ValCat) (_ : type).
 #[global] Instance Expr_eq_dec : EqDecision Expr.
 Proof.
   rewrite /RelDecision /Decision.

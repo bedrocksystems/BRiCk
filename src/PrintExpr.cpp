@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -93,9 +93,23 @@ class PrintExpr :
     public ConstStmtVisitor<PrintExpr, void, CoqPrinter&, ClangPrinter&,
                             const ASTContext&, OpaqueNames&> {
 private:
-    void done(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint) {
-        print.output() << fmt::nbsp;
-        cprint.printQualType(expr->getType(), print);
+
+    enum Done : unsigned {
+        V = 1,
+        T = 2,
+        VT = V | T,
+    };
+
+    void done(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
+            Done want = Done::T) {
+        if (want & Done::V) {
+            print.output() << fmt::nbsp;
+            cprint.printValCat(expr, print);
+        }
+        if (want & Done::T) {
+            print.output() << fmt::nbsp;
+            cprint.printQualType(expr->getType(), print);
+        }
         print.end_ctor();
     }
 
@@ -193,7 +207,7 @@ public:
                       << "\n";
         print.ctor("Eunsupported");
         print.str(expr->getStmtClassName());
-        done(expr, print, cprint);
+        done(expr, print, cprint, Done::VT);
     }
 
 #if CLANG_VERSION_MAJOR >= 11
@@ -206,7 +220,7 @@ public:
                       << "Try fixing earlier errors\n";
         print.ctor("Eunsupported");
         print.str(expr->getStmtClassName());
-        done(expr, print, cprint);
+        done(expr, print, cprint, Done::VT);
     }
 #endif
 
@@ -241,7 +255,7 @@ public:
             logging::unsupported()
                 << "defaulting binary operator"
                 << " (at " << cprint.sourceRange(expr->getSourceRange()) << ")\n";
-            print.ctor("Bother") << "\"" << expr->getOpcodeStr() << "\"" << fmt::rparen;
+            print.ctor("Bunsupported") << "\"" << expr->getOpcodeStr() << "\"" << fmt::rparen;
             break;
         }
     }
@@ -257,8 +271,6 @@ public:
         switch (expr->getOpcode()) {
         case BinaryOperatorKind::BO_Comma:
             print.ctor("Ecomma");
-            cprint.printValCat(expr->getLHS(), print);
-            print.output() << fmt::nbsp;
             cprint.printExpr(expr->getLHS(), print);
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
@@ -340,7 +352,7 @@ public:
             logging::unsupported()
                 << "Error: unsupported unary operator"
                 << " (at " << cprint.sourceRange(expr->getSourceRange()) << ")\n";
-            print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(expr->getOpcode())
+            print.output() << "(Uunsupported \"" << UnaryOperator::getOpcodeStr(expr->getOpcode())
                            << "\")";
             break;
         }
@@ -462,8 +474,6 @@ public:
             print.output() << fmt::rparen;
             print.end_ctor() << fmt::nbsp;
 
-            cprint.printValCat(expr->getArg(0), print);
-            print.output() << fmt::nbsp;
             cprint.printExpr(expr->getArg(0), print, li);
 
             print.output() << fmt::nbsp;
@@ -494,19 +504,16 @@ public:
             cprint.printObjName(vd, print);
             print.end_ctor();
 
-            cprint.printValCat(expr->getSubExpr(), print);
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getSubExpr(), print, li);
-            done(expr, print, cprint);
+            done(expr, print, cprint, Done::VT);
         } else {
             print.ctor("Ecast");
             printCast(expr, print, cprint);
 
             print.output() << fmt::nbsp;
-            cprint.printValCat(expr->getSubExpr(), print);
-            print.output() << fmt::nbsp;
             cprint.printExpr(expr->getSubExpr(), print, li);
-            done(expr, print, cprint);
+            done(expr, print, cprint, Done::VT);
         }
     }
 
@@ -566,12 +573,8 @@ public:
             die();
         }
         print.output() << fmt::nbsp;
-
-        cprint.printValCat(expr->getSubExpr(), print);
-        print.output() << fmt::nbsp;
         cprint.printExpr(expr->getSubExpr(), print, li);
-
-        done(expr, print, cprint);
+        done(expr, print, cprint, Done::VT);
     }
 
     void VisitIntegerLiteral(const IntegerLiteral* lit, CoqPrinter& print,
@@ -619,7 +622,7 @@ public:
         print.ctor("Eunsupported") << fmt::nbsp << "float: \"";
         lit->getValue().print(print.output().nobreak());
         print.output() << "\"";
-        done(lit, print, cprint);
+        done(lit, print, cprint, Done::VT);
     }
 
     void VisitMemberExpr(const MemberExpr* expr, CoqPrinter& print,
@@ -632,8 +635,6 @@ public:
         if (auto vd = dyn_cast<VarDecl>(expr->getMemberDecl())) {
             if (vd->isStaticDataMember()) {
                 print.ctor("Ecomma");
-                cprint.printValCat(expr->getBase(), print);
-                print.output() << fmt::nbsp;
                 cprint.printExpr(expr->getBase(), print, li);
                 print.output() << fmt::nbsp;
                 auto is_ref = vd->getType()->isReferenceType();
@@ -651,8 +652,6 @@ public:
         } else if (auto md = dyn_cast<CXXMethodDecl>(expr->getMemberDecl())) {
             if (md->isStatic()) {
                 print.ctor("Ecomma");
-                cprint.printValCat(expr->getBase(), print);
-                print.output() << fmt::nbsp;
                 cprint.printExpr(expr->getBase(), print, li);
                 print.output() << fmt::nbsp;
                 print.ctor("Evar", false);
@@ -675,7 +674,6 @@ public:
             expr->getMemberDecl()->getDeclContext();
         // TODO Assert that the type of the base is the type of the field.
         if (expr->isArrow()) {
-            print.output() << "Lvalue" << fmt::nbsp;
             print.ctor("Ederef");
             cprint.printExpr(base, print, li);
             print.output() << fmt::nbsp;
@@ -684,8 +682,6 @@ public:
                    "record projection type mismatch");
             print.end_ctor();
         } else {
-            cprint.printValCat(base, print);
-            print.output() << fmt::nbsp;
             cprint.printExpr(base, print, li);
             assert(base->getType()->getAsCXXRecordDecl() == record_type &&
                    "record projection type mismatch");
@@ -706,7 +702,7 @@ public:
         cprint.printExpr(expr->getLHS(), print, li);
         print.output() << fmt::nbsp;
         cprint.printExpr(expr->getRHS(), print, li);
-        done(expr, print, cprint);
+        done(expr, print, cprint, Done::VT);
     }
 
     void VisitCXXConstructExpr(const CXXConstructExpr* expr, CoqPrinter& print,
@@ -782,7 +778,6 @@ public:
             print.output() << fmt::nbsp;
             if (me->isArrow()) {
                 // NOTE: the C++ standard states that a `*` is always an `lvalue`.
-                print.output() << fmt::nbsp << "Lvalue";
                 print.ctor("Ederef");
                 cprint.printExpr(expr->getImplicitObjectArgument(), print, li);
                 print.output() << fmt::nbsp;
@@ -792,8 +787,6 @@ public:
                                      print);
                 print.end_ctor();
             } else {
-                cprint.printValCat(expr->getImplicitObjectArgument(), print);
-                print.output() << fmt::nbsp;
                 cprint.printExpr(expr->getImplicitObjectArgument(), print, li);
             }
         } else if (auto bo = dyn_cast<BinaryOperator>(callee)) {
@@ -819,8 +812,6 @@ public:
                 print.end_ctor();
                 break;
             case BinaryOperatorKind::BO_PtrMemD:
-                cprint.printValCat(expr->getImplicitObjectArgument(), print);
-                print.output() << fmt::nbsp;
                 cprint.printExpr(expr->getImplicitObjectArgument(), print, li);
                 break;
             default:
@@ -861,7 +852,7 @@ public:
         cprint.printExpr(expr->getTrueExpr(), print, li);
         print.output() << fmt::nbsp;
         cprint.printExpr(expr->getFalseExpr(), print, li);
-        done(expr, print, cprint);
+        done(expr, print, cprint, Done::VT);
     }
 
 #if CLANG_VERSION_MAJOR >= 8
@@ -1119,7 +1110,7 @@ public:
 #else
         cprint.printExpr(expr->GetTemporaryExpr(), print);
 #endif
-        print.end_ctor();
+        done(expr, print, cprint, Done::V);
     }
 
     void VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr* expr,
@@ -1141,7 +1132,7 @@ public:
                               ClangPrinter& cprint, const ASTContext&,
                               OpaqueNames& li) {
         print.ctor("Eopaque_ref") << li.find(expr);
-        done(expr, print, cprint);
+        done(expr, print, cprint, Done::VT);
     }
 
     void VisitAtomicExpr(const clang::AtomicExpr* expr, CoqPrinter& print,
@@ -1199,7 +1190,7 @@ public:
                          OpaqueNames&) {
         print.ctor("Eunsupported");
         print.str("lambda");
-        done(expr, print, cprint);
+        done(expr, print, cprint, Done::VT);
     }
 
     void VisitImplicitValueInitExpr(const ImplicitValueInitExpr* expr,
@@ -1255,8 +1246,6 @@ public:
 
         // this is the source array which we are initializing
         auto src = expr->getCommonExpr()->getSourceExpr();
-        cprint.printValCat(src, print);
-        print.output() << fmt::nbsp;
         cprint.printExpr(src, print, li);
 
         // this is the expression that is evaluated
