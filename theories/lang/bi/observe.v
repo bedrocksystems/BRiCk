@@ -169,6 +169,9 @@ Section observe.
   Proof.
     by rewrite {1}(observe_2_elim_strong Q P1 P2) bi.intuitionistically_elim.
   Qed.
+  Lemma observe_2_uncurry_elim Q P1 P2 {O : Observe2 Q P1 P2} :
+    P1 ∗ P2 ⊢ (P1 ∗ P2) ∗ Q.
+  Proof. rewrite -(assoc bi_sep). exact /bi.wand_elim_l' /observe_2_elim. Qed.
 
   Lemma observe_2_equiv Q P1 P2 `{!Observe2 Q P1 P2} `{!Affine Q} : P1 ∗ P2 ∗ Q ⊣⊢ P1 ∗ P2.
   Proof. split'; first iIntros "($ & $ & _)". by apply bi.wand_elim_l', observe_2_elim. Qed.
