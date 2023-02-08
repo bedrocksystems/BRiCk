@@ -212,13 +212,6 @@ Section observe.
   Qed.
 End observe.
 
-Arguments observe_elim_pure {_} _%type _%I {_} : assert.
-Arguments observe_elim_strong {_} (_ _)%I {_} : assert.
-Arguments observe_elim {_} (_ _)%I {_} : assert.
-Arguments observe_2_elim_pure {_} _%type (_ _)%I {_} : assert.
-Arguments observe_2_elim_strong {_} (_ _ _)%I {_} : assert.
-Arguments observe_2_elim {_} (_ _ _)%I {_} : assert.
-
 (** Instances *)
 Section bi.
   Context {PROP : bi}.
