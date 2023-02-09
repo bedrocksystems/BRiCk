@@ -534,3 +534,66 @@ Notation Qp_mul_left_id := Qp.mul_left_id (only parsing).
 Notation Qp_mul_right_id := Qp.mul_right_id (only parsing).
 #[deprecated(since="20221223", note="use [Qp.div_right_id]")]
 Notation Qp_div_right_id := Qp.div_right_id (only parsing).
+
+
+(** ** [N_to_Qp] *)
+
+Definition N_to_Qp (n : N) : Qp :=
+  if n is Npos p
+  then pos_to_Qp p
+  else 1%Qp.	(** dummy *)
+
+Section with_N_to_Qp.
+  #[local] Open Scope N_scope.
+  #[local] Infix "<=" := Qp.le : Qp_scope.
+
+  Lemma N_to_Qp_1 : N_to_Qp 1 = 1%Qp.
+  Proof. done. Qed.
+
+  Lemma N_to_Qp_pos p : N_to_Qp (N.pos p) = pos_to_Qp p.
+  Proof. done. Qed.
+
+  Lemma N_to_Qp_succ n : n <> 0 -> N_to_Qp (N.succ n) = (N_to_Qp n + 1)%Qp.
+  Proof.
+    destruct n; [done|]=>_ /=. by rewrite -Pos.add_1_r pos_to_Qp_add.
+  Qed.
+
+  Lemma N_to_Qp_inj n m :
+    n <> 0 -> m <> 0 -> N_to_Qp n = N_to_Qp m -> n = m.
+  Proof.
+    destruct n; [done|]. destruct m; [done|]=>_ _ ?.
+    f_equal. exact: pos_to_Qp_inj.
+  Qed.
+
+  Lemma N_to_Qp_inj_iff n m :
+    n <> 0 -> m <> 0 -> N_to_Qp n = N_to_Qp m <-> n = m.
+  Proof. naive_solver auto using N_to_Qp_inj. Qed.
+
+  Lemma N_to_Qp_inj_le n m :
+    n <> 0 -> m <> 0 -> n <= m <-> (N_to_Qp n <= N_to_Qp m)%Qp.
+  Proof.
+    destruct n; [done|]. destruct m; [done|]=>_ _.
+    by rewrite !N_to_Qp_pos -pos_to_Qp_inj_le.
+  Qed.
+
+  Lemma N_to_Qp_inj_lt n m :
+    n <> 0 -> m <> 0 -> n < m <-> (N_to_Qp n < N_to_Qp m)%Qp.
+  Proof.
+    destruct n; [done|]. destruct m; [done|]=>_ _.
+    by rewrite !N_to_Qp_pos -pos_to_Qp_inj_lt.
+  Qed.
+
+  Lemma N_to_Qp_add n m :
+    n <> 0 -> m <> 0 -> (N_to_Qp n + N_to_Qp m)%Qp = N_to_Qp (n + m).
+  Proof.
+    destruct n; [done|]. destruct m; [done|]=>_ _.
+    by rewrite !N_to_Qp_pos pos_to_Qp_add.
+  Qed.
+
+  Lemma N_to_Qp_mul n m :
+    n <> 0 -> m <> 0 -> (N_to_Qp n * N_to_Qp m)%Qp = N_to_Qp (n * m).
+  Proof.
+    destruct n; [done|]. destruct m; [done|]=>_ _.
+    by rewrite !N_to_Qp_pos pos_to_Qp_mul.
+  Qed.
+End with_N_to_Qp.
