@@ -181,6 +181,85 @@ Qed.
 Lemma N_land_mono_l (a b : N) : (a `land` b <= b)%N.
 Proof. by rewrite N.land_comm; apply: N_land_mono_r. Qed.
 
+(* monotonicity of lor in the right arg *)
+Lemma N_lor_mono_r (a b : N) :
+  (a <= b)%N -> (a `lor` b <= N.ones (N.log2 b + 1))%N.
+Proof.
+  move=>Hle.
+  apply: N.ldiff_le; rewrite -N.bits_inj_iff=>n.
+  rewrite N.ldiff_spec N.lor_spec andb_comm.
+  case: (N.leb_spec (N.log2 b + 1) n);
+    first case: (N.eqb_spec (N.log2 b + 1) n).
+  - move=><-_.
+    rewrite N.ones_spec_high //= !N.bits_above_log2 //.
+    by apply: N.lt_add_pos_r.
+    apply: N.le_lt_trans; last by apply: N.lt_add_pos_r.
+    by apply: N.log2_le_mono.
+
+  - rewrite N.add_1_r N.le_succ_l=>??.
+    rewrite N.ones_spec_high //=; last by rewrite N.le_succ_l.
+    rewrite !N.bits_above_log2 //.
+    by apply: N.le_lt_trans; first apply: N.log2_le_mono.
+  - by move=>?; rewrite N.ones_spec_low.
+Qed.
+
+(* monotonicity of lxor in the right arg *)
+Lemma N_lxor_mono_aux (a b : N) :
+  (a <= b)%N -> (N.lxor a b <= N.ones (N.log2 b + 1))%N.
+Proof.
+  move=>Hle.
+  apply: N.ldiff_le; rewrite -N.bits_inj_iff=>n.
+  rewrite N.ldiff_spec N.lxor_spec andb_comm.
+  case: (N.leb_spec (N.log2 b + 1) n);
+    first case: (N.eqb_spec (N.log2 b + 1) n).
+  - move=><-_.
+    rewrite N.ones_spec_high //= !N.bits_above_log2 //.
+    by apply: N.lt_add_pos_r.
+    apply: N.le_lt_trans; last by apply: N.lt_add_pos_r.
+    by apply: N.log2_le_mono.
+
+  - rewrite N.add_1_r N.le_succ_l=>??.
+    rewrite N.ones_spec_high //=; last by rewrite N.le_succ_l.
+    rewrite !N.bits_above_log2 //.
+    by apply: N.le_lt_trans; first apply: N.log2_le_mono.
+  - by move=>?; rewrite N.ones_spec_low.
+Qed.
+
+Lemma N_le_pred_lt: ∀ n m : N,
+    (0 < n)%N
+    -> (n ≤ m)%N -> (BinNat.N.pred n < m)%N.
+Proof. lia. Qed.
+
+(* pow2 bound on lxor *)
+Lemma N_lxor_lt_pow2_aux (a b c : N) :
+  (a <= b)%N
+  -> (0 < c)%N
+  -> (b < 2 ^ c)%N -> (N.lxor a b < 2 ^ c)%N.
+Proof.
+  move=>? ? Hlt.
+  apply: N.le_lt_trans; first by apply: N_lxor_mono_aux.
+  rewrite N.ones_equiv.
+  apply: N_le_pred_lt; first by lia.
+  apply: N.pow_le_mono_r; first done.
+
+  case: (N.leb_spec b 0).
+  - move=>/N.le_0_r->.
+    rewrite N.add_0_l; lia.
+  - move=>?.
+    by rewrite N.add_1_r N.le_succ_l -N.log2_lt_pow2 //.
+Qed.
+
+Lemma N_lxor_lt_pow2 (a b c : N) :
+  (0 < c)%N
+  -> (a < 2 ^ c)%N
+  -> (b < 2 ^ c)%N -> (N.lxor a b < 2 ^ c)%N.
+Proof.
+  case: (N.leb_spec a b).
+  - by move=>*; apply: N_lxor_lt_pow2_aux.
+  - rewrite N.lxor_comm.
+    by move=>/N.lt_le_incl *; apply: N_lxor_lt_pow2_aux.
+Qed.
+
 Lemma N2Z_land (a b : N) : Z.land (Z.of_N a) (Z.of_N b) = Z.of_N (N.land a b).
 Proof. by case: a; case: b. Qed.
 
