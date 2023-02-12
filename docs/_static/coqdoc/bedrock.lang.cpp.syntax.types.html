@@ -39,7 +39,7 @@
 
 <div class="code">
 <span class="comment">(*<br/>
-&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020-2023&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
@@ -151,6 +151,20 @@
 | <a id="Tptr" class="idref" href="#Tptr"><span class="id" title="constructor">Tptr</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:26"><span class="id" title="inductive">type</span></a>)<br/>
 | <a id="Tref" class="idref" href="#Tref"><span class="id" title="constructor">Tref</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:26"><span class="id" title="inductive">type</span></a>)<br/>
 | <a id="Trv_ref" class="idref" href="#Trv_ref"><span class="id" title="constructor">Trv_ref</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:26"><span class="id" title="inductive">type</span></a>)<br/>
+&nbsp;&nbsp;</div>
+
+<div class="doc">
+  Note: cpp2v (really, clang's parser) handles so-called "reference
+  collapsing": We do not see references to references.
+
+<div class="paragraph"> </div>
+
+  Background:
+  https://en.cppreference.com/w/cpp/language/referenceReference_collapsing
+  https://www.eel.is/c++draft/dcl.ref5
+  
+</div>
+<div class="code">
 | <a id="Tnum" class="idref" href="#Tnum"><span class="id" title="constructor">Tnum</span></a> (<a id="size:28" class="idref" href="#size:28"><span class="id" title="binder">size</span></a> : <a class="idref" href="bedrock.lang.cpp.arith.types.html#bitsize"><span class="id" title="inductive">bitsize</span></a>) (<a id="signed:29" class="idref" href="#signed:29"><span class="id" title="binder">signed</span></a> : <a class="idref" href="bedrock.lang.cpp.arith.types.html#signed"><span class="id" title="inductive">signed</span></a>)<br/>
 | <a id="Tvoid" class="idref" href="#Tvoid"><span class="id" title="constructor">Tvoid</span></a><br/>
 | <a id="Tarray" class="idref" href="#Tarray"><span class="id" title="constructor">Tarray</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:26"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) <span class="comment">(*&nbsp;unknown&nbsp;sizes&nbsp;are&nbsp;represented&nbsp;by&nbsp;pointers&nbsp;*)</span><br/>

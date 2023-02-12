@@ -39,7 +39,7 @@
 
 <div class="code">
 <span class="comment">(*<br/>
-&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2019-2022&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2019-2023&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
@@ -212,15 +212,15 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpX  '/' '[hv' ρ  '/' e ']' ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="1a5f4c22de027f691d174bef379827a2" class="idref" href="#1a5f4c22de027f691d174bef379827a2"><span class="id" title="notation">&quot;</span></a>'::wpGL' ρ '(ValCat' ↦ vc ) e"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_glval"><span class="id" title="definition">wp_glval</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">vc</span> <span class="id" title="var">e</span> <span class="id" title="var">_</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="Compact.:::'::wpGL'_x_x" class="idref" href="#Compact.:::'::wpGL'_x_x"><span class="id" title="notation">&quot;</span></a>'::wpGL' ρ e"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_glval"><span class="id" title="definition">wp_glval</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">e</span> <span class="id" title="var">_</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']' ']'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGL  '/' '[hv' ρ '/' e ']' ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="69574d6d9c6383cd6a636622031f13a0" class="idref" href="#69574d6d9c6383cd6a636622031f13a0"><span class="id" title="notation">&quot;</span></a>'::wpGLₓ' ρ '(ValCat' ↦ vc ) e"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_discard"><span class="id" title="definition">wp_discard</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">vc</span> <span class="id" title="var">e</span> <span class="id" title="var">_</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="0b40c9554063ea458d02888f4b9bea85" class="idref" href="#0b40c9554063ea458d02888f4b9bea85"><span class="id" title="notation">&quot;</span></a>'::wpGLₓ' ρ e"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_discard"><span class="id" title="definition">wp_discard</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">e</span> <span class="id" title="var">_</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']' ']'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGLₓ  '/' '[hv' ρ '/' e ']' ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;NOTE&nbsp;(JH):&nbsp;There&nbsp;isn't&nbsp;anything&nbsp;great&nbsp;to&nbsp;print&nbsp;from&nbsp;<span class="inlinecode"><span class="id" title="var">Func</span></span>&nbsp;since&nbsp;the&nbsp;name&nbsp;was&nbsp;erased&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="Compact.:::'::wpFunc'" class="idref" href="#Compact.:::'::wpFunc'"><span class="id" title="notation">&quot;</span></a>'::wpFunc'"<br/>
@@ -362,15 +362,15 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpX  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="4b7f1fa567bd3173972d96b12286af44" class="idref" href="#4b7f1fa567bd3173972d96b12286af44"><span class="id" title="notation">&quot;</span></a>'::wpGL' ρ '(ValCat' ↦ vc ) e Q"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_glval"><span class="id" title="definition">wp_glval</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">vc</span> <span class="id" title="var">e</span> <span class="id" title="var">Q</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="Verbose.:::'::wpGL'_x_x_x" class="idref" href="#Verbose.:::'::wpGL'_x_x_x"><span class="id" title="notation">&quot;</span></a>'::wpGL' ρ e Q"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_glval"><span class="id" title="definition">wp_glval</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">e</span> <span class="id" title="var">Q</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']'  '/' Q ']'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGL  '/' '[hv' ρ '/' e ']'  '/' Q ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="11cee76ab990794116af319a976da8b9" class="idref" href="#11cee76ab990794116af319a976da8b9"><span class="id" title="notation">&quot;</span></a>'::wpGLₓ' ρ '(ValCat' ↦ vc ) e Q"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_discard"><span class="id" title="definition">wp_discard</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">vc</span> <span class="id" title="var">e</span> <span class="id" title="var">Q</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="d30603e00fb0df8af15d23628c3de86e" class="idref" href="#d30603e00fb0df8af15d23628c3de86e"><span class="id" title="notation">&quot;</span></a>'::wpGLₓ' ρ e Q"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_discard"><span class="id" title="definition">wp_discard</span></a> <span class="id" title="var">_</span> ρ <span class="id" title="var">e</span> <span class="id" title="var">Q</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']'  '/' Q ']'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[hv  ' ::wpGLₓ  '/' '[hv' ρ '/' e ']'  '/' Q ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;NOTE&nbsp;(JH):&nbsp;There&nbsp;isn't&nbsp;anything&nbsp;great&nbsp;to&nbsp;print&nbsp;from&nbsp;<span class="inlinecode"><span class="id" title="var">Func</span></span>&nbsp;since&nbsp;the&nbsp;name&nbsp;was&nbsp;erased&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="Verbose.:::'::wpFunc'_x" class="idref" href="#Verbose.:::'::wpFunc'_x"><span class="id" title="notation">&quot;</span></a>'::wpFunc' Q"<br/>
