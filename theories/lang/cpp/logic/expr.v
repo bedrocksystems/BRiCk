@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2022 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -164,11 +164,9 @@ Module Type Expr.
     (* [Emember a f ty] is an lvalue by default except when
      * - where [m] is a member enumerator or a non-static member function, or
      * - where [a] is an rvalue and [m] is a non-static data member of non-reference type
-     *
-     * NOTE We need [vc] in order to distinguish the two forms of [rvalue], [xvalue] and [prvalue]
      *)
-    Axiom wp_lval_member : forall ty vc a m Q,
-        match vc with
+    Axiom wp_lval_member : forall ty a m Q,
+        match valcat_of a with
         | Prvalue => False
         | Lvalue =>
           wp_lval a (fun base free =>
@@ -179,13 +177,13 @@ Module Type Expr.
              temporary. Being conservative is sensible in our semantic style.
           *)
         end
-      |-- wp_lval (Emember vc a m ty) Q.
+      |-- wp_lval (Emember a m ty) Q.
 
     (* [Emember a m ty] is an xvalue if
      * - [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
-    Axiom wp_xval_member : forall ty vc a m Q,
-        match vc with
+    Axiom wp_xval_member : forall ty a m Q,
+        match valcat_of a with
         | Prvalue => False
           (* This does not occur because our AST explicitly contains [Cl2r] casts.
            *)
@@ -195,7 +193,7 @@ Module Type Expr.
                        valid_ptr addr ** Q addr free)
         | _ => False
         end%I
-      |-- wp_xval (Emember vc a m ty) Q.
+      |-- wp_xval (Emember a m ty) Q.
 
     Fixpoint is_pointer (ty : type) : bool :=
       match ty with
@@ -205,8 +203,7 @@ Module Type Expr.
       | _ => false
       end.
 
-    (* [Esubscript a n ty] is an lvalue if
-     * - one operand is an lvalue array
+    (* [Esubscript e i _ _] when one operand is an array lvalue
      *   (in clang's syntax tree, this value is converted to an rvalue via
      *    an array2pointer cast)
      *)
@@ -218,10 +215,9 @@ Module Type Expr.
          Exists i, [| idx = Vint i |] **
          let addr := _eqv base .[ erase_qualifiers t ! i ] in
          valid_ptr addr ** Q addr free)
-      |-- wp_lval (Esubscript e i t) Q.
+      |-- wp_lval (Esubscript e i Lvalue t) Q.
 
-    (* [Esubscript e i t]
-     * - where one operand is an array rvalue
+    (* [Esubscript e i _ _] when one operand is an array xvalue
      *)
     Axiom wp_xval_subscript : forall e i t Q,
       nd_seq (wp_operand e) (wp_operand i) (fun '(ev, iv) free =>
@@ -235,7 +231,7 @@ Module Type Expr.
           (Exists i, [| idx = Vint i |] **
            let addr := _eqv base .[ erase_qualifiers t ! i ] in
            valid_ptr addr ** Q addr free))
-      |-- wp_xval (Esubscript e i t) Q.
+      |-- wp_xval (Esubscript e i Xvalue t) Q.
 
     (** * Unary Operators
      *)
@@ -381,21 +377,21 @@ Module Type Expr.
         then runs `b`. the value (and temporaries) of `a` are destroyed
         after `b` completes (usually at the end of the statement).
      *)
-    Axiom wp_lval_comma : forall {vc} e1 e2 Q,
-        wp_discard vc e1 (fun free1 => wp_lval e2 (fun val free2 => Q val (free2 >*> free1)))
-        |-- wp_lval (Ecomma vc e1 e2) Q.
+    Axiom wp_lval_comma : forall e1 e2 Q,
+        wp_discard e1 (fun free1 => wp_lval e2 (fun val free2 => Q val (free2 >*> free1)))
+        |-- wp_lval (Ecomma e1 e2) Q.
 
-    Axiom wp_xval_comma : forall {vc} e1 e2 Q,
-        wp_discard vc e1 (fun free1 => wp_xval e2 (fun val free2 => Q val (free2 >*> free1)))
-        |-- wp_xval (Ecomma vc e1 e2) Q.
+    Axiom wp_xval_comma : forall e1 e2 Q,
+        wp_discard e1 (fun free1 => wp_xval e2 (fun val free2 => Q val (free2 >*> free1)))
+        |-- wp_xval (Ecomma e1 e2) Q.
 
-    Axiom wp_operand_comma : forall {vc} e1 e2 Q,
-        wp_discard vc e1 (fun free1 => wp_operand e2 (fun val free2 => Q val (free2 >*> free1)))
-        |-- wp_operand (Ecomma vc e1 e2) Q.
+    Axiom wp_operand_comma : forall e1 e2 Q,
+        wp_discard e1 (fun free1 => wp_operand e2 (fun val free2 => Q val (free2 >*> free1)))
+        |-- wp_operand (Ecomma e1 e2) Q.
 
-    Axiom wp_init_comma : forall {vc} ty p e1 e2 Q,
-        wp_discard vc e1 (fun free1 => wp_init ty p e2 (fun fval free2 => Q fval (free2 >*> free1)))
-        |-- wp_init ty p (Ecomma vc e1 e2) Q.
+    Axiom wp_init_comma : forall ty p e1 e2 Q,
+        wp_discard e1 (fun free1 => wp_init ty p e2 (fun fval free2 => Q fval (free2 >*> free1)))
+        |-- wp_init ty p (Ecomma e1 e2) Q.
 
     (** short-circuting operators *)
     Axiom wp_operand_seqand : forall e1 e2 Q,
@@ -426,85 +422,96 @@ Module Type Expr.
      *)
 
     (** [Cl2r] represents reads of locations. *)
-    Axiom wp_operand_cast_l2r_l : forall ty e Q,
-        wp_lval e (fun a free => Exists v,
+    Axiom wp_operand_cast_l2r : forall ty e Q,
+        wp_glval e (fun a free => Exists v,
            (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
-        |-- wp_operand (Ecast Cl2r Lvalue e ty) Q.
-
-    Axiom wp_operand_cast_l2r_x : forall ty e Q,
-        wp_xval e (fun a free => Exists v, (* was wp_lval *)
-          (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
-        |-- wp_operand (Ecast Cl2r Xvalue e ty) Q.
+        |-- wp_operand (Ecast Cl2r e Prvalue ty) Q.
 
     (** [Cnoop] casts are no-op casts. *)
     Axiom wp_init_cast_noop : forall ty ty' e p Q,
         wp_init ty p e Q
-        |-- wp_init ty p (Ecast Cnoop Prvalue e ty') Q.
+        |-- wp_init ty p (Ecast Cnoop e Prvalue ty') Q.
     Axiom wp_operand_cast_noop : forall ty e Q,
         wp_operand e Q
-        |-- wp_operand (Ecast Cnoop Prvalue e ty) Q.
+        |-- wp_operand (Ecast Cnoop e Prvalue ty) Q.
 
     Axiom wp_lval_cast_noop : forall ty e Q,
-        wp_lval e Q
-        |-- wp_lval (Ecast Cnoop Lvalue e ty) Q.
+        wp_glval e Q
+        |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
+
     Axiom wp_xval_cast_noop : forall ty e Q,
-        wp_xval e Q
-        |-- wp_xval (Ecast Cnoop Xvalue e ty) Q.
+        wp_glval e Q
+        |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
+
+    Lemma wp_lval_lval_cast_noop ty e Q :
+        valcat_of e = Lvalue ->
+        wp_lval e Q
+        |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
+    Proof. intros. by rewrite -wp_lval_cast_noop wp_glval_lval. Qed.
 
     (* note: this is the cast that occurs for the implementation of
      * [std::move]
      *)
-    Axiom wp_lval_xval_cast_noop : forall ty e Q,
+    Lemma wp_lval_xval_cast_noop ty e Q :
+        valcat_of e = Xvalue ->
         wp_xval e Q
-        |-- wp_lval (Ecast Cnoop Xvalue e ty) Q.
-    Axiom wp_xval_lval_cast_noop : forall ty e Q,
+        |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
+    Proof. intros. by rewrite -wp_lval_cast_noop wp_glval_xval. Qed.
+
+    Lemma wp_xval_xval_cast_noop ty e Q :
+        valcat_of e = Xvalue ->
+        wp_xval e Q
+        |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
+    Proof. intros. by rewrite -wp_xval_cast_noop wp_glval_xval. Qed.
+
+    Lemma wp_xval_lval_cast_noop ty e Q :
+        valcat_of e = Lvalue ->
         wp_lval e Q
-        |-- wp_xval (Ecast Cnoop Lvalue e ty) Q.
+        |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
+    Proof. intros. by rewrite -wp_xval_cast_noop wp_glval_lval. Qed.
 
     Definition int2bool_not_num (v : val) : Set.
     Proof. exact unit. Qed.
 
     Axiom wp_operand_cast_int2bool : forall ty e Q,
         wp_operand e (fun v free =>
-                        match v with
-                        | Vint n => Q (Vbool (bool_decide (n <> 0))) free
-                        | _ => ERROR (int2bool_not_num v)
-                        end)
-        |-- wp_operand (Ecast Cint2bool Prvalue e ty) Q.
+          match v with
+          | Vint n => Q (Vbool (bool_decide (n <> 0))) free
+          | _ => ERROR (int2bool_not_num v)
+          end)
+        |-- wp_operand (Ecast Cint2bool e Prvalue ty) Q.
 
     Definition ptr2bool_not_ptr (v : val) : Set.
     Proof. exact unit. Qed.
 
     Axiom wp_operand_cast_ptr2bool : forall ty e Q,
         wp_operand e (fun v free =>
-                      match v with
-                      | Vptr p => Q (Vbool (bool_decide (p <> nullptr))) free
-                      | _ => ERROR (ptr2bool_not_ptr v)
-                      end)
-        |-- wp_operand (Ecast Cptr2bool Prvalue e ty) Q.
+          match v with
+          | Vptr p => Q (Vbool (bool_decide (p <> nullptr))) free
+          | _ => ERROR (ptr2bool_not_ptr v)
+          end)
+        |-- wp_operand (Ecast Cptr2bool e Prvalue ty) Q.
 
     (** [Cfun2ptr] is a cast from a function to a pointer.
 
-       note that C and C++ classify function names differently, so we
-       end up with two cases
+       Note that C and C++ classify function names differently:
        - in C, function names are Rvalues, and
        - in C++, function names are Lvalues
+
+       We cannot write a rule for C functions without extending our
+       treatment of value categories to account for this difference.
      *)
-    Axiom wp_operand_cast_fun2ptr_c : forall ty ty' g Q,
-        wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
-            (* even though they are [prvalues], we reuse the [Lvalue] rule for
-               evaluating them. *)
-        |-- wp_operand (Ecast Cfun2ptr Prvalue (Evar (Gname g) ty') ty) Q.
     Axiom wp_operand_cast_fun2ptr_cpp : forall ty ty' g Q,
-        wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
-        |-- wp_operand (Ecast Cfun2ptr Lvalue (Evar (Gname g) ty') ty) Q.
+        let e := Evar (Gname g) ty' in
+        wp_lval e (fun v => Q (Vptr v))
+        |-- wp_operand (Ecast Cfun2ptr e Prvalue ty) Q.
 
     (** Known places that bitcasts occur
         - casting between [void*] and [T*] for some [T].
      *)
     Axiom wp_operand_cast_bitcast : forall e t Q,
         wp_operand e Q
-        |-- wp_operand (Ecast Cbitcast Prvalue e t) Q.
+        |-- wp_operand (Ecast Cbitcast e Prvalue t) Q.
 
     (** [Cintegral] casts represent casts between integral types, e.g.
         - [int] -> [short]
@@ -515,22 +522,22 @@ Module Type Expr.
     Axiom wp_operand_cast_integral : forall e t Q,
         wp_operand e (fun v free =>
            Exists v', [| exists tu, tu ⊧ resolve /\ conv_int tu (type_of e) t v v' |] ** Q v' free)
-        |-- wp_operand (Ecast Cintegral Prvalue e t) Q.
+        |-- wp_operand (Ecast Cintegral e Prvalue t) Q.
 
     Axiom wp_operand_cast_null : forall e t Q,
         wp_operand e Q
-        |-- wp_operand (Ecast Cnull2ptr Prvalue e t) Q.
+        |-- wp_operand (Ecast Cnull2ptr e Prvalue t) Q.
 
     (* note(gmm): in the clang AST, the subexpression is the call.
      * in essence, [Ecast (Cuser ..)] is a syntax annotation.
      *)
     Axiom wp_init_cast_user : forall ty' e p ty Z Q,
         wp_init ty' p e Q
-        |-- wp_init ty' p (Ecast (Cuser Z) Prvalue e ty) Q.
+        |-- wp_init ty' p (Ecast (Cuser Z) e Prvalue ty) Q.
 
     Axiom wp_operand_cast_user : forall e ty Z Q,
         wp_operand e Q
-        |-- wp_operand (Ecast (Cuser Z) Prvalue e ty) Q.
+        |-- wp_operand (Ecast (Cuser Z) e Prvalue ty) Q.
 
     Definition UNSUPPORTED_reinterpret_cast (ty1 ty2 : type) : mpred.
     Proof. exact False%I. Qed.
@@ -546,14 +553,14 @@ Module Type Expr.
              A pointer can be explicitly converted to any integral type large
              enough to hold all values of its type. The mapping function is
              implementation-defined. *)
-          wp_operand (Ecast Cptr2int Prvalue e ty) Q
+          wp_operand (Ecast Cptr2int e Prvalue ty) Q
         | Tnum _ _ , Tptr _ =>
           (* A value of integral type or enumeration type can be explicitly
              converted to a pointer. A pointer converted to an integer of sufficient
              size (if any such exists on the implementation) and back to the same
              pointer type will have its original value; mappings between pointers
              and integers are otherwise implementation-defined. *)
-          wp_operand (Ecast Cint2ptr Prvalue e ty) Q
+          wp_operand (Ecast Cint2ptr e Prvalue ty) Q
         | Tnullptr , Tnum _ _ =>
           (* A value of type [std​::​nullptr_t] can be converted to an integral type;
              the conversion has the same meaning and validity as a conversion of
@@ -569,32 +576,32 @@ Module Type Expr.
             wp_operand e Q
         | ty1 , ty2 => UNSUPPORTED_reinterpret_cast ty1 ty2
         end
-        |-- wp_operand (Ecast (Creinterpret qt) Prvalue e ty) Q.
+        |-- wp_operand (Ecast (Creinterpret qt) e Prvalue ty) Q.
 
     (** [Cstatic c] represents a use of `static_cast` to perform the underlying
         cast.
      *)
-    Axiom wp_operand_static_cast : forall c vc e ty Q,
-          wp_operand (Ecast c vc e ty) Q
-      |-- wp_operand (Ecast (Cstatic c) vc e ty) Q.
+    Axiom wp_operand_static_cast : forall c e ty Q,
+          wp_operand (Ecast c e Prvalue ty) Q
+      |-- wp_operand (Ecast (Cstatic c) e Prvalue ty) Q.
 
-    Axiom wp_lval_static_cast : forall c vc e ty Q,
-          wp_lval (Ecast c vc e ty) Q
-      |-- wp_lval (Ecast (Cstatic c) vc e ty) Q.
+    Axiom wp_lval_static_cast : forall c e ty Q,
+          wp_lval (Ecast c e Lvalue ty) Q
+      |-- wp_lval (Ecast (Cstatic c) e Lvalue ty) Q.
 
-    Axiom wp_xval_static_cast : forall c vc e ty Q,
-          wp_xval (Ecast c vc e ty) Q
-      |-- wp_xval (Ecast (Cstatic c) vc e ty) Q.
+    Axiom wp_xval_static_cast : forall c e ty Q,
+          wp_xval (Ecast c e Xvalue ty) Q
+      |-- wp_xval (Ecast (Cstatic c) e Xvalue ty) Q.
 
     (** You can cast anything to void, but an expression of type
         [void] can only be a pr_value *)
-    Axiom wp_operand_cast_tovoid : forall vc e Q,
-          wp_discard vc e (fun free => Q Vundef free)
-      |-- wp_operand (Ecast C2void vc e Tvoid) Q.
+    Axiom wp_operand_cast_tovoid : forall e Q,
+          wp_discard e (fun free => Q Vundef free)
+      |-- wp_operand (Ecast C2void e Prvalue Tvoid) Q.
 
-    Axiom wp_operand_cast_array2ptr : forall vc e t Q,
-        wp_glval vc e (fun p => Q (Vptr p))
-        |-- wp_operand (Ecast Carray2ptr vc e t) Q.
+    Axiom wp_operand_cast_array2ptr : forall e t Q,
+        wp_glval e (fun p => Q (Vptr p))
+        |-- wp_operand (Ecast Carray2ptr e Prvalue t) Q.
 
     (** [Cptr2int] exposes the pointer, which is expressed with [pinned_ptr]
      *)
@@ -608,7 +615,7 @@ Module Type Expr.
                                                     end (Z.of_N va))) free))
         | _ , _ => False
         end
-        |-- wp_operand (Ecast Cptr2int Prvalue e ty) Q.
+        |-- wp_operand (Ecast Cptr2int e Prvalue ty) Q.
 
     (** [Cint2ptr] uses "angelic non-determinism" to allow the developer to
         pick any pointer that was previously exposed as the given integer.
@@ -632,7 +639,7 @@ Module Type Expr.
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
         end
-        |-- wp_operand (Ecast Cint2ptr Prvalue e ty) Q.
+        |-- wp_operand (Ecast Cint2ptr e Prvalue ty) Q.
 
     (** * [Cderived2base]
         casts from a derived class to a base class. Casting is only permitted
@@ -647,25 +654,25 @@ Module Type Expr.
              It would technically be a little nicer if this side condition
              was checked at "compile" time rather than at runtime.
      *)
-    Axiom wp_lval_cast_derived2base : forall e vc ty path Q,
+    Axiom wp_lval_cast_derived2base : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base =>
-          wp_glval vc e (fun addr free =>
+          wp_glval e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_lval (Ecast (Cderived2base path) vc e ty) Q.
+      |-- wp_lval (Ecast (Cderived2base path) e Lvalue ty) Q.
 
-    Axiom wp_xval_cast_derived2base : forall e vc ty path Q,
+    Axiom wp_xval_cast_derived2base : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base =>
-          wp_glval vc e (fun addr free =>
+          wp_glval e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_xval (Ecast (Cderived2base path) vc e ty) Q.
+      |-- wp_xval (Ecast (Cderived2base path) e Xvalue ty) Q.
 
     Axiom wp_operand_cast_derived2base : forall e ty path Q,
       match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr  ty with
@@ -674,30 +681,30 @@ Module Type Expr.
             let addr' := _eqv addr ,, derived_to_base derived path in
             valid_ptr addr' ** Q (Vptr addr') free)
       | _, _ => False
-        end
-      |-- wp_operand (Ecast (Cderived2base path) Prvalue e ty) Q.
+      end
+      |-- wp_operand (Ecast (Cderived2base path) e Prvalue ty) Q.
 
     (* [Cbase2derived] casts from a base class to a derived class.
      *)
-    Axiom wp_lval_cast_base2derived : forall e vc ty path Q,
+    Axiom wp_lval_cast_base2derived : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed base , Tnamed derived =>
-          wp_glval vc e (fun addr free =>
+          wp_glval e (fun addr free =>
             let addr' := addr ,, base_to_derived derived path in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_lval (Ecast (Cbase2derived path) vc e ty) Q.
+      |-- wp_lval (Ecast (Cbase2derived path) e Lvalue ty) Q.
 
-    Axiom wp_xval_cast_base2derived : forall e vc ty path Q,
+    Axiom wp_xval_cast_base2derived : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed base , Tnamed derived =>
-          wp_glval vc e (fun addr free =>
+          wp_glval e (fun addr free =>
             let addr' := addr ,, base_to_derived derived path in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_xval (Ecast (Cbase2derived path) vc e ty) Q.
+      |-- wp_xval (Ecast (Cbase2derived path) e Xvalue ty) Q.
 
     Axiom wp_operand_cast_base2derived : forall e ty path Q,
          match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
@@ -707,31 +714,31 @@ Module Type Expr.
             valid_ptr addr' ** Q (Vptr addr') free)
          | _, _ => False
         end
-      |-- wp_operand (Ecast (Cbase2derived path) Prvalue e ty) Q.
+      |-- wp_operand (Ecast (Cbase2derived path) e Prvalue ty) Q.
 
     (** the ternary operator [_ ? _ : _] has the value category
      * of the "then" and "else" expressions (which must be the same).
      * We express this with 4 rules, one for each of [wp_lval],
      * [wp_operand], [wp_xval], and [wp_init].
      *)
-    Definition wp_cond {T} (wp : Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
+    Definition wp_cond {T} (vc : ValCat) (wp : Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
       forall ty tst th el (Q : T -> FreeTemps -> mpred),
         Unfold WPE.wp_test (wp_test tst (fun c free =>
            if c
            then wp th (fun v free' => Q v (free' >*> free))
            else wp el (fun v free' => Q v (free' >*> free))))
-        |-- wp (Eif tst th el ty) Q.
+        |-- wp (Eif tst th el vc ty) Q.
 
-    Axiom wp_lval_condition : Reduce (wp_cond wp_lval).
-    Axiom wp_xval_condition : Reduce (wp_cond wp_xval).
-    Axiom wp_operand_condition : Reduce (wp_cond wp_operand).
+    Axiom wp_lval_condition : Reduce (wp_cond Lvalue wp_lval).
+    Axiom wp_xval_condition : Reduce (wp_cond Xvalue wp_xval).
+    Axiom wp_operand_condition : Reduce (wp_cond Prvalue wp_operand).
 
     Axiom wp_init_condition : forall ty addr tst th el Q,
         Unfold WPE.wp_test (wp_test tst (fun c free =>
            if c
            then wp_init ty addr th (fun free' frees => Q free' (frees >*> free))
            else wp_init ty addr el (fun free' frees => Q free' (frees >*> free))))
-        |-- wp_init ty addr (Eif tst th el ty) Q.
+        |-- wp_init ty addr (Eif tst th el Prvalue ty) Q.
 
     Axiom wp_operand_implicit : forall e Q,
         wp_operand e Q |-- wp_operand (Eimplicit e) Q.
@@ -871,25 +878,25 @@ Module Type Expr.
       iIntros (?); iApply "K".
     Qed.
 
-    Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_lval_member_call : forall ty fty f obj es Q,
+        wp_glval obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
            lval_receive ty res $ fun v => Q v (free_args >*> free_this))
-        |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_lval (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
-    Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_xval_member_call : forall ty fty f obj es Q,
+        wp_glval obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
            xval_receive ty res $ fun v => Q v (free_args >*> free_this))
-        |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_xval (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
-    Axiom wp_operand_member_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_operand_member_call : forall ty fty f obj es Q,
+        wp_glval obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
            operand_receive ty res $ fun v => Q v (free_args >*> free_this))
-        |-- wp_operand (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_operand (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
-    Axiom wp_init_member_call : forall f fty es (addr : ptr) ty vc obj Q,
-        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_init_member_call : forall f fty es (addr : ptr) ty obj Q,
+        wp_glval obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
            init_receive ty addr res $ fun free => Q ty (free_args >*> free_this))
-        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
     (** virtual functions
         these are slightly more complex because we need to compute the address of the function
@@ -910,25 +917,25 @@ Module Type Expr.
       | _ => False
       end.
 
-    Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_xval_virtual_call : forall ty fty f obj es Q,
+        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
                    xval_receive ty res $ fun v => Q v (free_args >*> free_this))
-      |-- wp_xval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+      |-- wp_xval (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
-    Axiom wp_lval_virtual_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_lval_virtual_call : forall ty fty f obj es Q,
+        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
                    lval_receive ty res $ fun v => Q v (free_args >*> free_this))
-      |-- wp_lval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+      |-- wp_lval (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
-    Axiom wp_operand_virtual_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_operand_virtual_call : forall ty fty f obj es Q,
+        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
            operand_receive ty res $ fun v => Q v (free_args >*> free_this))
-        |-- wp_operand (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+        |-- wp_operand (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
-    Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty vc obj Q,
-        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+    Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty obj Q,
+        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
            init_receive ty addr res $ fun free => Q ty (free_args >*> free_this))
-        |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,
@@ -984,13 +991,13 @@ Module Type Expr.
         (let ty := type_of e in
          Forall a : ptr,
          wp_initialize ty a e (fun frees => Q a (FreeTemps.delete ty a >*> frees)))
-        |-- wp_xval (Ematerialize_temp e) Q.
+        |-- wp_xval (Ematerialize_temp e Xvalue) Q.
 
     Axiom wp_lval_temp : forall e Q,
         (let ty := type_of e in
          Forall a : ptr,
          wp_initialize ty a e (fun frees => Q a (FreeTemps.delete ty a >*> frees)))
-        |-- wp_lval (Ematerialize_temp e) Q.
+        |-- wp_lval (Ematerialize_temp e Lvalue) Q.
 
     (** Pseudo destructors arise from calling the destructor on
         an object of templated type when the type is instantiated
@@ -1298,9 +1305,14 @@ Module Type Expr.
 
     (* Maybe we can `Rbind (opaque n) p`, and then add `_opaque` to encapsulate looking this up in the region;
        the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
-    Axiom wp_glval_opaque_ref : forall vc n ρ ty Q,
+
+    Axiom wp_lval_opaque_ref : forall n ρ ty Q,
           wp_lval tu ρ (Evar (Lname (opaque_val n)) ty) Q
-      |-- wp_glval tu ρ vc (Eopaque_ref n ty) Q.
+      |-- wp_lval tu ρ (Eopaque_ref n Lvalue ty) Q.
+
+    Axiom wp_xval_opaque_ref : forall n ρ ty Q,
+          wp_lval tu ρ (Evar (Lname (opaque_val n)) ty) Q
+      |-- wp_xval tu ρ (Eopaque_ref n Xvalue ty) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
     Axiom wp_operand_arrayloop_index : forall ρ level ty Q,
@@ -1358,10 +1370,10 @@ Module Type Expr.
                                  loop_index |-> primR Tu64 (cQp.c 1) idx **
                                  rest (N.succ idx))) sz idx.
 
-    Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ety ty Q,
+    Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) src init ety ty Q,
           has_type (Vn sz) Tu64 ->
           is_array_of ty ety ->
-          wp_glval tu ρ vc src
+          wp_glval tu ρ src
                    (fun p free =>
                       Forall idxp,
                       trg |-> validR -*
@@ -1371,7 +1383,7 @@ Module Type Expr.
                                       (Q (Tarray ety sz) free)
                                       sz 0)
       |-- wp_init tu ρ (Tarray ety sz) trg
-                    (Earrayloop_init oname vc src level sz init ty) Q.
+                    (Earrayloop_init oname src level sz init ty) Q.
 
   End with_resolve__arrayloop.
 End Expr.

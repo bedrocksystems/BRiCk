@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2022 BedRock Systems, Inc.
+ * Copyright (c) 2022-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -9,18 +9,18 @@ From bedrock.lang.cpp Require Import notations code_notations logic logic.builti
 
 Module WpTestDefns.
   Context (ti : biIndex) (Σ : cpp_logic ti) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)
-          (v : val) (p p' p'' p''' this : ptr) (vc : expr.ValCat)
+          (v : val) (p p' p'' p''' this : ptr)
           (free : FreeTemps) (E : epred) (K : Kpred).
   #[local] Notation ty := (types.Tptr types.Tvoid).
   #[local] Notation e := (expr.Ebinop expr.Badd
                                       (expr.Evar (expr.Lname "foo") types.Tint)
                                       (expr.Evar (expr.Lname "bar") types.Tint)
                                       types.Tint).
-  #[local] Notation s := (stmt.Sseq [ stmt.Sexpr vc e
+  #[local] Notation s := (stmt.Sseq [ stmt.Sexpr e
                                     ; stmt.Sbreak
                                     ; stmt.Scontinue
-                                    ; stmt.Sexpr vc e
-                                    ; stmt.Sexpr vc e
+                                    ; stmt.Sexpr e
+                                    ; stmt.Sexpr e
                                     ; stmt.Sreturn None
                                     ; stmt.Sreturn (Some e)]%list).
 
@@ -91,14 +91,14 @@ Module WpTestDefns.
       wp_xval tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
 
     Definition NOTATION_wp_glval_nowrap Q :=
-      wp_glval tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) expr.Lvalue e Q.
+      wp_glval tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
     Definition NOTATION_wp_glval_wrap Q :=
-      wp_glval tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) expr.Xvalue e Q.
+      wp_glval tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
 
     Definition NOTATION_wp_discard_nowrap Q :=
-      wp_discard tu (Rbind "foo" p (Remp (Some this) None ty)) expr.Lvalue e Q.
+      wp_discard tu (Rbind "foo" p (Remp (Some this) None ty)) e Q.
     Definition NOTATION_wp_discard_wrap Q :=
-      wp_discard tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) expr.Xvalue e Q.
+      wp_discard tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
 
     Definition NOTATION_wp_func tu F ls Q :=
       wp_func tu F ls Q.

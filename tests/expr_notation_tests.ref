@@ -26,7 +26,7 @@ Ebool_false = {e: #false}
      : UnOp
 {e: ~}
      : UnOp
-{e: {:unop:"FooBarBaz":}}
+{e: {:unop:UNSUPPORTED:"FooBarBaz":}}
      : UnOp
 Eunop_1 = {e: -#42}
      : Expr
@@ -34,7 +34,7 @@ Eunop_2 = {e: !#false}
      : Expr
 Eunop_3 = {e: ~#314}
      : Expr
-Eunop_4 = {e: {:unop:"FooBarBaz":}{?: e}}
+Eunop_4 = {e: {:unop:UNSUPPORTED:"FooBarBaz":}{?: e}}
      : Expr
 {e: +}
      : BinOp
@@ -400,68 +400,6 @@ Ematerialize_temp_2 = {e: $"foo"}
      : BuiltinFn
 {e: __builtin_UNKNOWN_"__builtin__foobarbaz"}
      : BuiltinFn
-Ebuiltin_alloca = 
-{e: {builtin: __builtin_alloca; signature: {?: ty}}}
-     : Expr
-Ebuiltin_alloca_with_align = 
-{e: {builtin: __builtin_alloca_with_align; signature: {?: ty}}}
-     : Expr
-Ebuiltin_launder = 
-{e: {builtin: __builtin_launder; signature: {?: ty}}}
-     : Expr
-Ebuiltin_expect = 
-{e: {builtin: __builtin_expect; signature: {?: ty}}}
-     : Expr
-Ebuiltin_unreachable = 
-{e: {builtin: __builtin_unreachable; signature: {?: ty}}}
-     : Expr
-Ebuiltin_trap = {e: {builtin: __builtin_trap; signature: {?: ty}}}
-     : Expr
-Ebuiltin_bswap16 = 
-{e: {builtin: __builtin_bswap16; signature: {?: ty}}}
-     : Expr
-Ebuiltin_bswap32 = 
-{e: {builtin: __builtin_bswap32; signature: {?: ty}}}
-     : Expr
-Ebuiltin_bswap64 = 
-{e: {builtin: __builtin_bswap64; signature: {?: ty}}}
-     : Expr
-Ebuiltin_bswap128 = 
-{e: {builtin: __builtin_bswap128; signature: {?: ty}}}
-     : Expr
-Ebuiltin_bzero = 
-{e: {builtin: __builtin_bzero; signature: {?: ty}}}
-     : Expr
-Ebuiltin_ffs = {e: {builtin: __builtin_ffs; signature: {?: ty}}}
-     : Expr
-Ebuiltin_ffsl = {e: {builtin: __builtin_ffsl; signature: {?: ty}}}
-     : Expr
-Ebuiltin_ffsll = 
-{e: {builtin: __builtin_ffsll; signature: {?: ty}}}
-     : Expr
-Ebuiltin_clz = {e: {builtin: __builtin_clz; signature: {?: ty}}}
-     : Expr
-Ebuiltin_clzl = {e: {builtin: __builtin_clzl; signature: {?: ty}}}
-     : Expr
-Ebuiltin_clzll = 
-{e: {builtin: __builtin_clzll; signature: {?: ty}}}
-     : Expr
-Ebuiltin_ctz = {e: {builtin: __builtin_ctz; signature: {?: ty}}}
-     : Expr
-Ebuiltin_ctzl = {e: {builtin: __builtin_ctzl; signature: {?: ty}}}
-     : Expr
-Ebuiltin_ctzll = 
-{e: {builtin: __builtin_ctzll; signature: {?: ty}}}
-     : Expr
-Ebuiltin_popcount = 
-{e: {builtin: __builtin_popcount; signature: {?: ty}}}
-     : Expr
-Ebuiltin_popcountl = 
-{e: {builtin: __builtin_popcountl; signature: {?: ty}}}
-     : Expr
-Ebuiltin_unknown = 
-{e: {builtin: __builtin_UNKNOWN_"__builtin_foobarbaz"; signature: {?: ty}}}
-     : Expr
 Eva_arg_1 = {e: {?: e}}
      : Expr
 Eva_arg_2 = {e: #217}

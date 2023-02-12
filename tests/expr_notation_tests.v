@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2022 BedRock Systems, Inc.
+ * Copyright (c) 2022-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -36,12 +36,12 @@ Section TestExprNotations.
   #[local] Definition Ebool_false : Expr := Ebool false.
   Print Ebool_true. Print Ebool_false.
 
-  Check Uminus. Check Unot. Check Ubnot. Check (Uother "FooBarBaz").
+  Check Uminus. Check Unot. Check Ubnot. Check (Uunsupported "FooBarBaz").
 
   #[local] Definition Eunop_1 : Expr := Eunop Uminus (Eint 42 ty) ty.
   #[local] Definition Eunop_2 : Expr := Eunop Unot (Ebool false) ty.
   #[local] Definition Eunop_3 : Expr := Eunop Ubnot (Eint 314 ty) ty.
-  #[local] Definition Eunop_4 : Expr := Eunop (Uother "FooBarBaz") e ty.
+  #[local] Definition Eunop_4 : Expr := Eunop (Uunsupported "FooBarBaz") e ty.
   Print Eunop_1. Print Eunop_2. Print Eunop_3. Print Eunop_4.
 
   Check Badd. Check Band. Check Bcmp. Check Bdiv. Check Beq. Check Bge.
@@ -211,8 +211,8 @@ Section TestExprNotations.
   #[local] Definition Eseqor_2 : Expr := Eseqor (Ebool true) (Eseqor (Ebool false) (Ebool true)).
   Print Eseqor_1. Print Eseqor_2.
 
-  #[local] Definition Ecomma_1 : Expr := Ecomma Lvalue e e.
-  #[local] Definition Ecomma_2 : Expr := Ecomma Lvalue (Epreinc (Evar (Lname "baz") ty) ty) e.
+  #[local] Definition Ecomma_1 : Expr := Ecomma e e.
+  #[local] Definition Ecomma_2 : Expr := Ecomma (Epreinc (Evar (Lname "baz") ty) ty) e.
   Print Ecomma_1. Print Ecomma_2.
 
   #[local] Definition Ecall_nil_1 : Expr := Ecall e []%list ty.
@@ -230,30 +230,30 @@ Section TestExprNotations.
   #[local] Definition Ecall_cons_wrap_2 : Expr := Ecall (Evar (Gname "fn") ty) [Eint 42 ty; Ebool false; Estring "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
   Print Ecall_cons_wrap_1. Print Ecall_cons_wrap_2.
 
-  #[local] Definition Ecast_elide_1 (cast : Cast) (vc : ValCat) := Ecast cast vc e ty.
-  #[local] Definition Ecast_elide_2 (cast : Cast) (vc : ValCat) := Ecast cast vc (Eint 314 ty) ty.
+  #[local] Definition Ecast_elide_1 (cast : Cast) (vc : ValCat) := Ecast cast e vc ty.
+  #[local] Definition Ecast_elide_2 (cast : Cast) (vc : ValCat) := Ecast cast (Eint 314 ty) vc ty.
   Print Ecast_elide_1. Print Ecast_elide_2.
 
-  #[local] Definition Emember_1 : Expr := Emember Lvalue (Evar (Lname "foo") (Tnamed "foo")) (Build_field "foo" "bar") ty.
+  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) (Build_field "foo" "bar") ty.
   Print Emember_1.
 
-  #[local] Definition Emember_call_nil_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) Lvalue e []%list ty.
-  #[local] Definition Emember_call_nil_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) Lvalue (Evar (Gname "foo") ty) []%list ty.
+  #[local] Definition Emember_call_nil_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e []%list ty.
+  #[local] Definition Emember_call_nil_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Evar (Gname "foo") ty) []%list ty.
   Print Emember_call_nil_1. Print Emember_call_nil_2.
 
-  #[local] Definition Emember_call_cons_nowrap_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) Lvalue e [Eint 42 ty; Ebool false]%list ty.
-  #[local] Definition Emember_call_cons_nowrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) Lvalue (Evar (Gname "foo") ty) [Eint 42 ty; Ebool false]%list ty.
+  #[local] Definition Emember_call_cons_nowrap_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e [Eint 42 ty; Ebool false]%list ty.
+  #[local] Definition Emember_call_cons_nowrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Evar (Gname "foo") ty) [Eint 42 ty; Ebool false]%list ty.
   Print Emember_call_cons_nowrap_1. Print Emember_call_cons_nowrap_2.
 
   (* TODO (JH): Fix up the printing boxes s.t. the widths/splits correspond (and extra
      breaks aren't inserted; cf. [Ecall_cons_wrap_2].
    *)
-  #[local] Definition Emember_call_cons_wrap_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) Lvalue e [Eint 42 ty; Ebool false; Estring "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
-  #[local] Definition Emember_call_cons_wrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) Lvalue (Evar (Gname "foo") ty) [Eint 42 ty; Ebool false; Estring "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
+  #[local] Definition Emember_call_cons_wrap_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e [Eint 42 ty; Ebool false; Estring "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
+  #[local] Definition Emember_call_cons_wrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Evar (Gname "foo") ty) [Eint 42 ty; Ebool false; Estring "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
   Print Emember_call_cons_wrap_1. Print Emember_call_cons_wrap_2.
 
-  #[local] Definition Esubscript_1 : Expr := Esubscript e (Eint 42 ty) ty.
-  #[local] Definition Esubscript_2 : Expr := Esubscript (Evar (Lname "foo") ty) (Eint 314 ty) ty.
+  #[local] Definition Esubscript_1 : Expr := Esubscript e (Eint 42 ty) Lvalue ty.
+  #[local] Definition Esubscript_2 : Expr := Esubscript (Evar (Lname "foo") ty) (Eint 314 ty) Lvalue ty.
   Print Esubscript_1. Print Esubscript_2.
 
   #[local] Definition Esize_of_type_1 : Expr := Esize_of (inl ty) ty.
@@ -299,7 +299,7 @@ Section TestExprNotations.
   #[local] Definition Eimplicit_init_2 : Expr := Eimplicit_init (Tnum W8 Unsigned).
   Print Eimplicit_init_1. Print Eimplicit_init_2.
 
-  #[local] Definition Eif_1 : Expr := Eif (Ebool true) (Ecall (Evar (Lname "fn") ty) []%list ty) (Eassign_op Bmul (Evar (Lname "foo") ty) (Evar (Lname "bar") ty) ty) ty.
+  #[local] Definition Eif_1 : Expr := Eif (Ebool true) (Ecall (Evar (Lname "fn") ty) []%list ty) (Eassign_op Bmul (Evar (Lname "foo") ty) (Evar (Lname "bar") ty) ty) Lvalue ty.
   Print Eif_1.
 
   Check (Ethis ty). Check Enull.
@@ -348,8 +348,8 @@ Section TestExprNotations.
   #[local] Definition Eandclean_2 : Expr := Eandclean (Evar (Lname "foo") ty).
   Print Eandclean_1. Print Eandclean_2.
 
-  #[local] Definition Ematerialize_temp_1 : Expr := Ematerialize_temp e.
-  #[local] Definition Ematerialize_temp_2 : Expr := Ematerialize_temp (Evar (Lname "foo") ty).
+  #[local] Definition Ematerialize_temp_1 : Expr := Ematerialize_temp e Xvalue.
+  #[local] Definition Ematerialize_temp_2 : Expr := Ematerialize_temp (Evar (Lname "foo") ty) Xvalue.
   Print Ematerialize_temp_1. Print Ematerialize_temp_2.
 
   Check Bin_alloca. Check Bin_alloca_with_align. Check Bin_launder. Check Bin_expect.
@@ -359,37 +359,6 @@ Section TestExprNotations.
   Check Bin_ctzl. Check Bin_ctzll. Check Bin_popcount. Check Bin_popcountl.
   Check Bin_unknown "__builtin__foobarbaz"%bs.
 
-  #[local] Definition Ebuiltin_alloca : Expr := Ebuiltin Bin_alloca ty.
-  #[local] Definition Ebuiltin_alloca_with_align : Expr := Ebuiltin Bin_alloca_with_align ty.
-  #[local] Definition Ebuiltin_launder : Expr := Ebuiltin Bin_launder ty.
-  #[local] Definition Ebuiltin_expect : Expr := Ebuiltin Bin_expect ty.
-  #[local] Definition Ebuiltin_unreachable : Expr := Ebuiltin Bin_unreachable ty.
-  #[local] Definition Ebuiltin_trap : Expr := Ebuiltin Bin_trap ty.
-  #[local] Definition Ebuiltin_bswap16 : Expr := Ebuiltin Bin_bswap16 ty.
-  #[local] Definition Ebuiltin_bswap32 : Expr := Ebuiltin Bin_bswap32 ty.
-  #[local] Definition Ebuiltin_bswap64 : Expr := Ebuiltin Bin_bswap64 ty.
-  #[local] Definition Ebuiltin_bswap128 : Expr := Ebuiltin Bin_bswap128 ty.
-  #[local] Definition Ebuiltin_bzero : Expr := Ebuiltin Bin_bzero ty.
-  #[local] Definition Ebuiltin_ffs : Expr := Ebuiltin Bin_ffs ty.
-  #[local] Definition Ebuiltin_ffsl : Expr := Ebuiltin Bin_ffsl ty.
-  #[local] Definition Ebuiltin_ffsll : Expr := Ebuiltin Bin_ffsll ty.
-  #[local] Definition Ebuiltin_clz : Expr := Ebuiltin Bin_clz ty.
-  #[local] Definition Ebuiltin_clzl : Expr := Ebuiltin Bin_clzl ty.
-  #[local] Definition Ebuiltin_clzll : Expr := Ebuiltin Bin_clzll ty.
-  #[local] Definition Ebuiltin_ctz : Expr := Ebuiltin Bin_ctz ty.
-  #[local] Definition Ebuiltin_ctzl : Expr := Ebuiltin Bin_ctzl ty.
-  #[local] Definition Ebuiltin_ctzll : Expr := Ebuiltin Bin_ctzll ty.
-  #[local] Definition Ebuiltin_popcount : Expr := Ebuiltin Bin_popcount ty.
-  #[local] Definition Ebuiltin_popcountl : Expr := Ebuiltin Bin_popcountl ty.
-  #[local] Definition Ebuiltin_unknown : Expr := Ebuiltin (Bin_unknown "__builtin_foobarbaz"%bs) ty.
-  Print Ebuiltin_alloca. Print Ebuiltin_alloca_with_align. Print Ebuiltin_launder.
-  Print Ebuiltin_expect. Print Ebuiltin_unreachable. Print Ebuiltin_trap.
-  Print Ebuiltin_bswap16. Print Ebuiltin_bswap32. Print Ebuiltin_bswap64.
-  Print Ebuiltin_bswap128. Print Ebuiltin_bzero. Print Ebuiltin_ffs. Print Ebuiltin_ffsl.
-  Print Ebuiltin_ffsll. Print Ebuiltin_clz. Print Ebuiltin_clzl. Print Ebuiltin_clzll.
-  Print Ebuiltin_ctz. Print Ebuiltin_ctzl. Print Ebuiltin_ctzll. Print Ebuiltin_popcount.
-  Print Ebuiltin_popcountl. Print Ebuiltin_unknown.
-
   #[local] Definition Eva_arg_1 : Expr := Eva_arg e ty.
   #[local] Definition Eva_arg_2 : Expr := Eva_arg (Eint 217 ty) ty.
   Print Eva_arg_1. Print Eva_arg_2.
@@ -398,5 +367,5 @@ Section TestExprNotations.
   #[local] Definition Epseudo_destructor_2 : Expr := Epseudo_destructor ty (Eint 217 ty).
   Print Epseudo_destructor_1. Print Epseudo_destructor_2.
 
-  Check (Eunsupported "This was an unsupported operation" ty).
+  Check (Eunsupported "This was an unsupported operation" Prvalue ty).
 End TestExprNotations.

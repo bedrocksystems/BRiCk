@@ -257,7 +257,6 @@ NOTATION_wp_glval_nowrap =
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Lvalue) 
     ({e: ($"foo" + $"bar")})
      : (ptr → FreeTemps → epred) → mpred
 
@@ -269,7 +268,6 @@ NOTATION_wp_glval_wrap =
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Xvalue) 
     ({e: ($"foo" + $"bar")})
      : (ptr → FreeTemps → epred) → mpred
 
@@ -279,7 +277,6 @@ NOTATION_wp_discard_nowrap =
   ::wpGLₓ
     [region:
       "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Lvalue) 
     ({e: ($"foo" + $"bar")})
      : (FreeTemps → mpred) → mpred
 
@@ -289,7 +286,6 @@ NOTATION_wp_discard_nowrap =
   ::wpGLₓ
     [region:
       "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Lvalue) 
     ({e: ($"foo" + $"bar")})
      : (FreeTemps → mpred) → mpred
 
@@ -678,7 +674,6 @@ NOTATION_wp_glval_nowrap =
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Lvalue) 
     {e: ($"foo" + $"bar")}
     (Q)
      : (ptr → FreeTemps → epred) → mpred
@@ -691,7 +686,6 @@ NOTATION_wp_glval_wrap =
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Xvalue) 
     {e: ($"foo" + $"bar")}
     (Q)
      : (ptr → FreeTemps → epred) → mpred
@@ -702,7 +696,6 @@ NOTATION_wp_discard_nowrap =
   ::wpGLₓ
     [region:
       "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Lvalue) 
     {e: ($"foo" + $"bar")}
     (Q)
      : (FreeTemps → mpred) → mpred
@@ -713,7 +706,6 @@ NOTATION_wp_discard_nowrap =
   ::wpGLₓ
     [region:
       "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
-    (ValCat ↦ expr.Lvalue) 
     {e: ($"foo" + $"bar")}
     (Q)
      : (FreeTemps → mpred) → mpred

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2019-2022 BedRock Systems, Inc.
+ * Copyright (c) 2019-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -105,11 +105,11 @@ Module ExprNotations.
   Notation "'-'" := (Uminus) (in custom CPP_expr at level 0, only printing).
   Notation "'!'" := (Unot) (in custom CPP_expr at level 0, only printing).
   Notation "'~'" := (Ubnot) (in custom CPP_expr at level 0, only printing).
-  Notation "'{:unop:' op ':}'"
-      := (Uother op%bs)
+  Notation "'{:unop:UNSUPPORTED:' msg ':}'"
+      := (Uunsupported msg%bs)
          ( in custom CPP_expr at level 0
-         , op constr
-         , format "'[' {:unop: op :} ']'"
+         , msg constr
+         , format "'[hv  ' {:unop:UNSUPPORTED: msg :} ']'"
          , only printing).
 
   (* QUESTION (JH): Is this the right level? *)
@@ -273,7 +273,7 @@ Module ExprNotations.
          , only printing).
 
   Notation "'{:comma:' e1 , e2 ':}'"
-      := (Ecomma _ e1 e2)
+      := (Ecomma e1 e2)
          ( in custom CPP_expr at level 170
          , e1 custom CPP_expr at level 200
          , e2 custom CPP_expr at level 200
@@ -297,13 +297,13 @@ Module ExprNotations.
 
   (* TODO (JH): Determine which casts we actually want to print something for *)
   Notation "e"
-      := (Ecast _ _ e _)
+      := (Ecast _ e _ _)
          ( in custom CPP_expr at level 0
          , e custom CPP_expr at level 200
          , only printing).
 
   Notation "e . fld"
-      := (Emember _ e (Build_field _ fld%bs) _)
+      := (Emember e (Build_field _ fld%bs) _)
          ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , fld constr
@@ -314,14 +314,14 @@ Module ExprNotations.
      include a notation for it.
    *)
   Notation "e . fn ()"
-      := (Emember_call (inl (fn%bs, _, _)) _ e nil _)
+      := (Emember_call (inl (fn%bs, _, _)) e nil _)
          ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , fn constr
          , format "'[' e . fn () ']'"
          , only printing).
   Notation "e . fn ( a1 , .. , a2 )"
-      := (Emember_call (inl (fn, _, _)) _ e (cons a1 .. (cons a2 nil) ..) _)
+      := (Emember_call (inl (fn, _, _)) e (cons a1 .. (cons a2 nil) ..) _)
          ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , a1 custom CPP_expr at level 200
@@ -331,7 +331,7 @@ Module ExprNotations.
          , only printing).
 
   Notation "e [ n ]"
-      := (Esubscript e n _)
+      := (Esubscript e n _ _)
          ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , n custom CPP_expr at level 200
@@ -399,7 +399,7 @@ Module ExprNotations.
          , only printing).
 
   Notation "c ? t : e"
-      := (Eif c t e _)
+      := (Eif c t e _ _)
          ( in custom CPP_expr at level 160
          , c custom CPP_expr at level 200
          , t custom CPP_expr at level 200
@@ -482,7 +482,7 @@ Module ExprNotations.
          , e custom CPP_expr at level 200
          , only printing).
   Notation "e"
-      := (Ematerialize_temp e)
+      := (Ematerialize_temp e _)
          ( in custom CPP_expr at level 0
          , e custom CPP_expr at level 200
          , only printing).
@@ -516,14 +516,6 @@ Module ExprNotations.
          , format "'[' __builtin_UNKNOWN_ nm ']'"
          , only printing).
 
-  Notation "'{builtin:' bin ';' 'signature:' ty '}'"
-      := (Ebuiltin bin ty)
-         ( in custom CPP_expr at level 20
-         , bin custom CPP_expr at level 0
-         , ty custom CPP_type at level 200
-         , format "'[' {builtin:  bin ;  signature:  ty } ']'"
-         , only printing).
-
   (* TODO (JH): [Eatomic] *)
 
   (* QUESTION (JH): is this notation sufficient for [Eva_arg]? *)
@@ -544,7 +536,7 @@ Module ExprNotations.
   (* TODO (JH): [Earrayloop_init]/[Earrayloop_index]/[Eopaque_ref] *)
 
   Notation "'{UNSUPPORTED:' msg '}'"
-      := (Eunsupported msg%bs _)
+      := (Eunsupported msg%bs _ _)
          ( in custom CPP_expr at level 0
          , msg constr
          , format "'[hv   ' {UNSUPPORTED:  msg } ']'"
