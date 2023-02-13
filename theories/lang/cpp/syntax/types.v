@@ -334,10 +334,34 @@ Proof.
   rewrite merge_tq_assoc. done.
 Qed.
 
+(** Smart constructors *)
+
 Definition tqualified (q : type_qualifiers) (t : type) : type :=
   match q with
   | QM => t
   | _ => Tqualified q t
+  end.
+
+(**
+[tref], [trv_ref] implement reference collapsing.
+
+Background:
+https://en.cppreference.com/w/cpp/language/reference#Reference_collapsing
+https://www.eel.is/c++draft/dcl.ref#5
+*)
+Fixpoint tref (cv : type_qualifiers) (t : type) {struct t} : type :=
+  match t with
+  | Tref t => tref cv t
+  | Trv_ref t => tref cv t
+  | Tqualified q t => tref (merge_tq cv q) t
+  | _ => Tref (tqualified cv t)
+  end.
+Fixpoint trv_ref (cv : type_qualifiers) (t : type) : type :=
+  match t with
+  | Tref t => tref cv t
+  | Trv_ref t => trv_ref cv t
+  | Tqualified q t => trv_ref (merge_tq cv q) t
+  | _ => Trv_ref (tqualified cv t)
   end.
 
 (** normalization of types

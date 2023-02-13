@@ -15,17 +15,20 @@ Variant SwitchBranch : Set :=
 #[global] Instance: EqDecision SwitchBranch.
 Proof. solve_decision. Defined.
 
-Inductive VarDecl : Set :=
+Inductive VarDecl' {type Expr : Set} : Set :=
 | Dvar (name : localname) (_ : type) (init : option Expr)
-| Ddecompose (_ : Expr) (anon_var : ident) (_ : list VarDecl)
+| Ddecompose (_ : Expr) (anon_var : ident) (_ : list VarDecl')
   (* initialization of a function-local [static]. See https://eel.is/c++draft/stmt.dcl#3 *)
 | Dinit (thread_safe : bool) (name : obj_name) (_ : type) (init : option Expr).
-#[global] Instance: EqDecision VarDecl.
+#[global] Arguments VarDecl' _ _ : clear implicits, assert.
+#[global] Instance VarDecl_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
+  EqDecision (VarDecl' type Expr).
 Proof.
-  refine (fix dec (x y : VarDecl) : {x = y} + {x <> y} :=
+  refine (fix dec (x y : VarDecl' type Expr) : {x = y} + {x <> y} :=
+            let _ : EqDecision _ := dec in
             match x as x , y as y return {x = y} + {x <> y} with
             | Ddecompose xi xx xs , Ddecompose yi yx ys =>
-              match List.list_eq_dec dec xs ys with
+              match decide (xs = ys) with
               | left pf => match decide (xi = yi /\ xx = yx) with
                           | left pf' => left _
                           | right pf' => right _
@@ -53,17 +56,18 @@ Proof.
   { by destruct pf as [ -> [ -> [ -> -> ] ] ]. }
   { intro. apply pf. inversion H; tauto. }
 Defined.
+Notation VarDecl := (VarDecl' type Expr).
 
-Inductive Stmt : Set :=
-| Sseq    (_ : list Stmt)
-| Sdecl   (_ : list VarDecl)
+Inductive Stmt' {type Expr : Set} : Set :=
+| Sseq    (_ : list Stmt')
+| Sdecl   (_ : list (VarDecl' type Expr))
 
-| Sif     (_ : option VarDecl) (_ : Expr) (_ _ : Stmt)
-| Swhile  (_ : option VarDecl) (_ : Expr) (_ : Stmt)
-| Sfor    (_ : option Stmt) (_ : option Expr) (_ : option Expr) (_ : Stmt)
-| Sdo     (_ : Stmt) (_ : Expr)
+| Sif     (_ : option (VarDecl' type Expr)) (_ : Expr) (_ _ : Stmt')
+| Swhile  (_ : option (VarDecl' type Expr)) (_ : Expr) (_ : Stmt')
+| Sfor    (_ : option Stmt') (_ : option Expr) (_ : option Expr) (_ : Stmt')
+| Sdo     (_ : Stmt') (_ : Expr)
 
-| Sswitch (_ : option VarDecl) (_ : Expr) (_ : Stmt)
+| Sswitch (_ : option (VarDecl' type Expr)) (_ : Expr) (_ : Stmt')
 | Scase   (_ : SwitchBranch)
 | Sdefault
 
@@ -74,25 +78,28 @@ Inductive Stmt : Set :=
 
 | Sexpr   (_ : Expr)
 
-| Sattr (_ : list ident) (_ : Stmt)
+| Sattr (_ : list ident) (_ : Stmt')
 
 | Sasm (_ : bs) (volatile : bool)
        (inputs : list (ident * Expr))
        (outputs : list (ident * Expr))
        (clobbers : list ident)
 
-| Slabeled (_ : ident) (_ : Stmt)
+| Slabeled (_ : ident) (_ : Stmt')
 | Sgoto (_ : ident)
 | Sunsupported (_ : bs).
-#[global] Instance Stmt_eq_dec : EqDecision Stmt.
+#[global] Arguments Stmt' _ _ : clear implicits, assert.
+#[global] Instance Stmt_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
+  EqDecision (Stmt' type Expr).
 Proof.
   rewrite /RelDecision /Decision.
   fix IHs 1.
-  rewrite -{1}/(EqDecision Stmt) in IHs.
+  rewrite -{1}/(EqDecision _) in IHs.
   decide equality; try solve_trivial_decision.
 Defined.
+Notation Stmt := (Stmt' type Expr).
 
-Definition Sskip := Sseq nil.
+Definition Sskip {type Expr : Set} : Stmt' type Expr := Sseq nil.
 
 Variant OrDefault {t : Set} : Set :=
 | Defaulted

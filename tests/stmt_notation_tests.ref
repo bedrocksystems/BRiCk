@@ -251,9 +251,15 @@ Sdo_multiline =
     } while(#true);}
      : Stmt
 {s: break; }
-     : Stmt
+     : Stmt' ?type ?Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
+?Expr : [ty : type  e : Expr  s : Stmt |- Set]
 {s: continue; }
-     : Stmt
+     : Stmt' ?type ?Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
+?Expr : [ty : type  e : Expr  s : Stmt |- Set]
 Sreturn_None = {s: return; }
      : Stmt
 Sreturn_Some = {s: return #314; }
@@ -267,12 +273,21 @@ Sattr_nil = {s: continue; }
 Sattr_cons = {s: [["foo", "bar", "baz"]] break; }
      : Stmt
 {s: <LABEL: "FOO_BAR"> return; }
-     : Stmt
+     : Stmt' ?type ?Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
+?Expr : [ty : type  e : Expr  s : Stmt |- Set]
 {s: goto "FOO_BAR";}
-     : Stmt
+     : Stmt' ?type ?Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
+?Expr : [ty : type  e : Expr  s : Stmt |- Set]
 {s: <LABEL: "FOO_BAR"> continue; 
     goto "FOO_BAR";
     // end block}
-     : Stmt
+     : Stmt' ?type ?Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
+?Expr : [ty : type  e : Expr  s : Stmt |- Set]
 {e: {UNSUPPORTED: "This was an unsupported operation"}}
      : Expr

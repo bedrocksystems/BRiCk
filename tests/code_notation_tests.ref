@@ -1,5 +1,7 @@
 {s: $"foo" = !$"bar";}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
 {e: (*&$"hello" + #3)}
      : Expr
 {s: $"hello";
@@ -12,7 +14,9 @@
       break; 
     }
     // end block}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
 {s: if (mut int32 $"x" = #0; $"x") {
       continue; 
       continue; 
@@ -80,13 +84,17 @@
       // end block
     } while($"x");
     // end block}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
 {s: do {
       $"foo" = !$"bar";
       // end block
     } while($"x");
     // end block}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
 {s: $"should_continue" =
       !$::"_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin"(
        $"ctx",
@@ -94,7 +102,9 @@
        $"shared",
        $"client",
        $"result");}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
 {s: if (mut int32 $"x" = #0; $"x") {
       continue; 
     } else {
@@ -143,13 +153,17 @@
       // end block
     } while($"x");
     // end block}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
 {s: do {
       $"foo" = !$"bar";
       // end block
     } while($"x");
     // end block}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]
 {s: $"should_continue" =
       !$::"_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin"(
        $"ctx",
@@ -157,4 +171,6 @@
        $"shared",
        $"client",
        $"result");}
-     : Stmt
+     : Stmt' ?type Expr
+where
+?type : [ty : type  e : Expr  s : Stmt |- Set]

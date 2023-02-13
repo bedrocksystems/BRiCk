@@ -48,22 +48,29 @@ Record Dtor : Set :=
 #[global] Instance: EqDecision Dtor.
 Proof. solve_decision. Defined.
 
-Variant FunctionBody : Set :=
-| Impl (_ : Stmt)
+Variant FunctionBody' {type Expr : Set} : Set :=
+| Impl (_ : Stmt' type Expr)
 | Builtin (_ : BuiltinFn)
 .
-#[global] Instance: EqDecision FunctionBody.
+#[global] Arguments FunctionBody' _ _ : clear implicits, assert.
+#[global] Instance FunctionBody_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
+  EqDecision (FunctionBody' type Expr).
 Proof. solve_decision. Defined.
+Notation FunctionBody := (FunctionBody' type Expr).
 
-Record Func : Set :=
+Record Func' {type Expr : Set} : Set := Build_Func'
 { f_return : type
 ; f_params : list (ident * type)
 ; f_cc     : calling_conv
 ; f_arity  : function_arity
-; f_body   : option FunctionBody
+; f_body   : option (FunctionBody' type Expr)
 }.
-#[global] Instance: EqDecision Func.
+#[global] Arguments Func' _ _ : clear implicits, assert.
+#[global] Instance Func_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
+  EqDecision (Func' type Expr).
 Proof. solve_decision. Defined.
+Notation Func := (Func' type Expr).
+Notation Build_Func := (Build_Func' type Expr).
 
 Record Method : Set :=
 { m_return  : type

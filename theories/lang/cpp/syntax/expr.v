@@ -16,6 +16,26 @@ Variant UnOp : Set :=
 | Uunsupported (_ : bs).
 #[global] Instance: EqDecision UnOp.
 Proof. solve_decision. Defined.
+#[global] Instance UnOp_countable : Countable UnOp.
+Proof.
+  apply (inj_countable' (fun op =>
+    match op with
+    | Uminus => GenNode 0 []
+    | Uplus => GenNode 1 []
+    | Unot => GenNode 2 []
+    | Ubnot => GenNode 3 []
+    | Uunsupported op => GenNode 4 [GenLeaf op]
+    end) (fun t =>
+    match t with
+    | GenNode 0 [] => Uminus
+    | GenNode 1 [] => Uplus
+    | GenNode 2 [] => Unot
+    | GenNode 3 [] => Ubnot
+    | GenNode 4 [GenLeaf op] => Uunsupported op
+    | _ => Uminus	(* dummy *)
+    end)).
+  abstract (by intros []).
+Defined.
 
 Variant BinOp : Set :=
 | Badd	(* + *)
@@ -40,7 +60,56 @@ Variant BinOp : Set :=
 | Bunsupported (_ : bs).
 #[global] Instance: EqDecision BinOp.
 Proof. solve_decision. Defined.
-
+#[global] Instance BinOp_countable : Countable BinOp.
+Proof.
+  apply (inj_countable' (fun op =>
+    match op with
+    | Badd => GenNode 0 []
+    | Band => GenNode 1 []
+    | Bcmp => GenNode 2 []
+    | Bdiv => GenNode 3 []
+    | Beq => GenNode 4 []
+    | Bge => GenNode 5 []
+    | Bgt => GenNode 6 []
+    | Ble => GenNode 7 []
+    | Blt => GenNode 8 []
+    | Bmul => GenNode 9 []
+    | Bneq => GenNode 10 []
+    | Bor => GenNode 11 []
+    | Bmod => GenNode 12 []
+    | Bshl => GenNode 13 []
+    | Bshr => GenNode 14 []
+    | Bsub => GenNode 15 []
+    | Bxor => GenNode 16 []
+    | Bdotp => GenNode 17 []
+    | Bdotip => GenNode 18 []
+    | Bunsupported op => GenNode 19 [GenLeaf op]
+    end) (fun t =>
+    match t with
+    | GenNode 0 [] => Badd
+    | GenNode 1 [] => Band
+    | GenNode 2 [] => Bcmp
+    | GenNode 3 [] => Bdiv
+    | GenNode 4 [] => Beq
+    | GenNode 5 [] => Bge
+    | GenNode 6 [] => Bgt
+    | GenNode 7 [] => Ble
+    | GenNode 8 [] => Blt
+    | GenNode 9 [] => Bmul
+    | GenNode 10 [] => Bneq
+    | GenNode 11 [] => Bor
+    | GenNode 12 [] => Bmod
+    | GenNode 13 [] => Bshl
+    | GenNode 14 [] => Bshr
+    | GenNode 15 [] => Bsub
+    | GenNode 16 [] => Bxor
+    | GenNode 17 [] => Bdotp
+    | GenNode 18 [] => Bdotip
+    | GenNode 19 [GenLeaf op] => Bunsupported op
+    | _ => Badd	(* dummy *)
+    end)).
+  abstract (by intros []).
+Defined.
 
 Variant AtomicOp : Set :=
 | AO__atomic_load
@@ -96,7 +165,7 @@ Variant BuiltinFn : Set :=
 Proof. solve_decision. Defined.
 
 (** * Casts *)
-Inductive Cast : Set :=
+Inductive Cast' {type : Set} : Set :=
 | Cdependent (* this doesn't have any semantics *)
 | Cbitcast	(** TODO (FM-3431): This explicit cast expression could carry the type as written *)
 | Clvaluebitcast	(** TODO (FM-3431): Drop this constructor? *)
@@ -132,16 +201,18 @@ Inductive Cast : Set :=
 | C2void
 | Cuser        (conversion_function : obj_name)	(** TODO (FM-3431): Consider just emitting the method call *)
 | Creinterpret (_ : type)
-| Cstatic      (_ : Cast)
+| Cstatic      (_ : Cast')
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type).
+#[global] Arguments Cast' _ : clear implicits, assert.
 (**
 TODO (FM-3431): For the explicit casts, we could embed the type as
 written and compute the value category (rather than annote `Ecast`
 with a value category).
 *)
-#[global] Instance Cast_eq_dec: EqDecision Cast.
+#[global] Instance Cast_eq_dec {type : Set} `{!EqDecision type} : EqDecision (Cast' type).
 Proof. solve_decision. Defined.
+Notation Cast := (Cast' type).
 
 (** * References *)
 Variant VarRef : Set :=
@@ -157,6 +228,20 @@ Proof. solve_decision. Defined.
 Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
 #[global] Instance: EqDecision ValCat.
 Proof. solve_decision. Defined.
+#[global] Instance ValCat_countable : Countable ValCat.
+Proof.
+  apply (inj_countable
+    (fun vc => match vc with Lvalue => 1 | Prvalue => 2 | Xvalue => 3 end)
+    (fun n =>
+    match n with
+    | 1 => Some Lvalue
+    | 2 => Some Prvalue
+    | 3 => Some Xvalue
+    | _ => None
+    end)
+  )%positive.
+  abstract (by intros []).
+Defined.
 
 Variant OffsetInfo : Set :=
   | Oo_Field (_ : field).
@@ -238,7 +323,10 @@ Inductive Expr : Set :=
 | Earrayloop_init (oname : N) (src : Expr) (level : N) (length : N) (init : Expr) (_ : type)
 | Earrayloop_index (level : N) (_ : type)
 | Eopaque_ref (name : N) (_ : ValCat) (_ : type)
-| Eunsupported (_ : bs) (_ : ValCat) (_ : type).
+| Eunsupported (_ : bs) (_ : ValCat) (_ : type)
+.
+Notation MethodRef := ((obj_name * call_type * type) + Expr)%type (only parsing).
+
 #[global] Instance Expr_eq_dec : EqDecision Expr.
 Proof.
   rewrite /RelDecision /Decision.
