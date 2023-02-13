@@ -77,7 +77,7 @@ private:
         switch_st(PrettyState::ESCAPE);
 
         char buf[25];
-        sprintf(buf, "%02x", c);
+        snprintf(buf, sizeof buf, "%02x", c);
         print.output() << "(BS.String Byte.x" << buf << " ";
         parens_to_close++;
     }
