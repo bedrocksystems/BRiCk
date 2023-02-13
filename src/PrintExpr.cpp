@@ -20,6 +20,14 @@
 using namespace clang;
 using namespace fmt;
 
+bool
+is_dependent(const Expr *expr) {
+    return static_cast<bool>(
+        expr->getDependence() &
+        ExprDependence::TypeValueInstantiation
+    );
+}
+
 // todo(gmm): this is duplicated!
 bool
 is_builtin(const Decl* d) {
@@ -98,6 +106,7 @@ private:
     enum Done : unsigned {
         V = 1,
         T = 2,
+        O = 4,
         VT = V | T,
     };
 
@@ -110,6 +119,10 @@ private:
         if (want & Done::T) {
             print.output() << fmt::nbsp;
             cprint.printQualType(expr->getType(), print);
+        }
+        if (want & Done::O) {
+            print.output() << fmt::nbsp;
+            cprint.printQualTypeOption(expr->getType(), print);
         }
         print.end_ctor();
     }
@@ -200,15 +213,25 @@ public:
         logging::die();
     }
 
-    void VisitExpr(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
-                   const ASTContext& ctxt, OpaqueNames&) {
+    void unsupported_expr(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint) {
         using namespace logging;
-        unsupported() << "unrecognized expression '" << expr->getStmtClassName()
-                      << "' at " << cprint.sourceRange(expr->getSourceRange())
-                      << "\n";
+        unsupported()
+            << cprint.sourceLocation(expr->getBeginLoc())
+            << ": warning: unsupported expression (" << expr->getStmtClassName() << ")\n";
+        #if CLANG_VERSION_MAJOR >= 11
+            expr->dump(debug(), cprint.getContext());
+        #else
+            expr->dump(debug());
+        #endif
+
         print.ctor("Eunsupported");
         print.str(expr->getStmtClassName());
         done(expr, print, cprint, Done::VT);
+    }
+
+    void VisitExpr(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
+                   const ASTContext& ctxt, OpaqueNames&) {
+        unsupported_expr(expr, print, cprint);
     }
 
 #if CLANG_VERSION_MAJOR >= 11
@@ -277,6 +300,7 @@ public:
             cprint.printExpr(expr->getLHS(), print);
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
+            // TODO: Can be overloaded
             assert(expr->getRHS()->getType() == expr->getType() &&
                    "types must match");
             print.end_ctor(); // no type information
@@ -286,6 +310,7 @@ public:
             cprint.printExpr(expr->getLHS(), print);
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
+            // TODO: Can be overloaded
             assert(expr->getType().getTypePtr()->isBooleanType() &&
                    "&& is a bool");
             print.end_ctor(); // no type information
@@ -295,6 +320,7 @@ public:
             cprint.printExpr(expr->getLHS(), print);
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
+            // TODO: Can be overloaded
             assert(expr->getType().getTypePtr()->isBooleanType() &&
                    "|| is a bool");
             print.end_ctor(); // no type information
@@ -322,7 +348,7 @@ public:
         cprint.printExpr(expr->getLHS(), print, li);
         print.output() << fmt::nbsp;
         cprint.printExpr(expr->getRHS(), print, li);
-        done(expr, print, cprint);
+        done(expr, print, cprint, print.templates() ? Done::O : Done::T);
     }
 
     void VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr* expr,
@@ -443,9 +469,45 @@ public:
         }
     }
 
+    void VisitUnresolvedLookupExpr(const UnresolvedLookupExpr* expr,
+            CoqPrinter& print, ClangPrinter& cprint,
+            const ASTContext&, OpaqueNames&) {
+        if (!print.templates())
+            return unsupported_expr(expr, print, cprint);
+
+        auto name = expr->getName();
+        switch (name.getNameKind()) {
+        case DeclarationName::NameKind::Identifier:
+            /*
+            Example: A function name that couldn't be resolved due to an
+            argument depending on a template parameter.
+            */
+
+            print.str(name.getAsString());
+            break;
+
+        default:
+            return unsupported_expr(expr, print, cprint);
+        }
+    }
+
     void VisitCallExpr(const CallExpr* expr, CoqPrinter& print,
                        ClangPrinter& cprint, const ASTContext&,
                        OpaqueNames& li) {
+        if (print.templates() && is_dependent(expr)) {
+            /*
+            Either the function or an argument is dependent.
+            */
+            print.ctor("Eunresolved_call");
+            cprint.printExpr(expr->getCallee(), print, li);
+            print.output() << fmt::line;
+            print.list(expr->arguments(), [&](auto print, auto i) {
+                cprint.printExpr(i, print, li);
+            });
+            print.end_ctor();
+            return;
+        }
+
         print.ctor("Ecall");
         cprint.printExpr(expr->getCallee(), print, li);
         print.output() << fmt::line;
@@ -755,7 +817,7 @@ public:
         cprint.printExpr(expr->getLHS(), print, li);
         print.output() << fmt::nbsp;
         cprint.printExpr(expr->getRHS(), print, li);
-        done(expr, print, cprint);
+        done(expr, print, cprint, print.templates() ? Done::O : Done::T);
     }
 
     void VisitCXXConstructExpr(const CXXConstructExpr* expr, CoqPrinter& print,
@@ -938,6 +1000,36 @@ public:
                         ClangPrinter& cprint, const ASTContext& ctxt,
                         OpaqueNames& li) {
         this->Visit(e->getSubExpr(), print, cprint, ctxt, li);
+    }
+
+    void VisitParenListExpr(const ParenListExpr* expr, CoqPrinter& print,
+            ClangPrinter& cprint, const ASTContext& ctxt,
+            OpaqueNames& names) {
+        if (!print.templates())
+            return unsupported_expr(expr, print, cprint);
+        assert (is_dependent(expr));
+
+        print.ctor("Eunresolved_parenlist");
+
+        cprint.printQualTypeOption(expr->getType(), print);
+        print.output() << fmt::nbsp;
+
+        // `print.list` unavailable because there's no constant
+        // version of `ParenListExpr::exprs`.
+        // TODO: Define and use iterator over integer ranges.
+
+        auto n = expr->getNumExprs();
+        if (n == 0)
+            print.output() << "nil";
+        else {
+            print.begin_list();
+            for (auto i=0; i<n; i++){
+                cprint.printExpr(expr->getExpr(i), print, names);
+                print.cons();
+            }
+            print.end_list();
+        }
+        print.end_ctor();
     }
 
     void VisitInitListExpr(const InitListExpr* expr, CoqPrinter& print,
@@ -1333,19 +1425,6 @@ public:
 PrintExpr PrintExpr::printer;
 
 void
-ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
-    auto depth = print.output().get_depth();
-    auto li = OpaqueNames();
-    PrintExpr::printer.Visit(expr, print, *this, *this->context_, li);
-    if (depth != print.output().get_depth()) {
-        using namespace logging;
-        fatal() << "Error: BUG indentation bug in during: "
-                << expr->getStmtClassName() << "\n";
-        assert(false);
-    }
-}
-
-void
 ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print,
                         OpaqueNames& li) {
     auto depth = print.output().get_depth();
@@ -1356,4 +1435,10 @@ ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print,
                 << expr->getStmtClassName() << "\n";
         assert(false);
     }
+}
+
+void
+ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
+    OpaqueNames names;
+    printExpr(expr, print, names);
 }

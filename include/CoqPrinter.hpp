@@ -11,7 +11,13 @@
 
 class CoqPrinter {
 public:
-    CoqPrinter(fmt::Formatter& output) : output_(output) {}
+    CoqPrinter(fmt::Formatter& output, bool templates) : output_(output), templates_(templates) {}
+
+    bool templates() const { return templates_; }
+
+    fmt::Formatter& type() {
+        return this->output_ << (templates() ? "Mtype" : "type");
+    }
 
     fmt::Formatter& begin_tuple() {
         return this->output_ << "(";
@@ -129,10 +135,11 @@ public:
     }
 
 public:
-    fmt::Formatter& output() {
+    fmt::Formatter& output() const {
         return this->output_;
     }
 
 private:
     fmt::Formatter& output_;
+    const bool templates_;
 };

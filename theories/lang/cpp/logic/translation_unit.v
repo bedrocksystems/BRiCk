@@ -62,7 +62,7 @@ Section with_cpp.
   (** [is_strict_valid o] states that if the declaration [o] occurs in a
       translation unit, the pointer to it is guaranteed to be strictly valid.
    *)
-  Definition is_strict_valid o : Prop :=
+  Definition is_strict_valid (o : option ObjValue) : Prop :=
     match o with
     | None => False
     | Some (Ovar t _) =>

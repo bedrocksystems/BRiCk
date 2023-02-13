@@ -423,6 +423,23 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
     // note(gmm): Classify doesn't work on dependent types which occur in templates
     // that clang can't completely eliminate.
 
+    if (print.templates()) {
+        if (d->isLValue())
+            print.output() << "Lvalue";
+        else if (d->isPRValue())
+            print.output() << "Prvalue";
+        else if (d->isXValue())
+            print.output() << "Xvalue";
+        else{
+            using namespace logging;
+            fatal()
+                << "Error: cannot determine value category"
+                << " (at " << sourceRange(d->getSourceRange()) << ")\n";
+            die();
+        }
+        return;
+    }
+
     auto Class = d->Classify(*this->context_);
     if (Class.isLValue()) {
         print.output() << "Lvalue";
@@ -467,6 +484,11 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
                 << " (at " << sourceRange(decl->getSourceRange()) << ")\n";
         die();
     }
+}
+
+std::string
+ClangPrinter::sourceLocation(const SourceLocation loc) const {
+    return loc.printToString(this->context_->getSourceManager());
 }
 
 std::string

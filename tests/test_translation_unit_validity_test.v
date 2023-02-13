@@ -25,7 +25,8 @@ Goal complete_translation_unit (globals module) (symbols module).
 Proof.
   rewrite /complete_translation_unit /complete_type_table /complete_symbol_table.
   (* split; (unshelve eapply map_Forall_to_list; refine _; [shelve..|]). *)
-  split; apply map_Forall_to_list.
+  split.
+  all: remember (fun _ _ => _) as P; apply (map_Forall_to_list P); subst.
   all: remember (map_to_list _) as l; lazy in Heql; subst.
   #[local] Opaque module.
   (*all: repeat apply List.Forall_cons; rewrite /type_of_value/=/qual_norm/=; eauto 20.

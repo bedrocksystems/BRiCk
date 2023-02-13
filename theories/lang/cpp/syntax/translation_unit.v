@@ -9,6 +9,10 @@ From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
 #[local] Set Primitive Projections.
 
+#[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
+#[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
+#[local] Tactic Notation "solve_decision" := intros; solve_decision.
+
 (** Record an offset in _bits_. *)
 Record LayoutInfo : Set :=
 { li_offset : Z }.
@@ -23,42 +27,51 @@ Variant InitPath : Set :=
 #[global] Instance: EqDecision InitPath.
 Proof. solve_decision. Defined.
 
-Record Initializer :=
+Record Initializer' {type Expr : Set} : Set := Build_Initializer
   { init_path : InitPath
   ; init_type : type
   ; init_init : Expr }.
-#[global] Instance: EqDecision Initializer.
+#[global] Arguments Initializer' _ _ : clear implicits, assert.
+#[global] Arguments Build_Initializer {_ _} &.
+#[global] Instance: EqDecision2 Initializer'.
 Proof. solve_decision. Defined.
+Notation Initializer := (Initializer' type Expr).
 
-Record Ctor : Set :=
+Record Ctor' {type Expr : Set} : Set := Build_Ctor
 { c_class  : globname
 ; c_params : list (ident * type)
 ; c_cc     : calling_conv
 ; c_arity  : function_arity
-; c_body   : option (OrDefault (list Initializer * Stmt))
+; c_body   : option (OrDefault (list (Initializer' type Expr) * Stmt' type Expr))
 }.
-#[global] Instance: EqDecision Ctor.
+#[global] Arguments Ctor' _ _ : clear implicits, assert.
+#[global] Arguments Build_Ctor {_ _} &.
+#[global] Instance: EqDecision2 Ctor'.
 Proof. solve_decision. Defined.
+Notation Ctor := (Ctor' type Expr).
 
-Record Dtor : Set :=
+Record Dtor' {type Expr : Set} : Set := Build_Dtor
 { d_class  : globname
 ; d_cc     : calling_conv
-; d_body   : option (OrDefault Stmt)
+; d_body   : option (OrDefault (Stmt' type Expr))
 }.
-#[global] Instance: EqDecision Dtor.
+#[global] Arguments Dtor' _ _ : clear implicits, assert.
+#[global] Arguments Build_Dtor {_ _} &.
+#[global] Instance: EqDecision2 Dtor'.
 Proof. solve_decision. Defined.
+Notation Dtor := (Dtor' type Expr).
 
 Variant FunctionBody' {type Expr : Set} : Set :=
 | Impl (_ : Stmt' type Expr)
 | Builtin (_ : BuiltinFn)
 .
 #[global] Arguments FunctionBody' _ _ : clear implicits, assert.
-#[global] Instance FunctionBody_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
-  EqDecision (FunctionBody' type Expr).
+#[global] Arguments Impl _ _ &.
+#[global] Instance: EqDecision2 FunctionBody'.
 Proof. solve_decision. Defined.
 Notation FunctionBody := (FunctionBody' type Expr).
 
-Record Func' {type Expr : Set} : Set := Build_Func'
+Record Func' {type Expr : Set} : Set := Build_Func
 { f_return : type
 ; f_params : list (ident * type)
 ; f_cc     : calling_conv
@@ -66,36 +79,40 @@ Record Func' {type Expr : Set} : Set := Build_Func'
 ; f_body   : option (FunctionBody' type Expr)
 }.
 #[global] Arguments Func' _ _ : clear implicits, assert.
-#[global] Instance Func_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
-  EqDecision (Func' type Expr).
+#[global] Arguments Build_Func {_ _} &.
+#[global] Instance: EqDecision2 Func'.
 Proof. solve_decision. Defined.
 Notation Func := (Func' type Expr).
-Notation Build_Func := (Build_Func' type Expr).
 
-Record Method : Set :=
+Record Method' {type Expr : Set} : Set := Build_Method
 { m_return  : type
 ; m_class   : globname
 ; m_this_qual : type_qualifiers
 ; m_params  : list (ident * type)
 ; m_cc      : calling_conv
 ; m_arity   : function_arity
-; m_body    : option (OrDefault Stmt)
+; m_body    : option (OrDefault (Stmt' type Expr))
 }.
-#[global] Instance: EqDecision Method.
+#[global] Arguments Method' _ _ : clear implicits, assert.
+#[global] Arguments Build_Method {_ _} &.
+#[global] Instance: EqDecision2 Method'.
 Proof. solve_decision. Defined.
+Notation Method := (Method' type Expr).
 
-Record Member : Set := mkMember
+Record Member' {type Expr : Set} : Set := mkMember
 { mem_name : ident
 ; mem_type : type
 ; mem_mutable : bool
 ; mem_init : option Expr
 ; mem_layout : LayoutInfo }.
-#[global] Instance: EqDecision Member.
+#[global] Arguments Member' _ _ : clear implicits, assert.
+#[global] Arguments mkMember {_ _} &.
+#[global] Instance: EqDecision2 Member'.
 Proof. solve_decision. Defined.
+Notation Member := (Member' type Expr).
 
-
-Record Union : Set :=
-{ u_fields : list Member
+Record Union' {type Expr : Set} : Set := Build_Union
+{ u_fields : list (Member' type Expr)
   (* ^ fields with type, initializer, and layout information *)
 ; u_dtor : obj_name
   (* ^ the name of the destructor *)
@@ -108,8 +125,11 @@ Record Union : Set :=
 ; u_alignment : N
   (* ^ alignment of the union *)
 }.
-#[global] Instance: EqDecision Union.
+#[global] Arguments Union' _ _ : clear implicits, assert.
+#[global] Arguments Build_Union {_ _} &.
+#[global] Instance: EqDecision2 Union'.
 Proof. solve_decision. Defined.
+Notation Union := (Union' type Expr).
 
 
 Variant LayoutType : Set := POD | Standard | Unspecified.
@@ -117,10 +137,10 @@ Variant LayoutType : Set := POD | Standard | Unspecified.
 Proof. solve_decision. Defined.
 
 
-Record Struct : Set :=
+Record Struct' {type Expr : Set} : Set := Build_Struct
 { s_bases : list (globname * LayoutInfo)
   (* ^ base classes *)
-; s_fields : list Member
+; s_fields : list (Member' type Expr)
   (* ^ fields with type, initializer, and layout information *)
 ; s_virtuals : list (obj_name * option obj_name)
   (* ^ function_name -> symbol *)
@@ -146,18 +166,23 @@ Record Struct : Set :=
 ; s_alignment : N
   (* ^ alignment of the structure *)
 }.
-#[global] Instance: EqDecision Struct.
+#[global] Arguments Struct' _ _ : clear implicits, assert.
+#[global] Arguments Build_Struct {_ _} &.
+#[global] Instance: EqDecision2 Struct'.
 Proof. solve_decision. Defined.
+Notation Struct := (Struct' type Expr).
 
-Definition has_vtable (s : Struct) : bool :=
+Definition has_vtable {type Expr} (s : Struct' type Expr) : bool :=
   match s.(s_virtuals) with
   | nil => false
   | _ :: _ => true
   end.
+#[global] Arguments has_vtable _ _ & _ : assert.
 
 (* [has_virtual_dtor s] returns true if the destructor is virtual. *)
-Definition has_virtual_dtor (s : Struct) : bool :=
+Definition has_virtual_dtor {type Expr} (s : Struct' type Expr) : bool :=
   List.existsb (fun '(a,_) => bool_decide (a = s.(s_dtor))) s.(s_virtuals).
+#[global] Arguments has_virtual_dtor _ _ & _ : assert.
 
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
 #[global] Instance: EqDecision Ctor_type.
@@ -192,14 +217,25 @@ Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
   end%bs.
 
 (* Values in Object files. These can be externed. *)
-Variant ObjValue : Set :=
+Variant ObjValue' {type Expr : Set} : Set :=
 | Ovar         (_ : type) (_ : option Expr)
-| Ofunction    (_ : Func)
-| Omethod      (_ : Method)
-| Oconstructor (_ : Ctor)
-| Odestructor  (_ : Dtor).
-#[global] Instance: EqDecision ObjValue.
+| Ofunction    (_ : Func' type Expr)
+| Omethod      (_ : Method' type Expr)
+| Oconstructor (_ : Ctor' type Expr)
+| Odestructor  (_ : Dtor' type Expr).
+#[global] Arguments ObjValue' _ _ : clear implicits, assert.
+#[global] Arguments Ovar _ _ &.
+#[global] Arguments Ofunction _ _ &.
+#[global] Arguments Omethod _ _ &.
+#[global] Arguments Oconstructor _ _ &.
+#[global] Arguments Odestructor _ _ &.
+#[global] Instance: EqDecision2 ObjValue'.
 Proof. solve_decision. Defined.
+Notation ObjValue := (ObjValue' type Expr).
+
+(**
+TODO: [Tmember_func], [type_of_value] seem misplaced
+*)
 
 (* [Tmember_func ty fty] constructs the function type for a
      member function that takes a [this] parameter of [ty]
@@ -229,15 +265,22 @@ Definition type_of_value (o : ObjValue) : type :=
     Tmember_func (Tnamed d.(d_class)) $ Tfunction (cc:=d.(d_cc)) Tvoid nil
   end.
 
-Variant GlobDecl : Set :=
+Variant GlobDecl' {type Expr : Set} : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
-| Gunion    (_ : Union) (* union body *)
-| Gstruct   (_ : Struct) (* struct body *)
+| Gunion    (_ : Union' type Expr) (* union body *)
+| Gstruct   (_ : Struct' type Expr) (* struct body *)
 | Genum     (_ : type) (_ : list ident) (* *)
 | Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
 | Gtypedef  (_ : type).
-#[global] Instance: EqDecision GlobDecl.
+#[global] Arguments GlobDecl' _ _ : clear implicits, assert.
+#[global] Arguments Gunion _ _ &.
+#[global] Arguments Gstruct _ _ &.
+#[global] Arguments Genum _ _ &.
+#[global] Arguments Gconstant _ _ &.
+#[global] Arguments Gtypedef _ _ &.
+#[global] Instance: EqDecision2 GlobDecl'.
 Proof. solve_decision. Defined.
+Notation GlobDecl := (GlobDecl' type Expr).
 
 Definition symbol_table : Type := IM.t ObjValue.
 
@@ -245,6 +288,10 @@ Definition type_table : Type := IM.t GlobDecl.
 
 #[global] Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
 #[global] Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
+
+(**
+TODO: The following work on complete types seems misplaced.
+*)
 
 Fixpoint ref_to_type (t : type) : option type :=
   match t with
@@ -481,7 +528,7 @@ apply: map_Forall_dec.
 (*
 TODOs for FM-216:
 1. prove [complete_type_table_dec] above with an efficient checker.
-2. add [bool_decide (complete_type_table globals = true] to translation_unit;
+2. add [bool_decide (complete_type_table globals = true]) to translation_unit;
    that's automatically proof-irrelevant, and proofs are just cheap [eq_refl].
 3. add any helper lemmas, say for proving equality of [translation_unit] from
    equality of the relevant componets.
@@ -495,7 +542,7 @@ Goal: enable recursion on proofs of [complete_type_table], e.g. for defining
 [anyR] (FM-215).
 *)
 
-Variant GlobalInit : Set :=
+Variant GlobalInit' {Expr : Set} : Set :=
   (* initialization by an expression *)
 | ExprInit (_ : Expr)
   (* zero initialization *)
@@ -511,16 +558,25 @@ Variant GlobalInit : Set :=
      See https://eel.is/c++draft/stmt.dcl#3
    *)
 | FunctionInit (at_most_once : bool).
-
+#[global] Arguments GlobalInit' _ : clear implicits, assert.
+#[global] Arguments ExprInit _ &.
+#[global] Instance: EqDecision1 GlobalInit'.
+Proof. solve_decision. Defined.
+Notation GlobalInit := (GlobalInit' Expr).
 
 (** [GlobalInitializer] represents an initializer for a
     global variable.
  *)
-Record GlobalInitializer : Set :=
+Record GlobalInitializer' {type Expr : Set} : Set := Build_GlobalInitializer
   { g_name : obj_name
   ; g_type : type
-  ; g_init : GlobalInit
+  ; g_init : GlobalInit' Expr
   }.
+#[global] Arguments GlobalInitializer' _ _ : clear implicits, assert.
+#[global] Arguments Build_GlobalInitializer {_ _} &.
+#[global] Instance: EqDecision2 GlobalInitializer'.
+Proof. solve_decision. Defined.
+Notation GlobalInitializer := (GlobalInitializer' type Expr).
 
 (** An initialization block is a sequence of variable initializers
     that will be run when the compilation unit is loaded.
@@ -532,9 +588,10 @@ Record GlobalInitializer : Set :=
     This means that, to be completely precise, this type needs to be
     something a bit more exotic that permits concurrent initialization.
  *)
-Definition InitializerBlock : Set :=
-  list GlobalInitializer.
-#[global] Instance InitializerBlock_empty : Empty InitializerBlock := nil.
+Definition InitializerBlock' (type Expr : Set) : Set :=
+  list (GlobalInitializer' type Expr).
+Notation InitializerBlock := (InitializerBlock' type Expr).
+#[global] Instance InitializerBlock_empty {type Expr} : Empty (InitializerBlock' type Expr) := nil.
 
 (**
 A [translation_unit] value represents all the statically known information
