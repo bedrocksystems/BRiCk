@@ -153,6 +153,36 @@ Proof.
   apply big_sepL_fmap.
 Qed.
 
+Lemma big_sepM_lookup_acc' {PROP : bi} `{EqDecision K} `{Countable K} {A}
+    (Φ : K -> A -> PROP) (m : gmap K A) (i : K) (x : A) :
+  m !! i = Some x →
+  ([∗ map] k↦y ∈ m, Φ k y)
+  ⊢ Φ i x ∗ (Forall x', (Φ i x' -∗ ([∗ map] k↦y ∈ <[i:=x']> m, Φ k y))).
+Proof.
+  intros.
+  rewrite big_sepM_delete=> //. apply bi.sep_mono_r.
+  iIntros "map_without" (x') "Phi'".
+  rewrite big_sepM_insert_delete.
+  by iFrame.
+Qed.
+
+Lemma big_sepM2_lookup_acc' {PROP : bi} `{EqDecision K} `{Countable K} {A B}
+    (Φ : K -> A -> B -> PROP) (m1 : gmap K A) (m2 : gmap K B) (i : K) (x : A) :
+  m1 !! i = Some x →
+  ([∗ map] k↦y;z ∈ m1;m2, Φ k y z)
+  ⊢ (∃ y, ([| m2 !! i = Some y |] ∗ Φ i x y))
+  ∗ (∀ x' y',
+      (Φ i x' y' -∗ ([∗ map] k↦x;y ∈ <[i:=x']> m1; <[i:=y']> m2, Φ k x y))).
+Proof.
+  intros.
+  rewrite big_sepM2_delete_l=> //.
+  iIntros "(% & % & Ha & Hb)".
+  iSplitL "Ha".
+  - iExists _; by iFrame.
+  - iIntros (x' y') "HΦ".
+    rewrite big_sepM2_insert_delete; iFrame.
+Qed.
+
 (** ** Powers in BIs *)
 (**
 Overview:
