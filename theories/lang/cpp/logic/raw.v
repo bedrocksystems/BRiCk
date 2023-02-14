@@ -9,6 +9,7 @@ From iris.bi.lib Require Import fractional.
 
 Require Import bedrock.lang.cpp.bi.cfractional.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
+Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -216,4 +217,100 @@ Section with_Σ.
       Qed.
     End rawsR.
   End Theory.
+
 End with_Σ.
+
+Module Endian.
+  Section with_Σ.
+    Context `{Σ : cpp_logic} {σ : genv}.
+    Definition to_big_end (sz : bitsize) : Z -> Z :=
+      match genv_byte_order σ with
+      | Little => bswap sz
+      | Big => fun x => x
+      end.
+
+    Definition to_little_end (sz : bitsize) : Z -> Z :=
+      match genv_byte_order σ with
+      | Big => bswap sz
+      | Little => fun x => x
+      end.
+
+    Definition to_end (endianness: endian) (sz: bitsize) : Z -> Z :=
+      match endianness with
+      | Big    => to_big_end sz
+      | Little => to_little_end sz
+      end.
+
+    Definition of_big_end := @to_big_end.
+    (** move to builtins.v *)
+    Definition of_little_end := @to_little_end.
+    (** move to builtins.v *)
+    Definition of_end := @to_end.
+
+    (** move to raw.v *)
+    Lemma decodes_uint_to_end :
+      forall endianness sz l v,
+        length l = bytesNat sz ->
+        decodes endianness Unsigned l v ->
+        decodes_uint l (to_end endianness sz v).
+    Proof.
+      move=> endianness sz l v Hsz [Hbyte Hdecode].
+      rewrite /decodes in Hdecode.
+      rewrite /decodes_uint/to_end/to_little_end/to_big_end.
+      split; first assumption.
+      repeat case_match; eauto;
+        rewrite z_to_bytes._Z_from_bytes_eq/z_to_bytes._Z_from_bytes_def;
+        rewrite z_to_bytes._Z_from_bytes_eq/z_to_bytes._Z_from_bytes_def in Hdecode;
+        [ | replace l with (rev (rev l)) by (apply rev_involutive)];
+        erewrite z_to_bytes._Z_from_bytes_unsigned_le_bswap; eauto;
+        now rewrite rev_length.
+    Qed.
+
+    Lemma _Z_to_bytes_has_type (cnt : nat) (endianness : endian) sign (z : Z) :
+      List.Forall (fun (v : N) => has_type (Vn v) Tu8) (_Z_to_bytes cnt endianness sign z).
+    Proof.
+      eapply List.Forall_impl.
+      2: { exact: _Z_to_bytes_range. }
+      move => ? /= ?.
+      rewrite -has_int_type.
+      rewrite/bound/min_val/max_val.
+      lia.
+    Qed.
+
+    Lemma decodes_Z_to_bytes_Unsigned:
+      forall (sz : bitsize) (n : nat)  (endianness : endian) (z : Z),
+        (bytesNat sz = n)%nat ->
+        has_type z (Tnum sz Unsigned) ->
+        decodes endianness Unsigned (_Z_to_bytes n endianness Unsigned z) z.
+    Proof.
+      intros * Hsz Hty; subst.
+      rewrite /decodes.
+      split.
+      2: {
+        erewrite _Z_from_to_bytes_roundtrip; try reflexivity.
+        move: Hty.
+        rewrite -has_int_type.
+        rewrite/bound/min_val/max_val.
+        destruct sz; rewrite/bytesNat; split; lia.
+      }
+      exact: _Z_to_bytes_has_type.
+    Qed.
+
+    (** move to raws.v? if it knows about has_type *)
+    Lemma raw_bytes_of_val_raw_int_byte (z : Z) :
+      has_type z Tu16 ->
+      raw_bytes_of_val σ Tu16 (to_big_end W16 z) (map raw_int_byte (_Z_to_bytes 2 Big Unsigned z)).
+    Proof.
+      rewrite raw_byte_of_int_eq.
+      exists (_Z_to_bytes 2 Big Unsigned z).
+      intuition.
+      2: by rewrite _Z_to_bytes_length //.
+      have -> : to_big_end W16 z = to_end Big W16 z.
+      { reflexivity. }
+      apply: decodes_uint_to_end.
+      { rewrite _Z_to_bytes_length; reflexivity. }
+      apply: (decodes_Z_to_bytes_Unsigned W16); try reflexivity.
+      assumption.
+    Qed.
+  End with_Σ.
+End Endian.
