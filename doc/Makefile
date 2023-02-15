@@ -3,7 +3,9 @@
 # See the LICENSE-BedRock file in the repository root for details.
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-ALECTRYON = $(ROOT_DIR)/alectryon/alectryon.py
+
+# cf. <https://github.com/cpitclaudel/alectryon#setup>
+ALECTRYON = $(shell which alectryon)
 export ALECTRYON
 
 COQBIN       = $(shell dirname $(shell which coqc))
@@ -49,7 +51,7 @@ TANGLE_OUTPUTS = $(patsubst $(TANGLE_DIR)/%.v,$(SPHINXTANGLEDIR)/%.rst,$(TANGLE_
 # This is responsible for building .rst files from .v files with Alectryon comments
 $(SPHINXTANGLEDIR)/%.rst: $(TANGLE_DIR)/%.v
 	@mkdir -p $(SPHINXDIR)/tangles
-	python3 $(ALECTRYON) --frontend coq+rst --backend rst $< -o $@
+	$(ALECTRYON) --frontend coq+rst --backend rst $< -o $@
 
 tangle: $(TANGLE_OUTPUTS)
 
