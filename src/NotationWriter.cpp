@@ -78,14 +78,13 @@ void
 write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
     print.output() << "Module _'." << fmt::indent << fmt::line;
 
-    // todo(gmm): i would like to generate function names.
-    for (auto def : mod.definitions()) {
+    auto write_notations = [&](const clang::NamedDecl *def) {
         std::string s_notation;
         llvm::raw_string_ostream notation{s_notation};
         if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
-            if (not print_path(notation, fd->getParent(), true)) {
-                continue;
-            }
+            if (not print_path(notation, fd->getParent(), true))
+                return;
+
             notation << fd->getNameAsString();
             print.output() << "Notation \"'" << s_notation;
             print.output() << fd->getNameAsString() << "'\" :=" << fmt::nbsp;
@@ -93,7 +92,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             print.output() << " (in custom cppglobal at level 0)." << fmt::line;
         } else if (const RecordDecl *rd = dyn_cast<RecordDecl>(def)) {
             if (not print_path(notation, rd, false))
-                continue;
+                return;
 
             if (!rd->isAnonymousStructOrUnion() &&
                 rd->getNameAsString() != "") {
@@ -119,7 +118,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             // todo(gmm): skipping due to function overloading
         } else if (const TypedefDecl *td = dyn_cast<TypedefDecl>(def)) {
             if (not print_path(notation, td->getDeclContext(), true))
-                continue;
+                return;
 
             print.output() << "Notation \"'" << s_notation;
             print.output() << td->getNameAsString() << "'\" :=" << fmt::nbsp;
@@ -128,7 +127,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
                            << fmt::line;
         } else if (const auto *ta = dyn_cast<TypeAliasDecl>(def)) {
             if (not print_path(notation, ta->getDeclContext(), true))
-                continue;
+                return;
 
             print.output() << "Notation \"'" << s_notation;
             print.output() << ta->getNameAsString() << "'\" :=" << fmt::nbsp;
@@ -142,7 +141,13 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             log(Level::VERBOSE) << "unknown declaration type "
                                 << def->getDeclKindName() << "\n";
         }
-    }
+    };
+
+    // todo(gmm): i would like to generate function names.
+    for (auto def : mod.definitions())
+        write_notations(def);
+    for (auto def : mod.declarations())
+        write_notations(def.first);
 
     print.output() << fmt::outdent << "End _'." << fmt::line;
     print.output() << "Export _'." << fmt::line << fmt::line;
