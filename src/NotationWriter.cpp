@@ -146,7 +146,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
     // todo(gmm): i would like to generate function names.
     for (auto def : mod.definitions())
         write_notations(def);
-    for (auto def : mod.imports())
+    for (auto def : mod.declarations())
         write_notations(def.first);
 
     print.output() << fmt::outdent << "End _'." << fmt::line;

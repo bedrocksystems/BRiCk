@@ -434,11 +434,11 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
 }
 
 void ::Module::add_declaration(const clang::NamedDecl *d) {
-    imports_.push_back(std::make_pair(d, true));
+    declarations_.push_back(std::make_pair(d, true));
 #if 0
-    auto found = imports_.find(d);
-    if (found == imports_.end()) {
-        imports_.insert(std::make_pair(d, true));
+    auto found = declarations_.find(d);
+    if (found == declarations_.end()) {
+        declarations_.insert(std::make_pair(d, true));
     } else {
         logging::debug() << "Error: Duplicate declaration: "
                          << d->getQualifiedNameAsString() << "\n";

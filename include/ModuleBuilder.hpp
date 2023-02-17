@@ -29,18 +29,18 @@ public:
         return asserts_;
     }
 
-    const auto& imports() const {
-        return imports_;
+    const auto& declarations() const {
+        return declarations_;
     }
 
     const auto& definitions() const {
         return definitions_;
     }
 
-    Module() : imports_(), definitions_() {}
+    Module() : declarations_(), definitions_() {}
 
 private:
-    std::list<std::pair<const clang::NamedDecl*, bool>> imports_;
+    std::list<std::pair<const clang::NamedDecl*, bool>> declarations_;
     std::list<const clang::NamedDecl*> definitions_;
 
     std::list<const clang::StaticAssertDecl*> asserts_;

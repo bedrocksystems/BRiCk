@@ -72,7 +72,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                 << fmt::nbsp;
 
             print.begin_list();
-            for (auto entry : mod.imports()) {
+            for (auto entry : mod.declarations()) {
                 if (cprint.printDecl(entry.first, print))
                     print.cons();
             }
