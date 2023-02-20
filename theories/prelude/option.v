@@ -20,6 +20,18 @@
 From elpi Require Import locker.
 From bedrock.prelude Require Import base.
 
+(** * Theory for [is_Some_proj]
+
+[@stdpp.option.is_Some_proj A mx P] extracts the element of type [A]
+from [mx] knowing that [mx] is not a [None].
+
+The theory for [is_Some_proj] is simply [is_Some_proj_eq], which can
+be used in combination with [Some_inj] to switch between [A] and [option A].
+*)
+Lemma is_Some_proj_eq {A : Type} {mx : option A} (P : is_Some mx) :
+  mx = Some (is_Some_proj P).
+Proof. rewrite /is_Some_proj. case_match; [done|by destruct P]. Qed.
+
 (**
 Haskell's [Data.Function.on]
 (https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Function.html#v:on).
