@@ -24,6 +24,19 @@ Export bedrock.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
 
+(** ** Type-level list quantifier *)
+
+Inductive ForallT {A} (P : A -> Type) : list A -> Type :=
+| ForallT_nil : ForallT P []
+| ForallT_cons x l : P x -> ForallT P l -> ForallT P (x :: l).
+
+Definition ForallT_true {A} (P : A -> Type) (go : ∀ x, P x) : ∀ l, ForallT P l :=
+  fix go_list l :=
+  match l with
+  | [] => ForallT_nil _
+  | x :: l => ForallT_cons _ _ _ (go x) (go_list l)
+  end.
+
 (** ** Teach [set_solver] to reason about more list operations, similarly to set
 operations. *)
 
@@ -266,6 +279,35 @@ Section lists.
   Lemma elem_of_zip x1 x2 xs ys :
     (x1, x2) ∈ zip xs ys → x1 ∈ xs ∧ x2 ∈ ys.
   Proof. intros. eauto using elem_of_zip_l, elem_of_zip_r. Qed.
+
+  (** Properties of [Forall] *)
+
+  (** Strengthens [mapM_fmap_Some_inv] by weakening the second premiss *)
+  Lemma mapM_fmap_Forall_Some_inv (f : A -> option B) (g : B -> A) l k :
+    mapM f l = Some k ->
+    Forall (fun x => ∀ y, f x = Some y -> g y = x) l ->
+    g <$> k = l.
+  Proof.
+    intros Hmap Hl. have Hlen := mapM_length _ _ _ Hmap.
+    apply mapM_Some_1 in Hmap. elim: Hl k Hmap Hlen; intros.
+    - by rewrite (nil_length_inv k).
+    - decompose_Forall_hyps. auto with f_equal.
+  Qed.
+
+  Lemma Forall_fmap_fmap_1 (f : A -> B) (g : B -> A) l :
+    Forall (fun x => g (f x) = x) l -> g <$> (f <$> l) = l.
+  Proof.
+    intros. rewrite -list_fmap_compose -{2}(list_fmap_id l).
+    exact: Forall_fmap_ext_1.
+  Qed.
+
+  Lemma Forall_fmap_fmap (f : A -> B) (g : B -> A) l :
+    Forall (fun x => g (f x) = x) l <-> g <$> (f <$> l) = l.
+  Proof.
+    split; first apply Forall_fmap_fmap_1.
+    rewrite -list_fmap_compose -{2}(list_fmap_id l).
+    by rewrite -Forall_fmap_ext.
+  Qed.
 End lists.
 
 Section list_difference.
