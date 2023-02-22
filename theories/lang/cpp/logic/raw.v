@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021,2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -264,17 +264,6 @@ Module Endian.
         [ | replace l with (rev (rev l)) by (apply rev_involutive)];
         erewrite z_to_bytes._Z_from_bytes_unsigned_le_bswap; eauto;
         now rewrite rev_length.
-    Qed.
-
-    Lemma _Z_to_bytes_has_type (cnt : nat) (endianness : endian) sign (z : Z) :
-      List.Forall (fun (v : N) => has_type (Vn v) Tu8) (_Z_to_bytes cnt endianness sign z).
-    Proof.
-      eapply List.Forall_impl.
-      2: { exact: _Z_to_bytes_range. }
-      move => ? /= ?.
-      rewrite -has_int_type.
-      rewrite/bound/min_val/max_val.
-      lia.
     Qed.
 
     Lemma decodes_Z_to_bytes_Unsigned:
