@@ -13,7 +13,7 @@ Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-     arr heap_pred pred.
+     arr builtins heap_pred pred z_to_bytes.
 
 Section with_Σ.
   Context `{Σ : cpp_logic} {σ : genv}.
@@ -223,31 +223,7 @@ End with_Σ.
 Module Endian.
   Section with_Σ.
     Context `{Σ : cpp_logic} {σ : genv}.
-    Definition to_big_end (sz : bitsize) : Z -> Z :=
-      match genv_byte_order σ with
-      | Little => bswap sz
-      | Big => fun x => x
-      end.
 
-    Definition to_little_end (sz : bitsize) : Z -> Z :=
-      match genv_byte_order σ with
-      | Big => bswap sz
-      | Little => fun x => x
-      end.
-
-    Definition to_end (endianness: endian) (sz: bitsize) : Z -> Z :=
-      match endianness with
-      | Big    => to_big_end sz
-      | Little => to_little_end sz
-      end.
-
-    Definition of_big_end := @to_big_end.
-    (** move to builtins.v *)
-    Definition of_little_end := @to_little_end.
-    (** move to builtins.v *)
-    Definition of_end := @to_end.
-
-    (** move to raw.v *)
     Lemma decodes_uint_to_end :
       forall endianness sz l v,
         length l = bytesNat sz ->
@@ -285,7 +261,6 @@ Module Endian.
       exact: _Z_to_bytes_has_type.
     Qed.
 
-    (** move to raws.v? if it knows about has_type *)
     Lemma raw_bytes_of_val_raw_int_byte (z : Z) :
       has_type z Tu16 ->
       raw_bytes_of_val σ Tu16 (to_big_end W16 z) (map raw_int_byte (_Z_to_bytes 2 Big Unsigned z)).
