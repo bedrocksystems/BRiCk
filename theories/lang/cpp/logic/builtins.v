@@ -140,3 +140,32 @@ Section with_Σ.
           (Vptr res :: nil) Q.
 
 End with_Σ.
+
+Section endian_conversion.
+  Context `{Σ : cpp_logic} {σ : genv}.
+
+  Definition to_big_end (sz : bitsize) : Z -> Z :=
+    match genv_byte_order σ with
+    | Little => bswap sz
+    | Big => fun x => x
+    end.
+
+  Definition to_little_end (sz : bitsize) : Z -> Z :=
+    match genv_byte_order σ with
+    | Big => bswap sz
+    | Little => fun x => x
+    end.
+
+  Definition to_end (endianness: endian) (sz: bitsize) : Z -> Z :=
+    match endianness with
+    | Big    => to_big_end sz
+    | Little => to_little_end sz
+    end.
+
+  Definition of_big_end := @to_big_end.
+  (** move to builtins.v *)
+  Definition of_little_end := @to_little_end.
+  (** move to builtins.v *)
+  Definition of_end := @to_end.
+
+End endian_conversion.
