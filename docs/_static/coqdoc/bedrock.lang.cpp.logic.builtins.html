@@ -220,6 +220,51 @@ std::launder (http://eel.is/c++draft/ptr.launder)
 
 <br/>
 <span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#106674b72acf13fb9e22a04f2639dc9f"><span class="id" title="section">with_Σ</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="endian_conversion" class="idref" href="#endian_conversion"><span class="id" title="section">endian_conversion</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="ad55bb628a30602c3defc5575918601a" class="idref" href="#ad55bb628a30602c3defc5575918601a"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>} {<a id="08304a5fe01b9b887e728c77caf420c2" class="idref" href="#08304a5fe01b9b887e728c77caf420c2"><span class="id" title="binder">σ</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="to_big_end" class="idref" href="#to_big_end"><span class="id" title="definition">to_big_end</span></a> (<a id="sz:94" class="idref" href="#sz:94"><span class="id" title="binder">sz</span></a> : <a class="idref" href="bedrock.lang.cpp.arith.types.html#bitsize"><span class="id" title="inductive">bitsize</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv_byte_order"><span class="id" title="definition">genv_byte_order</span></a> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#09fe569c66ba545d99544766f58afacd"><span class="id" title="variable">σ</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.arith.types.html#Little"><span class="id" title="constructor">Little</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.arith.builtins.html#bswap"><span class="id" title="definition">bswap</span></a> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#sz:94"><span class="id" title="variable">sz</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.arith.types.html#Big"><span class="id" title="constructor">Big</span></a> =&gt; <span class="id" title="keyword">fun</span> <a id="x:95" class="idref" href="#x:95"><span class="id" title="binder">x</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#x:95"><span class="id" title="variable">x</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="to_little_end" class="idref" href="#to_little_end"><span class="id" title="definition">to_little_end</span></a> (<a id="sz:96" class="idref" href="#sz:96"><span class="id" title="binder">sz</span></a> : <a class="idref" href="bedrock.lang.cpp.arith.types.html#bitsize"><span class="id" title="inductive">bitsize</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv_byte_order"><span class="id" title="definition">genv_byte_order</span></a> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#09fe569c66ba545d99544766f58afacd"><span class="id" title="variable">σ</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.arith.types.html#Big"><span class="id" title="constructor">Big</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.arith.builtins.html#bswap"><span class="id" title="definition">bswap</span></a> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#sz:96"><span class="id" title="variable">sz</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.arith.types.html#Little"><span class="id" title="constructor">Little</span></a> =&gt; <span class="id" title="keyword">fun</span> <a id="x:97" class="idref" href="#x:97"><span class="id" title="binder">x</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#x:97"><span class="id" title="variable">x</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="to_end" class="idref" href="#to_end"><span class="id" title="definition">to_end</span></a> (<a id="endianness:98" class="idref" href="#endianness:98"><span class="id" title="binder">endianness</span></a>: <a class="idref" href="bedrock.lang.cpp.arith.types.html#endian"><span class="id" title="inductive">endian</span></a>) (<a id="sz:99" class="idref" href="#sz:99"><span class="id" title="binder">sz</span></a>: <a class="idref" href="bedrock.lang.cpp.arith.types.html#bitsize"><span class="id" title="inductive">bitsize</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#endianness:98"><span class="id" title="variable">endianness</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.arith.types.html#Big"><span class="id" title="constructor">Big</span></a>    =&gt; <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#to_big_end"><span class="id" title="definition">to_big_end</span></a> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#sz:99"><span class="id" title="variable">sz</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.arith.types.html#Little"><span class="id" title="constructor">Little</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#to_little_end"><span class="id" title="definition">to_little_end</span></a> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#sz:99"><span class="id" title="variable">sz</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="of_big_end" class="idref" href="#of_big_end"><span class="id" title="definition">of_big_end</span></a> := @<a class="idref" href="bedrock.lang.cpp.logic.builtins.html#to_big_end"><span class="id" title="definition">to_big_end</span></a>.<br/>
+</div>
+
+<div class="doc">
+move to builtins.v 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="of_little_end" class="idref" href="#of_little_end"><span class="id" title="definition">of_little_end</span></a> := @<a class="idref" href="bedrock.lang.cpp.logic.builtins.html#to_little_end"><span class="id" title="definition">to_little_end</span></a>.<br/>
+</div>
+
+<div class="doc">
+move to builtins.v 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="of_end" class="idref" href="#of_end"><span class="id" title="definition">of_end</span></a> := @<a class="idref" href="bedrock.lang.cpp.logic.builtins.html#to_end"><span class="id" title="definition">to_end</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.logic.builtins.html#endian_conversion"><span class="id" title="section">endian_conversion</span></a>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
