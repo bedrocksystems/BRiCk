@@ -276,7 +276,6 @@ Elpi Db bedrock.basis.db lp:{{
       std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Typeclass }} _) "[typeclass] typechecking an instance failed",
       coq.ltac.collect-goals Bo [SealedGoal] [],
       coq.ltac.open (coq.ltac.call "try_typeclasses_eauto" []) SealedGoal [],
-      derive.if-verbose (coq.say "[typeclass] Instance:" Grafting Typeclass Bo),
       coq.elpi.accumulate library Db (clause _ Grafting Done),
     ].
 
