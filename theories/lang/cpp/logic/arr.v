@@ -276,11 +276,12 @@ Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
 Arguments arrayR {_ _ _ _} _ _%function_scope _%list_scope : assert.
 #[global] Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
 
-Section with_array_R.
+Module arrayR_proper_ho.
+Section arrayR_proper_ho.
   Context `{Σ : cpp_logic, resolve : genv}.
   Context {X : Type} (R : X -> Rep) (ty : type).
 
-  #[global] Instance arrayR_ne {T : ofe} t n :
+  #[export] Instance arrayR_ne_ho {T : ofe} t n :
     Proper ((dist n ==> dist n) ==> dist n ==> dist n) (arrayR (X:=T) t).
   Proof.
     rewrite arrayR_eq/arrayR_def.
@@ -289,7 +290,7 @@ Section with_array_R.
     induction H' => //=; f_equiv; eauto.
   Qed.
 
-  #[global] Instance arrayR_proper `{Equiv T} t :
+  #[export] Instance arrayR_proper_ho `{Equiv T} t :
     Proper (((≡) ==> (≡)) ==> (≡) ==> (≡)) (arrayR (X:=T) t).
   Proof.
     rewrite arrayR_eq/arrayR_def.
@@ -298,7 +299,7 @@ Section with_array_R.
     induction Hl => //=; f_equiv; eauto.
   Qed.
 
-  #[global] Instance arrayR_mono `{Equiv T} t :
+  #[export] Instance arrayR_mono_ho `{Equiv T} t :
     Proper (((≡) ==> (⊢)) ==> (≡) ==> (⊢)) (arrayR (X:=T) t).
   Proof.
     rewrite arrayR_eq/arrayR_def.
@@ -307,13 +308,44 @@ Section with_array_R.
     induction Hl => //=; f_equiv; eauto.
   Qed.
 
-  #[global] Instance arrayR_flip_mono `{Equiv T} t :
+  #[export] Instance arrayR_flip_mono_ho `{Equiv T} t :
     Proper ((flip (≡) ==> flip (⊢)) ==> flip (≡) ==> flip (⊢)) (arrayR (X:=T) t).
   Proof.
     move => ? ? Hf ? ? Hl.
-    apply arrayR_mono => // ???.
+    apply arrayR_mono_ho => // ???.
     by apply Hf.
   Qed.
+End arrayR_proper_ho.
+End arrayR_proper_ho.
+
+Section with_array_R.
+  Context `{Σ : cpp_logic, resolve : genv}.
+  Context {X : Type} (R : X -> Rep) (ty : type).
+
+  #[global] Instance arrayR_ne {T : ofe} n :
+    Proper (pointwise_relation _ (dist n) ==> (=) ==> dist n) (arrayR (X:=T) ty).
+  Proof.
+    rewrite arrayR_eq/arrayR_def => f g Hf xs _ <-; f_equiv.
+    exact: list_fmap_ext_ne.
+  Qed.
+
+  #[global] Instance arrayR_proper :
+    Proper ((pointwise_relation X (≡)) ==> (=) ==> (≡)) (arrayR ty).
+  Proof.
+    rewrite arrayR_eq/arrayR_def => f g Hf xs _ <-; f_equiv.
+    exact: list_fmap_equiv_ext.
+  Qed.
+
+  #[global] Instance arrayR_mono :
+    Proper (pointwise_relation X (⊢) ==> (=) ==> (⊢)) (arrayR ty).
+  Proof.
+    rewrite arrayR_eq/arrayR_def => f g Hf xs _ <-; f_equiv.
+    decompose_Forall.
+  Qed.
+
+  #[global] Instance arrayR_flip_mono :
+    Proper (pointwise_relation X (flip (⊢)) ==> (=) ==> flip (⊢)) (arrayR ty).
+  Proof. solve_proper. Qed.
 
   Lemma arrayR_nil : arrayR ty R [] -|- validR ** [| is_Some (size_of resolve ty) |].
   Proof. by rewrite arrayR_eq /arrayR_def arrR_nil. Qed.
