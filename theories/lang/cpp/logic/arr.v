@@ -263,6 +263,24 @@ Section with_array_R.
   Context `{Σ : cpp_logic, resolve : genv}.
   Context {X : Type} (R : X -> Rep) (ty : type).
 
+  #[global] Instance arrayR_ne {T : ofe} t n :
+    Proper ((dist n ==> dist n) ==> dist n ==> dist n) (arrayR (X:=T) t).
+  Proof.
+    rewrite arrayR_eq/arrayR_def.
+    move => ? ? H ? ? H'.
+    f_equiv.
+    induction H' => //=; f_equiv; eauto.
+  Qed.
+
+  #[global] Instance arrayR_proper `{Equiv T} t :
+    Proper (((≡) ==> (≡)) ==> (≡) ==> (≡)) (arrayR (X:=T) t).
+  Proof.
+    rewrite arrayR_eq/arrayR_def.
+    move => ? ? Hf ? ? Hl.
+    f_equiv.
+    induction Hl => //=; f_equiv; eauto.
+  Qed.
+
   Lemma arrayR_nil : arrayR ty R [] -|- validR ** [| is_Some (size_of resolve ty) |].
   Proof. by rewrite arrayR_eq /arrayR_def arrR_nil. Qed.
 
