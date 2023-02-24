@@ -4,7 +4,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.algebra Require Import list.
+From bedrock.lang.algebra Require Import list.
 From iris.proofmode Require Import proofmode.
 From bedrock.prelude Require Import numbers.
 From bedrock.lang.bi Require Import observe fractional big_op.
@@ -137,18 +137,35 @@ Section arrR.
     have Hlen := Forall2_length _ _ _ Hl.
     f_equiv. f_equiv. by rewrite Hlen. f_equiv.
     apply big_sepL_gen_ne; first done.
-    move=>k y1 y2 Hl1 Hl2. apply _offsetR_ne, bi.sep_ne, (inj Some); first done.
-    rewrite -Hl1 -Hl2. by apply list_dist_lookup.
+    move=>k y1 y2 Hl1 Hl2. apply _offsetR_ne, bi.sep_ne; first done.
+    move: Hl =>/dist_Forall2 Hl.
+    exact: Forall2_lookup_lr.
   Qed.
+
   #[global] Instance arrR_proper ty : Proper ((≡) ==> (≡)) (arrR ty).
   Proof.
     intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), equiv_Forall2.
     f_equiv. f_equiv. by rewrite Hlen. f_equiv.
     apply big_sepL_gen_proper; first done.
-    move=>k y1 y2 Hl1 Hl2. apply _offsetR_proper, bi.sep_proper, (inj Some); first done.
-    rewrite -Hl1 -Hl2. by apply list_equiv_lookup.
+    move=>k y1 y2 Hl1 Hl2. apply _offsetR_proper, bi.sep_proper; first done.
+    apply equiv_Forall2 in Hl.
+    exact: Forall2_lookup_lr.
   Qed.
+
+  #[global] Instance arrR_mono ty : Proper (Forall2 (⊢) ==> (⊢)) (arrR ty).
+  Proof.
+    intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
+    have Hlen : length l1 = length l2 by exact: Forall2_length.
+    f_equiv. f_equiv. by rewrite Hlen. f_equiv.
+    apply big_sepL_gen_mono; first done.
+    move=>k y1 y2 Hl1 Hl2. apply _offsetR_mono, bi.sep_mono; first done.
+    exact: Forall2_lookup_lr.
+  Qed.
+
+  #[global] Instance arrR_flip_mono ty : Proper (flip (Forall2 (⊢)) ==> flip (⊢)) (arrR ty).
+  Proof. solve_proper. Qed.
+
   (** We don't register this as an instance because it doesn't hold in
       arbitrary non-affine BIs. *)
   Remark arrR_timeless_when_mpred_affine ty Rs :
@@ -279,6 +296,23 @@ Section with_array_R.
     move => ? ? Hf ? ? Hl.
     f_equiv.
     induction Hl => //=; f_equiv; eauto.
+  Qed.
+
+  #[global] Instance arrayR_mono `{Equiv T} t :
+    Proper (((≡) ==> (⊢)) ==> (≡) ==> (⊢)) (arrayR (X:=T) t).
+  Proof.
+    rewrite arrayR_eq/arrayR_def.
+    move => ? ? Hf ? ? Hl.
+    f_equiv.
+    induction Hl => //=; f_equiv; eauto.
+  Qed.
+
+  #[global] Instance arrayR_flip_mono `{Equiv T} t :
+    Proper ((flip (≡) ==> flip (⊢)) ==> flip (≡) ==> flip (⊢)) (arrayR (X:=T) t).
+  Proof.
+    move => ? ? Hf ? ? Hl.
+    apply arrayR_mono => // ???.
+    by apply Hf.
   Qed.
 
   Lemma arrayR_nil : arrayR ty R [] -|- validR ** [| is_Some (size_of resolve ty) |].
