@@ -69,6 +69,20 @@ Section big_sepL.
     - done.
   Qed.
 
+  (** In contrast with [big_sepL_mono], the lists need not be equal. *)
+  Lemma big_sepL_gen_mono {B} f g (l1 : list A) (l2 : list B) :
+    length l1 = length l2 →
+    (∀ k y1 y2, l1 !! k = Some y1 → l2 !! k = Some y2 → f k y1 |-- g k y2) →
+    ([∗ list] k↦y ∈ l1, f k y) ⊢ [∗ list] k↦y ∈ l2, g k y.
+  Proof.
+    intros ? Hf. apply big_opL_gen_proper_2; [done|by apply _| ].
+    move=>k. destruct (l1 !! k) eqn:Hl1, (l2 !! k) eqn:Hl2.
+    - exact: Hf.
+    - apply lookup_lt_Some in Hl1. apply lookup_ge_None_1 in Hl2. lia.
+    - apply lookup_ge_None_1 in Hl1. apply lookup_lt_Some in Hl2. lia.
+    - done.
+  Qed.
+
   (** Unlike [big_sepL_delete] and [big_sepL_delete'], this one uses [delete],
   but is restricted to comprehensions that do not use the list index.
   Unlike [big_sepL_difference_singleton], this works on lists with duplicates.
