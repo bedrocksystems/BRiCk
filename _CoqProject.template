@@ -113,6 +113,8 @@ theories/lang/cpp/bi/split_cfrac.v
 theories/lang/cpp/bi/split_cfrac_tests.v
 theories/lang/cpp/bi/cfractional.v
 theories/lang/cpp/bi/cfractional_tests.v
+theories/lang/cpp/bi/spec.v
+theories/lang/cpp/bi/spec/cfrac_splittable.v
 
 # Spec building blocks
 theories/lang/bi/spec.v
