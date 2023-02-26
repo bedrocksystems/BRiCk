@@ -157,6 +157,14 @@ Section seqN.
     N.add j <$> seqN 0 n = seqN j n.
   Proof. by rewrite fmap_add_seqN N.add_0_r. Qed.
 
+  (* Lifts stdpp's [fmap_S_seq] aka stdlib's [seq_shift] *)
+  Lemma fmap_S_seqN len start :
+    N.succ <$> (seqN start len) = seqN (N.succ start) len.
+  Proof.
+    rewrite /seqN N2Nat.inj_succ -fmap_S_seq -!list_fmap_compose.
+    apply list_fmap_ext; intros; clear. cbn; lia.
+  Qed.
+
   Lemma seqN_sublist (i j n m : N) :
     n <= i -> i + j <= n + m ->
     seqN i j `sublist_of` seqN n m.
