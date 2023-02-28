@@ -355,6 +355,10 @@ Section with_array_R.
     arrayR ty R (x :: xs) -|- type_ptrR ty ** R x ** .[ ty ! 1 ] |-> arrayR ty R xs.
   Proof. rewrite arrayR_eq. exact: arrR_cons. Qed.
 
+  Lemma arrayR_cons_obs x xs `{Hobs : ∀ x, Observe (type_ptrR ty) (R x)} :
+    arrayR ty R (x :: xs) -|- R x ** .[ ty ! 1 ] |-> arrayR ty R xs.
+  Proof. rewrite arrayR_cons. rewrite assoc. f_equiv. rewrite comm. exact: observe_equiv. Qed.
+
   #[global] Instance arrayR_timeless {T} t (P : T → Rep) l `{!∀ x, Timeless (P x)} :
     Timeless (arrayR t P l).
   Proof.

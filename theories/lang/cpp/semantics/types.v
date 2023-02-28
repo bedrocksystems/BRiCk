@@ -157,6 +157,13 @@ Lemma size_of_genv_compat tu σ gn st
   size_of σ (Tnamed gn) = GlobDecl_size_of (Gstruct st).
 Proof. by rewrite /= (glob_def_genv_compat_struct st Hl). Qed.
 
+Lemma size_of_erase_qualifiers σ ty :
+  size_of σ (erase_qualifiers ty) = size_of σ ty.
+Proof. induction ty => //=. by rewrite IHty. Qed.
+Lemma size_of_drop_qualifiers σ ty :
+  size_of σ (drop_qualifiers ty) = size_of σ ty.
+Proof. by induction ty. Qed.
+
 (** [SizeOf ty n] means that C++ type [ty] has size [n] bytes *)
 Class SizeOf {σ : genv} (ty : type) (n : N) : Prop :=
   size_of_spec : size_of σ ty = Some n.
