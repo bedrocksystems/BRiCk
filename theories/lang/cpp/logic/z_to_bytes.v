@@ -9,8 +9,8 @@ Require Import stdpp.numbers.
 Require Import bedrock.lang.cpp.arith.types.
 Require Import bedrock.lang.cpp.semantics.values.
 
-Section with_Σ.
-  Context `{Σ : cpp_logic} {σ : genv}.
+Section with_σ.
+  Context {σ : genv}.
 
   Lemma _Z_to_bytes_has_type (cnt : nat) (endianness : endian) sign (z : Z) :
     List.Forall (fun (v : N) => has_type (Vn v) Tu8) (_Z_to_bytes cnt endianness sign z).
@@ -23,4 +23,4 @@ Section with_Σ.
     lia.
   Qed.
 
-End with_Σ.
+End with_σ.

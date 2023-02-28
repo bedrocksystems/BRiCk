@@ -1239,7 +1239,7 @@ Module Type Expr.
                 Q (Tnamed cls) FreeTemps.id)
 
         | Some (Gunion u) =>
-            (* The standard allows initializaing unions in a variety of ways.
+            (* The standard allows initializing unions in a variety of ways.
                See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
                frontent desugars all of these to initialize exactly one element.
              *)

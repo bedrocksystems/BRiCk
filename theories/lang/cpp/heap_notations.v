@@ -39,6 +39,7 @@ Module INTERNAL.
 End INTERNAL.
 
 (* Test suite *)
+Module Type TEST_SUITE.
 Section test_suite.
   Context {σ : genv} `{Σ : cpp_logic} (R : Rep) (f g : field) (o : offset) (p : ptr) (v : val).
 
@@ -117,3 +118,4 @@ Section test_suite.
 
   Fail Example fail3 := p |-> R q.
 End test_suite.
+End TEST_SUITE.
