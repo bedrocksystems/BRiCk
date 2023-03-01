@@ -219,3 +219,6 @@ Section add_opt.
     rewrite /add_opt => -[b1|] [b2|] // [?]. f_equal. lia.
   Qed.
 End add_opt.
+
+Lemma option_list_nil {A} (x : option A) : option_list x = [] -> x = None.
+Proof. case: x => //=. Qed.
