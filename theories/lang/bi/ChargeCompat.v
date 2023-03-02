@@ -154,9 +154,6 @@ Section with_PROP.
   Lemma sepSPAdj' (P Q C : PROP) (HWand: C |-- P -* Q) : P ** C |-- Q.
   Proof. exact: bi.wand_elim_r'. Qed.
 
-  Lemma spec_later_weaken (P : PROP) : P |-- |> P.
-  Proof. apply bi.later_intro. Qed.
-
   Lemma later_sep (P Q R : PROP) :
       (|> P) ** Q |-- R ->
       P ** Q |-- R.
