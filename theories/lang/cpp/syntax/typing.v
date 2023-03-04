@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+From bedrock.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
 (** [type_of e] returns the type of the expression [e]. *)
@@ -311,9 +312,26 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
   end.
 #[global] Arguments valcat_of !_ / : simpl nomatch, assert.
 
-Definition vctype_of (e : Expr) : type :=
-  match valcat_of e with
-  | Prvalue => id
-  | Lvalue => Tref
-  | Xvalue => Trv_ref
-  end (type_of e).
+#[projections(primitive)]
+Record vctype : Set := VCType { vctype_type : type; vctype_valcat : ValCat }.
+Add Printing Constructor vctype.
+
+#[global] Instance vctype_eq_dec : EqDecision vctype.
+Proof. solve_decision. Defined.
+
+#[global] Instance vctype_countable : Countable vctype.
+Proof.
+  apply (inj_countable'
+    (fun r => (r.(vctype_type), r.(vctype_valcat)))
+    (fun p => VCType p.1 p.2)
+  ).
+  abstract (by intros []).
+Defined.
+
+Definition vctype_of (e : Expr) : vctype :=
+  VCType (type_of e) (valcat_of e).
+
+Lemma vctype_of_type e : vctype_type (vctype_of e) = type_of e.
+Proof. done. Qed.
+Lemma vctype_of_valcat e : vctype_valcat (vctype_of e) = valcat_of e.
+Proof. done. Qed.

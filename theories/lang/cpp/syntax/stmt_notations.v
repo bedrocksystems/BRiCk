@@ -17,8 +17,8 @@ Module Export StmtNotationsInterface.
   Declare Scope CPP_stmt_scope.
   Delimit Scope CPP_stmt_scope with cpp_stmt.
 
-  Bind Scope CPP_stmt_scope with Stmt.
-  Bind Scope CPP_stmt_scope with VarDecl.
+  Bind Scope CPP_stmt_scope with Stmt'.
+  Bind Scope CPP_stmt_scope with VarDecl'.
 
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{?:' s '};'"
