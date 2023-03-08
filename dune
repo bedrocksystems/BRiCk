@@ -28,6 +28,9 @@
 
 ; Explain Dune how to find and build cpp2v binary
 (subdir build
+ (env
+  (release (env-vars (BUILD_TYPE Release)))
+  (_ (env-vars (BUILD_TYPE Debug))))
  (rule
   (targets llvm-lib-path.txt)
   (deps (universe))
@@ -51,7 +54,7 @@
     ../Makefile ../Makefile.doc ../CMakeLists.txt (source_tree ../src)
     (source_tree ../cmake) (source_tree ../include) (source_tree ../doc)
     (source_tree ../llvm-include)
-    (env_var PATH) (env_var LLVM_DIR) (env_var CLANG_DIR))
+    (env_var PATH) (env_var LLVM_DIR) (env_var CLANG_DIR) (env_var BUILD_TYPE))
   (action (run make -j 7 -C .. cpp2v)))
  ; The install rule is also necessary to _use_ cpp2v in other actions
  (install
