@@ -44,11 +44,7 @@ all: coq cpp2v test
 SYS := $(shell uname)
 
 BUILDARG=
-ifeq ($(DUNE_PROFILE),dev)
-BUILD_TYPE ?= Debug
-else
 BUILD_TYPE ?= Release
-endif
 
 CPP2V_LOGS := cpp2v-cmake.log cpp2v-make.log
 
