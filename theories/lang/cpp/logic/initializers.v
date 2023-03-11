@@ -92,6 +92,7 @@ Module Type Init.
     Fixpoint default_initialize (ty : type) (p : ptr) (Q : FreeTemps → epred) {struct ty} : mpred :=
       match ty with
       | Tnum _ _
+      | Tchar_ _
       | Tptr _
       | Tbool
       | Tfloat _
@@ -99,6 +100,7 @@ Module Type Init.
       | Tenum _ =>
           let rty := erase_qualifiers ty in
           p |-> uninitR rty (cQp.m 1) -* Q FreeTemps.id
+
       | Tarray ety sz =>
           default_initialize_array default_initialize ety sz p (fun _ => Q FreeTemps.id)
 
@@ -159,12 +161,14 @@ Module Type Init.
            void g() { return f(); }
            ```
          *)
-        wp_operand init (fun v frees => [| v = Vvoid |] ** (addr |-> primR Tvoid (cQp.m 1) Vvoid -* k frees))
+        wp_operand init (fun v frees => [| v = Vvoid |] ** (addr |-> primR Tvoid qf Vvoid -* k frees))
       | Tpointer _ as ty
       | Tmember_pointer _ _ as ty
       | Tbool as ty
       | Tnum _ _ as ty
+      | Tchar_ _ as ty
       | Tenum _ as ty
+      | Tfloat _ as ty
       | Tnullptr as ty =>
         wp_operand init (fun v free =>
                           addr |-> primR (erase_qualifiers ty) qf v -* k free)
@@ -192,7 +196,6 @@ Module Type Init.
 
       | Tqualified _ ty => False (* unreachable *)
       | Tarch _ _ => UNSUPPORTED (initializing_type ty init)
-      | Tfloat _ => UNSUPPORTED (initializing_type ty init)
       end.
     #[global] Arguments wp_initialize !_ _ _ _ /.
 

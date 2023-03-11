@@ -10,7 +10,7 @@ Echar_letter = {e: ASCII#65}
      : Expr
 Echar_newline = {e: ASCII#10}
      : Expr
-Estring_1 = {e: #"FooBarBazQux"}
+Estring_1 = {e: STRING#to_chars "FooBarBazQux"}
      : Expr
 Eint_1 = {e: #42}
      : Expr
@@ -200,12 +200,14 @@ Ecall_cons_nowrap_2 = {e: $::"fn"(#42, #false)}
 Ecall_cons_wrap_1 = 
 {e: {?: e}(#42,
            #false,
-           #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
+           STRING#to_chars
+                    "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Ecall_cons_wrap_2 = 
 {e: $::"fn"(#42,
             #false,
-            #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
+            STRING#to_chars
+                     "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Ecast_elide_1 = 
 λ (cast : Cast) (vc : ValCat), {e: {?: e}}
@@ -230,12 +232,14 @@ Emember_call_cons_nowrap_2 = {e: $::"foo"."fn"%bs(#42, #false)}
 Emember_call_cons_wrap_1 = 
 {e: {?: e}."fn"%bs(#42,
                    #false,
-                   #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
+                   STRING#to_chars
+                            "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Emember_call_cons_wrap_2 = 
 {e: $::"foo"."fn"%bs(#42,
                      #false,
-                     #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
+                     STRING#to_chars
+                              "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Esubscript_1 = {e: {?: e}[#42]}
      : Expr
@@ -274,7 +278,8 @@ Econstructor_cons_nowrap = {e: #"Foo"(#42, #false)}
 Econstructor_cons_wrap = 
 {e: #"Qux::Zop"(#42,
                 #false,
-                #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
+                STRING#to_chars
+                         "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Eimplicit_1 = {e: {?: e}}
      : Expr
@@ -301,12 +306,14 @@ Einitlist_cons_no_wrap_no_default_2 = {e: (uint64){#42, #false}}
 Einitlist_cons_wrap_no_default_1 = 
 {e: ({?: ty}){#42,
               #false,
-              #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}}
+              STRING#to_chars
+                       "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}}
      : Expr
 Einitlist_cons_wrap_no_default_2 = 
 {e: (uint64){#42,
              #false,
-             #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}}
+             STRING#to_chars
+                      "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}}
      : Expr
 Einitlist_cons_no_wrap_default_1 = 
 {e: ({?: ty}){#42, #false}{default: #314}}
@@ -317,13 +324,15 @@ Einitlist_cons_no_wrap_default_2 =
 Einitlist_cons_wrap_default_1 = 
 {e: ({?: ty}){#42,
               #false,
-              #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}{default:
+              STRING#to_chars
+                       "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}{default:
     #314}}
      : Expr
 Einitlist_cons_wrap_default_2 = 
 {e: (uint64){#42,
              #false,
-             #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}{default:
+             STRING#to_chars
+                      "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}{default:
     #314}}
      : Expr
 Enew_nonarray_nil_1 = {e: new (nothrow) {?: ty}}

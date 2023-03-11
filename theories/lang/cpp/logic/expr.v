@@ -16,7 +16,7 @@ From bedrock.lang.cpp.logic Require Import
      operator
      destroy
      initializers
-     wp call string
+     wp call core_string
      translation_unit
      dispatch layout.
 Require Import bedrock.lang.bi.errors.
@@ -91,14 +91,17 @@ Module Type Expr.
       [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) FreeTemps.id
       |-- wp_operand (Eint n ty) Q.
 
-    (* note that `char` is actually `byte` *)
-    Axiom wp_operand_char : forall c ty Q,
-      [! has_type (Vint c) (drop_qualifiers ty) !] //\\ Q (Vint c) FreeTemps.id
-      |-- wp_operand (Echar c ty) Q.
+    (* NOTE: character literals represented in the AST as 32-bit unsigned integers
+             (with the Coq type [N]). We assume that the AST is well-typed so the
+             value here will be well-typed according to the character type.
+     *)
+    Axiom wp_operand_char : forall c cty Q,
+          Q (Vchar c) FreeTemps.id
+      |-- wp_operand (Echar c (Tchar_ cty)) Q.
 
     (* boolean literals are prvalues *)
     Axiom wp_operand_bool : forall (b : bool) Q,
-      Q (Vbool b) FreeTemps.id
+          Q (Vbool b) FreeTemps.id
       |-- wp_operand (Ebool b) Q.
 
     (** * String Literals
@@ -135,16 +138,12 @@ Module Type Expr.
         the string pool is maintained within an invariant of the abstract
         machine.
      *)
-    Axiom wp_lval_string : forall bytes ty Q,
-          match drop_qualifiers ty with
-          | Tarray ty' _ =>
-            Forall (p : ptr) (q : Qp),
-              p |-> cstring.R (cQp.c q) bytes -*
-              (p |-> cstring.R (cQp.c q) bytes ={⊤}=∗ emp) -*
-              Q p FreeTemps.id
-          | _ => False
-          end
-      |-- wp_lval (Estring bytes ty) Q.
+    Axiom wp_lval_string : forall chars ct Q,
+          (Forall (p : ptr) (q : Qp),
+            p |-> string_bytesR ct (cQp.c q) chars -*
+            □ (Forall q', (p |-> string_bytesR ct (cQp.c q') chars ={⊤}=∗ emp)) -*
+            Q p FreeTemps.id)
+      |-- wp_lval (Estring chars (Tchar_ ct)) Q.
 
     (* `this` is a prvalue *)
     Axiom wp_operand_this : forall ty Q,
@@ -194,14 +193,6 @@ Module Type Expr.
         | _ => False
         end%I
       |-- wp_xval (Emember a m ty) Q.
-
-    Fixpoint is_pointer (ty : type) : bool :=
-      match ty with
-      | Tpointer _
-      | Tarray _ _ => true
-      | Tqualified _ t => is_pointer t
-      | _ => false
-      end.
 
     (* [Esubscript e i _ _] when one operand is an array lvalue
      *   (in clang's syntax tree, this value is converted to an rvalue via
@@ -273,71 +264,63 @@ Module Type Expr.
           Q v' free)
         |-- wp_operand (Eunop o e ty) Q.
 
+    (* The semantics of pre- and post- increment/decrement.
+
+       NOTE: This function assumes that [ty1] is the LHS and that the result will
+             that type.
+     *)
+    Definition inc_dec_op (op : BinOp) (ty : type) (v : val) : val -> mpred :=
+      if is_arithmetic ty then
+        match promote_integral tu ty with
+        | Some ity => fun v_result =>
+            Exists v' v'',
+              [| conv_int tu ty ity v v' |] **
+              eval_binop tu op ity ity ity v' (Vint 1) v'' **
+              [| conv_int tu ity ty v'' v_result |]
+        | None => fun _ => UNSUPPORTED ""
+        end
+      else if is_pointer ty then
+            (* use eval_binop_impure *)
+             fun v_result => eval_binop tu op ty Tint ty v (Vint 1) v_result
+      else fun _ => UNSUPPORTED "cast-op".
+
+    Definition pre_op (b : BinOp) (ty : type) (e : Expr) (Q : ptr -> FreeTemps.t -> mpred) : mpred :=
+      let ety := erase_qualifiers $ type_of e in
+      wp_lval e (fun a free => Exists v v',
+                   (inc_dec_op b ety v v' ** True) //\\
+                   (a |-> primR ety (cQp.mut 1) v **
+                      (a |-> primR ety (cQp.mut 1) v' -* Q a free))).
+
     (** `++e`
         https://eel.is/c++draft/expr.pre.incr#1
      *)
     Axiom wp_lval_preinc : forall e ty Q,
-        (let ety := type_of e in
-         let eety := erase_qualifiers ety in
-         match companion_type eety with
-         | Some cty =>
-          wp_lval e (fun a free => Exists v' v'',
-              (eval_binop tu Badd eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR eety (cQp.mut 1) v' **
-                (a |-> primR eety (cQp.mut 1) v'' -* Q a free)))
-         | None => False
-         end)
-        |-- wp_lval (Epreinc e ty) Q.
+        pre_op Badd ty e Q |-- wp_lval (Epreinc e ty) Q.
 
     (** `--e`
         https://eel.is/c++draft/expr.pre.incr#2
      *)
     Axiom wp_lval_predec : forall e ty Q,
-        (let ety := type_of e in
-         let eety := erase_qualifiers ety in
-         match companion_type eety with
-         | Some cty =>
-          wp_lval e (fun a free => Exists v' v'',
-              (eval_binop tu Bsub eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR eety (cQp.mut 1) v' **
-                (a |-> primR eety (cQp.mut 1) v'' -* Q a free)))
-         | None => False
-         end)
-        |-- wp_lval (Epredec e ty) Q.
+        pre_op Bsub ty e Q |-- wp_lval (Epredec e ty) Q.
+
+    Definition post_op (b : BinOp) (ty : type) (e : Expr) (Q : val -> FreeTemps.t -> mpred) : mpred :=
+      let ety := erase_qualifiers $ type_of e in
+      wp_lval e (fun a free => Exists v v',
+                   (inc_dec_op b ety v v' ** True) //\\
+                   (a |-> primR ety (cQp.mut 1) v **
+                      (a |-> primR ety (cQp.mut 1) v' -* Q v free))).
 
     (** `e++`
         https://eel.is/c++draft/expr.post.incr#1
      *)
     Axiom wp_operand_postinc : forall e ty Q,
-        (let ety := type_of e in
-         let eety := erase_qualifiers ety in
-         match companion_type eety with
-         | Some cty =>
-             wp_lval e (fun a free => Exists v', Exists v'',
-                          (eval_binop tu Badd eety cty
-                             (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-                            (a |-> primR eety (cQp.mut 1) v' **
-                               (a |-> primR eety (cQp.mut 1) v'' -* Q v' free)))
-         | None => False
-         end)
-      |-- wp_operand (Epostinc e ty) Q.
+        post_op Badd ty e Q |-- wp_operand (Epostinc e ty) Q.
 
     (** `e--`
         https://eel.is/c++draft/expr.post.incr#2
      *)
     Axiom wp_operand_postdec : forall e ty Q,
-        (let ety := type_of e in
-         let eety := erase_qualifiers ety in
-         match companion_type eety with
-         | Some cty =>
-             wp_lval e (fun a free => Exists v', Exists v'',
-                          (eval_binop tu Bsub eety cty
-                             (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-                            (a |-> primR eety (cQp.mut 1) v' **
-                               (a |-> primR eety (cQp.mut 1) v'' -* Q v' free)))
-         | None => False
-         end)
-     |-- wp_operand (Epostdec e ty) Q.
+        post_op Bsub ty e Q |-- wp_operand (Epostdec e ty) Q.
 
     (** * Binary Operators *)
     (* NOTE the following axioms assume that [eval_binop] is deterministic *)
@@ -359,15 +342,20 @@ Module Type Expr.
            (la |-> primR (erase_qualifiers ty) (cQp.mut 1) rv -* Q la free))
         |-- wp_lval (Eassign l r ty) Q.
 
-    (* Assignemnt operators are *almost* like regular assignments except that they
-       guarantee to evaluate the left hand side *exactly* once (rather than twice
-       which is what would come from the standard desugaring)
-     *)
     Axiom wp_lval_bop_assign : forall ty o l r Q,
-        nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
-             (Exists v v', la |-> primR (erase_qualifiers ty) (cQp.mut 1) v **
-                 ((eval_binop tu o (erase_qualifiers (type_of l)) (erase_qualifiers (type_of r)) (erase_qualifiers (type_of l)) v rv v' ** True) //\\
-                 (la |-> primR (erase_qualifiers ty) (cQp.mut 1) v' -* Q la free))))
+            match convert_type_op tu o (type_of l) (type_of r) with
+            | Some (tl, tr, resultT) =>
+              nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free => Exists v cv v',
+                    ((* cast and perform the computation *)
+                      [| convert tu (type_of l) tl v cv |] **
+                      [| (* ensured by the AST *) tr = type_of r |] **
+                      eval_binop tu o tl tr resultT cv rv v' **
+                        (* convert the value back to the target type so it can be stored *)
+                        [| convert tu resultT ty cv v' |] ** True) //\\
+                    (la |-> primR (erase_qualifiers ty) (cQp.mut 1) v **
+                      (la |-> primR (erase_qualifiers ty) (cQp.mut 1) v' -* Q la free)))
+            | _ => False%I
+            end
         |-- wp_lval (Eassign_op o l r ty) Q.
 
     (** The comma operator can be both an lvalue and a prvalue
@@ -521,7 +509,7 @@ Module Type Expr.
      *)
     Axiom wp_operand_cast_integral : forall e t Q,
         wp_operand e (fun v free =>
-           Exists v', [| exists tu, tu ⊧ resolve /\ conv_int tu (type_of e) t v v' |] ** Q v' free)
+           Exists v', [| conv_int tu (type_of e) t v v' |] ** Q v' free)
         |-- wp_operand (Ecast Cintegral e Prvalue t) Q.
 
     Axiom wp_operand_cast_null : forall e t Q,
@@ -1032,14 +1020,54 @@ Module Type Expr.
        [3] https://eel.is/c++draft/dcl.init#general-8.3
        [4] https://eel.is/c++draft/dcl.init#general-6
      *)
-    Axiom wp_operand_implicit_init_int : forall ty sz sgn Q,
-        drop_qualifiers ty = Tnum sz sgn ->
-          Q (Vint 0) FreeTemps.id
-      |-- wp_operand (Eimplicit_init ty) Q.
 
-    Axiom wp_operand_implicit_init_bool : forall ty Q,
-        drop_qualifiers ty = Tbool ->
-          Q (Vbool false) FreeTemps.id
+    Definition zero_init_val (ty : type) : option val :=
+      match representation_type tu ty with
+      | Tnullptr | Tptr _  => Some $ Vptr nullptr
+      (* | Tmember_pointer _ _ *)
+      | Tchar_ _ => Some $ Vchar 0
+      | Tbool => Some $ Vbool false
+      | Tnum _ _ => Some $ Vint 0
+      | _ => None
+      end.
+
+    Lemma zero_init_val_is_scalar ty v : zero_init_val ty = Some v -> scalar_type ty = true.
+    Proof.
+      rewrite /zero_init_val/scalar_type/representation_type /=. destruct (drop_qualifiers ty) eqn:Hdrop => //; eauto.
+    Qed.
+
+    Lemma well_typed_zero_init_val (MOD : tu ⊧ resolve) : forall ty v,
+        zero_init_val ty = Some v -> has_type v ty.
+    Proof.
+      rewrite /zero_init_val/representation_type. intros.
+      eapply has_type_drop_qualifiers; revert H.
+      destruct (drop_qualifiers ty) eqn:Heq; simpl; try inversion 1; subst.
+      - apply has_nullptr_type.
+      - apply has_int_type. rewrite /bound. destruct size, signed; compute; intuition congruence.
+      - apply has_type_char_0.
+      - eapply has_type_enum.
+        clear H1. revert H.
+        rewrite /underlying_type/=.
+        destruct (globals tu !! g) eqn:Hglobal => /= //.
+        destruct g0 => /=//.
+        intros. do 3 eexists; split; eauto. split; eauto.
+        case_match; try congruence; inversion H; subst; simpl; split; try tauto.
+        + apply has_nullptr_type.
+        + apply has_int_type. rewrite /bound; destruct size,signed; compute; intuition congruence.
+        + apply has_type_char_0.
+        + apply has_type_bool; eauto.
+        + eapply has_type_nullptr; eauto.
+      - apply has_type_bool. eauto.
+      - eapply has_type_nullptr; eauto.
+    Qed.
+
+    Lemma zero_init_val_erase_drop ty :
+      zero_init_val (erase_qualifiers ty) = zero_init_val (drop_qualifiers ty).
+    Proof. by induction ty. Qed.
+
+    Axiom wp_operand_implicit_init : forall ty v Q,
+          zero_init_val ty = Some v ->
+          Q v FreeTemps.id
       |-- wp_operand (Eimplicit_init ty) Q.
 
     Axiom wp_init_constructor : forall cls (addr : ptr) cnd es Q,

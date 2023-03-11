@@ -16,6 +16,8 @@ Require Import bedrock.lang.cpp.specs.cpp_specs.
 
 (** * Wrappers to build [function_spec] from a [WithPrePost] *)
 
+Notation WithPrePostO PROP := (WpSpecO PROP ptr ptr).
+
 #[local] Notation SPEC := (WpSpec_cpp_ptr) (only parsing).
 
 (* A specification for a function  *)

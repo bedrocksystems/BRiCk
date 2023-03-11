@@ -411,6 +411,7 @@ Module SimpleCPP.
           | Vundef => pure_encodes_undef sz vs
           | _ => False
           end
+        | Tchar_ ct => False (* TODO *)
         | Tmember_pointer _ _ =>
           match v with
           | Vint v =>

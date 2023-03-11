@@ -37,6 +37,7 @@ Section defs.
       match rty with
       | Tptr _
       | Tnum _ _
+      | Tchar_ _
       | Tbool
       | Tnullptr
       | Tenum _

@@ -458,6 +458,22 @@ Proof.
   rewrite !Zmax_left; lia.
 Qed.
 
+Lemma Z_mod_big a b :
+  (- b <= a < 0)%Z
+  -> (a `mod` b = a + b)%Z.
+Proof.
+  move=>[??].
+  by symmetry; apply: (Zmod_unique_full _ _ (-1)%Z); [left | ]; lia.
+Qed.
+
+Lemma Z_pow2_half a : (1 <= a)%Z -> (2 ^ a = 2 ^ (a - 1) + 2 ^ (a - 1))%Z.
+Proof.
+  move=>?.
+  rewrite Z.add_diag {1}(_ : a = (a - 1) + 1)%Z; last by lia.
+  rewrite Z.pow_add_r //=; last by lia.
+  by rewrite Z.mul_comm.
+Qed.
+
 #[global] Instance Z_b2z_inj : Inj eq eq Z.b2z := Z.b2z_inj.
 
 Lemma Z_b2z_0 b : Z.b2z b = 0%Z <-> ~b.

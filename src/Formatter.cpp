@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #include "clang/Basic/LLVM.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include "Formatter.hpp"
@@ -123,4 +124,11 @@ operator<<(Formatter& out, BOOL b) {
     return out;
 }
 
+Formatter&
+operator<<(Formatter& out, const llvm::APSInt& val) {
+    out.nobreak() << "(";
+    val.print(out.nobreak(), val.isSigned());
+    out.nobreak() << ")%Z";
+    return out;
+}
 }

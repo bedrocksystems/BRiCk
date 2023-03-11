@@ -43,7 +43,6 @@ Module Type RAW_BYTES.
       The following might help but will likely require other
       axioms which reflect boundedness or round-trip properties.
 
-
     Parameter of_raw_byte : raw_byte -> N.
     Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
     #[global] Existing Instance inj_of_raw_byte.
@@ -59,13 +58,21 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
       primitive subobjects.
 
       There is also a distinguished undefined element [Vundef] that
-      models uninitialized values (https://eel.is/c++draft/basic.indet).
+      models uninitialized values <https://eel.is/c++draft/basic.indet>.
       Operations on [Vundef] are all undefined behavior.
       [Vraw] (a raw byte) represents the low-level bytewise view of data.
       See [logic/layout.v] for more axioms about it.
   *)
   Variant val : Set :=
   | Vint (_ : Z)
+  | Vchar (_ : N)
+    (* ^ value used for non-integral character types, e.g.
+         [char], [wchar], etc, but *not* [unsigned char] and [signed char]
+
+         The values here are *always* unsigned. When arithmetic is performed
+         the semantics will convert the unsigned value into the appropriate
+         equivalent on the target platform based on the signedness of the type.
+     *)
   | Vptr (_ : ptr)
   | Vraw (_ : raw_byte)
   | Vundef
@@ -80,12 +87,7 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   #[global] Instance val_eq_dec : EqDecision val := val_dec.
   #[global] Instance val_inhabited : Inhabited val := populate (Vint 0).
 
-  (** wrappers for constructing certain values *)
-  (** [Vchar] is currently not well supported. *)
-  Definition Vchar (a : Byte.byte) : val :=
-    Vint (Z.of_N (Byte.to_N a)).
-
-  (** wrappers for constructing certain values *)
+  (** ** Notation wrappers for [val] *)
   Definition Vbool (b : bool) : val :=
     Vint (if b then 1 else 0).
   Definition Vnat (b : nat) : val :=
@@ -97,10 +99,18 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   (** we use [Vundef] as our value of type [void] *)
   Definition Vvoid := Vundef.
 
+  (** [is_raw v] holds when [v] is a raw value. *)
+  Definition is_raw (v : val) : bool :=
+    match v with
+    | Vraw _ => true
+    | _ => false
+    end.
+
   Definition is_true (v : val) : option bool :=
     match v with
     | Vint v => Some (bool_decide (v <> 0))
     | Vptr p => Some (bool_decide (p <> nullptr))
+    | Vchar n => Some (bool_decide (n <> 0%N))
     | Vundef | Vraw _ => None
     end.
   #[global] Arguments is_true !_.
@@ -116,12 +126,18 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   Proof. by move=> []. Qed.
   Lemma Vint_inj a b : Vint a = Vint b -> a = b.
   Proof. by move=> []. Qed.
+  Lemma Vchar_inj a b : Vchar a = Vchar b -> a = b.
+  Proof. by move=> []. Qed.
   Lemma Vbool_inj a b : Vbool a = Vbool b -> a = b.
   Proof. by move: a b =>[] [] /Vint_inj. Qed.
 
   #[global] Instance Vptr_Inj : Inj (=) (=) Vptr := Vptr_inj.
   #[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
+  #[global] Instance Vchar_Inj : Inj (=) (=) Vchar := Vchar_inj.
   #[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
+
+  Definition N_to_char (t : char_type.t) (z : N) : val :=
+    Vchar $ trimN (char_type.bitsN t) z.
 
   (* the default value for a type.
   * this is used to initialize primitives if you do, e.g.
@@ -344,7 +360,7 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     Axiom has_type_pointer : forall v ty,
         has_type v (Tpointer ty) -> exists p, v = Vptr p.
     Axiom has_type_nullptr : forall v,
-        has_type v Tnullptr -> v = Vptr nullptr.
+        has_type v Tnullptr <-> v = Vptr nullptr.
     Axiom has_type_ref : forall v ty,
         has_type v (Tref ty) -> exists p, v = Vref p /\ p <> nullptr.
     Axiom has_type_rv_ref : forall v ty,
@@ -353,6 +369,9 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
         has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
     Axiom has_type_function : forall v cc rty args,
         has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+
+    Axiom has_type_char : forall ct v,
+        (exists n, v = Vchar n /\ 0 <= n < 2^(char_type.bitsN ct))%N <-> has_type v (Tchar_ ct).
 
     Axiom has_type_void : forall v,
         has_type v Tvoid -> v = Vundef.
@@ -363,10 +382,13 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     Axiom has_type_bool : forall v,
         has_type v Tbool <-> exists b, v = Vbool b.
 
+    (* NOTE: even if an enumeration's underlying type is `unsigned int` (which contains
+       raw values), raw values are not well typed at the enumeration type. *)
     Axiom has_type_enum : forall v nm,
-        has_type v (Tenum nm) ->
-        exists tu ty ls e, tu ⊧ σ /\ tu !! nm = Some (Genum ty ls) /\
-                  v = Vint e /\ has_type v ty.
+        has_type v (Tenum nm) <->
+        exists tu ty ls,
+          tu ⊧ σ /\ tu !! nm = Some (Genum ty ls) /\
+          (~is_raw v) /\ has_type v (drop_qualifiers ty).
 
     (** Note in the case of [Tuchar], the value [v] could be a
         raw value. *)
@@ -401,9 +423,14 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
         bound sz sgn z <-> has_type (Vint z) (Tnum sz sgn).
     Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
 
-    Theorem has_char_type : forall sz (sgn : signed) z,
-        bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
-    Proof. apply has_int_type. Qed.
+    Lemma has_type_char' (n : N) ct : (0 <= n < 2 ^ char_type.bitsN ct)%N <-> has_type (Vchar n) (Tchar_ ct).
+    Proof. rewrite -has_type_char. naive_solver. Qed.
+
+    Lemma has_type_char_255 (n : N) ct : (0 <= n < 256)%N -> has_type (Vchar n) (Tchar_ ct).
+    Proof. intros. rewrite -has_type_char'. destruct ct; simpl; lia. Qed.
+
+    Lemma has_type_char_0 ct :  has_type (Vchar 0) (Tchar_ ct).
+    Proof. intros. apply has_type_char_255. lia. Qed.
 
     Lemma has_type_drop_qualifiers
       : forall v ty, has_type v ty <-> has_type v (drop_qualifiers ty).
@@ -459,61 +486,6 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
               has_type_bswap64,
               has_type_bswap128.
     Qed.
-
-    (** representation of integral types *)
-    Variant IntegralType : Set :=
-      | Bool
-      | Num (_ : bitsize) (_ : signed).
-
-    (** [as_integral tu ty] is the integral representation of the type if one exists.
-       In particular, this gets the underlying type of enumerations.
-     *)
-    Definition as_integral (tu : translation_unit) (ty : type) : option IntegralType :=
-      match drop_qualifiers ty with
-      | Tnum sz sgn => Some $ Num sz sgn
-      | Tenum nm =>
-          match tu !! nm with
-          | Some (Genum ty _) =>
-              match ty with
-              | Tnum sz sgn => Some $ Num sz sgn
-              | Tbool => Some Bool
-              | _ => None
-              end
-          | _ => None
-          end
-      | Tbool => Some Bool
-      | _ => None
-      end.
-
-    (** Integral conversions. For use in the semantics of C++ operators. *)
-    Definition conv_int (tu : translation_unit) (from to : type) (v v' : val) : Prop :=
-      match as_integral tu from , as_integral tu to with
-      | Some from , Some to =>
-          match from , to with
-          | Bool , Num _ _ =>
-              match is_true v with
-              | Some v => v' = Vbool v
-              | _ => False
-              end
-          | Num _ _ , Bool =>
-              match v with
-              | Vint v =>
-                  v' = Vbool (bool_decide (v <> 0))
-              | _ => False
-              end
-          | Num _ _ , Num sz Unsigned =>
-              match v with
-              | Vint v =>
-                  v' = Vint (to_unsigned sz v)
-              | _ => False
-              end
-          | Num _ _ , Num sz Signed =>
-              has_type v (Tnum sz Signed) /\ v' = v
-          | Bool , Bool => v = v'
-          end
-      | _ , _ => False
-      end.
-    Arguments conv_int !_ !_ _ _ /.
 
   End with_env.
 

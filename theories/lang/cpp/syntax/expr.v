@@ -254,8 +254,11 @@ Inductive Expr : Set :=
 | Evar     (_ : VarRef) (_ : type)
   (* ^ local and global variable reference *)
 
-| Echar    (_ : Z) (_ : type)
-| Estring  (_ : bs) (_ : type)
+| Echar    (value : N) (_ : type)
+  (* ^ [value] is the unsigned character value *)
+| Estring  (values : list N) (ty : type) (* type = Tarray (const ty) (lengthN values) *)
+  (* ^ [values] is a list of *characters*, e.g. if [ty] is a 2-byte
+     character type, then each [N] in [values] represents 2 bytes. *)
 | Eint     (_ : Z) (_ : type)
 | Ebool    (_ : bool)
   (* ^ literals *)

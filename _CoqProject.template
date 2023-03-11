@@ -160,6 +160,10 @@ theories/lang/cpp/semantics/builtins.v
 theories/lang/cpp/semantics/genv.v
 theories/lang/cpp/semantics/sub_module.v
 theories/lang/cpp/semantics/subtyping.v
+theories/lang/cpp/semantics/promotion.v
+theories/lang/cpp/semantics/characters.v
+theories/lang/cpp/semantics/cast.v
+theories/lang/cpp/semantics/cast_operator.v
 theories/lang/cpp/semantics/types.v
 theories/lang/cpp/semantics/dispatch.v
 theories/lang/cpp/semantics/intensional.v
@@ -197,6 +201,7 @@ theories/lang/cpp/logic/builtins.v
 theories/lang/cpp/logic/layout.v
 theories/lang/cpp/logic/raw.v
 theories/lang/cpp/logic/object_repr.v
+theories/lang/cpp/logic/core_string.v
 theories/lang/cpp/logic/cstring.v
 theories/lang/cpp/logic/zstring.v
 theories/lang/cpp/logic/string.v

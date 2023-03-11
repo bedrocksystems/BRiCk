@@ -14,6 +14,7 @@ Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   | Gunion u => Some u.(u_size)
   | Genum t _ =>
     match drop_qualifiers t with
+    | Tchar_ sz => Some $ char_type.bytesN sz
     | Tnum sz _ => Some $ bytesN sz
     | Tbool => Some 1%N
     | _ => None
@@ -26,6 +27,7 @@ Definition GlobDecl_align_of (g : GlobDecl) : option N :=
   | Gunion u => Some u.(u_alignment)
   | Genum t _ =>
     match drop_qualifiers t with
+    | Tchar_ sz => Some $ char_type.bytesN sz
     | Tnum sz _ => Some $ bytesN sz
     | Tbool => Some 1%N
     | _ => None
@@ -63,6 +65,7 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tref _ => None
   | Trv_ref _ => None
   | Tnum sz _ => Some (bytesN sz)
+  | Tchar_ ct => Some (char_type.bytesN ct)
   | Tvoid => None
   | Tarray t n => N.mul n <$> size_of resolve t
   | Tnamed nm => glob_def resolve nm ≫= GlobDecl_size_of
@@ -100,8 +103,8 @@ Qed.
 Theorem size_of_int : forall {c : genv} s w,
     @size_of c (Tnum w s) = Some (bytesN w).
 Proof. reflexivity. Qed.
-Theorem size_of_char : forall {c : genv} s w,
-    @size_of c (Tchar w s) = Some (bytesN w).
+Theorem size_of_char : forall {c : genv} s,
+    @size_of c (Tchar_ s) = Some (char_type.bytesN s).
 Proof. reflexivity. Qed.
 Theorem size_of_bool : forall {c : genv},
     @size_of c Tbool = Some 1%N.
@@ -208,8 +211,14 @@ Qed.
 #[global] Instance bool_size_of {σ : genv} : SizeOf Tbool 1.
 Proof. done. Qed.
 
+(* TODO?: consider using [SizeOf (Tnum sz sgn) (bytesN sz)]. *)
 #[global] Instance int_size_of {σ : genv} sz sgn n :
   TCEq (bytesN sz) n -> SizeOf (Tnum sz sgn) n.
+Proof. by rewrite /SizeOf TCEq_eq=><-. Qed.
+
+(* TODO?: consider using [SizeOf (Tnum sz sgn) (char_type.bytesN ct)]. *)
+#[global] Instance char_size_of {σ' : genv} ct n :
+  TCEq (char_type.bytesN ct) n -> SizeOf (Tchar_ ct) n.
 Proof. by rewrite /SizeOf TCEq_eq=><-. Qed.
 
 #[global] Instance qualified_size_of {σ : genv} qual ty n :

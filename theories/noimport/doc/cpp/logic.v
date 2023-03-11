@@ -65,12 +65,24 @@ Example eFrac2 : Qp := 2/4.
 Variable z:Z.
 (**
 There are similar primitives for other primitive types as well: *)
-Example e4 : Rep := intR q z. (** similarly, [sintR] and [uingR] *)
-Example e6 : Rep := charR q z. (** similarly, [scharR] for signed and [ucharR] for unsigned *)
-Example e5 : Rep := shortR q z. (** similarly, [ushortR] and [sshortR] *)
-Example e7 : Rep := longR q z. (** similarly, [ulongR] and [slongR] *)
-Example e8 : Rep := longlongR q z. (** similarly, [ulonglongR] and [slonglongR] *)
-Example e9 : Rep  := i8R q z. (** similarly, [int16], [int32], [uni64]. Prefix 'u' for the unsigned variants *)
+Example e_schar : Rep := scharR q z. (** similarly, [ucharR] for unsigned *)
+Example e_int : Rep := intR q z. (** similarly, [sintR] and [uingR] *)
+Example e_short : Rep := shortR q z. (** similarly, [ushortR] and [sshortR] *)
+Example e_long : Rep := longR q z. (** similarly, [ulongR] and [slongR] *)
+Example e_longlong : Rep := longlongR q z. (** similarly, [ulonglongR] and [slonglongR] *)
+Example e_i8 : Rep  := i8R q z. (** similarly, [int16], [int32], [uint64]. Prefix 'u' for the unsigned variants *)
+
+(** Character types work a little bit differently because they are represented
+    in an architecture-indepenent way as *unsigned* numbers *)
+Example e_char : Rep := charR q 10.
+Example e_wchar : Rep := wcharR q 10.
+Example e_char32 : Rep := char32R q 10.
+Example e_char16 : Rep := char16R q 10.
+Example e_char8 : Rep := char8R q 10.
+
+
+
+
 Variable b: bool.
 Example e11: bool:=true.
 Example e10 : Rep := boolR (cQp.m (1/2)) b.

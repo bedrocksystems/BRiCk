@@ -711,15 +711,34 @@ public:
 
             // TODO the values are not necessary.
             print.list(decl->enumerators(), [](auto &print, auto i) {
-                print.output() << fmt::line << "(";
                 print.str(i->getNameAsString());
-                print.output() << "," << fmt::nbsp << "("
-                               << i->getInitVal().getExtValue() << ")%Z)";
             });
 
             print.end_ctor();
             return true;
         }
+    }
+
+    /** The character types that BRiCk represents using character types
+     *  [Tchar_]
+     */
+    static bool isBRiCkCharacter(const BuiltinType *type) {
+        switch (type->getKind()) {
+        case BuiltinType::Kind::Char_S:
+        case BuiltinType::Kind::Char_U:
+        case BuiltinType::Kind::WChar_S:
+        case BuiltinType::Kind::WChar_U:
+        case BuiltinType::Kind::Char16:
+        case BuiltinType::Kind::Char8:
+        case BuiltinType::Kind::Char32:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    static uint64_t toBRiCkCharacter(size_t bitsize, int64_t val) {
+        return static_cast<uint64_t>(val) & ((1ull << bitsize) - 1);
     }
 
     bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
@@ -732,8 +751,19 @@ public:
         cprint.printQualType(decl->getType(), print);
         print.output() << fmt::nbsp;
         cprint.printQualType(ed->getIntegerType(), print);
-        print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
-                       << fmt::nbsp;
+        auto bt = ed->getIntegerType().getTypePtr()->getAs<BuiltinType>();
+        assert(bt && "integer type of enumeration must be a builtin type");
+
+        print.output() << fmt::nbsp << "(";
+        if (isBRiCkCharacter(bt)) {
+            print.output() << "inl "
+                           << toBRiCkCharacter(cprint.getTypeSize(bt),
+                                               decl->getInitVal().getExtValue())
+                           << "%N";
+        } else {
+            print.output() << "inr " << decl->getInitVal();
+        }
+        print.output() << ")" << fmt::nbsp;
 
         if (decl->getInitExpr()) {
             print.some();
