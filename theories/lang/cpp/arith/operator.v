@@ -17,6 +17,9 @@ From bedrock.lang.cpp.arith Require Import types.
 Definition trim (w : N) (v : Z) : Z :=
   v mod (2 ^ Z.of_N w).
 
+(** [trim] on [N]. Not much theory available yet. *)
+Definition trimN (bits : N) (v : N) : N := v `mod` 2^bits.
+
 Lemma trim_0_l:
   forall (v: Z),
     trim 0 v = 0.
@@ -90,18 +93,62 @@ Arguments bitsZ !_/.
 Arguments Z.of_N !_/.
 Arguments bitsN !_/.
 
+
 (* lemmas for [to_signed] and [to_unsigned] *)
+Lemma to_signed_bits_spec_low (to_sz : N) v :
+  (- 2 ^ (to_sz - 1) <= v < 2 ^ (to_sz - 1))%Z
+  → to_signed_bits to_sz v = v.
+Proof.
+  rewrite /to_signed_bits.
+  case: bool_decide_reflect; first
+    by move=>->[]/(Z.le_lt_trans _ _ _)/[apply]/Z.lt_irrefl.
+
+  move=>? [Hlb Hub].
+
+  have Hub': (v < 2 ^ to_sz)%Z.
+  { apply: Z.lt_le_trans; first done.
+    by apply: Z.pow_le_mono; lia. }
+  have Hlb': (- 2 ^ to_sz <= v)%Z.
+  { apply: Z.le_trans; last done.
+    rewrite -Z.opp_le_mono.
+    by apply: Z.pow_le_mono; lia. }
+
+  case: (Z.le_gt_cases 0 v).
+  - move=>?.
+    rewrite Zmod_small; last done.
+    case: bool_decide_reflect Hub; last done.
+    by move=>/Z.ge_le/Z.le_lt_trans/[apply]/Z.lt_irrefl.
+
+  - move=>?.
+    rewrite Z_mod_big; last done.
+    case: bool_decide_reflect; first by lia.
+    move=>/Znot_ge_lt.
+    move: (Z_mult_div_ge (2 ^ to_sz) 2 ltac:(done))=>/[swap].
+    move: (Zplus_le_compat_r _ _ (2 ^ to_sz)%Z Hlb).
+    move=>/Z.le_lt_trans/[apply].
+    rewrite Z.lt_add_lt_sub_l Z.sub_opp_r.
+    rewrite Z.add_diag Z.pow_sub_r //.
+    by move=>/Z.lt_le_trans/[apply]/Z.lt_irrefl.
+    by case He: (to_sz); lia.
+Qed.
+
 Lemma to_signed_bits_id: forall (z: Z) (bits: N),
     0 <= z < 2 ^ ((Z.of_N bits) - 1) -> to_signed_bits bits z = z.
 Proof.
-  intros ? ? [Hlower Hupper]; rewrite /to_signed_bits Z.mod_small; first last.
-  - intuition; eapply Z.lt_trans; eauto;
-      apply Z.pow_lt_mono_r; lia.
-  - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
-    + rewrite Z.pow_neg_r in Hupper; lia.
-    + rewrite bool_decide_eq_false_2; [ | by lia ].
-      rewrite bool_decide_eq_false_2;
-        by [| intro; contradiction].
+  by move=>> ?; apply: to_signed_bits_spec_low; lia.
+Qed.
+
+Lemma to_signed_bits_spec_high (to_sz : N) v :
+  to_sz <> 0%N
+  -> (2 ^ (to_sz - 1) <= v < 2 ^ to_sz)%Z
+  → to_signed_bits to_sz v = (v - 2 ^ to_sz)%Z.
+Proof.
+  rewrite /to_signed_bits.
+  case: bool_decide_reflect; first done.
+  move=>?? [Hlb Hub].
+  have Hsz: (0 <= v)%Z by lia.
+  rewrite Zmod_small; last done.
+  by case: bool_decide_reflect; lia.
 Qed.
 
 Lemma to_signed_id : forall (z : Z) (n : bitsize),
@@ -112,21 +159,13 @@ Lemma to_signed_bits_neg: forall (z: Z) (bits: N),
     2^((Z.of_N bits) - 1) - 1 < z < 2^(Z.of_N bits) ->
     to_signed_bits bits z = trim bits (z - 2^((Z.of_N bits) - 1)) + - 2^((Z.of_N bits) - 1).
 Proof.
-  intros ? ? [Hlower Hupper]; rewrite /to_signed_bits /trim Z.mod_small; first last.
-  - split; [ | by lia ].
-    assert (Z.of_N bits - 1 < 0 \/ Z.of_N bits - 1 = 0 \/ 0 < Z.of_N bits - 1)%Z
-      as [Hexp | [Hexp | Hexp]] by lia.
-    + rewrite Z.pow_neg_r in Hlower; lia.
-    + rewrite Hexp in Hlower; lia.
-    + pose proof (Z.pow_pos_nonneg 2 (Z.of_N bits - 1) ltac:(lia) ltac:(lia)); lia.
-  - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
-    + rewrite bool_decide_eq_true_2; last by [lia]; simpl in *.
-      rewrite Z.mod_small; intuition lia.
-    + rewrite bool_decide_eq_false_2; last by lia.
-      rewrite bool_decide_eq_true_2 /=; last by [lia].
-      rewrite Z.mod_small; (intuition auto with lia); first last.
-      rewrite -{1}(Zplus_minus 1 (Z.of_N bits)) Z.add_1_l.
-      rewrite Z.pow_succ_r; lia.
+  move=>z bits.
+  have [->?|Hne ?]: (bits = 0 \/ bits <> 0)%N by lia.
+  { by rewrite /trim Z.mod_1_r. }
+
+  rewrite to_signed_bits_spec_high; try lia.
+  rewrite /trim Z.mod_small //; try lia.
+  rewrite -Z.add_assoc -Z.opp_add_distr -Z_pow2_half; lia.
 Qed.
 
 Lemma to_signed_neg : forall x (n : bitsize),

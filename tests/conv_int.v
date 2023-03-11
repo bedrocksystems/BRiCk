@@ -1,0 +1,32 @@
+(*
+ * Copyright (c) 2021-2022 BedRock Systems, Inc.
+ *
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
+ *)
+Require Import bedrock.lang.cpp.semantics.cast.
+Require Import bedrocktest.conv_int_cpp.
+
+Import syntax.types.
+
+Import values.
+
+Section with_genv.
+
+  Context {σ : genv}.
+
+  Goal conv_int module Tbool (Tnum W8 Signed) (Vbool false) (Vint 0).
+  Proof. by vm_compute; split; first (rewrite has_type_bool; exists false). Qed.
+
+  Goal ~ (conv_int module Tbool (Tnum W8 Signed) (Vbool true) (Vint 0)).
+  Proof. by vm_compute=>[][]. Qed.
+
+  Goal  has_type 0%Z (Tenum "_Z3Foo")
+        -> conv_int module (Tenum "_Z3Foo") (Tnum W8 Unsigned) (Vint 0) (Vint 0).
+  Proof. by vm_compute. Qed.
+
+  Goal  has_type 0%Z (Tenum "_Z3Bar")
+        -> conv_int module (Tenum "_Z3Bar") (Tenum "_Z3Foo") (Vint 0) (Vint 0).
+  Proof. by vm_compute. Qed.
+
+End with_genv.

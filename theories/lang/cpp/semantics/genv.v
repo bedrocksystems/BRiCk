@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -36,11 +36,49 @@ Record genv : Type :=
   in the program. Might be replaced when fixing FM-2738. *)
 ; pointer_size_bitsize : bitsize
   (* ^ the size of a pointer *)
+; char_signed : signed
+  (* ^ whether or not `char` is signed or unsigned *)
+; wchar_signed : signed
+  (* ^ whether or not `wchar` is signed or unsigned *)
 }.
 Existing Class genv.
 Definition genv_byte_order (g : genv) : endian :=
   g.(genv_tu).(byte_order).
 Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).
+
+Module integral_type.
+  Record t : Set := mk { size : int_type.t ; signedness : signed }.
+  Coercion to_type (v : t) : type :=
+    Tnum v.(size) v.(signedness).
+End integral_type.
+Coercion integral_type.to_type : integral_type.t >-> type.
+
+Definition signedness_of_char (σ : genv) (ct : char_type) : signed :=
+  match ct with
+  | char_type.Cchar => σ.(char_signed)
+  | char_type.Cwchar => σ.(wchar_signed)
+  | _ => Unsigned
+  end.
+
+(** [equivalent_int_type g ct] is the integral type that is equivalent
+    (in rank and signedness) of [ct].
+ *)
+Definition equivalent_int_type (g : genv) (ct : char_type) : integral_type.t :=
+  let bits :=
+    match ct with
+    | char_type.Cchar => int_type.Ichar
+    | _ =>
+        match char_type.bitsN ct with
+        | 8 => W8
+        | 16 => W16
+        | 32 => W32
+        | 64 => W64
+        | 128 => W128
+        | _ => W8
+        end%N
+    end
+  in
+  integral_type.mk bits (signedness_of_char g ct).
 
 (** * global environments *)
 
@@ -114,6 +152,33 @@ Proof.
   unfold Is_true in *.
   case_match; try contradiction. intros.
   apply Build_genv_compat. assumption.
+Qed.
+
+(** ** One Definition Rule
+
+    The "one definition rule" states that if a single program ([σ : genv]) contains
+    two translation units that both declare/define the same type, then those two
+    type declarations/definitions are consistent. That is, they are either the same
+    or one is a declaration and the other is a definition.
+
+    Current limitations:
+    - This does not (currently) account for visibility, e.g. with anonymous namespaces
+    - This lemma only covers type declarations.
+ *)
+Lemma ODR : forall {σ tu1 tu2},
+    tu1 ⊧ σ ->
+    tu2 ⊧ σ -> forall nm gd1 gd2,
+        tu1.(globals) !! nm = Some gd1 ->
+        tu2.(globals) !! nm = Some gd2 ->
+        GlobDecl_compat gd1 gd2.
+Proof.
+  intros.
+  destruct H. destruct H0.
+  eapply tu_compat0 in H1.
+  eapply tu_compat1 in H2.
+  Forward.forward_reason.
+  rewrite H0 in H. inversion H; subst.
+  eapply (GlobDecl_ler_join); eauto.
 Qed.
 
 (** TODO deprecate this in favor of inlining it *)

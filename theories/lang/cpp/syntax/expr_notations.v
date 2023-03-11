@@ -75,17 +75,20 @@ Module ExprNotations.
          , only printing).
 
   Notation "'ASCII#' ascii_code"
-      := (Echar ascii_code%Z _)
+      := (Echar ascii_code%N _)
          ( in custom CPP_expr at level 0
          , ascii_code constr
          , format "'[' ASCII# ascii_code ']'"
          , only printing).
 
-  Notation "# s"
-      := (Estring s%bs _)
+  (** TODO: add an identity inductive type ([Estring_pretty]?) which is inserted
+      into the AST and which can serve as an anchor for a [String Notation].
+   *)
+  Notation "STRING# bytes"
+      := (Estring bytes%list _)
          ( in custom CPP_expr at level 0
-         , s constr
-         , format "'[' # s ']'"
+         , bytes constr
+         , format "'[' STRING# bytes ']'"
          , only printing).
 
   Notation "# v"

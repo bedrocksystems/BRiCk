@@ -6,6 +6,12 @@
 Require Export bedrock.prelude.base.
 Require Export bedrock.lang.cpp.ast.
 
+(** Unsupported types.
+    [description] is meant to be only used for documentation.
+ *)
+Definition Tunsupported (description : bs) : type.
+Proof. exact inhabitant. Qed.
+
 Fixpoint do_end (ty : globname) : obj_name :=
   match ty with
   | BS.String _ BS.EmptyString => "D0Ev"
@@ -61,6 +67,12 @@ Definition mk_overrides (methods : list (obj_name * obj_name)) : list (obj_name 
 Definition mk_virtuals (methods : list (obj_name * option obj_name)) : list (obj_name * option obj_name) := methods.
 
 Definition NStop : list ident := nil.
+
+Fixpoint string_to_bytes (b : bs) : list N :=
+  match b with
+  | BS.EmptyString => nil
+  | BS.String b bs => Byte.to_N b :: string_to_bytes bs
+  end.
 
 Bind Scope Z_scope with Z.
 
@@ -124,8 +136,8 @@ Definition Dstruct (name : globname) (o : option Struct) : translation_unitK :=
                        end ]> tys).
 
 (* named enumerations *)
-Definition Denum (name : globname) (t : type) (branches : list (ident * BinNums.Z)) : translation_unitK :=
-  fun syms tys k => k syms $ <[ name := Genum t (List.map fst branches) ]> tys.
+Definition Denum (name : globname) (t : type) (branches : list ident) : translation_unitK :=
+  fun syms tys k => k syms $ <[ name := Genum t branches ]> tys.
 (*
     let enum_ty := Tnamed name in
     let raw_ty :=
@@ -142,12 +154,11 @@ Definition Denum (name : globname) (t : type) (branches : list (ident * BinNums.
                            end). *)
   (* ^ enumerations (the initializers need to be constant expressions) *)
 
-Definition Dconstant    (name : globname) (t : type) (e : Expr) : translation_unitK :=
-  fun syms tys k => k syms $ <[ name := Gconstant t (Some e) ]> tys.
-Definition Dconstant_undef  (name : globname) (t : type) : translation_unitK :=
-  fun syms tys k => k syms $ <[ name := Gconstant t None ]> tys.
-Definition Denum_constant (name : globname) (t ut : type) (v : Z) (init : option Expr) : translation_unitK :=
-  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Ecast Cintegral (Eint v ut) Prvalue t)) ]> tys.
+Definition Denum_constant (name : globname) (t ut : type) (v : N + Z) (init : option Expr) : translation_unitK :=
+  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Ecast Cintegral (match v with
+                                                                         | inl n => Echar n ut
+                                                                         | inr z => Eint z ut
+                                                                         end) Prvalue t)) ]> tys.
 Definition Dtypedef     (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms $ <[ name := Gtypedef t ]> tys.
 Definition Dtype (name : globname) : translation_unitK :=

@@ -92,6 +92,7 @@ Section destroy.
         (* NOTE rvalue references [Trv_ref] are represented as references [Tref]. *)
         this |-> anyR (Tref $ erase_qualifiers r_ty) q ** Q
     | Tnum _ _
+    | Tchar_ _
     | Tfloat _
     | Tenum _
     | Tbool

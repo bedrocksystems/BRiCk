@@ -132,6 +132,34 @@ Section GlobDecl_ler.
   Qed.
 End GlobDecl_ler.
 
+
+(**
+   Compatibility of [GlobDecl] states that they contain consistent information.
+   Since declarations can not be partially defined, it is sufficient to define
+   this by saying that one subsumes the other.
+
+   Note this relation is reflexive and symmetric, but *not* transitive.
+ *)
+Definition GlobDecl_compat gd1 gd2 :=
+  GlobDecl_ler gd1 gd2 \/ GlobDecl_ler gd2 gd1.
+
+#[local] Instance GlobDecl_compat_refl : Reflexive GlobDecl_compat.
+Proof. left. reflexivity. Qed.
+
+#[local] Instance GlobDecl_compat_sym : Symmetric GlobDecl_compat.
+Proof. red. rewrite /GlobDecl_compat; destruct 1; tauto. Qed.
+
+Lemma enum_compat {t1 t2 a b} :
+  GlobDecl_compat (Genum t1 a) (Genum t2 b) ->
+  t1 = t2.
+Proof.
+  rewrite /GlobDecl_compat/GlobDecl_ler/=.
+  destruct 1.
+  case_bool_decide; eauto; contradiction.
+  case_bool_decide; eauto; contradiction.
+Qed.
+
+
 (** *** Inclusion of [type_table]s *)
 
 Definition type_table_le (te1 te2 : type_table) : Prop :=

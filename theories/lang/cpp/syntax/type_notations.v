@@ -93,6 +93,13 @@ Module Export TypeNotations.
   Notation "'int128'" := Ti128 (in custom CPP_type at level 0, only printing).
   Notation "'uint128'" := Tu128 (in custom CPP_type at level 0, only printing).
 
+  (* [char_type.t] variants *)
+  Notation "'char'" := Tchar (in custom CPP_type at level 0, only printing).
+  Notation "'wchar'" := Twchar (in custom CPP_type at level 0, only printing).
+  Notation "'char8'" := Tchar8 (in custom CPP_type at level 0, only printing).
+  Notation "'char16'" := Tchar16 (in custom CPP_type at level 0, only printing).
+  Notation "'char32'" := Tchar32 (in custom CPP_type at level 0, only printing).
+
   (* The rest of the [type]s *)
   Notation "'ptr<' ty '>'"
       := (Tptr ty)

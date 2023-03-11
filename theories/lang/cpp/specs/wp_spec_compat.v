@@ -6,7 +6,6 @@
 Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.algebra.telescopes.
 Require Import bedrock.lang.bi.telescopes.
-Require Import bedrock.lang.cpp.semantics.values.
 Require Import bedrock.lang.cpp.logic.entailsN.
 Require Import bedrock.lang.cpp.specs.classy.
 
@@ -180,7 +179,6 @@ Section wpspec_ofe.
 End wpspec_ofe.
 End wpspec_ofe.
 Arguments WpSpecO : clear implicits.
-Notation WithPrePostO PROP := (WpSpecO PROP ptr ptr).
 
 (** Relations between WPPs. *)
 Definition wpspec_relation {PROP : bi} (R : relation PROP)

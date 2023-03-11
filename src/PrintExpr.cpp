@@ -13,7 +13,9 @@
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/Builtins.h"
+#include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/Version.inc"
+#include <bit>
 
 using namespace clang;
 using namespace fmt;
@@ -594,16 +596,64 @@ public:
     void VisitCharacterLiteral(const CharacterLiteral* lit, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext&,
                                OpaqueNames&) {
-        print.ctor("Echar", false) << lit->getValue() << "%Z";
+        print.ctor("Echar", false) << lit->getValue() << "%N";
         done(lit, print, cprint);
     }
 
+    static void print_string_type(const Expr* expr, CoqPrinter& print,
+                                  ClangPrinter& cprint) {
+        if (auto at = dyn_cast<ArrayType>(expr->getType().getTypePtr())) {
+            print.output() << fmt::nbsp;
+            cprint.printType(at->getElementType().getTypePtr(), print);
+        } else {
+            assert(false && "string literal does not have array type");
+        }
+    }
+
     void VisitStringLiteral(const StringLiteral* lit, CoqPrinter& print,
-                            ClangPrinter& cprint, const ASTContext&,
+                            ClangPrinter& cprint, const ASTContext& ctxt,
                             OpaqueNames&) {
         print.ctor("Estring", false);
-        print.escaped_str(lit);
-        done(lit, print, cprint);
+        // We get the string literal in bytes, but we need to encode it
+        // as unsigned characters (not necessarily `char`) using the
+        // internal character representation of BRiCk.
+        auto bytes = lit->getBytes();
+        const unsigned width = lit->getCharByteWidth();
+        print.begin_list();
+        for (unsigned i = 0, len = lit->getByteLength(); i < len;) {
+            unsigned long long byte = 0;
+            // TODO confirm that this is correct
+            if (llvm::support::endian::system_endianness() ==
+                llvm::support::endianness::big) {
+                for (unsigned j = 0; j < width; ++j) {
+                    byte = (byte << 8) | static_cast<unsigned char>(bytes[i++]);
+                }
+            } else {
+                for (unsigned j = 0; j < width; ++j) {
+                    byte = (byte << 8) |
+                           static_cast<unsigned char>(bytes[i + width - j - 1]);
+                }
+                i += width;
+            }
+            print.output() << byte << "%N";
+            print.cons();
+        }
+        print.end_list();
+        // NOTE: the trailing `\0` is added by the semantics
+        print_string_type(lit, print, cprint);
+        print.end_ctor();
+    }
+
+    void VisitPredefinedExpr(const PredefinedExpr* expr, CoqPrinter& print,
+                             ClangPrinter& cprint, const ASTContext&,
+                             OpaqueNames&) {
+        // [PredefinedExpr] constructs a [string] which is always ascii
+        print.ctor("Estring");
+        print.ctor("string_to_bytes");
+        print.str(expr->getFunctionName()->getString());
+        print.end_ctor();
+        print_string_type(expr, print, cprint);
+        print.end_ctor();
     }
 
     void VisitCXXBoolLiteralExpr(const CXXBoolLiteralExpr* lit,
@@ -1167,14 +1217,6 @@ public:
         print.ctor("Edefault_init_expr");
         cprint.printExpr(expr->getExpr(), print, li);
         print.end_ctor();
-    }
-
-    void VisitPredefinedExpr(const PredefinedExpr* expr, CoqPrinter& print,
-                             ClangPrinter& cprint, const ASTContext&,
-                             OpaqueNames&) {
-        print.ctor("Estring");
-        print.str(expr->getFunctionName()->getString());
-        done(expr, print, cprint);
     }
 
     void VisitVAArgExpr(const VAArgExpr* expr, CoqPrinter& print,

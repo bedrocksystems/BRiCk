@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 #include <string.h>
@@ -54,6 +55,8 @@ public:
 
 struct NBSP;
 extern const NBSP* nbsp;
+
+Formatter& operator<<(Formatter& out, const llvm::APSInt&);
 
 Formatter& operator<<(Formatter& out, const NBSP* _);
 

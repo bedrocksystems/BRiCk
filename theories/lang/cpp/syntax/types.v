@@ -75,7 +75,6 @@ Variant calling_conv : Set :=
 | CC_C
 | CC_MsAbi
 | CC_RegCall.
-
 #[only(inhabited,eq_dec,countable)] derive calling_conv.
 
 (* in almost all contexts, we are going to use [CC_C], so we're going to make
@@ -95,6 +94,81 @@ Variant function_arity : Set :=
 Existing Class function_arity.
 #[global] Existing Instance Ar_Definite.
 
+(** Character types
+    See https://en.cppreference.com/w/cpp/language/types
+ *)
+Module char_type.
+  Variant t : Set :=
+    | Cchar (* signedness defined by platform *)
+    | Cwchar (* signedness defined by platform *)
+    | C8 (* unsigned *)
+    | C16 (* unsigned *)
+    | C32. (* unsigned *)
+  #[global] Instance t_eq_dec: EqDecision t.
+  Proof. solve_decision. Defined.
+  #[global] Instance t_countable : Countable t.
+  Proof.
+    apply (inj_countable'
+      (λ cc,
+        match cc with
+        | Cchar => 0 | Cwchar => 1 | C8 => 2 | C16 => 3 | C32 => 4
+        end)
+      (λ n,
+        match n with
+        | 0 => Cchar | 1 => Cwchar | 2 => C8 | 3 => C16 | 4 => C32
+        | _ => Cchar	(** dummy *)
+        end)).
+    abstract (by intros []).
+  Defined.
+
+  Definition bytesN (t : t) : N :=
+    match t with
+    | Cchar => 1
+    | Cwchar => 4 (* TODO: actually 16-bits on Windows *)
+    | C8 => 1
+    | C16 => 2
+    | C32 => 4
+    end.
+
+  Definition bitsN (t : t) : N :=
+    8 * bytesN t.
+
+End char_type.
+Notation char_type := char_type.t.
+
+(** Integer types
+    See https://en.cppreference.com/w/cpp/language/types
+ *)
+Module int_type.
+  (* the rank <https://eel.is/c++draft/conv.rank> *)
+  Notation t := bitsize (only parsing).
+  Notation rank := t (only parsing).
+
+  Notation Ichar := W8 (only parsing).
+  Notation Ishort := W16 (only parsing).
+  Notation Iint := W32 (only parsing).
+  Notation Ilong := W64 (only parsing).
+  (** warning: LLP64 model uses [long_bits := W32] *)
+  Notation Ilonglong := W64 (only parsing).
+
+  Definition bytesN (t : t) : N :=
+    arith.types.bytesN t. (* from [arith.types] *)
+
+  Definition bitsN (t : t) : N :=
+    8 * bytesN t.
+
+  Definition t_le (a b : t) : Prop :=
+    (bytesN a <= bytesN b)%N.
+
+  #[global] Instance t_le_dec : RelDecision t_le :=
+    fun a b => N_le_dec (bytesN a) (bytesN b).
+
+  (* [max] on the rank. *)
+  Definition t_max (a b : bitsize) : bitsize :=
+    if bool_decide (t_le a b) then b else a.
+
+End int_type.
+Notation int_type := int_type.t.
 
 (* types *)
 Inductive type : Set :=
@@ -109,7 +183,8 @@ Inductive type : Set :=
   https://en.cppreference.com/w/cpp/language/reference#Reference_collapsing
   https://www.eel.is/c++draft/dcl.ref#5
   *)
-| Tnum (size : bitsize) (signed : signed)
+| Tnum (size : int_type.t) (signed : signed)
+| Tchar_ (_ : char_type)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
@@ -126,13 +201,6 @@ Inductive type : Set :=
 .
 
 #[only(inhabited)] derive type.
-
-
-(** [description] is meant to be only used for documentation. *)
-Definition Tunsupported (description : bs) : type.
-Proof. exact inhabitant. Qed.
-
-Notation Tchar := Tnum (only parsing).
 
 (** Strengthened Induction Principle for [type]
 
@@ -162,6 +230,7 @@ Section type_ind'.
     P ty -> P (Trv_ref ty).
   Hypothesis Tnum_ind' : forall (size : bitsize) (sign : signed),
     P (Tnum size sign).
+  Hypothesis Tchar__ind' : forall ct, P (Tchar_ ct).
   Hypothesis Tvoid_ind' : P Tvoid.
   Hypothesis Tarray_ind' : forall (ty : type) (sz : N),
     P ty -> P (Tarray ty sz).
@@ -188,6 +257,7 @@ Section type_ind'.
     | Tref ty                 => Tref_ind' ty (type_ind' ty)
     | Trv_ref ty              => Trv_ref_ind' ty (type_ind' ty)
     | Tnum sz sgn             => Tnum_ind' sz sgn
+    | Tchar_ sz               => Tchar__ind' sz
     | Tvoid                   => Tvoid_ind'
     | Tarray ty sz            => Tarray_ind' ty sz (type_ind' ty)
     | Tnamed name             => Tnamed_ind' name
@@ -223,13 +293,15 @@ Proof.
 Defined.
 #[global] Instance type_eq: EqDecision type := type_eq_dec.
 Section type_countable.
-  #[local] Notation BS x      := (GenLeaf (inr x)).
-  #[local] Notation QUAL x    := (GenLeaf (inl (inr x))).
-  #[local] Notation BITSIZE x := (GenLeaf (inl (inl (inr x)))).
-  #[local] Notation SIGNED x  := (GenLeaf (inl (inl (inl (inr x))))).
-  #[local] Notation CC x      := (GenLeaf (inl (inl (inl (inl (inr x)))))).
-  #[local] Notation AR x      := (GenLeaf (inl (inl (inl (inl (inl (inr x))))))).
-  #[local] Notation N x       := (GenLeaf (inl (inl (inl (inl (inl (inl x))))))).
+  #[local] Notation BS x        := (GenLeaf (inr x)).
+  #[local] Notation QUAL x      := (GenLeaf (inl (inr x))).
+  #[local] Notation BITSIZE x   := (GenLeaf (inl (inl (inr x)))).
+  #[local] Notation SIGNED x    := (GenLeaf (inl (inl (inl (inr x))))).
+  #[local] Notation CC x        := (GenLeaf (inl (inl (inl (inl (inr x)))))).
+  #[local] Notation AR x        := (GenLeaf (inl (inl (inl (inl (inl (inr x))))))).
+  #[local] Notation N x         := (GenLeaf (inl (inl (inl (inl (inl (inl (inr x)))))))).
+  #[local] Notation CHAR_TYPE x := (GenLeaf (inl (inl (inl (inl (inl (inl (inl x)))))))).
+
   #[global] Instance type_countable : Countable type.
   Proof.
     set enc := fix go (t : type) :=
@@ -250,6 +322,7 @@ Section type_countable.
       | Tarch None gn => GenNode 13 [BS gn]
       | Tarch (Some sz) gn => GenNode 14 [BITSIZE sz; BS gn]
       | Tenum gn => GenNode 15 [BS gn]
+      | Tchar_ sz => GenNode 16 [CHAR_TYPE sz]
       end.
     set dec := fix go t :=
       match t with
@@ -269,10 +342,11 @@ Section type_countable.
       | GenNode 13 [BS gn] => Tarch None gn
       | GenNode 14 [BITSIZE sz; BS gn] => Tarch (Some sz) gn
       | GenNode 15 [BS gn] => Tenum gn
+      | GenNode 16 [CHAR_TYPE sz] => Tchar_ sz
       | _ => Tvoid	(** dummy *)
       end.
     apply (inj_countable' enc dec). refine (fix go t := _).
-    destruct t as [| | | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
+    destruct t as [| | | | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
     induction args; simpl; f_equal; done.
   Defined.
 End type_countable.
@@ -386,6 +460,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
   | Tqualified q t => qual_norm q t
   | Tnum _ _ => t
+  | Tchar_ _ => t
   | Tbool => t
   | Tvoid => t
   | Tnamed _ => t
@@ -439,6 +514,14 @@ Section normalize_type_idempotent.
   Qed.
 End normalize_type_idempotent.
 
+(** ** Notation for character types *)
+Coercion Tchar_ : char_type.t >-> type.
+Notation Tchar   := (Tchar_ char_type.Cchar).
+Notation Twchar  := (Tchar_ char_type.Cwchar).
+Notation Tchar8  := (Tchar_ char_type.C8).
+Notation Tchar16 := (Tchar_ char_type.C16).
+Notation Tchar32 := (Tchar_ char_type.C32).
+
 (** ** Types with explicit size information. *)
 
 Notation Ti8    := (Tnum W8 Signed).
@@ -464,28 +547,27 @@ LLP64 and LP64 agree except for the [long] type: see
 the warning below.
 In future, we may want to parametrize by a data model, or
 the machine word size.
-*)
-Notation char_bits :=  (W8)  (only parsing).
-Notation short_bits := (W16) (only parsing).
-Notation int_bits :=   (W32) (only parsing).
-
 (** warning: LLP64 model uses [long_bits := W32] *)
-Notation long_bits :=      (W64) (only parsing).
-Notation long_long_bits := (W64) (only parsing).
+*)
+Notation char_bits      := (int_type.Ichar)     (only parsing).
+Notation short_bits     := (int_type.Ishort)    (only parsing).
+Notation int_bits       := (int_type.Iint)      (only parsing).
+Notation long_bits      := (int_type.Ilong)     (only parsing).
+Notation long_long_bits := (int_type.Ilonglong) (only parsing).
 
 (** ** Types with implicit size information. *)
 
-Notation Tschar  := Ti8 (only parsing).
-Notation Tuchar  := Tu8 (only parsing).
+Notation Tschar  := (Tnum int_type.Ichar Signed) (only parsing).
+Notation Tuchar  := (Tnum int_type.Ichar Unsigned) (only parsing).
 
-Notation Tushort := (Tnum short_bits Unsigned) (only parsing).
-Notation Tshort := (Tnum short_bits Signed) (only parsing).
+Notation Tushort := (Tnum int_type.Ishort Unsigned) (only parsing).
+Notation Tshort  := (Tnum int_type.Ishort Signed) (only parsing).
 
-Notation Tint := (Tnum int_bits Signed) (only parsing).
-Notation Tuint := (Tnum int_bits Unsigned) (only parsing).
+Notation Tint  := (Tnum int_type.Iint Signed) (only parsing).
+Notation Tuint := (Tnum int_type.Iint Unsigned) (only parsing).
 
-Notation Tulong := (Tnum long_bits Unsigned) (only parsing).
-Notation Tlong := (Tnum long_bits Signed) (only parsing).
+Notation Tulong := (Tnum int_type.Ilong Unsigned) (only parsing).
+Notation Tlong  := (Tnum int_type.Ilong Signed) (only parsing).
 
-Notation Tulonglong := (Tnum long_long_bits Unsigned) (only parsing).
-Notation Tlonglong := (Tnum long_long_bits Signed) (only parsing).
+Notation Tulonglong := (Tnum int_type.Ilonglong Unsigned) (only parsing).
+Notation Tlonglong  := (Tnum int_type.Ilonglong Signed) (only parsing).

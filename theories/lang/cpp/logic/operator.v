@@ -8,7 +8,12 @@ From bedrock.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
 
-Parameter eval_binop_impure : forall `{has_cpp : cpp_logic}, translation_unit -> BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), mpred.
+Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {σ : genv},
+    translation_unit -> BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), mpred.
+
+Axiom eval_binop_impure_well_typed : forall `{has_cpp : cpp_logic} `{σ : genv} tu bo ty1 ty2 ty3 v1 v2 v3,
+    tu ⊧ σ ->
+    eval_binop_impure tu bo ty1 ty2 ty3 v1 v2 v3 |-- [| has_type v1 ty1 /\ has_type v2 ty2 /\ has_type v3 ty3 |].
 
 (** Pointer [p'] is not at the beginning of a block. *)
 Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
@@ -31,6 +36,16 @@ Section with_Σ.
 
   Definition eval_binop tu (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
     [| eval_binop_pure tu b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure tu b lhsT rhsT resT lhs rhs res.
+
+  Theorem eval_binop_well_typed : forall tu bo ty1 ty2 ty3 v1 v2 v3,
+    tu ⊧ resolve ->
+    eval_binop tu bo ty1 ty2 ty3 v1 v2 v3 |-- [| has_type v1 ty1 /\ has_type v2 ty2 /\ has_type v3 ty3 |].
+  Proof.
+    intros.
+    iIntros "X"; iDestruct "X" as "[% | X]".
+    - eauto using eval_binop_pure_well_typed.
+    - iApply eval_binop_impure_well_typed; eauto.
+  Qed.
 
   Variable tu : translation_unit.
 

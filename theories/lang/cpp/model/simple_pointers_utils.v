@@ -41,6 +41,8 @@ Module canonical_tu.
     (* ^ the [translation_unit] *)
   ; pointer_size_bitsize : bitsize
     (* ^ the size of a pointer *)
+  ; char_signed : signed
+  ; wchar_signed : signed
   }.
   #[global] Instance genv_canon_eq_dec : EqDecision genv_canon.
   Proof. solve_decision. Qed.
@@ -48,7 +50,7 @@ Module canonical_tu.
   Definition tu_to_canon (tu : translation_unit) : translation_unit_canon :=
     let (s, g, init, bo) := tu in Build_translation_unit_canon (im_to_gmap s) (im_to_gmap g) bo.
   #[local] Definition genv_to_canon σ : genv_canon :=
-    let (tu, sz) := σ in Build_genv_canon (tu_to_canon tu) sz.
+    let (tu, sz, sgn, wsgn) := σ in Build_genv_canon (tu_to_canon tu) sz sgn wsgn.
 End canonical_tu.
 
 Definition null_alloc_id : alloc_id := MkAllocId 0.
