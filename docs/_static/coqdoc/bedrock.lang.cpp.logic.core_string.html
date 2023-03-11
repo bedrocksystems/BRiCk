@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.lang.cpp.logic.core_string</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;BedRock&nbsp;Systems&nbsp;Inc.&nbsp;2023<br/>
+<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">elpi.apps.locker</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">iris.proofmode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.proofmode.html#"><span class="id" title="library">proofmode</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">prelude</span></a> <a class="idref" href="bedrock.lang.bi.observe.html#"><span class="id" title="library">observe</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.semantics</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">values</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.arr.html#"><span class="id" title="library">arr</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#"><span class="id" title="library">heap_pred</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.bi.spec.html#"><span class="id" title="library">spec</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#ChargeNotation"><span class="id" title="module">ChargeNotation</span></a>.<br/>
+#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">Z_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Core C++ string theory: part of the semantics. 
+<div class="paragraph"> </div>
+
+ <span class="inlinecode"><span class="id" title="var">strings_bytesR</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.with_ct.ct"><span class="id" title="variable">ct</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> <span class="inlinecode"><span class="id" title="var">chars</span></span> is <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> (const) fractional ownership of
+    <span class="inlinecode"><span class="id" title="var">chars</span></span> with a trailing <span class="inlinecode">0</span>.
+<ul class="doclist">
+<li> Unlike <span class="inlinecode"><span class="id" title="var">zstring.t</span></span>, does not assume the contents avoid `0` elements, since that property might not be guaranteed in all character types/encodings.
+
+</li>
+<li> Used for string literals of arbitrary character types.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+    NOTE that <span class="inlinecode"><span class="id" title="var">chars</span></span> is in units of *characters* using the standard
+          character encoding (see <span class="inlinecode"><span class="id" title="var">syntax</span>/<span class="id" title="var">expr.v</span></span>). This is *not* the
+          same as bytes, and will not be for multi-byte characters.
+  
+</div>
+<div class="code">
+<span class="id" title="var">mlock</span><br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">string_bytesR</span> `{<a id="2ab75602e9b8af2ca6fd6dbdb1e68a19" class="idref" href="#2ab75602e9b8af2ca6fd6dbdb1e68a19"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>} {<a id="303c62d4b554442e1659318da8f8db12" class="idref" href="#303c62d4b554442e1659318da8f8db12"><span class="id" title="binder">σ</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>} (<a id="cty:12" class="idref" href="#cty:12"><span class="id" title="binder">cty</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#char_type"><span class="id" title="abbreviation">char_type</span></a>) (<a id="q:13" class="idref" href="#q:13"><span class="id" title="binder">q</span></a> : <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#cQp.t"><span class="id" title="record">cQp.t</span></a>) (<a id="ls:14" class="idref" href="#ls:14"><span class="id" title="binder">ls</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <a id="ty:7" class="idref" href="#ty:7"><span class="id" title="binder">ty</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tchar_"><span class="id" title="constructor">Tchar_</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#cty:4"><span class="id" title="variable">cty</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.arr.html#arrayR"><span class="id" title="definition">arrayR</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#ty:7"><span class="id" title="variable">ty</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Unicode.Utf8_core.html#bc1ad27deabe143d39d35abe6be2c1a4"><span class="id" title="notation">λ</span></a> <a id="c:8" class="idref" href="#c:8"><span class="id" title="binder">c</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Unicode.Utf8_core.html#bc1ad27deabe143d39d35abe6be2c1a4"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="definition">primR</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#ty:7"><span class="id" title="variable">ty</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#q:5"><span class="id" title="variable">q</span></a> (<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.N_to_char"><span class="id" title="definition">N_to_char</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#cty:4"><span class="id" title="variable">cty</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:8"><span class="id" title="variable">c</span></a>)) (<a class="idref" href="bedrock.lang.cpp.logic.core_string.html#ls:6"><span class="id" title="variable">ls</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Init.Datatypes.html#bc347c51eaf667706ae54503b26d52c6"><span class="id" title="notation">++</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Lists.List.html#ddd65c2f7ee73ecec433744948d846bb"><span class="id" title="notation">[</span></a>0%<span class="id" title="var">N</span><a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Lists.List.html#ddd65c2f7ee73ecec433744948d846bb"><span class="id" title="notation">]</span></a>).<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="var">Arguments</span> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#body"><span class="id" title="axiom">string_bytesR</span></a> {<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> : <span class="id" title="tactic">assert</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Arguments&nbsp;char_type.bitsN&nbsp;!_&nbsp;/.<br/>
+Arguments&nbsp;char_type.bytesN&nbsp;!_&nbsp;/.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <a id="N_to_char_Cchar_eq" class="idref" href="#N_to_char_Cchar_eq"><span class="id" title="lemma">N_to_char_Cchar_eq</span></a> (<a id="c:15" class="idref" href="#c:15"><span class="id" title="binder">c</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) :<br/>
+&nbsp;&nbsp;(<a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:15"><span class="id" title="variable">c</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.NArith.BinNat.html#::N_scope:x_'&lt;'_x"><span class="id" title="notation">&lt;</span></a> 2 <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.NArith.BinNat.html#7878de73cb557151570f9fd311801cb8"><span class="id" title="notation">^</span></a> 8)%<span class="id" title="var">N</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.N_to_char"><span class="id" title="definition">N_to_char</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#char_type.Cchar"><span class="id" title="constructor">char_type.Cchar</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:15"><span class="id" title="variable">c</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.Vchar"><span class="id" title="constructor">Vchar</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:15"><span class="id" title="variable">c</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.N_to_char"><span class="id" title="definition">N_to_char</span></a> /<a class="idref" href="bedrock.lang.cpp.arith.operator.html#trimN"><span class="id" title="definition">operator.trimN</span></a>/=. <span class="id" title="var">f_equiv</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">exact</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.NArith.BinNat.html#N.mod_small"><span class="id" title="lemma">N.mod_small</span></a>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="106674b72acf13fb9e22a04f2639dc9f" class="idref" href="#106674b72acf13fb9e22a04f2639dc9f"><span class="id" title="section">with_Σ</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="9e57768f7d1333d5d23f870b726fb0dd" class="idref" href="#9e57768f7d1333d5d23f870b726fb0dd"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>} {<a id="afb2f45ff79aed8fbb6b6cf08ccf3841" class="idref" href="#afb2f45ff79aed8fbb6b6cf08ccf3841"><span class="id" title="binder">σ</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="string_bytesR_timeless" class="idref" href="#string_bytesR_timeless"><span class="id" title="instance">string_bytesR_timeless</span></a> : <a class="idref" href="bedrock.lang.bi.derived_laws.html#nary.Timeless3"><span class="id" title="abbreviation">Timeless3</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#string_bytesR"><span class="id" title="abbreviation">string_bytesR</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">rewrite</span> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#unlock"><span class="id" title="axiom">string_bytesR.unlock</span></a> /=. <span class="id" title="tactic">apply</span> <span class="id" title="var">_</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="string_bytesR_cfrac" class="idref" href="#string_bytesR_cfrac"><span class="id" title="instance">string_bytesR_cfrac</span></a> <a id="cty:19" class="idref" href="#cty:19"><span class="id" title="binder">cty</span></a> : <a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#CFractional1"><span class="id" title="abbreviation">CFractional1</span></a> (<a class="idref" href="bedrock.lang.cpp.logic.core_string.html#string_bytesR"><span class="id" title="abbreviation">string_bytesR</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#cty:19"><span class="id" title="variable">cty</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">rewrite</span> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#unlock"><span class="id" title="axiom">string_bytesR.unlock</span></a> /=. <span class="id" title="tactic">apply</span> <span class="id" title="var">_</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#106674b72acf13fb9e22a04f2639dc9f"><span class="id" title="section">with_Σ</span></a>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

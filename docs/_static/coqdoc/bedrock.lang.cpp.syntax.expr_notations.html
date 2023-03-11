@@ -125,18 +125,26 @@
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="d8173d31f57bc445c009ada32dd32aef" class="idref" href="#d8173d31f57bc445c009ada32dd32aef"><span class="id" title="notation">&quot;</span></a>'ASCII#' ascii_code"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Echar"><span class="id" title="constructor">Echar</span></a> <span class="id" title="var">ascii_code</span>%<span class="id" title="var">Z</span> <span class="id" title="var">_</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Echar"><span class="id" title="constructor">Echar</span></a> <span class="id" title="var">ascii_code</span>%<span class="id" title="var">N</span> <span class="id" title="var">_</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">CPP_expr</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">ascii_code</span> <span class="id" title="keyword">constr</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' ASCII# ascii_code ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 
 <br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="a15f198151d8b956a0896521e4b54be9" class="idref" href="#a15f198151d8b956a0896521e4b54be9"><span class="id" title="notation">&quot;</span></a># s"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Estring"><span class="id" title="constructor">Estring</span></a> <span class="id" title="var">s</span>%<span class="id" title="var">bs</span> <span class="id" title="var">_</span>)<br/>
+</div>
+
+<div class="doc">
+TODO: add an identity inductive type (<span class="inlinecode"><span class="id" title="var">Estring_pretty</span></span>?) which is inserted
+      into the AST and which can serve as an anchor for a <span class="inlinecode"><a class="idref" href="bedrock.prelude.bytestring_core.html#BS.String"><span class="id" title="constructor">String</span></a></span> <span class="inlinecode"><span class="id" title="keyword">Notation</span></span>.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="c599756cbd3f0e59c1fe5e8a5968bfd6" class="idref" href="#c599756cbd3f0e59c1fe5e8a5968bfd6"><span class="id" title="notation">&quot;</span></a>STRING# bytes"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Estring"><span class="id" title="constructor">Estring</span></a> <span class="id" title="var">bytes</span>%<span class="id" title="var">list</span> <span class="id" title="var">_</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">CPP_expr</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">s</span> <span class="id" title="keyword">constr</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' # s ']'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">bytes</span> <span class="id" title="keyword">constr</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' STRING# bytes ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 
 <br/>
