@@ -187,6 +187,10 @@ Section observe.
   Lemma observe_intro Q P `{!Persistent Q} : (P ⊢ P ∗ Q) → Observe Q P.
   Proof. rewrite/Observe {1}(persistent Q)=>->. iIntros "[_ $]". Qed.
 
+  (* Ease proving the goal linearly. *)
+  Lemma observe_intro_intuitionistically Q P : Observe Q P → Observe (□ Q) P.
+  Proof. rewrite/Observe=>->. iIntros "#$". Qed.
+
   Lemma observe_equiv_sep_True Q P `{!Persistent Q} : (P ⊢ Q ∗ True) ↔ Observe Q P.
   Proof.
     rewrite/Observe; split; move->; last by iIntros "#$".
@@ -206,6 +210,10 @@ Section observe.
   Proof.
     rewrite/Observe2 {1}(persistent Q)=>->. f_equiv. iIntros "(_ &_ & $)".
   Qed.
+
+  (* Ease proving the goal linearly. *)
+  Lemma observe_2_intro_intuitionistically Q P1 P2 : Observe2 Q P1 P2 → Observe2 (□ Q) P1 P2.
+  Proof. rewrite/Observe2=>->. f_equiv. iIntros "#$". Qed.
 
   Lemma observe_2_equiv_sep_True Q P1 P2 `{!Persistent Q} : (P1 ∗ P2 ⊢ Q ∗ True) ↔ Observe2 Q P1 P2.
   Proof.
