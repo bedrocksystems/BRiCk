@@ -177,6 +177,7 @@ Section observe.
   Proof. split'; first iIntros "($ & $ & _)". by apply bi.wand_elim_l', observe_2_elim. Qed.
 
   (** Alternatives for introducing observations *)
+  (* [observe_intro_persistent] makes the goal linearly unprovable (unless [P] is affine). *)
   Lemma observe_intro_persistent Q P `{!Persistent Q} : (P ⊢ Q) → Observe Q P.
   Proof. rewrite/Observe=>->. iIntros "#$". Qed.
 
@@ -192,6 +193,7 @@ Section observe.
     rewrite {1}(persistent Q). iIntros "[$ _]".
   Qed.
 
+  (* [observe_2_intro_persistent] makes the goal linearly unprovable (unless [P1] and [P2] are affine). *)
   Lemma observe_2_intro_persistent Q P1 P2 `{!Persistent Q} :
     (P1 ⊢ P2 -∗ Q) → Observe2 Q P1 P2.
   Proof. rewrite/Observe2=>->. f_equiv. iIntros "#$". Qed.
