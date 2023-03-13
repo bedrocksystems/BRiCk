@@ -150,3 +150,27 @@ Section monPred_lift.
   Proof. intros. apply: intuitionistic_laterable. Qed.
   (** Liftings for [BiPositive] and [BiEmpForallOnlyProvable] are declared elsewhere. *)
 End monPred_lift.
+
+#[export] Remove Hints class_instances.from_forall_intuitionistically : typeclass_instances.
+
+Section UPSTREAM_PROP.
+  Context {PROP : bi}.
+  (* To upstream to Iris. *)
+  #[export] Instance from_forall_intuitionistically {A} `{!BiPersistentlyForall PROP}
+      P (Φ : A → PROP) name :
+    (* Compute [A] before searching for [Inhabited A]: *)
+    FromForall P Φ name →
+    TCOrT (BiAffine PROP) (Inhabited A) ->
+    FromForall (□ P) (λ a, □ (Φ a))%I name.
+  Proof.
+    Import bi.
+    rewrite /FromForall => /[swap] HT <-.
+    destruct HT.
+    - setoid_rewrite intuitionistically_into_persistently.
+      by rewrite persistently_forall.
+    - rewrite {2} /bi_intuitionistically /bi_affinely.
+      apply and_intro; first exact: affine.
+      setoid_rewrite intuitionistically_into_persistently_1 at 1.
+      by rewrite persistently_forall.
+  Qed.
+End UPSTREAM_PROP.
