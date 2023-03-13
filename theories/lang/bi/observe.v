@@ -134,10 +134,12 @@ Section observe.
     - iIntros (HQ) "P1 P2". iApply (HQ with "P2 P1").
   Qed.
 
+  Lemma observe_2_observe Q P1 P2 : Observe2 Q P1 P2 ↔ Observe Q (P1 ∗ P2).
+  Proof. by rewrite /Observe bi.entails_curry. Qed.
   Lemma observe_curry Q P1 P2 : Observe2 Q P1 P2 → Observe Q (P1 ∗ P2).
-  Proof. intros Hobs. rewrite /Observe. apply bi.wand_elim_l', Hobs. Qed.
+  Proof. apply observe_2_observe. Qed.
   Lemma observe_uncurry Q P1 P2 : Observe Q (P1 ∗ P2) → Observe2 Q P1 P2.
-  Proof. intros Hobs. rewrite /Observe2. apply bi.wand_intro_r, Hobs. Qed.
+  Proof. apply observe_2_observe. Qed.
 
   (** Alternatives for eliminating observations *)
   (** We favor declaring observations with [only_provable] over [bi_pure]. *)
@@ -193,8 +195,7 @@ Section observe.
 
   Lemma observe_equiv_sep_True Q P `{!Persistent Q} : (P ⊢ Q ∗ True) ↔ Observe Q P.
   Proof.
-    rewrite/Observe; split; move->; last by iIntros "#$".
-    rewrite {1}(persistent Q). iIntros "[$ _]".
+    by rewrite (comm bi_sep Q) /Observe bi.persistently_absorbingly.
   Qed.
 
   (* [observe_2_intro_persistent] makes the goal linearly unprovable (unless [P1] and [P2] are affine). *)
@@ -216,10 +217,7 @@ Section observe.
   Proof. rewrite/Observe2=>->. f_equiv. iIntros "#$". Qed.
 
   Lemma observe_2_equiv_sep_True Q P1 P2 `{!Persistent Q} : (P1 ∗ P2 ⊢ Q ∗ True) ↔ Observe2 Q P1 P2.
-  Proof.
-    rewrite/Observe2; split; last first. { move=>/bi.wand_elim_l' ->. iIntros "#$". }
-    move=> HPQ. apply bi.wand_intro_r. rewrite HPQ {1}(persistent Q). iIntros "[$ _]".
-  Qed.
+  Proof. by rewrite observe_2_observe observe_equiv_sep_True. Qed.
 End observe.
 
 (** Instances *)
