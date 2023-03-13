@@ -475,3 +475,28 @@ Section theory.
     Observe2 [| R2 (f x) (f y) |] P1 P2 -> Observe2 [| R1 x y |] P1 P2.
   Proof. apply observe_2_derive_only_provable, inj, _. Qed.
 End theory.
+
+(** [observable P] is the largest observation deducible from [P].
+
+Motivation: framing [P] might make the goal unprovable, for instance in
+[Observe Q P → P -∗ P ∗ Q]
+
+But after observing [observable P], framing [P] always preserves provability. *)
+Definition observable {PROP : bi} (P : PROP) : PROP :=
+  □ (∀ Q : PROP, [| Observe Q P |] -∗ Q).
+
+Section observable_theory.
+  Context {PROP : bi}.
+  Implicit Types P Q : PROP.
+
+  #[global] Instance observe_observable `{!BiPersistentlyForall PROP} P :
+    Observe (observable P) P.
+  Proof.
+    apply observe_intro_intuitionistically.
+    iIntros "P" (Q HQP). iDestruct (HQP with "P") as "#$".
+  Qed.
+
+  #[global] Instance observable_observe P Q `{!Observe Q P} :
+    Observe Q (observable P).
+  Proof. iIntros "#P". by iApply ("P" $! Q with "[%]"). Qed.
+End observable_theory.
