@@ -189,12 +189,11 @@ Qed.
 
 Lemma to_char_spec_high (from_bits : N) (from_sgn : signed) (to_bits : N) (to_sgn : signed) (v : Z) :
   (from_bits ≤ to_bits)%Z
-  -> (2 ^ from_bits | 2 ^ to_bits)%Z
   -> (2 ^ (from_bits - 1) <= v < 2 ^ from_bits)%Z
   -> to_char to_bits to_sgn from_bits
       (of_char_specf from_bits from_sgn to_bits to_sgn v) = (Z.to_N v).
 Proof.
-  move=>Ho Hd [Hlb Hub].
+  move=>Ho [Hlb Hub].
   have Hpow: (2 ^ from_bits <= 2 ^ to_bits)%Z
     by apply: Z.pow_le_mono.
   have Hlt: (v < 2 ^ to_bits)%Z
@@ -212,9 +211,12 @@ Proof.
       by rewrite Z.mod_small; lia.
 
     rewrite Zplus_mod.
-    move: Hd; rewrite -Z.mod_divide; last lia.
-    move=>->; rewrite Z.add_0_r.
-    rewrite Z.mod_mod; last lia.
+    have->: (2 ^ to_bits `mod` 2 ^ from_bits = 0).
+    { have ->:(Z.of_N to_bits = to_bits - from_bits + from_bits)%Z by lia.
+      rewrite Z.pow_add_r; try lia.
+      apply: Z.mod_mul; lia. }
+
+    rewrite Z.add_0_r Z.mod_mod; last lia.
     by rewrite Z_mod_big; lia.
 Qed.
 
@@ -222,12 +224,11 @@ Lemma of_char_to_char (from_bits : N) (from_sgn : signed) (to_bits : N)
   (to_sgn : signed) (v : N) :
   (0 < from_bits)%Z
   -> (from_bits ≤ to_bits)%Z
-  -> (2 ^ from_bits | 2 ^ to_bits)%Z
   -> (0 <= v < 2 ^ from_bits)%Z
   -> to_char to_bits to_sgn from_bits
           (of_char from_bits from_sgn to_bits to_sgn v) = v.
 Proof.
-  move=>H0 Ho Hd [Hlb Hub].
+  move=>H0 Ho [Hlb Hub].
   case: (Z.lt_ge_cases v (2 ^ (from_bits - 1))%Z)=>[?|?].
   - by rewrite of_char_spec_low // to_char_spec_low; lia.
   - by rewrite of_char_spec_high // to_char_spec_high // N2Z.id.
@@ -236,34 +237,52 @@ Qed.
 Lemma of_char_trim (from_bits to_bits : N) (v : Z) :
   (to_bits <> 0%N)
   -> (to_bits <= from_bits)%Z
-  -> (2 ^ (to_bits - 1) ≤ v < 2 ^ to_bits)
-  -> (2 ^ from_bits | 2 ^ to_bits)
+  -> (2 ^ (from_bits) - 2 ^ (to_bits - 1) ≤ v < 2 ^ from_bits)
   -> of_char to_bits Signed from_bits Unsigned (Z.to_N (trim to_bits v)) = v.
 Proof.
-  move=>??[??]?.
-  have H2: (2 ^ to_bits <= 2 ^ from_bits)%Z
-    by apply: Z.pow_le_mono.
+  move=>Hne Ho.
+  move: (Z.mod_pos_bound v (2 ^ to_bits) ltac:(lia))=>[??].
 
-  rewrite of_char.unlock /=.
+  rewrite of_char.unlock /trim /to_signed_bits (bool_decide_false _ Hne).
+  rewrite Z2N.id; last lia.
+  rewrite Z.mod_mod //; last lia.
 
-  case: bool_decide_reflect; first
-    by rewrite /trim Z.mod_small; lia.
-  move=>/Znot_lt_ge/Z.ge_le ?.
+  rewrite (Z_div_mod_eq_full (2^from_bits) (2 ^ to_bits)).
+  set a := (2 ^ from_bits `div` 2 ^ to_bits).
+  set b := (2 ^ to_bits).
+  set b_2 := (2 ^ (to_bits - 1)).
 
-  rewrite /to_signed_bits.
-  case: bool_decide_reflect=>[|?]; first lia.
-  case: bool_decide_reflect=>[?|]; last first.
-  - move=>/Znot_ge_lt.
-    rewrite Z.mod_small;try lia.
-    rewrite /trim Z.mod_small;try lia.
-  -
-    rewrite /trim Z2N.id (Z.mod_small v); try lia.
-    rewrite (Z.mod_small v); last lia.
-    apply: Znumtheory.Zdivide_mod_minus; try lia.
+  have->: (2 ^ from_bits `mod` b = 0).
+  { rewrite /b.
+    have ->:(Z.of_N from_bits = from_bits - to_bits + to_bits)%Z by lia.
+    rewrite Z.pow_add_r; try lia.
+    apply: Z.mod_mul; lia. }
+  rewrite Z.add_0_r.
 
-    rewrite -Z.sub_add_distr Z.add_comm Z.sub_add_distr.
-    rewrite Z.sub_diag Z.sub_0_l.
-    by apply: Znumtheory.Zdivide_opp_r.
+  have Hb2: b_2 < b by apply: Z.pow_lt_mono_r; lia.
+
+  move=>[Hlb Hub].
+
+  have Heq: (v `div` b = a - 1) by apply: Z_rem_dev_eq; lia.
+
+
+  case: bool_decide_reflect=>[?|].
+  - move: Hlb.
+    rewrite {1}(Z_div_mod_eq_full v b) Heq.
+    have {1 2}-> : b = b_2 + b_2; last by lia.
+    by apply: Z_pow2_half; lia.
+
+  - have Hpow: (2 ^ Z.of_N to_bits ≤ 2 ^ Z.of_N from_bits)
+      by apply: Z.pow_le_mono; lia.
+    have Hq: 1 <= (2 ^ Z.of_N from_bits `div` 2 ^ Z.of_N to_bits)
+      by apply: Z.div_le_lower_bound; lia.
+    have Hba:  b ≤ b * a
+      by rewrite {1}(_ : b = b * 1); [apply Z.mul_le_mono_pos_l|]; lia.
+
+    move: (Z.mod_pos_bound v b ltac:(lia))=>[??].
+
+    move=>/Znot_lt_ge Hge; rewrite (bool_decide_true _ Hge).
+    rewrite {2}(Z_div_mod_eq_full v b) Heq Z_mod_big; lia.
 Qed.
 
 (* architecture-dependent domain where [to_char] is left inverse of [of_char] *)
@@ -272,7 +291,7 @@ Definition to_char_domP (from_bits : N) (from_sgn : signed) to_bits to_sgn (v : 
   match to_sgn with
   | Signed =>  match from_sgn with
               | Signed => (- 2 ^ (to_bits - 1) <= v < 2 ^ (to_bits - 1))%Z
-              | Unsigned => (0 <= v < 2 ^ to_bits)%Z /\ (2 ^ from_bits | 2 ^ to_bits)
+              | Unsigned => (2 ^ (from_bits) - 2 ^ (to_bits - 1) ≤ v < 2 ^ from_bits)
               end
   | Unsigned => match from_sgn with
                | Signed =>
@@ -314,7 +333,7 @@ Proof.
       case: (Z.lt_ge_cases v ((2 ^ (to_bits - 1)))%Z)=>[?|?].
       rewrite /trim Z.mod_small; last lia.
       rewrite of_char_spec_low; try lia.
-      by rewrite of_char_trim; try lia.
+      by rewrite of_char_trim; lia.
 
   - case: from_sgn=>[/=|[??]].
     + case: bool_decide_reflect=>[/N2Z.inj Heq [??]|Heq [??]].

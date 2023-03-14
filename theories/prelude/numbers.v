@@ -522,6 +522,23 @@ Section with_Z.
     by apply Z.pow_pos_nonneg.
   Qed.
 
+  Lemma Z_rem_dev_eq a b q :
+    (0 <> a)
+    -> (b <= a * q)
+    -> a * (q - 1) <= b < a * q
+    -> b `div` a = (q - 1).
+  Proof.
+    move=>??; have ?: (a <> 0) by lia.
+    rewrite Z.mul_sub_distr_l (Z.div_mod b a) // Z.add_comm.
+    rewrite (Z.mul_comm a (_ `div` _)) Z.div_add // Zmod_div Z.add_0_l.
+    move=>[Hlb Hub].
+    move: (Z.mod_pos_bound b a ltac:(lia))=>[??].
+
+    apply: Z.le_antisymm;
+      rewrite -Z.lt_succ_r;
+      apply: (Zmult_gt_0_lt_reg_r _ _ a); lia.
+  Qed.
+
   (** Properties of [align_dn] and [align_up] *)
   Lemma align_dn_pow2 n bits :
     0 ≤ bits → align_dn n bits = 2 ^ bits * n `div` 2 ^ bits.
