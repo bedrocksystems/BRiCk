@@ -81,6 +81,9 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
     auto write_notations = [&](const clang::NamedDecl *def) {
         std::string s_notation;
         llvm::raw_string_ostream notation{s_notation};
+        std::string def_name = def->getNameAsString();
+        if (def_name == "__builtin_va_list")
+            return;
         if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
             if (not print_path(notation, fd->getParent(), true))
                 return;
