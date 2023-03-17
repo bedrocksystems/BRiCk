@@ -40,6 +40,7 @@ Fixpoint type_of (e : Expr) : type :=
   | Econstructor _ _ t => t
   | Eimplicit e => type_of e
   | Eif _ _ _ _ t
+  | Eif2 _ _ _ _ _ _ t
   | Ethis t => t
   | Enull => Tnullptr
   | Einitlist _ _ t
@@ -367,6 +368,7 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
   | Econstructor _ _ _ => Prvalue (* init *)
   | Eimplicit e => valcat_of e
   | Eif _ e1 e2 vc _ => vc
+  | Eif2 _ _ _ _ _ vc _ => vc
   | Ethis _ => Prvalue
   | Enull => Prvalue
   | Einitlist _ _ t => Prvalue (* operand | init *)

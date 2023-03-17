@@ -302,6 +302,7 @@ Inductive Expr : Set :=
 | Eimplicit (_ : Expr)
 | Eimplicit_init (_ : type)
 | Eif       (_ _ _ : Expr) (_ : ValCat) (_ : type)
+| Eif2  (name : N) (common cond thn els : Expr) (_ : ValCat) (_ : type)
 
 | Ethis (_ : type)
 | Enull

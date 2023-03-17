@@ -905,6 +905,24 @@ public:
         done(expr, print, cprint, Done::VT);
     }
 
+    void VisitBinaryConditionalOperator(const BinaryConditionalOperator* expr,
+                                        CoqPrinter& print, ClangPrinter& cprint,
+                                        const ASTContext&, OpaqueNames& li) {
+        print.ctor("Eif2");
+        auto index = li.fresh(expr->getOpaqueValue());
+        print.output() << index << fmt::nbsp;
+        cprint.printExpr(expr->getCommon(), print, li);
+        li.inc_index_count();
+        print.output() << fmt::nbsp;
+        cprint.printExpr(expr->getCond(), print, li);
+        print.output() << fmt::nbsp;
+        cprint.printExpr(expr->getTrueExpr(), print, li);
+        print.output() << fmt::nbsp;
+        cprint.printExpr(expr->getFalseExpr(), print, li);
+        li.dec_index_count();
+        done(expr, print, cprint, Done::VT);
+    }
+
 #if CLANG_VERSION_MAJOR >= 8
     void VisitConstantExpr(const ConstantExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext& ctxt,
