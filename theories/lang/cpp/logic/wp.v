@@ -890,13 +890,13 @@ Section with_cpp.
   End wp_glval.
 
   (** Discarded values.
+
       Sometimes expressions are evaluated only for their side-effects.
       https://eel.is/c++draft/expr#context-2
 
-      The definition [wp_discard] captures this and allows us to express some rules
-      more concisely. Note that due to the fact that we have different [wp]s for each
-      value category, [wp_discard] takes the value category of the expression which
-      must be embedded into the AST.
+      The definition [wp_discard] captures this and allows us to express some
+      rules more concisely. The value category used to evaluate the expression
+      is computed from the expression using [valcat_of].
    *)
   Section wp_discard.
     Context {σ : genv} (tu : translation_unit).
