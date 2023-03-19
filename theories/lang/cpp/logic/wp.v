@@ -686,11 +686,11 @@ Section with_cpp.
   (** This is justified in the logic but technically not sactioned by the standard
 
     [[
-   Axiom wp_init_wp_operand : forall {σ : genv} M ρ addr e Q (ty := type_of e),
+   Axiom wp_init_wp_operand : forall {σ : genv} M ρ e Q (ty := type_of e),
       is_value_type ty ->
-      wp_prval M ρ e (fun p free frees =>
-         [| FreeTemps.t_eq free (FreeTemps.delete ty addr) |] **
-         ∃ v, _at addr (primR ty (cQp.mut 1) v) ** Q v frees)
+      wp_prval M ρ e (fun p ty' frees =>
+         [| ty' = ty |] -*
+         ∃ v, _at p (primR ty (cQp.mut 1) v) ** Q v frees)
     |-- wp_operand M ρ e Q.
     ]]
    *)
