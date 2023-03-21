@@ -1413,7 +1413,8 @@ Module Type Expr.
       |-- wp_init tu ρ (Tarray ety sz) trg
                     (Earrayloop_init oname src level sz init ty) Q.
 
-    (* this needs to be able to extend the region
+    (* This is here, rather than being next to [Eif] because the evaluation
+       requires extending the region (for the temporary)
        NOTE that the clang documentation states that the 'else' branch is defined in
        terms of the opaque value, but, it does not seem possible for the opaque value to
        be used in this expression.
@@ -1435,10 +1436,19 @@ Module Type Expr.
     Axiom wp_operand_condition2 : Reduce (wp_cond2 Prvalue wp_operand).
 
     (* Note: This one is more subtle because the [free] from the [wp_initialize]
-       could (in theory) bhe the [free] for the then branch. This happens if the
+       could (in theory) be the [free] for the then branch. This happens if the
        [then] branch is just a reference to the opaque value.
-       I have not found a way to achieve this for aggregate types because there
-       will end up being a copy in the then branch.
+       This would only be possible if, for example,
+       ```
+       C x = C(1) ?: C();
+       ```
+       could be compiled *without* materializing a temporary. This would require:
+       1. constructing `C(1)` into the memory for `x`
+       2. if `(bool)(C(1))` is false, then calling (effectively) `x.~C()` and then
+          constructing `C()` into `x`.
+       Generally, this violates the rule that temporaries are destroyed at the
+       end of the full expression because (in this trace), `C(1)` would be
+       constructing a temporary.
      *)
     Axiom wp_init_condition2 : forall tu ρ n ty common tst th el vc p Q,
         Forall p,
