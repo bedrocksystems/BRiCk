@@ -334,7 +334,7 @@ Module ExprNotations.
          , only printing).
 
   Notation "e [ n ]"
-      := (Esubscript e n _ _)
+      := (Esubscript e n _)
          ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , n custom CPP_expr at level 200

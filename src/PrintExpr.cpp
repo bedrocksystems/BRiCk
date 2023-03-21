@@ -752,7 +752,7 @@ public:
         cprint.printExpr(expr->getLHS(), print, li);
         print.output() << fmt::nbsp;
         cprint.printExpr(expr->getRHS(), print, li);
-        done(expr, print, cprint, Done::VT);
+        done(expr, print, cprint);
     }
 
     void VisitCXXConstructExpr(const CXXConstructExpr* expr, CoqPrinter& print,

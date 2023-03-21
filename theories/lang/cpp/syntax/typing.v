@@ -33,7 +33,7 @@ Fixpoint type_of (e : Expr) : type :=
   | Ecast _ _ _ t
   | Emember _ _ t
   | Emember_call _ _ _ t
-  | Esubscript _ _ _ t
+  | Esubscript _ _ t
   | Esize_of _ t
   | Ealign_of _ t
   | Eoffset_of _ t
@@ -360,7 +360,27 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
     | inr (Ecast Cl2r _  _ (Tmember_pointer _ t)) => valcat_from_function_type t
     | _ => UNEXPECTED_valcat e
     end
-  | Esubscript _ _ vc _ => vc
+  | Esubscript e1 e2 _ =>
+    (**
+    [valcat_of_array] may never be relevant because [cpp2v] rejects
+    examples like ../../../../tests/valcat_subscript_xvalue.cpp
+    *)
+    let valcat_of_array (ar : Expr) : ValCat :=
+      match valcat_of ar with
+      | Lvalue => Lvalue
+      | Prvalue | Xvalue => Xvalue
+      end
+    in
+    match drop_qualifiers (type_of e1) with
+    | Tptr _ => Lvalue
+    | Tarray _ _ => valcat_of_array e1
+    | _ =>
+      match drop_qualifiers (type_of e2) with
+      | Tptr _ => Lvalue
+      | Tarray _ _ => valcat_of_array e2
+      | _ => UNEXPECTED_valcat e
+      end
+    end
   | Esize_of _ _ => Prvalue
   | Ealign_of _ _ => Prvalue
   | Eoffset_of _ _ => Prvalue
