@@ -206,7 +206,7 @@ Module Type Expr.
          Exists i, [| idx = Vint i |] **
          let addr := _eqv base .[ erase_qualifiers t ! i ] in
          valid_ptr addr ** Q addr free)
-      |-- wp_lval (Esubscript e i Lvalue t) Q.
+      |-- wp_lval (Esubscript e i t) Q.
 
     (* [Esubscript e i _ _] when one operand is an array xvalue
      *)
@@ -222,7 +222,7 @@ Module Type Expr.
           (Exists i, [| idx = Vint i |] **
            let addr := _eqv base .[ erase_qualifiers t ! i ] in
            valid_ptr addr ** Q addr free))
-      |-- wp_xval (Esubscript e i Xvalue t) Q.
+      |-- wp_xval (Esubscript e i t) Q.
 
     (** * Unary Operators
      *)

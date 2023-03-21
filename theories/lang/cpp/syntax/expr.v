@@ -294,7 +294,7 @@ Inductive Expr : Set :=
   (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * call_type * type) + Expr) (obj : Expr) (_ : list Expr) (_ : type)
 
-| Esubscript (_ : Expr) (_ : Expr) (_ : ValCat) (_ : type)
+| Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
 | Eoffset_of (_ : OffsetInfo) (_ : type)

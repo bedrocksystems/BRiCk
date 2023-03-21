@@ -258,8 +258,8 @@ Section TestExprNotations.
   #[local] Definition Emember_call_cons_wrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Evar (Gname "foo") ty) [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
   Print Emember_call_cons_wrap_1. Print Emember_call_cons_wrap_2.
 
-  #[local] Definition Esubscript_1 : Expr := Esubscript e (Eint 42 ty) Lvalue ty.
-  #[local] Definition Esubscript_2 : Expr := Esubscript (Evar (Lname "foo") ty) (Eint 314 ty) Lvalue ty.
+  #[local] Definition Esubscript_1 : Expr := Esubscript e (Eint 42 ty) ty.
+  #[local] Definition Esubscript_2 : Expr := Esubscript (Evar (Lname "foo") ty) (Eint 314 ty) ty.
   Print Esubscript_1. Print Esubscript_2.
 
   #[local] Definition Esize_of_type_1 : Expr := Esize_of (inl ty) ty.
