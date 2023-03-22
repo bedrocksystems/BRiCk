@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) BedRock Systems Inc. 2020-21
+# Copyright (C) BedRock Systems Inc. 2020-2023
 #
 # This software is distributed under the terms of the BedRock Open-Source License.
 # See the LICENSE-BedRock file in the repository root for details.
@@ -8,7 +8,7 @@
 
 usage() {
 	cat >&2 <<-EOF
-		$0 <filename>.<ext> <options>
+		usage: $0 <filename>.<ext> <options>
 
 		This will output (to stdout) dune rules for building <filename>.<ext>,
 		passing <options> to cpp2v. Redirect output to dune.inc and
