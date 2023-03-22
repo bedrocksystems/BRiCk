@@ -552,36 +552,34 @@ Section with_cpp.
   (* BEGIN wp_init *)
   (* evaluate a prvalue that "initializes an object".
 
-     The continuation is passed two [FreeTemp.t]s, the first is to delete the
-     value being initialized, the second is to delete temporaries created while
-     creating the value. To delete both correctly, you must destroy the value
-     *before* destroying the temporaries.
-     Only destroying temporaries (and discarding the first argument) is legal
-     when mandated by the semantics, for example, in a variable declaration.
-     `int x = (C{}, 2);`
+     The continuation is passed a [type] and a [FreeTemp.t]. The first is the
+     type of the constructed value, which can be converted to a [FreeTemp.t]
+     using [FreeTemps.delete ty p] (where [p] is the passed in pointer). The
+     [FreeTemp.t] is used to delete temporaries created while creating the
+     value. To delete both correctly, you must destroy the value *before*
+     destroying the temporaries. Only destroying temporaries (and discarding the
+     first argument) is legal when mandated by the semantics, for example, in a
+     variable declaration. `int x = (C{}, 2);`
 
-     The memory that is being initialized is already owned by the C++ abstract machine.
-     Therefore, schematically, a [wp_init ty addr e Q] looks like the following:
-       [[
-          addr |-> R ... 1 -* Q
-       ]]
-     This choice means that a thread needs to give up the memory to the abstract
-     machine when it transitions to running a [wp_init]. In the case of
-     stack allocation, there is nothing to do here, but in the case of [new],
-     the memory must be given up.
+     The memory that is being initialized is already owned by the C++ abstract
+     machine. Therefore, schematically, a [wp_init ty addr e Q] looks like the
+     following: [[ addr |-> R ... 1 -* Q ]] This choice means that a thread
+     needs to give up the memory to the abstract machine when it transitions to
+     running a [wp_init]. In the case of stack allocation, there is nothing to
+     do here, but in the case of [new], the memory must be given up.
 
      The C++ standard has many forms of initialization (see
      <https://eel.is/c++draft/dcl.init>). The Clang frontend (and therefore our
      AST) implements the different forms of initialization through elaboration.
 
-     For example, in aggregate pass-by-value the standard states that copy initialization
-     <https://eel.is/c++draft/dcl.init#general-14> is used; however, our AST
-     produces an explicit [Econstructor] in the AST to represent this. This seems
-     necessary to have a uniform representation of the various evoluations of
-     initialization between different standards, e.g. C++14, C++17, etc.
+     For example, in aggregate pass-by-value the standard states that copy
+     initialization <https://eel.is/c++draft/dcl.init#general-14> is used;
+     however, the BRiCk AST contains an explicit [Econstructor] in the AST to
+     represent this. This seems necessary to have a uniform representation of
+     the various evoluations of initialization between different standards, e.g.
+     C++14, C++17, etc.
 
-     NOTE: this doesn't really fit the pattern for [M]...
-   *)
+     NOTE: this doesn't really fit the pattern for [M]... *)
   Parameter wp_init
     : forall {resolve:genv}, translation_unit -> region ->
                         type -> ptr -> Expr ->
@@ -688,11 +686,11 @@ Section with_cpp.
   (** This is justified in the logic but technically not sactioned by the standard
 
     [[
-   Axiom wp_init_wp_operand : forall {σ : genv} M ρ addr e Q (ty := type_of e),
+   Axiom wp_init_wp_operand : forall {σ : genv} M ρ e Q (ty := type_of e),
       is_value_type ty ->
-      wp_prval M ρ e (fun p free frees =>
-         [| FreeTemps.t_eq free (FreeTemps.delete ty addr) |] **
-         ∃ v, _at addr (primR ty (cQp.mut 1) v) ** Q v frees)
+      wp_prval M ρ e (fun p ty' frees =>
+         [| ty' = ty |] -*
+         ∃ v, _at p (primR ty (cQp.mut 1) v) ** Q v frees)
     |-- wp_operand M ρ e Q.
     ]]
    *)
@@ -892,13 +890,13 @@ Section with_cpp.
   End wp_glval.
 
   (** Discarded values.
+
       Sometimes expressions are evaluated only for their side-effects.
       https://eel.is/c++draft/expr#context-2
 
-      The definition [wp_discard] captures this and allows us to express some rules
-      more concisely. Note that due to the fact that we have different [wp]s for each
-      value category, [wp_discard] takes the value category of the expression which
-      must be embedded into the AST.
+      The definition [wp_discard] captures this and allows us to express some
+      rules more concisely. The value category used to evaluate the expression
+      is computed from the expression using [valcat_of].
    *)
   Section wp_discard.
     Context {σ : genv} (tu : translation_unit).
