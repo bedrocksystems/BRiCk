@@ -363,8 +363,9 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
     end
   | Esubscript e1 e2 _ =>
     (**
-    [valcat_of_array] may never be relevant because [cpp2v] rejects
-    examples like ../../../../tests/valcat_subscript_xvalue.cpp
+    Neither operand ever has type [Tarray _ _] due to implicitly
+    inserted array-to-pointer conversions. To compute the right value
+    category, we skip over such conversions.
     *)
     let valcat_of_array (ar : Expr) : ValCat :=
       match valcat_of ar with
@@ -372,15 +373,15 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
       | Prvalue | Xvalue => Xvalue
       end
     in
-    match drop_qualifiers (type_of e1) with
-    | Tptr _ => Lvalue
-    | Tarray _ _ => valcat_of_array e1
-    | _ =>
-      match drop_qualifiers (type_of e2) with
-      | Tptr _ => Lvalue
-      | Tarray _ _ => valcat_of_array e2
-      | _ => UNEXPECTED_valcat e
+    let valcat_of_base (ei : Expr) : ValCat :=
+      match ei with
+      | Ecast Carray2ptr ar _ _ => valcat_of_array ar
+      | _ => Lvalue
       end
+    in
+    match drop_qualifiers (type_of e1) with
+    | Tptr _ => valcat_of_base e1
+    | _ => valcat_of_base e2
     end
   | Esize_of _ _ => Prvalue
   | Ealign_of _ _ => Prvalue
