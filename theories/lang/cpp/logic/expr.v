@@ -333,8 +333,8 @@ Module Type Expr.
             Q v' free)
         |-- wp_operand (Ebinop o e1 e2 ty) Q.
 
-    (* NOTE the right operand is sequenced before the left operand in C++20,
-       check when this started. (cppreference.com doesn't seem to have this information)
+    (* NOTE the right operand is sequenced before the left operand since
+       P0145R3 (C++17).
      *)
     Axiom wp_lval_assign : forall ty l r Q,
         nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
