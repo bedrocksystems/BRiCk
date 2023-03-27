@@ -220,6 +220,9 @@ public:
             CASE(ULongLong, "Tulonglong")
             CASE(Int128, "Ti128")
             CASE(UInt128, "Tu128")
+            CASE(Float, "Tfloat")
+            CASE(Double, "Tdouble")
+            CASE(LongDouble, "Tlongdouble")
 #undef CASE
 #if CLANG_VERSION_MAJOR == 10
         case BuiltinType::Kind::SveInt8:
@@ -255,10 +258,9 @@ public:
 
         default:
             if (type->isAnyCharacterType()) {
-                assert(false);
+                assert(false && "unexpected character type");
             } else if (type->isFloatingPoint()) {
-                print.output()
-                    << "(Tfloat " << bitsize(cprint.getTypeSize(type)) << ")";
+                assert(false && "unexpected floating point type");
             } else if (type->isIntegerType()) {
                 assert(false);
 #if CLANG_VERSION_MAJOR >= 11

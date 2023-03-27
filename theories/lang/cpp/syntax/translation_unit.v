@@ -346,7 +346,7 @@ Section with_type_table.
 
   (* Basic types. This excludes references (as checked by [complete_basic_type_not_ref]). *)
   with complete_basic_type : type -> Prop :=
-  | complete_float sz : complete_basic_type (Tfloat sz)
+  | complete_float sz : complete_basic_type (Tfloat_ sz)
   | complete_int sgn sz : complete_basic_type (Tnum sgn sz)
   | complete_bool : complete_basic_type Tbool
   | complete_void : complete_basic_type Tvoid

@@ -170,6 +170,40 @@ Module int_type.
 End int_type.
 Notation int_type := int_type.t.
 
+Module float_type.
+  Variant t : Set :=
+    | Ffloat
+    | Fdouble
+    | Flongdouble.
+
+  #[global] Instance t_eq_dec : EqDecision t := ltac:(solve_decision).
+  #[global] Instance t_countable : Countable t.
+  Proof.
+    apply (inj_countable'
+      (λ cc,
+        match cc with
+        | Ffloat => 0 | Fdouble => 1 | Flongdouble => 2
+        end)
+      (λ n,
+        match n with
+        | 0 => Ffloat | 1 => Fdouble | 2 => Flongdouble
+        | _ => Ffloat	(** dummy *)
+        end)).
+    abstract (by intros []).
+  Defined.
+
+  Definition bytesN (t : t) : N :=
+    match t with
+    | Ffloat => 4
+    | Fdouble => 8
+    | Flongdouble => 16
+    end.
+
+  Definition bitsN (t : t) : N :=
+    8 * bytesN t.
+
+End float_type.
+
 (* types *)
 Inductive type : Set :=
 | Tptr (_ : type)
@@ -192,7 +226,7 @@ Inductive type : Set :=
 | Tfunction {cc : calling_conv} {ar : function_arity} (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
-| Tfloat (_ : bitsize)
+| Tfloat_ (_ : float_type.t)
 | Tqualified (_ : type_qualifiers) (_ : type)
 | Tnullptr
 (* architecture-specific types; currently unused.
@@ -243,8 +277,8 @@ Section type_ind'.
   Hypothesis Tbool_ind' : P Tbool.
   Hypothesis Tmember_pointer_ind' : forall (name : globname) (ty : type),
     P ty -> P (Tmember_pointer name ty).
-  Hypothesis Tfloat_ind' : forall (size : bitsize),
-    P (Tfloat size).
+  Hypothesis Tfloat_ind' : forall (size : float_type.t),
+    P (Tfloat_ size).
   Hypothesis Tqualified_ind' : forall (q : type_qualifiers) (ty : type),
     P ty -> P (Tqualified q ty).
   Hypothesis Tnullptr_ind' : P Tnullptr.
@@ -276,7 +310,7 @@ Section type_ind'.
                          end) tys)
     | Tbool                   => Tbool_ind'
     | Tmember_pointer name ty => Tmember_pointer_ind' name ty (type_ind' ty)
-    | Tfloat sz               => Tfloat_ind' sz
+    | Tfloat_ sz               => Tfloat_ind' sz
     | Tqualified q ty         => Tqualified_ind' q ty (type_ind' ty)
     | Tnullptr                => Tnullptr_ind'
     | Tarch osize name        => Tarch_ind' osize name
@@ -300,7 +334,9 @@ Section type_countable.
   #[local] Notation CC x        := (GenLeaf (inl (inl (inl (inl (inr x)))))).
   #[local] Notation AR x        := (GenLeaf (inl (inl (inl (inl (inl (inr x))))))).
   #[local] Notation N x         := (GenLeaf (inl (inl (inl (inl (inl (inl (inr x)))))))).
-  #[local] Notation CHAR_TYPE x := (GenLeaf (inl (inl (inl (inl (inl (inl (inl x)))))))).
+  #[local] Notation CHAR_TYPE x := (GenLeaf (inl (inl (inl (inl (inl (inl (inl (inr x))))))))).
+  #[local] Notation FLOAT_TYPE x := (GenLeaf (inl (inl (inl (inl (inl (inl (inl (inl x))))))))).
+
 
   #[global] Instance type_countable : Countable type.
   Proof.
@@ -316,7 +352,7 @@ Section type_countable.
       | @Tfunction cc ar ret args => GenNode 7 $ (CC cc) :: (AR ar) :: go ret :: (go <$> args)
       | Tbool => GenNode 8 []
       | Tmember_pointer gn t => GenNode 9 [BS gn; go t]
-      | Tfloat sz => GenNode 10 [BITSIZE sz]
+      | Tfloat_ sz => GenNode 10 [FLOAT_TYPE sz]
       | Tqualified q t => GenNode 11 [QUAL q; go t]
       | Tnullptr => GenNode 12 []
       | Tarch None gn => GenNode 13 [BS gn]
@@ -336,7 +372,7 @@ Section type_countable.
       | GenNode 7 (CC cc :: AR ar :: ret :: args) => @Tfunction cc ar (go ret) (go <$> args)
       | GenNode 8 [] => Tbool
       | GenNode 9 [BS gn; t] => Tmember_pointer gn (go t)
-      | GenNode 10 [BITSIZE sz] => Tfloat sz
+      | GenNode 10 [FLOAT_TYPE sz] => Tfloat_ sz
       | GenNode 11 [QUAL q; t] => Tqualified q (go t)
       | GenNode 12 [] => Tnullptr
       | GenNode 13 [BS gn] => Tarch None gn
@@ -466,7 +502,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Tnamed _ => t
   | Tenum _ => t
   | Tnullptr => t
-  | Tfloat _ => t
+  | Tfloat_ _ => t
   | Tarch _ _ => t
   end.
 
@@ -571,3 +607,7 @@ Notation Tlong  := (Tnum int_type.Ilong Signed) (only parsing).
 
 Notation Tulonglong := (Tnum int_type.Ilonglong Unsigned) (only parsing).
 Notation Tlonglong  := (Tnum int_type.Ilonglong Signed) (only parsing).
+
+Notation Tfloat := (Tfloat_ float_type.Ffloat).
+Notation Tdouble := (Tfloat_ float_type.Fdouble).
+Notation Tlongdouble := (Tfloat_ float_type.Flongdouble).

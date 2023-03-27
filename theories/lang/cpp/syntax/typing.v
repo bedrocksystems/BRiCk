@@ -73,7 +73,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tchar_ _
   | Tbool
   | Tvoid
-  | Tfloat _
+  | Tfloat_ _
   | Tnamed _
   | Tenum _ => t
   | Tarray t sz => Tarray (erase_qualifiers t) sz
@@ -146,7 +146,7 @@ Lemma drop_qualifiers_Tmember_pointer : forall [ty cls ty'],
     erase_qualifiers ty = Tmember_pointer cls (erase_qualifiers ty').
 Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
 Lemma drop_qualifiers_Tfloat : forall [ty sz],
-    drop_qualifiers ty = Tfloat sz -> erase_qualifiers ty = Tfloat sz.
+    drop_qualifiers ty = Tfloat_ sz -> erase_qualifiers ty = Tfloat_ sz.
 Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
 (* Omit Tqualified on purpose *)
 Lemma drop_qualifiers_Tnullptr : forall [ty],
@@ -239,7 +239,7 @@ Definition scalar_type (ty : type) : bool :=
   match drop_qualifiers ty with
   | Tnullptr | Tptr _
   | Tmember_pointer _ _
-  | Tfloat _
+  | Tfloat_ _
   | Tchar_ _
   | Tbool
   | Tnum _ _ | Tenum _ => true
@@ -262,7 +262,7 @@ Definition is_value_type (t : type) : bool :=
   | Tbool
   | Tptr _
   | Tnullptr
-  | Tfloat _
+  | Tfloat_ _
   | Tmember_pointer _ _
   | Tenum _ (* enum types are value types *)
   | Tvoid => true

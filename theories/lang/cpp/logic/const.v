@@ -42,7 +42,7 @@ Section defs.
       | Tnullptr
       | Tenum _
       | Tmember_pointer _ _
-      | Tfloat _
+      | Tfloat_ _
       | Tvoid =>
         let rty := erase_qualifiers rty in
         (Exists v, addr |-> primR rty from v ** (addr |-> primR rty to v -* Q)) ∨

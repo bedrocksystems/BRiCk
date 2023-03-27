@@ -93,7 +93,7 @@ Section destroy.
         this |-> anyR (Tref $ erase_qualifiers r_ty) q ** Q
     | Tnum _ _
     | Tchar_ _
-    | Tfloat _
+    | Tfloat_ _
     | Tenum _
     | Tbool
     | Tnullptr
