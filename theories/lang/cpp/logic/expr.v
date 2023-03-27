@@ -1413,6 +1413,54 @@ Module Type Expr.
       |-- wp_init tu ρ (Tarray ety sz) trg
                     (Earrayloop_init oname src level sz init ty) Q.
 
+    (* This is here, rather than being next to [Eif] because the evaluation
+       requires extending the region (for the temporary)
+       NOTE that the clang documentation states that the 'else' branch is defined in
+       terms of the opaque value, but, it does not seem possible for the opaque value to
+       be used in this expression.
+     *)
+    Definition wp_cond2 {T} (vc : ValCat) (wp : translation_unit -> region -> Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
+      forall tu ρ n ty common tst th el (Q : T -> FreeTemps -> mpred),
+        Forall p,
+           wp_initialize tu ρ (type_of common) p common (fun free =>
+           let ρ' := Rbind (opaque_val n) p ρ in
+           wp_test tu ρ' tst (fun c free'' =>
+             let free := (free'' >*> FreeTemps.delete ty p >*> free)%free in
+             if c
+             then wp tu ρ' th (fun v free' => Q v (free' >*> free))
+             else wp tu ρ' el (fun v free' => Q v (free' >*> free))))
+        |-- wp tu ρ (Eif2 n common tst th el vc ty) Q.
+
+    Axiom wp_lval_condition2 : Reduce (wp_cond2 Lvalue wp_lval).
+    Axiom wp_xval_condition2 : Reduce (wp_cond2 Xvalue wp_xval).
+    Axiom wp_operand_condition2 : Reduce (wp_cond2 Prvalue wp_operand).
+
+    (* Note: This one is more subtle because the [free] from the [wp_initialize]
+       could (in theory) be the [free] for the then branch. This happens if the
+       [then] branch is just a reference to the opaque value.
+       This would only be possible if, for example,
+       ```
+       C x = C(1) ?: C();
+       ```
+       could be compiled *without* materializing a temporary. This would require:
+       1. constructing `C(1)` into the memory for `x`
+       2. if `(bool)(C(1))` is false, then calling (effectively) `x.~C()` and then
+          constructing `C()` into `x`.
+       Generally, this violates the rule that temporaries are destroyed at the
+       end of the full expression because (in this trace), `C(1)` would be
+       constructing a temporary.
+     *)
+    Axiom wp_init_condition2 : forall tu ρ n ty common tst th el vc p Q,
+        Forall p,
+           wp_initialize tu ρ (type_of common) p common (fun free =>
+           let ρ' := Rbind (opaque_val n) p ρ in
+           wp_test tu ρ' tst (fun c free'' =>
+             let free := (free'' >*> FreeTemps.delete ty p >*> free)%free in
+             if c
+             then wp_init tu ρ' ty p th (fun v free' => Q v (free' >*> free))
+             else wp_init tu ρ' ty p el (fun v free' => Q v (free' >*> free))))
+        |-- wp_init tu ρ ty p (Eif2 n common tst th el vc ty) Q.
+
   End with_resolve__arrayloop.
 End Expr.
 
