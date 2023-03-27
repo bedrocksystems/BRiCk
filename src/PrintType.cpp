@@ -208,7 +208,17 @@ public:
             CASE(WChar_U, "Twchar")
             CASE(Char16, "Tchar16")
             CASE(Char32, "Tchar32")
-            CASE(Char8, "Tchar8");
+            CASE(Char8, "Tchar8")
+            CASE(Short, "Tshort")
+            CASE(UShort, "Tushort")
+            CASE(Int, "Tint")
+            CASE(UInt, "Tuint")
+            CASE(Long, "Tlong")
+            CASE(ULong, "Tulong")
+            CASE(LongLong, "Tlonglong")
+            CASE(ULongLong, "Tulonglong")
+            CASE(Int128, "Ti128")
+            CASE(UInt128, "Tu128")
 #undef CASE
         case BuiltinType::Kind::Dependent:
             print.output() << "Tunsupported \"type-dependent type\"";
@@ -245,9 +255,7 @@ public:
                 print.output()
                     << "(Tfloat " << bitsize(cprint.getTypeSize(type)) << ")";
             } else if (type->isIntegerType()) {
-                print.output()
-                    << "(Tnum " << bitsize(cprint.getTypeSize(type)) << " "
-                    << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
+                assert(false);
 #if CLANG_VERSION_MAJOR >= 11
             } else if (type->isSizelessBuiltinType()) {
                 print.output() << fmt::lparen << "Tarch None \""
