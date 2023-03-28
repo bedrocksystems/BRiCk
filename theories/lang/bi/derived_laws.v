@@ -65,6 +65,16 @@ Section derived_laws.
     by rewrite /bi_intuitionistically bi.persistently_pure affinely_pure.
   Qed.
 
+  Lemma persistently_absorbingly P `{!Persistent P} :
+    <pers> P ⊣⊢@{PROP} <absorb> P.
+  Proof.
+    apply: anti_symm; first by iIntros "#$".
+    rewrite {1}(persistent P) /bi_absorbingly. iIntros "[_ $]".
+  Qed.
+
+  Lemma entails_curry (P1 P2 Q : PROP) : (P1 ∗ P2 ⊢ Q) ↔ (P1 ⊢ P2 -∗ Q).
+  Proof. split; eauto using wand_elim_l', wand_intro_r. Qed.
+
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
   Proof. iIntros. iExists v; eauto. Qed.

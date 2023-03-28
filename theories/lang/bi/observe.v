@@ -134,10 +134,12 @@ Section observe.
     - iIntros (HQ) "P1 P2". iApply (HQ with "P2 P1").
   Qed.
 
+  Lemma observe_2_observe Q P1 P2 : Observe2 Q P1 P2 ↔ Observe Q (P1 ∗ P2).
+  Proof. by rewrite /Observe bi.entails_curry. Qed.
   Lemma observe_curry Q P1 P2 : Observe2 Q P1 P2 → Observe Q (P1 ∗ P2).
-  Proof. intros Hobs. rewrite /Observe. apply bi.wand_elim_l', Hobs. Qed.
+  Proof. apply observe_2_observe. Qed.
   Lemma observe_uncurry Q P1 P2 : Observe Q (P1 ∗ P2) → Observe2 Q P1 P2.
-  Proof. intros Hobs. rewrite /Observe2. apply bi.wand_intro_r, Hobs. Qed.
+  Proof. apply observe_2_observe. Qed.
 
   (** Alternatives for eliminating observations *)
   (** We favor declaring observations with [only_provable] over [bi_pure]. *)
@@ -177,6 +179,7 @@ Section observe.
   Proof. split'; first iIntros "($ & $ & _)". by apply bi.wand_elim_l', observe_2_elim. Qed.
 
   (** Alternatives for introducing observations *)
+  (* [observe_intro_persistent] makes the goal linearly unprovable (unless [P] is affine). *)
   Lemma observe_intro_persistent Q P `{!Persistent Q} : (P ⊢ Q) → Observe Q P.
   Proof. rewrite/Observe=>->. iIntros "#$". Qed.
 
@@ -186,12 +189,16 @@ Section observe.
   Lemma observe_intro Q P `{!Persistent Q} : (P ⊢ P ∗ Q) → Observe Q P.
   Proof. rewrite/Observe {1}(persistent Q)=>->. iIntros "[_ $]". Qed.
 
+  (* Ease proving the goal linearly. *)
+  Lemma observe_intro_intuitionistically Q P : Observe Q P → Observe (□ Q) P.
+  Proof. rewrite/Observe=>->. iIntros "#$". Qed.
+
   Lemma observe_equiv_sep_True Q P `{!Persistent Q} : (P ⊢ Q ∗ True) ↔ Observe Q P.
   Proof.
-    rewrite/Observe; split; move->; last by iIntros "#$".
-    rewrite {1}(persistent Q). iIntros "[$ _]".
+    by rewrite (comm bi_sep Q) /Observe bi.persistently_absorbingly.
   Qed.
 
+  (* [observe_2_intro_persistent] makes the goal linearly unprovable (unless [P1] and [P2] are affine). *)
   Lemma observe_2_intro_persistent Q P1 P2 `{!Persistent Q} :
     (P1 ⊢ P2 -∗ Q) → Observe2 Q P1 P2.
   Proof. rewrite/Observe2=>->. f_equiv. iIntros "#$". Qed.
@@ -205,11 +212,12 @@ Section observe.
     rewrite/Observe2 {1}(persistent Q)=>->. f_equiv. iIntros "(_ &_ & $)".
   Qed.
 
+  (* Ease proving the goal linearly. *)
+  Lemma observe_2_intro_intuitionistically Q P1 P2 : Observe2 Q P1 P2 → Observe2 (□ Q) P1 P2.
+  Proof. rewrite/Observe2=>->. f_equiv. iIntros "#$". Qed.
+
   Lemma observe_2_equiv_sep_True Q P1 P2 `{!Persistent Q} : (P1 ∗ P2 ⊢ Q ∗ True) ↔ Observe2 Q P1 P2.
-  Proof.
-    rewrite/Observe2; split; last first. { move=>/bi.wand_elim_l' ->. iIntros "#$". }
-    move=> HPQ. apply bi.wand_intro_r. rewrite HPQ {1}(persistent Q). iIntros "[$ _]".
-  Qed.
+  Proof. by rewrite observe_2_observe observe_equiv_sep_True. Qed.
 End observe.
 
 (** Instances *)
@@ -467,3 +475,28 @@ Section theory.
     Observe2 [| R2 (f x) (f y) |] P1 P2 -> Observe2 [| R1 x y |] P1 P2.
   Proof. apply observe_2_derive_only_provable, inj, _. Qed.
 End theory.
+
+(** [observable P] is the largest observation deducible from [P].
+
+Motivation: framing [P] might make the goal unprovable, for instance in
+[Observe Q P → P -∗ P ∗ Q]
+
+But after observing [observable P], framing [P] always preserves provability. *)
+Definition observable {PROP : bi} (P : PROP) : PROP :=
+  □ (∀ Q : PROP, [| Observe Q P |] -∗ Q).
+
+Section observable_theory.
+  Context {PROP : bi}.
+  Implicit Types P Q : PROP.
+
+  #[global] Instance observe_observable `{!BiPersistentlyForall PROP} P :
+    Observe (observable P) P.
+  Proof.
+    apply observe_intro_intuitionistically.
+    iIntros "P" (Q HQP). iDestruct (HQP with "P") as "#$".
+  Qed.
+
+  #[global] Instance observable_observe P Q `{!Observe Q P} :
+    Observe Q (observable P).
+  Proof. iIntros "#P". by iApply ("P" $! Q with "[%]"). Qed.
+End observable_theory.
