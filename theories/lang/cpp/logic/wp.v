@@ -289,10 +289,14 @@ Section with_cpp.
     iIntros (??); iApply "C".
   Qed.
 
-  (** *** Indeterminately sequenced computations *)
+  (** *** Indeterminately sequenced computations
+      Note that [FreeTemps.t] is sequenced in reverse order of construction
+      to encode the stack discipline guaranteed by C++.
+      (CITATION NEEDED)
+   *)
   Definition nd_seq {T U} (wp1 : M T) (wp2 : M U) : M (T * U) :=
     fun K => wp1 (fun v1 f1 => wp2 (fun v2 f2 => K (v1,v2) (f2 >*> f1)%free))
-     //\\ wp2 (fun v1 f1 => wp1 (fun v2 f2 => K (v2,v1) (f2 >*> f1)%free)).
+     //\\ wp2 (fun v2 f2 => wp1 (fun v1 f1 => K (v1,v2) (f1 >*> f2)%free)).
 
   Lemma nd_seq_frame {T U} wp1 wp2 :
     Mframe wp1 wp1 |-- Mframe wp2 wp2 -* Mframe (@nd_seq T U wp1 wp2) (nd_seq wp1 wp2).
@@ -303,8 +307,9 @@ Section with_cpp.
     { iApply "B". iIntros (??). iApply "A"; iIntros (??). iApply "C". }
   Qed.
 
-  (* unspecified sequencing of monadic compuations
-     this is like the sematncis of argument evaluation in C++
+  (* Lifting non-deterministic sequencing to lists.
+
+     NOTE: this is like the semantics of argument evaluation in C++.
    *)
   Fixpoint nd_seqs' {T} (f : nat) (qs : list (M T)) {struct f} : M (list T) :=
     match qs with
@@ -426,7 +431,10 @@ Section with_cpp.
 
   (** *** interleaving of monadic values
 
-     this is like the semantics of argument evaluation in C
+      We encode interleaving through concurrency which we represent through
+      separable resources.
+
+      NOTE: this is like the semantics of argument evaluation in C
    *)
   Definition Mpar {T U} (wp1 : M T) (wp2 : M U) : M (T * U) :=
     fun Q => Exists Q1 Q2, wp1 Q1 ** wp2 Q2 ** (Forall v1 v2 f1 f2, Q1 v1 f1 -* Q2 v2 f2 -* Q (v1,v2) (f1 |*| f2)%free).
@@ -445,7 +453,7 @@ Section with_cpp.
     iIntros (????) "A B". iApply "C". iApply ("K" with "A B").
   Qed.
 
-  (* unspecified *interleaving* of monadic computations *)
+  (** lifting [Mpar] to homogeneous lists *)
   Fixpoint Mpars {T} (f : list (M T)) : M (list T) :=
     match f with
     | nil => Mret nil
