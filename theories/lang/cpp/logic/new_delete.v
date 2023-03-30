@@ -63,7 +63,6 @@ Module Type Expr__newdelete.
       Context {σ : genv} (ρ : region).
       Variable (tu : translation_unit).
 
-      #[local] Notation wp_prval := (wp_prval tu ρ).
       #[local] Notation wp_init := (wp_init tu ρ).
       #[local] Notation wp_initialize := (wp_initialize tu ρ).
       #[local] Notation default_initialize := (default_initialize tu).
