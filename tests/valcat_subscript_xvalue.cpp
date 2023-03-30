@@ -14,6 +14,6 @@ void test() {
     correctly assigns value category `xvalue` to the subscript as a
     whole.
     */
-    int&& subscript_xvalue = S().a[0];
+    //int&& subscript_xvalue = S().a[0];
     XVALUE(S().a[0]);
 }
