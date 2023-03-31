@@ -33,6 +33,6 @@ template<typename T> constexpr bool is_glvalue = is_lvalue<T> || is_xvalue<T>;
 #define IS_RVALUE(e) is_rvalue<decltype((e))>
 #define IS_GLVALUE(e) is_glvalue<decltype((e))>
 
-#define PRVALUE(e) static_assert(IS_PRVALUE(e))
-#define LVALUE(e) static_assert(IS_LVALUE(e))
-#define XVALUE(e) static_assert(IS_XVALUE(e))
+#define PRVALUE(e) static_assert(IS_PRVALUE(e), "PRVALUE(" #e ")")
+#define LVALUE(e) static_assert(IS_LVALUE(e), "LVALUE(" #e ")")
+#define XVALUE(e) static_assert(IS_XVALUE(e), "XVALUE(" #e ")")
