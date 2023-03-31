@@ -37,7 +37,6 @@ Module Type Init.
 
     #[local] Notation wp := (wp tu ρ).
     #[local] Notation wp_lval := (wp_lval tu ρ).
-    #[local] Notation wp_prval := (wp_prval tu ρ).
     #[local] Notation wp_operand := (wp_operand tu ρ).
     #[local] Notation wp_xval := (wp_xval tu ρ).
     #[local] Notation wp_init := (wp_init tu ρ).
