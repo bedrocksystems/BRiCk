@@ -297,10 +297,10 @@ Section theory.
     Implicit Types a : A.
     Implicit Types b : B.
 
-    Notation "●V{ dq } a" := (view_auth (rel:=rel) dq a).
-    Notation "●V{# q } a" := (view_auth (rel:=rel) (DfracOwn q) a).
-    Notation "●V a" := (view_auth (rel:=rel) (DfracOwn 1) a).
-    Notation "◯V a" := (view_frag (rel:=rel) a).
+    Notation "●V{ dq } a" := (view_auth (rel:=rel) dq a) (at level 20).
+    Notation "●V{# q } a" := (view_auth (rel:=rel) (DfracOwn q) a) (at level 20).
+    Notation "●V a" := (view_auth (rel:=rel) (DfracOwn 1) a) (at level 20).
+    Notation "◯V a" := (view_frag (rel:=rel) a) (at level 20).
 
     Tactic Notation "lift" uconstr(lem) :=
       solve_entails' (rewrite lem; naive_solver).

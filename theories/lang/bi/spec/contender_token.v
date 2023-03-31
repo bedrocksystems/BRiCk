@@ -81,6 +81,9 @@ Section with_contender.
   #[global] Instance contender_from_sep n1 n2 :
     FromSep (P (n1 + n2)) (P n1) (P n2).
   Proof. by rewrite /FromSep contender_op. Qed.
+  #[global] Instance contender_combine_sep_as n1 n2 :
+    CombineSepAs (P n1) (P n2) (P (n1 + n2)).
+  Proof. by rewrite /CombineSepAs contender_op. Qed.
 
 End with_contender.
 

@@ -61,7 +61,8 @@ Class BiIndexElementDiscrete {I : biIndex} (i : I) : Prop :=
 #[global] Arguments bi_index_element_discrete {_} _ {_} _ _ : assert.
 
 Class BiIndexDiscrete (I : biIndex) : Prop :=
-  bi_index_discrete (i : I) :> BiIndexElementDiscrete i.
+  bi_index_discrete (i : I) : BiIndexElementDiscrete i.
+#[global] Existing Instance bi_index_discrete.
 #[global] Hint Mode BiIndexDiscrete ! : typeclass_instances.
 
 Section bi_index_discrete.

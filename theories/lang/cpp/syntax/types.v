@@ -486,8 +486,8 @@ Section normalize_type_idempotent.
         induction ty using type_ind'; intros *;
         rewrite /qual_norm/= ?normalize_type_idempotent//.
       - rewrite map_map /qual_norm !IHty /merge_tq/=;
-          erewrite map_ext_Forall; eauto; eapply Forall_impl; eauto;
-          intros * HForall; simpl in HForall; apply HForall.
+          erewrite map_ext_Forall; eauto; eapply Forall_impl;
+          [|eassumption]; intros * HForall; simpl in HForall; apply HForall.
       - rewrite IHty !merge_tq_assoc. f_equal. f_equal. apply merge_tq_comm.
     }
     { (* _qual_norm_involutive *)

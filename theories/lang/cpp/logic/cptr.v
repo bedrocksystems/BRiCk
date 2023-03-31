@@ -71,7 +71,7 @@ Section defs.
         + intros P Q R [Ht1 HPQ] [Ht2 HQR]. split.
           * by rewrite Ht1 Ht2.
           * etrans. by apply HPQ. done.
-      - intros n P Q []. split. done. by apply dist_S.
+      - intros n m P Q [] ?. split; first done. by eapply dist_lt.
     Qed.
     Canonical Structure function_specO := Ofe function_spec function_spec_ofe_mixin.
 

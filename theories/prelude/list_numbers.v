@@ -565,9 +565,9 @@ Section listN.
     rewrite drop_app_le; last by rewrite drop_length -/n.
     rewrite take_app_le; last by rewrite drop_length -/n.
     rewrite drop_drop -app_assoc take_take_drop.
-    rewrite N2Nat.inj_add -[N.to_nat 1]/1%nat -Nat.add_mod_idemp_l//.
+    rewrite N2Nat.inj_add -[N.to_nat 1]/1%nat -Nat.Div0.add_mod_idemp_l//.
     case/decide: (N.to_nat k `mod` n + 1 = n)%nat=> E.
-    - rewrite E Nat.mod_same//= drop_all firstn_all.
+    - rewrite E Nat.Div0.mod_same//= drop_all firstn_all.
       by rewrite app_nil_l app_nil_r.
     - rewrite Nat.mod_small//. lia.
   Qed.
@@ -601,7 +601,7 @@ Section listN.
     rotateN k xs = xs.
   Proof.
     move=> -> {k}. rewrite -rotateN_fold /rotate /lengthN Nat2N.id.
-    case: xs=> [|x xs]//. by rewrite Nat.mod_same//= app_nil_r.
+    case: xs=> [|x xs]//. by rewrite Nat.Div0.mod_same//= app_nil_r.
   Qed.
 
   Lemma rotateN_modulo k xs :
@@ -610,7 +610,7 @@ Section listN.
     case: xs=> [|x xs]; first by rewrite !rotateN_nil.
     rewrite -!rotateN_fold /rotate/lengthN.
     rewrite N2Nat.inj_mod// Nat2N.id.
-    by rewrite Nat.mod_mod//.
+    by rewrite Nat.Div0.mod_mod//.
   Qed.
 
   Lemma rotateN_modulo' k xs :

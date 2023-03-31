@@ -380,19 +380,14 @@ Section proofmode.
   (**
   Support the IPM's [iCombine] tactic: [P1], [P2] inputs, [P] an
   output.
-
-  This instance has a higher cost so it doesn't interfere with
-  [iSplitL], [iSplitR]. (Overall, things might be simpler if the IPM
-  used a dedicated class for combining.)
   *)
-  #[global] Instance from_sep_cfractional_combine P1 P2 P F q1 q2 q :
+  #[global] Instance combine_sep_as_cfractional_bwd P1 P2 P F q1 q2 q :
     AsCFractional P1 F q1 -> AsCFractional P2 F q2 ->
     CombineCFrac q1 q2 q -> AsCFractional P F q ->
-    FromSep P P1 P2 | 100.
+    CombineSepAs P1 P2 P | 100.
   Proof.
-    intros. rewrite/FromSep. by rewrite -as_cfractional_combine.
+    intros. rewrite /CombineSepAs. by rewrite -as_cfractional_combine.
   Qed.
-
 End proofmode.
 
 (** ** Observations from validity *)

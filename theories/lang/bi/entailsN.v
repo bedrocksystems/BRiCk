@@ -104,7 +104,7 @@ Section mixin.
 End mixin.
 
 Class BiEntailsN (PROP : bi) : Type := {
-  bi_entailsN_entailsN :> EntailsN PROP;
+  #[global] bi_entailsN_entailsN :: EntailsN PROP;
   bi_entailsN_mixin : BiEntailsNMixin PROP;
 }.
 #[global] Hint Mode BiEntailsN ! : typeclass_instances.

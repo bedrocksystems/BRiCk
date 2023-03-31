@@ -49,7 +49,10 @@ Section si_embedding.
     unfold embed, bi_embed_embed; cbn;
     do ?rewrite si_embed_eq; unfold si_embed_def; cbn;
     try uPred.unseal;
-    siProp.unseal.
+    (* FIXME: figure out what is happening. *)
+    cbv [siPropI bi_emp bi_later siProp_plainlyC siProp_internal_eq bi_internal_eq_internal_eq bi_plainly_plainly];
+    siProp.unseal;
+    try siProp_primitive.unseal.
 
   #[local] Ltac unseal' :=
     let n := fresh "n" in let x := fresh "x" in
@@ -81,13 +84,13 @@ Section si_embedding.
   Proof. rewrite /BiEmbedEmp. by unseal'. Qed.
 
   #[global] Instance si_embed_later : BiEmbedLater siPropI PROP.
-  Proof. intros P. constructor=>-[]; by unseal. Qed.
+  Proof. intros P. constructor=>-[]; by repeat unseal. Qed.
 
   #[global] Instance si_embed_internal_eq : BiEmbedInternalEq siPropI PROP.
-  Proof. intros A x y. by unseal'. Qed.
+  Proof. intros A x y. unseal'. by repeat unseal. Qed.
 
   #[global] Instance si_embed_plainly : BiEmbedPlainly siPropI PROP.
-  Proof. intros P. by unseal'. Qed.
+  Proof. intros P. unseal'. by unseal. Qed.
 
   (* TODO: uPred_cmra_valid should have been defined as si_cmra_valid.
     This is to be fixed upstream. *)

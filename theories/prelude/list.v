@@ -223,7 +223,10 @@ Section list.
   (** Properties of [NoDup] *)
   Lemma NoDup_Permutation' l k:
     NoDup l -> length l = length k -> (∀ x : A, x ∈ l -> x ∈ k) → l ≡ₚ k.
-  Proof. move => ???. apply submseteq_Permutation_length_eq => //. by apply NoDup_submseteq. Qed.
+  Proof.
+    move => ???. apply submseteq_length_Permutation; last lia.
+    by apply NoDup_submseteq.
+  Qed.
 
   Lemma NoDup_not_in_delete l i x:
     NoDup l -> l !! i = Some x -> x ∉ delete i l.
