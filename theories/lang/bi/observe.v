@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-21 BedRock Systems, Inc.
+ * Copyright (c) 2020-21,23 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -499,4 +499,26 @@ Section observable_theory.
   #[global] Instance observable_observe P Q `{!Observe Q P} :
     Observe Q (observable P).
   Proof. iIntros "#P". by iApply ("P" $! Q with "[%]"). Qed.
+
+  Lemma observable_emp `{!BiPersistentlyForall PROP} : observable emp ⊣⊢@{PROP} emp.
+  Proof.
+    iSplit; first by eauto.
+    iIntros "P".
+    iDestruct (observe (observable _) with "P") as "#$".
+  Qed.
+
+  Lemma observable_False : observable False ⊣⊢@{PROP} False.
+  Proof.
+    iSplit.
+    2: iIntros; contradiction.
+    iIntros "O".
+    iDestruct (observe False with "O") as "#$".
+  Qed.
+
+  Lemma observable_sep P Q : observable (P ∗ Q) ⊢ observable P ∗ observable Q.
+  Proof.
+    iIntros "#PQ".
+    iSplit; iModIntro; iIntros (R) "%O"; iApply "PQ"; iPureIntro; apply _.
+  Qed.
+
 End observable_theory.
