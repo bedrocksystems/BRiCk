@@ -26,8 +26,8 @@ N] rather than [n : nat] for specs that cough up, e.g., [contender γ
 INT_MAX].
 *)
 Class ContenderToken {PROP : bi} (P : N → PROP) : Prop := {
-  contender_timeless n :> Timeless (P n);
-  contender_affine   n :> Affine (P n);
+  #[global] contender_timeless n :: Timeless (P n);
+  #[global] contender_affine   n :: Affine (P n);
 
   (**
   [contender_op] or the derived rule [contender_alloc] are used to

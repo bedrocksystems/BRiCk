@@ -58,9 +58,9 @@ Notation Frac2Valid1 P := (∀ q1 q2 a1 a2, Observe2 [| q1 + q2 ≤ 1 |]%Qp (P q
 Ltac solve_frac := solve [intros; split; apply _].
 
 Class FracSplittable_0 {PROP : bi} (R : Qp → PROP) : Prop := {
-  frac_splittable_0_fractional :> Fractional R;
-  frac_splittable_0_timeless :> Timeless1 R;
-  frac_splittable_0_frac_valid :> FracValid0 R;
+  #[global] frac_splittable_0_fractional :: Fractional R;
+  #[global] frac_splittable_0_timeless :: Timeless1 R;
+  #[global] frac_splittable_0_frac_valid :: FracValid0 R;
 }.
 Section frac_0.
   Context {PROP : bi} (R : Qp → PROP) `{!FracSplittable_0 R}.
@@ -96,9 +96,9 @@ Section frac_1_gen.
 End frac_1_gen.
 
 Class FracSplittable_1 {A} {PROP : bi} (R : Qp → A → PROP) : Prop := {
-  frac_splittable_1_fractional :> Fractional1 R;
-  frac_splittable_1_timeless :> Timeless2 R;
-  frac_splittable_1_frac_valid :> FracValid1 R;
+  #[global] frac_splittable_1_fractional :: Fractional1 R;
+  #[global] frac_splittable_1_timeless :: Timeless2 R;
+  #[global] frac_splittable_1_frac_valid :: FracValid1 R;
 }.
 Section frac_1.
   Context {A} {PROP : bi} (R : Qp → A → PROP) `{!FracSplittable_1 R}.
@@ -114,9 +114,9 @@ Section frac_1.
 End frac_1.
 
 Class FracSplittable_2 {A B} {PROP : bi} (R : Qp → A → B → PROP) : Prop := {
-  frac_splittable_2_fractional :> Fractional2 R;
-  frac_splittable_2_timeless :> Timeless3 R;
-  frac_splittable_2_frac_valid :> FracValid2 R;
+  #[global] frac_splittable_2_fractional :: Fractional2 R;
+  #[global] frac_splittable_2_timeless :: Timeless3 R;
+  #[global] frac_splittable_2_frac_valid :: FracValid2 R;
 }.
 Section frac_2.
   Context {A B} {PROP : bi} (R : Qp → A → B → PROP) `{!FracSplittable_2 R}.
@@ -127,9 +127,9 @@ End frac_2.
 
 Class FracSplittable_3 {A B C} {PROP : bi}
     (R : Qp → A → B → C → PROP) : Prop := {
-  frac_splittable_3_fractional :> Fractional3 R;
-  frac_splittable_3_timeless :> Timeless4 R;
-  frac_splittable_3_frac_valid :> FracValid3 R;
+  #[global] frac_splittable_3_fractional :: Fractional3 R;
+  #[global] frac_splittable_3_timeless :: Timeless4 R;
+  #[global] frac_splittable_3_frac_valid :: FracValid3 R;
 }.
 Section frac_3.
   Context {A B C} {PROP : bi} (R : Qp → A → B → C → PROP) `{!FracSplittable_3 R}.
@@ -140,9 +140,9 @@ End frac_3.
 
 Class FracSplittable_4 {A B C D} {PROP : bi}
     (R : Qp → A → B → C → D → PROP) : Prop := {
-  frac_splittable_4_fractional :> Fractional4 R;
-  frac_splittable_4_timeless :> Timeless5 R;
-  frac_splittable_4_frac_valid :> FracValid4 R;
+  #[global] frac_splittable_4_fractional :: Fractional4 R;
+  #[global] frac_splittable_4_timeless :: Timeless5 R;
+  #[global] frac_splittable_4_frac_valid :: FracValid4 R;
 }.
 Section frac_4.
   Context {A B C D} {PROP : bi} (R : Qp → A → B → C → D → PROP).
@@ -154,9 +154,9 @@ End frac_4.
 
 Class FracSplittable_5 {A B C D E} {PROP : bi}
     (R : Qp → A → B → C → D → E → PROP) : Prop := {
-  frac_splittable_5_fractional :> Fractional5 R;
-  frac_splittable_5_timeless :> Timeless6 R;
-  frac_splittable_5_frac_valid :> FracValid5 R;
+  #[global] frac_splittable_5_fractional :: Fractional5 R;
+  #[global] frac_splittable_5_timeless :: Timeless6 R;
+  #[global] frac_splittable_5_frac_valid :: FracValid5 R;
 }.
 Section frac_5.
   Context {A B C D E} {PROP : bi} (R : Qp → A → B → C → D → E → PROP).
@@ -168,9 +168,9 @@ End frac_5.
 
 Class FracSplittable_6 {A B C D E F} {PROP : bi}
     (R : Qp → A → B → C → D → E → F → PROP) : Prop := {
-  frac_splittable_6_fractional a b c d e f :> Fractional (λ q, R q a b c d e f);
-  frac_splittable_6_timeless q a b c d e f :> Timeless (R q a b c d e f);
-  frac_splittable_6_frac_valid (q : Qp) a b c d e f :>
+  #[global] frac_splittable_6_fractional a b c d e f :: Fractional (λ q, R q a b c d e f);
+  #[global] frac_splittable_6_timeless q a b c d e f :: Timeless (R q a b c d e f);
+  #[global] frac_splittable_6_frac_valid (q : Qp) a b c d e f ::
     Observe [| q ≤ 1 |]%Qp (R q a b c d e f);
 }.
 Section frac_6.
@@ -184,10 +184,10 @@ End frac_6.
 
 Class FracSplittable_7 {A B C D E F G} {PROP : bi}
     (R : Qp → A → B → C → D → E → F → G → PROP) : Prop := {
-  frac_splittable_7_fractional a b c d e f g :>
+  #[global] frac_splittable_7_fractional a b c d e f g ::
     Fractional (λ q, R q a b c d e f g);
-  frac_splittable_7_timeless q a b c d e f g :> Timeless (R q a b c d e f g);
-  frac_splittable_7_frac_valid (q : Qp) a b c d e f g :>
+  #[global] frac_splittable_7_timeless q a b c d e f g :: Timeless (R q a b c d e f g);
+  #[global] frac_splittable_7_frac_valid (q : Qp) a b c d e f g ::
     Observe [| q ≤ 1 |]%Qp (R q a b c d e f g);
 }.
 Section frac_7.
@@ -201,11 +201,11 @@ End frac_7.
 
 Class FracSplittable_8 {A B C D E F G H} {PROP : bi}
     (R : Qp → A → B → C → D → E → F → G → H → PROP) : Prop := {
-  frac_splittable_8_fractional a b c d e f g h :>
+  #[global] frac_splittable_8_fractional a b c d e f g h ::
     Fractional (λ q, R q a b c d e f g h);
-  frac_splittable_8_timeless q a b c d e f g h :>
+  #[global] frac_splittable_8_timeless q a b c d e f g h ::
     Timeless (R q a b c d e f g h);
-  frac_splittable_8_frac_valid (q : Qp) a b c d e f g h :>
+  #[global] frac_splittable_8_frac_valid (q : Qp) a b c d e f g h ::
     Observe [| q ≤ 1 |]%Qp (R q a b c d e f g h);
 }.
 Section frac_8.
@@ -219,11 +219,11 @@ End frac_8.
 
 Class FracSplittable_9 {A B C D E F G H I} {PROP : bi}
     (R : Qp → A → B → C → D → E → F → G → H → I → PROP) : Prop := {
-  frac_splittable_9_fractional a b c d e f g h i :>
+  #[global] frac_splittable_9_fractional a b c d e f g h i ::
     Fractional (λ q, R q a b c d e f g h i);
-  frac_splittable_9_timeless q a b c d e f g h i :>
+  #[global] frac_splittable_9_timeless q a b c d e f g h i ::
     Timeless (R q a b c d e f g h i);
-  frac_splittable_9_frac_valid (q : Qp) a b c d e f g h i :>
+  #[global] frac_splittable_9_frac_valid (q : Qp) a b c d e f g h i ::
     Observe [| q ≤ 1 |]%Qp (R q a b c d e f g h i);
 }.
 Section frac_9.
@@ -242,7 +242,7 @@ over those arguments and cover the remaining arguments using a
 Module example.
   Class Res {PROP : bi} : Type := {
     my_thing (x : nat) (q : Qp) (y : nat) : PROP;
-    my_thing_frac x :> FracSplittable_1 (my_thing x);
+    #[global] my_thing_frac x :: FracSplittable_1 (my_thing x);
   }.
 
   Lemma my_thing_example `{Res} q1 q2 x y :
@@ -262,10 +262,10 @@ step-index, and
 *)
 Class FracLaterAgree1 {A : ofe} {PROP} `{!BiInternalEq PROP}
     (R : Qp -> A -> PROP) : Prop := {
-  frac_later_agree_1_fractional a :> Fractional (fun q => R q a);
-  frac_later_agree_1_valid q a :> Observe [| q ≤ 1 |]%Qp (R q a);
-  frac_later_agree_1_contractive q :> Contractive (R q);
-  frac_later_agree_1_agree :> LaterAgreeF1 R;
+  #[global] frac_later_agree_1_fractional a :: Fractional (fun q => R q a);
+  #[global] frac_later_agree_1_valid q a :: Observe [| q ≤ 1 |]%Qp (R q a);
+  #[global] frac_later_agree_1_contractive q :: Contractive (R q);
+  #[global] frac_later_agree_1_agree :: LaterAgreeF1 R;
 }.
 #[global] Hint Mode FracLaterAgree1 - - - ! : typeclass_instances.
 

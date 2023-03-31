@@ -54,7 +54,7 @@ Notation CFractional5 P := (∀ a b c d e, CFractional (fun q => P q a b c d e))
 (** [CFractional] wrapper suited to avoiding HO unification. *)
 Class AsCFractional {PROP : bi} (P : PROP) (Q : cQp.t -> PROP) (q : cQp.t) : Prop := {
   as_cfractional : P -|- Q q;
-  as_cfractional_cfractional :> CFractional Q;
+  #[global] as_cfractional_cfractional :: CFractional Q;
 }.
 #[global] Hint Mode AsCFractional + ! - - : typeclass_instances.
 #[global] Hint Mode AsCFractional + - + - : typeclass_instances.

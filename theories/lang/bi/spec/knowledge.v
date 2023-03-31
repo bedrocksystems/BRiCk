@@ -14,8 +14,8 @@ Require Import iris.proofmode.proofmode.
 (** Spec building block: knowledge *)
 
 Class Knowledge {PROP : bi} (P : PROP) : Prop := {
-  knowledge_persistent :> Persistent P;
-  knowledge_affine     :> Affine P;
+  #[global] knowledge_persistent :: Persistent P;
+  #[global] knowledge_affine     :: Affine P;
 }.
 Arguments Knowledge {_} _%I.
 
@@ -49,10 +49,10 @@ Compared to [Knowledge], we
 *)
 Class KnowLaterAgree1 {A : ofe} {PROP} `{!BiInternalEq PROP}
     (R : A -> PROP) : Prop := {
-  know_later_agree_1_persistent :> Persistent1 R;
-  know_later_agree_1_affine :> Affine1 R;
-  know_later_agree_1_contractive :> Contractive R;
-  know_later_agree_1_agree :> LaterAgree1 R;
+  #[global] know_later_agree_1_persistent :: Persistent1 R;
+  #[global] know_later_agree_1_affine :: Affine1 R;
+  #[global] know_later_agree_1_contractive :: Contractive R;
+  #[global] know_later_agree_1_agree :: LaterAgree1 R;
 }.
 #[global] Hint Mode KnowLaterAgree1 - - - ! : typeclass_instances.
 

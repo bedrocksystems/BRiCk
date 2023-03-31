@@ -109,7 +109,8 @@ Module afrac : AUTH_FRAC.
   (** CMRA *)
 
   #[local] Notation RA A := (frac_authR (agreeR (leibnizO A))).
-  Class G (A : Type) (Σ : gFunctors) : Set := G_inG :> inG Σ (RA A).
+  Class G (A : Type) (Σ : gFunctors) : Set := G_inG : inG Σ (RA A).
+  #[global] Existing Instance G_inG.
   Definition Σ (A : Type) : gFunctors := #[ GFunctor (RA A) ].
   Lemma subG {A Σ} : subG (afrac.Σ A) Σ -> G A Σ.
   Proof. solve_inG. Qed.
