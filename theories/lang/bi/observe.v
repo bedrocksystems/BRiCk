@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+From elpi Require Import locker.
 Require Import bedrock.lang.bi.prelude.
 Require Import iris.bi.bi iris.bi.monpred.
 Require Import iris.proofmode.proofmode.
@@ -482,41 +483,49 @@ Motivation: framing [P] might make the goal unprovable, for instance in
 [Observe Q P → P -∗ P ∗ Q]
 
 But after observing [observable P], framing [P] always preserves provability. *)
-Definition observable {PROP : bi} (P : PROP) : PROP :=
+mlock Definition observable {PROP : bi} (P : PROP) : PROP :=
   □ (∀ Q : PROP, [| Observe Q P |] -∗ Q).
+#[global] Arguments observable {_} _ : assert.
 
 Section observable_theory.
   Context {PROP : bi}.
   Implicit Types P Q : PROP.
 
+  #[global] Instance observable_persistent P : Persistent (observable P).
+  Proof. rewrite observable.unlock. apply _. Qed.
+  #[global] Instance observable_affine P : Affine (observable P).
+  Proof. rewrite observable.unlock. apply _. Qed.
   #[global] Instance observe_observable `{!BiPersistentlyForall PROP} P :
     Observe (observable P) P.
   Proof.
+    rewrite observable.unlock.
     apply observe_intro_intuitionistically.
     iIntros "P" (Q HQP). iDestruct (HQP with "P") as "#$".
   Qed.
 
   #[global] Instance observable_observe P Q `{!Observe Q P} :
     Observe Q (observable P).
-  Proof. iIntros "#P". by iApply ("P" $! Q with "[%]"). Qed.
+  Proof.
+    rewrite observable.unlock.
+    iIntros "#P". by iApply ("P" $! Q with "[%]").
+  Qed.
 
   Lemma observable_emp `{!BiPersistentlyForall PROP} : observable emp ⊣⊢@{PROP} emp.
   Proof.
     iSplit; first by eauto.
-    iIntros "P".
-    iDestruct (observe (observable _) with "P") as "#$".
+    iIntros "_". iApply (observe (observable emp) emp with "[//]").
   Qed.
 
   Lemma observable_False : observable False ⊣⊢@{PROP} False.
   Proof.
-    iSplit.
-    2: iIntros; contradiction.
+    iSplit; last by iIntros.
     iIntros "O".
     iDestruct (observe False with "O") as "#$".
   Qed.
 
   Lemma observable_sep P Q : observable (P ∗ Q) ⊢ observable P ∗ observable Q.
   Proof.
+    rewrite observable.unlock.
     iIntros "#PQ".
     iSplit; iModIntro; iIntros (R) "%O"; iApply "PQ"; iPureIntro; apply _.
   Qed.
