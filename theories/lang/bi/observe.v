@@ -513,14 +513,12 @@ Section observable_theory.
   Lemma observable_emp `{!BiPersistentlyForall PROP} : observable emp ⊣⊢@{PROP} emp.
   Proof.
     iSplit; first by eauto.
-    iIntros "P".
-    iDestruct (observe (observable _) with "P") as "#$".
+    iIntros "_". iApply (observe (observable emp) emp with "[//]").
   Qed.
 
   Lemma observable_False : observable False ⊣⊢@{PROP} False.
   Proof.
-    iSplit.
-    2: iIntros; contradiction.
+    iSplit; last by iIntros.
     iIntros "O".
     iDestruct (observe False with "O") as "#$".
   Qed.
