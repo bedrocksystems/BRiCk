@@ -12,11 +12,11 @@ bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
 dev-repo: "git+https://github.com/bedrocksystems/cpp2v.git"
 
 depends: [
-  "coq" { >= "8.16.0" & < "8.17~" }
-  "coq-ext-lib" { = "0.11.6" }
-  "coq-iris" {(= "dev.2022-09-29.0.b335afaf")}
-  "elpi" {(= "1.16.8")}
-  "coq-elpi" {(= "1.16.0")}
+  "coq" { >= "8.17.0" & < "8.18~" }
+  "coq-ext-lib" { = "0.11.8" }
+  "coq-iris" {(= "dev.2023-04-06.0.09fa9322")}
+  "elpi" {(= "1.16.9")}
+  "coq-elpi" {(= "1.17.1")}
 ]
 version: "vdev"
 
