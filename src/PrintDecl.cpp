@@ -99,10 +99,30 @@ parameter(const ParmVarDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
     print.output() << fmt::rparen;
 }
 
+const std::string
+templateArgumentKindName(TemplateArgument::ArgKind kind) {
+    #define CASE(k) case TemplateArgument::ArgKind::k: return #k;
+    switch (kind) {
+    CASE(Null)
+    CASE(Type)
+    CASE(Declaration)
+    CASE(NullPtr)
+    CASE(Integral)
+    CASE(Template)
+    CASE(TemplateExpansion)
+    CASE(Expression)
+    CASE(Pack)
+    default:
+        return "<unknown>";
+    }
+    #undef CASE
+}
+
 void
 printFunction(const FunctionDecl *decl, CoqPrinter &print,
               ClangPrinter &cprint) {
     print.ctor("Build_Func");
+
     cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::nbsp << fmt::line;
 
@@ -227,6 +247,16 @@ public:
                         ClangPrinter &cprint, const ASTContext &) {
         // ignore
         return false;
+    }
+
+    bool VisitTemplateTypeParmDecl(const TemplateTypeParmDecl* param,
+            CoqPrinter &print, ClangPrinter &cprint, const ASTContext &) {
+        assert(print.templates() && "TemplateTypeParmDecl");
+
+        print.ctor("TypeParam");
+        print.str(param->getName());
+        print.end_ctor();
+        return true;
     }
 
     bool VisitTypedefNameDecl(const TypedefNameDecl *type, CoqPrinter &print,
@@ -504,11 +534,59 @@ public:
 
     bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, const ASTContext &) {
-        print.ctor("Dfunction");
-        cprint.printObjName(decl, print);
-        printFunction(decl, print, cprint);
-        print.end_ctor();
-        return true;
+        auto info = decl->getTemplateSpecializationInfo();
+        if (print.templates() && info) {
+            switch (info->getTemplateSpecializationKind()) {
+            case TemplateSpecializationKind::TSK_Undeclared:
+                return false;
+
+            case TemplateSpecializationKind::TSK_ImplicitInstantiation:
+            case TemplateSpecializationKind::TSK_ExplicitSpecialization:
+            case TemplateSpecializationKind::TSK_ExplicitInstantiationDeclaration:
+            case TemplateSpecializationKind::TSK_ExplicitInstantiationDefinition:
+                auto tdecl = info->getTemplate();
+                auto targs = info->TemplateArguments;
+                assert(tdecl && "FunctionTemplateSpecializationInfo without template");
+                assert(targs && "FunctionTemplateSpecializationInfo without arguments");
+
+                auto function = tdecl->getTemplatedDecl();
+                assert(function && "FunctionTemplateDecl without function");
+
+                print.ctor("Dfunction");
+                cprint.printObjName(decl, print);
+                print.output() << fmt::nbsp;
+                cprint.printObjName(function, print);
+                print.output() << fmt::nbsp;
+                print.list(targs->asArray(), [&cprint, &info](auto print, auto &arg){
+                    switch(arg.getKind()){
+
+                    case TemplateArgument::Type:
+                        print.ctor("TypeArg");
+                        cprint.printQualType(arg.getAsType(), print);
+                        print.end_ctor();
+                        break;
+
+                    default:
+                        using namespace logging;
+                        fatal()
+                            << cprint.sourceRange(info->getPointOfInstantiation()) << ": "
+                            << "error: unsupported template argument kind: "
+                            << templateArgumentKindName(arg.getKind()) << "\n";
+                        die();
+                        break;
+                    }
+                });
+                print.end_ctor();
+                return true;
+            }
+        } else {
+            print.ctor("Dfunction");
+            cprint.printObjName(decl, print);
+            print.output() << fmt::nbsp;
+            printFunction(decl, print, cprint);
+            print.end_ctor();
+            return true;
+        }
     }
 
     bool VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
@@ -786,18 +864,39 @@ public:
 
     bool VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
                                    CoqPrinter &print, ClangPrinter &cprint,
-                                   const ASTContext &) {
-        // we only print specializations
-        assert(false && "FunctionTemplateDecl");
-        return false;
+                                   const ASTContext &ctxt) {
+        assert(print.templates() && "FunctionTemplateDecl");
+
+        auto params = decl->getTemplateParameters();
+        assert(params && "FunctionTemplateDecl without parameters");
+        auto function = decl->getTemplatedDecl();
+        assert(function && "FunctionTemplateDecl without function");
+
+        print.ctor("Dfunction_template");
+        cprint.printObjName(function, print);
+        print.output() << fmt::nbsp;
+        print.list(params->asArray(), [&cprint](auto print, auto *decl) {
+            cprint.printDecl(decl, print);
+        }) << fmt::nbsp;
+        printFunction(function, print, cprint);
+        print.end_ctor();
+        return true;
     }
 
     bool VisitClassTemplateDecl(const ClassTemplateDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
-                                const ASTContext &) {
-        // we only print specializations
-        assert(false && "ClassTemplateDecl");
-        return false;
+                                const ASTContext &ctxt) {
+        assert(print.templates() && "unexpected class template");
+
+        if (false)
+            return this->Visit(decl->getTemplatedDecl(), print, cprint, ctxt);
+        else {
+            using namespace logging;
+            unsupported()
+                << cprint.sourceRange(decl->getSourceRange()) << ": "
+                << "warning: unsupported class template\n";
+            return false;
+        }
     }
 
     bool VisitFriendDecl(const FriendDecl *, CoqPrinter &, ClangPrinter &,

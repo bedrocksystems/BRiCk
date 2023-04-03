@@ -28,9 +28,13 @@ public:
     explicit ToCoqConsumer(clang::CompilerInstance *compiler,
                            const llvm::Optional<std::string> output_file,
                            const llvm::Optional<std::string> notations_file,
-                           bool elaborate = true)
-        : compiler_(compiler), output_file_(output_file),
-          notations_file_(notations_file), elaborate_(elaborate) {}
+                           const llvm::Optional<std::string> templates_file,
+                           bool elaborate = true) :
+        compiler_(compiler),
+        output_file_(output_file),
+        notations_file_(notations_file),
+        templates_file_(templates_file),
+        elaborate_(elaborate) {}
 
     virtual void HandleTranslationUnit(clang::ASTContext &Context) {
         toCoqModule(&Context, Context.getTranslationUnitDecl());
@@ -43,5 +47,6 @@ private:
     clang::CompilerInstance *compiler_;
     const Optional<std::string> output_file_;
     const Optional<std::string> notations_file_;
+    const Optional<std::string> templates_file_;
     bool elaborate_;
 };

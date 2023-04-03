@@ -18,6 +18,7 @@ class TranslationUnitDecl;
 class ParmVarDecl;
 class Type;
 class BuiltinType;
+class DecltypeType;
 class ASTContext;
 class MangleContext;
 class ValueDecl;
@@ -29,6 +30,8 @@ class TypeDecl;
 
 class CoqPrinter;
 struct OpaqueNames;
+
+bool is_dependent(const clang::Expr*);
 
 class ClangPrinter {
 public:
@@ -54,6 +57,7 @@ public:
 
     // Printing types
     void printQualType(const clang::QualType& qt, CoqPrinter& print);
+    void printQualTypeOption(const clang::QualType& qt, CoqPrinter& print);
 
     void printQualifier(const clang::QualType& qt, CoqPrinter& print) const;
 
@@ -68,6 +72,7 @@ public:
 
     unsigned getTypeSize(const clang::BuiltinType* type) const;
 
+    std::string sourceLocation(const clang::SourceLocation) const;
     std::string sourceRange(const clang::SourceRange sr) const;
 
     ClangPrinter(clang::CompilerInstance* compiler, clang::ASTContext* context);

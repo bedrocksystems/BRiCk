@@ -170,7 +170,8 @@ Definition type_table_le (te1 te2 : type_table) : Prop :=
 (* TODO: consider replacing [type_table_le]'s definition with [type_table_le_alt] *)
 Definition type_table_le_alt : type_table -> type_table -> Prop :=
   map_included GlobDecl_ler.
-#[global] Instance: PreOrder type_table_le_alt := _.
+#[global] Instance: PreOrder type_table_le_alt.
+Proof. apply @map_included_preorder, _. Qed.
 
 Lemma type_table_le_equiv te1 te2 : type_table_le te1 te2 <-> type_table_le_alt te1 te2.
 Proof.
@@ -328,7 +329,8 @@ End ObjValue_ler.
 (* Ditto. *)
 Definition sym_table_le_alt : symbol_table -> symbol_table -> Prop :=
   map_included ObjValue_ler.
-#[global] Instance: PreOrder sym_table_le_alt := _.
+#[global] Instance: PreOrder sym_table_le_alt.
+Proof. apply @map_included_preorder, _. Qed.
 
 Definition sym_table_le (a b : symbol_table) :=
   forall (on : obj_name) v,

@@ -89,6 +89,7 @@ public:
             // https://gcc.gnu.org/onlinedocs/gcc-11.1.0/gcc/Type-Traits.html
 
             print.ctor("@Tunderlying", false);
+            print.type() << fmt::nbsp;
 
             // The enumeration
             cprint.printQualType(type->getBaseType(), print);
@@ -117,8 +118,8 @@ public:
 
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
                                    CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Ttemplate")
-            << "\"" << type->getDecl()->getNameAsString() << "\"";
+        print.ctor("Tvar");
+        print.str(type->getDecl()->getNameAsString());
         print.end_ctor();
     }
 
@@ -220,15 +221,6 @@ public:
             CASE(Int128, "Ti128")
             CASE(UInt128, "Tu128")
 #undef CASE
-        case BuiltinType::Kind::Dependent:
-            print.output() << "Tunsupported \"type-dependent type\"";
-            using namespace logging;
-            fatal() << "Clang failed to resolve type, due to earlier errors or "
-                       "unresolved templates\n"
-                    << "Try fixing earlier errors, or ask for help. Aborting\n";
-            die();
-
-            break;
 #if CLANG_VERSION_MAJOR == 10
         case BuiltinType::Kind::SveInt8:
         case BuiltinType::Kind::SveInt16:
@@ -248,6 +240,18 @@ public:
                            << "\"" << fmt::rparen;
             break;
 #endif
+        case BuiltinType::Kind::Dependent:
+            if (!print.templates()) {
+                unsupported_type(type, print, cprint);
+                using namespace logging;
+                fatal()
+                    << "Clang failed to resolve type, due to earlier errors or unresolved templates\n"
+                    << "Try fixing earlier errors, or ask for help. Aborting\n";
+                die();
+                break;
+            }
+            [[fallthrough]];
+
         default:
             if (type->isAnyCharacterType()) {
                 assert(false);
@@ -264,14 +268,10 @@ public:
                                << "\"" << fmt::rparen;
                 break;
 #endif
+            } else if (print.templates() && type->isDependentType()) {
+                print.output() << "Tdependent";
             } else {
-                using namespace logging;
-                fatal() << "[ERR] Unsupported builtin type (" << type->getKind()
-                        << "): \""
-                        << type->getNameAsCString(
-                               cprint.getContext().getPrintingPolicy())
-                        << "\"\n";
-                die();
+                unsupported_type(type, print, cprint);
             }
         }
     }
@@ -300,7 +300,9 @@ public:
     void VisitTypedefType(const TypedefType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         if (PRINT_ALIAS) {
-            print.ctor("@Talias", false) << "\"";
+            print.ctor("@Talias", false);
+            print.type() << fmt::nbsp;
+            print.output() << "\"";
             cprint.printTypeName(type->getDecl(), print);
             // printing a "human readable" type
             // type->getDecl()->printQualifiedName(print.output().nobreak());
@@ -378,18 +380,35 @@ public:
         if (type->isSugared()) {
             cprint.printQualType(type->desugar(), print);
         } else {
-            VisitType(type, print, cprint);
+            unsupported_type(type, print, cprint);
         }
     }
 
     void VisitDecltypeType(const DecltypeType* type, CoqPrinter& print,
                            ClangPrinter& cprint) {
-        cprint.printQualType(type->desugar(), print);
+        if (type->isSugared()) {
+            // The guard ensure the type visitor terminates.
+            cprint.printQualType(type->desugar(), print);
+        } else if (print.templates()) {
+            cprint.printQualType(type->getUnderlyingType(), print);
+        } else {
+            unsupported_type(type, print, cprint);
+        }
     }
 
     void VisitTypeOfExprType(const TypeOfExprType* type, CoqPrinter& print,
                              ClangPrinter& cprint) {
-        cprint.printQualType(type->desugar(), print);
+        if (type->isSugared()) {
+            // The guard ensure the type visitor terminates.
+            cprint.printQualType(type->desugar(), print);
+        } else if (print.templates()) {
+            /*
+            TODO: Test whether we need printQualTypeOption here.
+            */
+            cprint.printQualType(type->getUnderlyingExpr()->getType(), print);
+        } else {
+            unsupported_type(type, print, cprint);
+        }
     }
 
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
@@ -412,7 +431,16 @@ public:
     void VisitMemberPointerType(const MemberPointerType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tmember_pointer");
-        cprint.printTypeName(type->getClass()->getAsCXXRecordDecl(), print);
+        auto class_type = type->getClass();
+        if (! print.templates()) {
+            cprint.printTypeName(class_type->getAsCXXRecordDecl(), print);
+        } else {
+            /*
+            `class_type` may not be a concrete class (e.g., it could
+            be a template parameter).
+            */
+            this->Visit(class_type, print, cprint);
+        }
         print.output() << fmt::nbsp;
         cprint.printQualType(type->getPointeeType(), print);
         print.end_ctor();
@@ -465,6 +493,18 @@ ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print) {
         using namespace logging;
         fatal() << "unexpected null type in printQualType\n";
         die();
+    }
+}
+
+void
+ClangPrinter::printQualTypeOption(const QualType& qt, CoqPrinter& print) {
+    auto t = qt.getTypePtrOrNull();
+    if (t == nullptr || t->isDependentType()) {
+        print.none();
+    } else {
+        print.some();
+        printQualType(qt, print);
+        print.end_ctor();
     }
 }
 

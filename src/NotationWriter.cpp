@@ -150,7 +150,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
     for (auto def : mod.definitions())
         write_notations(def);
     for (auto def : mod.declarations())
-        write_notations(def.first);
+        write_notations(def);
 
     print.output() << fmt::outdent << "End _'." << fmt::line;
     print.output() << "Export _'." << fmt::line << fmt::line;

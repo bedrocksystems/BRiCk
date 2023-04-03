@@ -213,6 +213,42 @@ with a value category).
 #[global] Instance Cast_eq_dec {type : Set} `{!EqDecision type} : EqDecision (Cast' type).
 Proof. solve_decision. Defined.
 Notation Cast := (Cast' type).
+Module Cast.
+
+  Definition mapM {M} `{!FMap M, !MRet M} {A B : Set} (f : A -> M B) :
+      Cast' A -> M (Cast' B) :=
+    fix go c :=
+    match c with
+    | Cdependent => mret Cdependent
+    | Cbitcast => mret Cbitcast
+    | Clvaluebitcast => mret Clvaluebitcast
+    | Cl2r => mret Cl2r
+    | Cnoop => mret Cnoop
+    | Carray2ptr => mret Carray2ptr
+    | Cfun2ptr => mret Cfun2ptr
+    | Cint2ptr => mret Cint2ptr
+    | Cptr2int => mret Cptr2int
+    | Cptr2bool => mret Cptr2bool
+    | Cderived2base path => mret $ Cderived2base path
+    | Cbase2derived path => mret $ Cbase2derived path
+    | Cintegral => mret Cintegral
+    | Cint2bool => mret Cint2bool
+    | Cfloat2int => mret Cfloat2int
+    | Cnull2ptr => mret Cnull2ptr
+    | Cbuiltin2fun => mret Cbuiltin2fun
+    | Cctor => mret Cctor
+    | C2void => mret C2void
+    | Cuser f => mret $ Cuser f
+    | Creinterpret t => Creinterpret <$> f t
+    | Cstatic c => Cstatic <$> go c
+    | Cdynamic gn1 gn2 => mret $ Cdynamic gn1 gn2
+    | Cconst t => Cconst <$> f t
+    end.
+
+  Definition fmap : ∀ {A B : Set} (f : A -> B) (c : Cast' A), Cast' B :=
+    @mapM (fun T => T) (fun _ _ f x => f x) (fun _ x => x).
+
+End Cast.
 
 (** * References *)
 Variant VarRef : Set :=

@@ -45,7 +45,7 @@ public:
     static PrintLocalDecl printer;
 
     bool VisitVarDecl(const VarDecl* decl, CoqPrinter& print,
-                      ClangPrinter& cprint, OpaqueNames& on) {
+                      ClangPrinter& cprint, OpaqueNames& names) {
         if (decl->isStaticLocal()) {
             bool thread_safe =
                 cprint.getCompiler().getLangOpts().ThreadsafeStatics;
@@ -57,12 +57,13 @@ public:
             print.ctor("Dvar")
                 << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
         }
-        cprint.printQualType(decl->getType(), print);
+        auto declty = decl->getType();
+        cprint.printQualType(declty, print);
         print.output() << fmt::nbsp;
 
-        if (decl->hasInit()) {
+        if (auto init = decl->getInit()) {
             print.some();
-            cprint.printExpr(decl->getInit(), print, on);
+            cprint.printExpr(init, print, names);
             print.end_ctor();
         } else {
             print.none() << fmt::nbsp;
