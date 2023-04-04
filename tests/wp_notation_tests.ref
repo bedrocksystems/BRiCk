@@ -1,6 +1,6 @@
 "~~~TESTING COMPACT NOTATIONS~~~"%bs
      : bs
-NOTATION_wp_nowrap = 
+NOTATION_wp_nowrap =
 ::wpS
   [region:
     "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
@@ -14,7 +14,7 @@ NOTATION_wp_nowrap =
        return ($"foo" + $"bar"); 
        // end block})
      : mpred
-NOTATION_wp_wrap = 
+NOTATION_wp_wrap =
 ::wpS
   [region:
     "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -54,7 +54,7 @@ NOTATION_wp_wrap =
        // end block
        // end block})
      : mpred
-NOTATION_wp_decl_nowrap = 
+NOTATION_wp_decl_nowrap =
 λ (decl : VarDecl) (Q : region → FreeTemps → epred),
   ::wpD
     [region:
@@ -67,13 +67,13 @@ NOTATION_wp_decl_nowrap =
      : VarDecl → (region → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_decl_nowrap decl%CPP_stmt_scope Q%function_scope
-NOTATION_wp_atomic_nil = 
+NOTATION_wp_atomic_nil =
 λ (M : coPset) (Q : val → mpred),
   ::wpAtomic (Mask ↦ M; Type ↦ ptr<void>) {e: {?: expr.AO__atomic_load}()}
      : coPset → (val → mpred) → mpred
 
 Arguments NOTATION_wp_atomic_nil M Q%function_scope
-NOTATION_wp_atomic_cons_nowrap = 
+NOTATION_wp_atomic_cons_nowrap =
 λ (M : coPset) (Q : val → mpred),
   ::wpAtomic
     (Mask ↦ M; Type ↦ ptr<void>) 
@@ -81,7 +81,7 @@ NOTATION_wp_atomic_cons_nowrap =
      : coPset → (val → mpred) → mpred
 
 Arguments NOTATION_wp_atomic_cons_nowrap M Q%function_scope
-NOTATION_wp_atomic_cons_wrap = 
+NOTATION_wp_atomic_cons_wrap =
 λ (M : coPset) (Q : val → mpred),
   ::wpAtomic
     (Mask ↦ M; Type ↦ ptr<void>) 
@@ -96,19 +96,19 @@ NOTATION_wp_atomic_cons_wrap =
      : coPset → (val → mpred) → mpred
 
 Arguments NOTATION_wp_atomic_cons_wrap M Q%function_scope
-NOTATION_wp_builtin_nil = 
+NOTATION_wp_builtin_nil =
 λ Q : val → mpred, ::wpBuiltin (Type ↦ ptr<void>) {e: __builtin_popcount()}
      : (val → mpred) → mpred
 
 Arguments NOTATION_wp_builtin_nil Q%function_scope
-NOTATION_wp_builtin_cons_nowrap = 
+NOTATION_wp_builtin_cons_nowrap =
 λ Q : val → mpred,
   ::wpBuiltin
     (Type ↦ ptr<void>) {e: __builtin_popcount(Vundef, Vundef, Vundef)}
      : (val → mpred) → mpred
 
 Arguments NOTATION_wp_builtin_cons_nowrap Q%function_scope
-NOTATION_wp_builtin_cons_wrap = 
+NOTATION_wp_builtin_cons_wrap =
 λ Q : val → mpred,
   ::wpBuiltin
     (Type ↦ ptr<void>) 
@@ -123,10 +123,10 @@ NOTATION_wp_builtin_cons_wrap =
      : (val → mpred) → mpred
 
 Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
-NOTATION_destroy_val_nowrap = 
+NOTATION_destroy_val_nowrap =
 destroy_val WpTestDefns.tu ({t: ptr<void>}) WpTestDefns.p WpTestDefns.E
      : mpred
-NOTATION_destroy_val_wrap = 
+NOTATION_destroy_val_wrap =
 λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
   destroy_val WpTestDefns.tu ({t: ptr<void>})
     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -137,14 +137,14 @@ Arguments NOTATION_destroy_val_wrap
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 NOTATION_interp_nowrap = ::interp { WpTestDefns.free }
      : mpred
-NOTATION_interp_wrap = 
+NOTATION_interp_wrap =
 ::interp
   { (((((((((FreeTemps.id |*| FreeTemps.id) |*| FreeTemps.id)
            |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
         |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
      |*| FreeTemps.id)%free |*| FreeTemps.id }
      : mpred
-NOTATION_wp_lval_nowrap = 
+NOTATION_wp_lval_nowrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpL
     [region:
@@ -154,7 +154,7 @@ NOTATION_wp_lval_nowrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_lval_nowrap Q%function_scope
-NOTATION_wp_lval_wrap = 
+NOTATION_wp_lval_wrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpL
     [region:
@@ -165,7 +165,7 @@ NOTATION_wp_lval_wrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_lval_wrap Q%function_scope
-NOTATION_wp_init_nowrap = 
+NOTATION_wp_init_nowrap =
 λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
@@ -176,7 +176,7 @@ NOTATION_wp_init_nowrap =
      : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_nowrap Q%function_scope
-NOTATION_wp_init_wrap = 
+NOTATION_wp_init_wrap =
 λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
@@ -188,7 +188,7 @@ NOTATION_wp_init_wrap =
      : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_wrap Q%function_scope
-NOTATION_wp_prval_nowrap = 
+NOTATION_wp_prval_nowrap =
 λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
@@ -198,7 +198,7 @@ NOTATION_wp_prval_nowrap =
      : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_nowrap Q%function_scope
-NOTATION_wp_prval_wrap = 
+NOTATION_wp_prval_wrap =
 λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
@@ -209,7 +209,7 @@ NOTATION_wp_prval_wrap =
      : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_wrap Q%function_scope
-NOTATION_wp_operand_nowrap = 
+NOTATION_wp_operand_nowrap =
 λ Q : val → FreeTemps → epred,
   ::wpOperand
     [region:
@@ -219,7 +219,7 @@ NOTATION_wp_operand_nowrap =
      : (val → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_operand_nowrap Q%function_scope
-NOTATION_wp_operand_wrap = 
+NOTATION_wp_operand_wrap =
 λ Q : val → FreeTemps → epred,
   ::wpOperand
     [region:
@@ -230,7 +230,7 @@ NOTATION_wp_operand_wrap =
      : (val → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_operand_wrap Q%function_scope
-NOTATION_wp_xval_nowrap = 
+NOTATION_wp_xval_nowrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpX
     [region:
@@ -240,7 +240,7 @@ NOTATION_wp_xval_nowrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_xval_nowrap Q%function_scope
-NOTATION_wp_xval_wrap = 
+NOTATION_wp_xval_wrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpX
     [region:
@@ -251,7 +251,7 @@ NOTATION_wp_xval_wrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_xval_wrap Q%function_scope
-NOTATION_wp_glval_nowrap = 
+NOTATION_wp_glval_nowrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
@@ -261,7 +261,7 @@ NOTATION_wp_glval_nowrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_nowrap Q%function_scope
-NOTATION_wp_glval_wrap = 
+NOTATION_wp_glval_wrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
@@ -272,7 +272,7 @@ NOTATION_wp_glval_wrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_wrap Q%function_scope
-NOTATION_wp_discard_nowrap = 
+NOTATION_wp_discard_nowrap =
 λ Q : FreeTemps → mpred,
   ::wpGLₓ
     [region:
@@ -281,7 +281,7 @@ NOTATION_wp_discard_nowrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
-NOTATION_wp_discard_nowrap = 
+NOTATION_wp_discard_nowrap =
 λ Q : FreeTemps → mpred,
   ::wpGLₓ
     [region:
@@ -290,31 +290,31 @@ NOTATION_wp_discard_nowrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
-NOTATION_wp_func = 
+NOTATION_wp_func =
 λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
   ::wpFunc Q
      : translation_unit → Func → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
-NOTATION_wp_method = 
+NOTATION_wp_method =
 λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
   ::wpMethod Q
      : translation_unit → Method → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
-NOTATION_wp_ctor = 
+NOTATION_wp_ctor =
 λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
   ::wpCtor Q
      : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
-NOTATION_wp_dtor = 
+NOTATION_wp_dtor =
 λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
   ::wpDtor Q
      : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
-NOTATION_wp_args_nowrap = 
+NOTATION_wp_args_nowrap =
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),
   ::wpArgs
@@ -325,7 +325,7 @@ NOTATION_wp_args_nowrap =
        → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_args_nowrap tys_ar es%list_scope Q%function_scope
-NOTATION_wp_args_wrap = 
+NOTATION_wp_args_wrap =
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),
   ::wpArgs
@@ -337,7 +337,7 @@ NOTATION_wp_args_wrap =
        → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_args_wrap tys_ar es%list_scope Q%function_scope
-NOTATION_wp_initialize_nowrap = 
+NOTATION_wp_initialize_nowrap =
 λ Q : FreeTemps → mpred,
   ::wpInitialize
     [region:
@@ -347,7 +347,7 @@ NOTATION_wp_initialize_nowrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_initialize_nowrap Q%function_scope
-NOTATION_wp_initialize_wrap = 
+NOTATION_wp_initialize_wrap =
 λ Q : FreeTemps → mpred,
   ::wpInitialize
     [region:
@@ -359,7 +359,7 @@ NOTATION_wp_initialize_wrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_initialize_wrap Q%function_scope
-NOTATION_wp_call_nowrap = 
+NOTATION_wp_call_nowrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpCall
     ([region:
@@ -367,7 +367,7 @@ NOTATION_wp_call_nowrap =
      : list expr.Expr → (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_call_nowrap ls%list_scope Q%function_scope
-NOTATION_wp_call_wrap = 
+NOTATION_wp_call_wrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpCall
     ([region:
@@ -377,7 +377,7 @@ NOTATION_wp_call_wrap =
      : list expr.Expr → (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_call_wrap ls%list_scope Q%function_scope
-NOTATION_wp_mcall_nowrap = 
+NOTATION_wp_mcall_nowrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpMCall
     ([region:
@@ -385,7 +385,7 @@ NOTATION_wp_mcall_nowrap =
      : list expr.Expr → (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_mcall_nowrap ls%list_scope Q%function_scope
-NOTATION_wp_mcall_wrap = 
+NOTATION_wp_mcall_wrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpMCall
     ([region:
@@ -397,7 +397,7 @@ NOTATION_wp_mcall_wrap =
 Arguments NOTATION_wp_mcall_wrap ls%list_scope Q%function_scope
 "~~~TESTING Verbose NOTATIONS~~~"%bs
      : bs
-NOTATION_wp_nowrap = 
+NOTATION_wp_nowrap =
 ::wpS
   [region:
     "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
@@ -412,7 +412,7 @@ NOTATION_wp_nowrap =
       // end block}
   (WpTestDefns.K)
      : mpred
-NOTATION_wp_wrap = 
+NOTATION_wp_wrap =
 ::wpS
   [region:
     "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -453,7 +453,7 @@ NOTATION_wp_wrap =
       // end block}
   (WpTestDefns.K)
      : mpred
-NOTATION_wp_decl_nowrap = 
+NOTATION_wp_decl_nowrap =
 λ (decl : VarDecl) (Q : region → FreeTemps → epred),
   ::wpD
     [region:
@@ -467,13 +467,13 @@ NOTATION_wp_decl_nowrap =
      : VarDecl → (region → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_decl_nowrap decl%CPP_stmt_scope Q%function_scope
-NOTATION_wp_atomic_nil = 
+NOTATION_wp_atomic_nil =
 λ (M : coPset) (Q : val → mpred),
   ::wpAtomic (Mask ↦ M; Type ↦ ptr<void>)  {e: expr.AO__atomic_load()} (Q)
      : coPset → (val → mpred) → mpred
 
 Arguments NOTATION_wp_atomic_nil M Q%function_scope
-NOTATION_wp_atomic_cons_nowrap = 
+NOTATION_wp_atomic_cons_nowrap =
 λ (M : coPset) (Q : val → mpred),
   ::wpAtomic
     (Mask ↦ M; Type ↦ ptr<void>) 
@@ -482,7 +482,7 @@ NOTATION_wp_atomic_cons_nowrap =
      : coPset → (val → mpred) → mpred
 
 Arguments NOTATION_wp_atomic_cons_nowrap M Q%function_scope
-NOTATION_wp_atomic_cons_wrap = 
+NOTATION_wp_atomic_cons_wrap =
 λ (M : coPset) (Q : val → mpred),
   ::wpAtomic
     (Mask ↦ M; Type ↦ ptr<void>) 
@@ -498,13 +498,13 @@ NOTATION_wp_atomic_cons_wrap =
      : coPset → (val → mpred) → mpred
 
 Arguments NOTATION_wp_atomic_cons_wrap M Q%function_scope
-NOTATION_wp_builtin_nil = 
+NOTATION_wp_builtin_nil =
 λ Q : val → mpred,
   ::wpBuiltin (Type ↦ ptr<void>) {e: {e: __builtin_popcount}()} (Q)
      : (val → mpred) → mpred
 
 Arguments NOTATION_wp_builtin_nil Q%function_scope
-NOTATION_wp_builtin_cons_nowrap = 
+NOTATION_wp_builtin_cons_nowrap =
 λ Q : val → mpred,
   ::wpBuiltin
     (Type ↦ ptr<void>) {e: {e: __builtin_popcount}(Vundef, Vundef, Vundef)}
@@ -512,7 +512,7 @@ NOTATION_wp_builtin_cons_nowrap =
      : (val → mpred) → mpred
 
 Arguments NOTATION_wp_builtin_cons_nowrap Q%function_scope
-NOTATION_wp_builtin_cons_wrap = 
+NOTATION_wp_builtin_cons_wrap =
 λ Q : val → mpred,
   ::wpBuiltin
     (Type ↦ ptr<void>) 
@@ -528,10 +528,10 @@ NOTATION_wp_builtin_cons_wrap =
      : (val → mpred) → mpred
 
 Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
-NOTATION_destroy_val_nowrap = 
+NOTATION_destroy_val_nowrap =
 destroy_val WpTestDefns.tu ({t: ptr<void>}) WpTestDefns.p WpTestDefns.E
      : mpred
-NOTATION_destroy_val_wrap = 
+NOTATION_destroy_val_wrap =
 λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
   destroy_val WpTestDefns.tu ({t: ptr<void>})
     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -540,10 +540,10 @@ NOTATION_destroy_val_wrap =
 
 Arguments NOTATION_destroy_val_wrap
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-NOTATION_interp_nowrap = 
+NOTATION_interp_nowrap =
 ::interp { WpTestDefns.free }  (WpTestDefns.E)
      : mpred
-NOTATION_interp_wrap = 
+NOTATION_interp_wrap =
 ::interp
   { (((((((((FreeTemps.id |*| FreeTemps.id) |*| FreeTemps.id)
            |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
@@ -551,7 +551,7 @@ NOTATION_interp_wrap =
      |*| FreeTemps.id)%free |*| FreeTemps.id }
   (WpTestDefns.E)
      : mpred
-NOTATION_wp_lval_nowrap = 
+NOTATION_wp_lval_nowrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpL
     [region:
@@ -562,7 +562,7 @@ NOTATION_wp_lval_nowrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_lval_nowrap Q%function_scope
-NOTATION_wp_lval_wrap = 
+NOTATION_wp_lval_wrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpL
     [region:
@@ -574,7 +574,7 @@ NOTATION_wp_lval_wrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_lval_wrap Q%function_scope
-NOTATION_wp_init_nowrap = 
+NOTATION_wp_init_nowrap =
 λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
@@ -586,7 +586,7 @@ NOTATION_wp_init_nowrap =
      : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_nowrap Q%function_scope
-NOTATION_wp_init_wrap = 
+NOTATION_wp_init_wrap =
 λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
@@ -599,7 +599,7 @@ NOTATION_wp_init_wrap =
      : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_wrap Q%function_scope
-NOTATION_wp_prval_nowrap = 
+NOTATION_wp_prval_nowrap =
 λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
@@ -610,7 +610,7 @@ NOTATION_wp_prval_nowrap =
      : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_nowrap Q%function_scope
-NOTATION_wp_prval_wrap = 
+NOTATION_wp_prval_wrap =
 λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
@@ -622,7 +622,7 @@ NOTATION_wp_prval_wrap =
      : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_wrap Q%function_scope
-NOTATION_wp_operand_nowrap = 
+NOTATION_wp_operand_nowrap =
 λ Q : val → FreeTemps → epred,
   ::wpOperand
     [region:
@@ -633,7 +633,7 @@ NOTATION_wp_operand_nowrap =
      : (val → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_operand_nowrap Q%function_scope
-NOTATION_wp_operand_wrap = 
+NOTATION_wp_operand_wrap =
 λ Q : val → FreeTemps → epred,
   ::wpOperand
     [region:
@@ -645,7 +645,7 @@ NOTATION_wp_operand_wrap =
      : (val → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_operand_wrap Q%function_scope
-NOTATION_wp_xval_nowrap = 
+NOTATION_wp_xval_nowrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpX
     [region:
@@ -656,7 +656,7 @@ NOTATION_wp_xval_nowrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_xval_nowrap Q%function_scope
-NOTATION_wp_xval_wrap = 
+NOTATION_wp_xval_wrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpX
     [region:
@@ -668,7 +668,7 @@ NOTATION_wp_xval_wrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_xval_wrap Q%function_scope
-NOTATION_wp_glval_nowrap = 
+NOTATION_wp_glval_nowrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
@@ -679,7 +679,7 @@ NOTATION_wp_glval_nowrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_nowrap Q%function_scope
-NOTATION_wp_glval_wrap = 
+NOTATION_wp_glval_wrap =
 λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
@@ -691,7 +691,7 @@ NOTATION_wp_glval_wrap =
      : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_wrap Q%function_scope
-NOTATION_wp_discard_nowrap = 
+NOTATION_wp_discard_nowrap =
 λ Q : FreeTemps → mpred,
   ::wpGLₓ
     [region:
@@ -701,7 +701,7 @@ NOTATION_wp_discard_nowrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
-NOTATION_wp_discard_nowrap = 
+NOTATION_wp_discard_nowrap =
 λ Q : FreeTemps → mpred,
   ::wpGLₓ
     [region:
@@ -711,31 +711,31 @@ NOTATION_wp_discard_nowrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
-NOTATION_wp_func = 
+NOTATION_wp_func =
 λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
   ::wpFunc (Q)
      : translation_unit → Func → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
-NOTATION_wp_method = 
+NOTATION_wp_method =
 λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
   ::wpMethod (Q)
      : translation_unit → Method → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
-NOTATION_wp_ctor = 
+NOTATION_wp_ctor =
 λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
   ::wpCtor (Q)
      : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
-NOTATION_wp_dtor = 
+NOTATION_wp_dtor =
 λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
   ::wpDtor (Q)
      : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
 
 Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
-NOTATION_wp_args_nowrap = 
+NOTATION_wp_args_nowrap =
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),
   ::wpArgs
@@ -747,7 +747,7 @@ NOTATION_wp_args_nowrap =
        → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_args_nowrap tys_ar es%list_scope Q%function_scope
-NOTATION_wp_args_wrap = 
+NOTATION_wp_args_wrap =
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),
   ::wpArgs
@@ -760,7 +760,7 @@ NOTATION_wp_args_wrap =
        → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_args_wrap tys_ar es%list_scope Q%function_scope
-NOTATION_wp_initialize_nowrap = 
+NOTATION_wp_initialize_nowrap =
 λ Q : FreeTemps → mpred,
   ::wpInitialize
     [region:
@@ -771,7 +771,7 @@ NOTATION_wp_initialize_nowrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_initialize_nowrap Q%function_scope
-NOTATION_wp_initialize_wrap = 
+NOTATION_wp_initialize_wrap =
 λ Q : FreeTemps → mpred,
   ::wpInitialize
     [region:
@@ -784,7 +784,7 @@ NOTATION_wp_initialize_wrap =
      : (FreeTemps → mpred) → mpred
 
 Arguments NOTATION_wp_initialize_wrap Q%function_scope
-NOTATION_wp_call_nowrap = 
+NOTATION_wp_call_nowrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpCall
     [region:
@@ -793,7 +793,7 @@ NOTATION_wp_call_nowrap =
      : list expr.Expr → (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_call_nowrap ls%list_scope Q%function_scope
-NOTATION_wp_call_wrap = 
+NOTATION_wp_call_wrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpCall
     [region:
@@ -804,7 +804,7 @@ NOTATION_wp_call_wrap =
      : list expr.Expr → (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_call_wrap ls%list_scope Q%function_scope
-NOTATION_wp_mcall_nowrap = 
+NOTATION_wp_mcall_nowrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpMCall
     [region:
@@ -813,7 +813,7 @@ NOTATION_wp_mcall_nowrap =
      : list expr.Expr → (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_mcall_nowrap ls%list_scope Q%function_scope
-NOTATION_wp_mcall_wrap = 
+NOTATION_wp_mcall_wrap =
 λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
   ::wpMCall
     [region:
