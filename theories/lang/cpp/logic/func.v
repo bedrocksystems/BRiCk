@@ -360,7 +360,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate. *)
-          wp_init ρ (Tnamed cls) this e (fun _ frees => interp frees Q)
+          wp_init ρ (Tnamed cls) this e (fun frees => interp frees Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -389,7 +389,7 @@ Section with_cpp.
       case_match; eauto.
       iIntros "x".
       iApply wp_init_frame => //.
-      iIntros (??); by iApply interp_frame. }
+      iIntros (?); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
       rewrite /wp_init_identity.
       rewrite !_at_sep !_at_wand !_at_pureR.

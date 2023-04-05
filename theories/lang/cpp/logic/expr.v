@@ -392,7 +392,7 @@ Module Type Expr.
         |-- wp_operand (Ecomma e1 e2) Q.
 
     Axiom wp_init_comma : forall ty p e1 e2 Q,
-        wp_discard e1 (fun free1 => wp_init ty p e2 (fun fval free2 => Q fval (free2 >*> free1)))
+        wp_discard e1 (fun free1 => wp_init ty p e2 (fun free2 => Q (free2 >*> free1)))
         |-- wp_init ty p (Ecomma e1 e2) Q.
 
     (** short-circuting operators *)
@@ -669,15 +669,8 @@ Module Type Expr.
         | Some ptype =>
           wp_operand e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
              (([| (0 < va)%N |] **
-               Exists p,
+               Exists p : ptr,
                  pinned_ptr va p **
-                 (* NOTE: In the future when we properly handle cv-qualifiers
-                    we will need to replace this with some existentially
-                    quantified [ptype'] which is less cv-qualified than
-                    [ptype].
-
-                    <https://eel.is/c++draft/conv.qual#note-3>
-                  *)
                  type_ptr (erase_qualifiers ptype) p **
                  Q (Vptr p) free) \\//
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
@@ -780,8 +773,8 @@ Module Type Expr.
     Axiom wp_init_condition : forall ty addr tst th el Q,
         Unfold WPE.wp_test (wp_test tst (fun c free =>
            if c
-           then wp_init ty addr th (fun free' frees => Q free' (frees >*> free))
-           else wp_init ty addr el (fun free' frees => Q free' (frees >*> free))))
+           then wp_init ty addr th (fun frees => Q (frees >*> free))
+           else wp_init ty addr el (fun frees => Q (frees >*> free))))
         |-- wp_init ty addr (Eif tst th el Prvalue ty) Q.
 
     Axiom wp_operand_implicit : forall e Q,
@@ -880,7 +873,7 @@ Module Type Expr.
     Axiom wp_init_call : forall f es Q (addr : ptr) ty ty',
           (* ^ give the memory back to the C++ abstract machine *)
           wp_operand f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
-             Reduce (init_receive ty addr res $ fun free => Q ty (free_args >*> free_f)))
+             Reduce (init_receive ty addr res $ fun free => Q (free_args >*> free_f)))
       |-- wp_init ty addr (Ecall f es ty') Q.
 
     (** * Member calls *)
@@ -939,7 +932,7 @@ Module Type Expr.
 
     Axiom wp_init_member_call : forall f fty es (addr : ptr) ty obj Q,
         wp_glval obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
-           init_receive ty addr res $ fun free => Q ty (free_args >*> free_this))
+           init_receive ty addr res $ fun free => Q (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
     (** virtual functions
@@ -978,7 +971,7 @@ Module Type Expr.
 
     Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty obj Q,
         wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
-           init_receive ty addr res $ fun free => Q ty (free_args >*> free_this))
+           init_receive ty addr res $ fun free => Q (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
     (* null *)
@@ -1025,7 +1018,7 @@ Module Type Expr.
           wp_operand e (fun v frees => interp frees $ Q v FreeTemps.id)
       |-- wp_operand (Eandclean e) Q.
     Axiom wp_init_clean : forall ty e addr Q,
-          wp_init ty addr e (fun free frees => interp frees $ Q free FreeTemps.id)
+          wp_init ty addr e (fun frees => interp frees $ Q FreeTemps.id)
       |-- wp_init ty addr (Eandclean e) Q.
 
     (** [Ematerialize_temp e ty] is an xvalue that gets memory (with automatic
@@ -1136,7 +1129,7 @@ Module Type Expr.
              (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
              wp_mcall (Vptr $ _global cnd) addr (Tnamed cls) (type_of_value cv) es (fun p free =>
                (* in the semantics, constructors return [void] *)
-               p |-> primR Tvoid (cQp.mut 1) Vvoid ** Q (Tnamed cls) free)
+               p |-> primR Tvoid (cQp.mut 1) Vvoid ** Q free)
            | _ => False
            end
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
@@ -1227,7 +1220,7 @@ Module Type Expr.
      *)
     Axiom wp_init_initlist_array :forall ls fill ty ety (sz : N) (base : ptr) Q, (* sz' <= sz *)
           is_array_of ty ety ->
-          wp_array_init_fill ety base ls fill sz (Q (Tarray ety sz))
+          wp_array_init_fill ety base ls fill sz Q
       |-- wp_init (Tarray ety sz) base (Einitlist ls fill ty) Q.
 
 
@@ -1254,7 +1247,7 @@ Module Type Expr.
     list. *)
     Axiom wp_init_default_array : forall ty ety sz base ctorname args Q,
           is_array_of ty ety ->
-          wp_init ty base (Einitlist [] (Some (Econstructor ctorname args ety)) (Tarray ety sz)) Q
+          wp_array_init_fill ety base [] (Some $ Econstructor ctorname args ety) sz Q
       |-- wp_init (Tarray ety sz) base (Econstructor ctorname args ty) Q.
 
     Axiom wp_operand_initlist_default : forall t Q,
@@ -1320,7 +1313,7 @@ Module Type Expr.
             init_fields cls base fs es
                (base |-> struct_paddingR (cQp.mut 1) cls **
                 (if has_vtable s then base |-> derivationR cls [cls] (cQp.mut 1) else emp) -*
-                Q (Tnamed cls) FreeTemps.id)
+                Q FreeTemps.id)
 
         | Some (Gunion u) =>
             (* The standard allows initializing unions in a variety of ways.
@@ -1331,7 +1324,7 @@ Module Type Expr.
             let fs := map mem_to_li $ firstn 1 u.(u_fields) in
             init_fields cls base fs es
                (base |-> union_paddingR (cQp.mut 1) cls (Some 0) -*
-                Q (Tnamed cls) FreeTemps.id)
+                Q FreeTemps.id)
         | _ => False
         end
       |-- wp_init (Tnamed cls) base (Einitlist es None t) Q.
@@ -1464,7 +1457,7 @@ Module Type Expr.
                       _arrayloop_init (Rbind (opaque_val oname) p
                                              (Rbind (arrayloop_loop_index level) idxp ρ))
                                       level trg init ety
-                                      (Q (Tarray ety sz) free)
+                                      (Q free)
                                       sz 0)
       |-- wp_init tu ρ (Tarray ety sz) trg
                     (Earrayloop_init oname src level sz init ty) Q.
@@ -1513,8 +1506,8 @@ Module Type Expr.
            wp_test tu ρ' tst (fun c free'' =>
              let free := (free'' >*> FreeTemps.delete ty p >*> free)%free in
              if c
-             then wp_init tu ρ' ty p th (fun v free' => Q v (free' >*> free))
-             else wp_init tu ρ' ty p el (fun v free' => Q v (free' >*> free))))
+             then wp_init tu ρ' ty p th (fun free' => Q (free' >*> free))
+             else wp_init tu ρ' ty p el (fun free' => Q (free' >*> free))))
         |-- wp_init tu ρ ty p (Eif2 n common tst th el vc ty) Q.
 
   End with_resolve__arrayloop.

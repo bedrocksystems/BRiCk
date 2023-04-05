@@ -247,7 +247,7 @@ Section wp_initialize.
       (* non-primitives are handled via prvalue-initialization semantics *)
     | Tarray _ _
     | Tnamed _ =>
-      letI* _, frees := wp_init ty addr init in
+      letI* frees := wp_init ty addr init in
       letI* := if q_const cv then wp_make_const tu addr ty else id in
       Q frees
 
@@ -350,7 +350,7 @@ Section frames.
     all:
       lazymatch goal with
       | |- context [wp_const] =>
-        iIntros (??);
+        iIntros (?);
         destruct (q_const cv);
           [ iApply wp_const_frame; [exact: types_compat|]
           | cbn ];

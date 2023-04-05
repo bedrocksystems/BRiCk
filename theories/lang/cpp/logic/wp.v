@@ -584,12 +584,12 @@ Section with_cpp.
   Parameter wp_init
     : forall {resolve:genv}, translation_unit -> region ->
                         type -> ptr -> Expr ->
-                        (type -> FreeTemps -> epred) -> (* type to destroy -> free -> post *)
+                        (FreeTemps -> epred) -> (* free -> post *)
                         mpred. (* pre-condition *)
   (* END wp_init *)
 
   Axiom wp_init_shift : forall {σ:genv} tu ρ ty p e Q,
-      (|={top}=> wp_init tu ρ ty p e (fun free frees => |={top}=> Q free frees))
+      (|={top}=> wp_init tu ρ ty p e (fun frees => |={top}=> Q frees))
     ⊢ wp_init tu ρ ty p e Q.
 
   Axiom wp_init_models : forall {σ:genv} tu ty ρ p e Q,
@@ -598,32 +598,32 @@ Section with_cpp.
 
   Axiom wp_init_frame : forall σ tu1 tu2 ρ ty p e k1 k2,
       sub_module tu1 tu2 ->
-      Forall f fs, k1 f fs -* k2 f fs |-- @wp_init σ tu1 ρ ty p e k1 -* @wp_init σ tu2 ρ ty p e k2.
+      Forall fs, k1 fs -* k2 fs |-- @wp_init σ tu1 ρ ty p e k1 -* @wp_init σ tu2 ρ ty p e k2.
 
   #[global] Instance Proper_wp_init σ :
     Proper (sub_module ==> eq ==> eq ==> eq ==> eq ==>
-            pointwise_relation _ (pointwise_relation _ (⊢)) ==> (⊢))
+            pointwise_relation _ (⊢) ==> (⊢))
            (@wp_init σ).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
-    iIntros (??); iApply H4.
+    iIntros (?); iApply H4.
   Qed.
 
   Section wp_init.
     Context {σ : genv} (tu : translation_unit) (ρ : region) (ty : type) (p : ptr) (e : Expr).
     Local Notation WP := (wp_init tu ρ ty p e) (only parsing).
     Implicit Types P : mpred.
-    Implicit Types Q : type -> FreeTemps → epred.
+    Implicit Types Q : FreeTemps → epred.
 
-    Lemma wp_init_wand Q1 Q2 : WP Q1 |-- (∀ f fs, Q1 f fs -* Q2 f fs) -* WP Q2.
+    Lemma wp_init_wand Q1 Q2 : WP Q1 |-- (∀ fs, Q1 fs -* Q2 fs) -* WP Q2.
     Proof. iIntros "Hwp HK". by iApply (wp_init_frame with "HK Hwp"). Qed.
     Lemma fupd_wp_init Q : (|={top}=> WP Q) |-- WP Q.
     Proof.
       rewrite -{2}wp_init_shift. apply fupd_elim. rewrite -fupd_intro.
       iIntros "Hwp". iApply (wp_init_wand with "Hwp"). auto.
     Qed.
-    Lemma wp_init_fupd Q : WP (λ f fs, |={top}=> Q f fs) |-- WP Q.
+    Lemma wp_init_fupd Q : WP (λ fs, |={top}=> Q fs) |-- WP Q.
     Proof. iIntros "Hwp". by iApply (wp_init_shift with "[$Hwp]"). Qed.
 
     (* proof mode *)
@@ -646,7 +646,7 @@ Section with_cpp.
 
   (* BEGIN wp_prval *)
   Definition wp_prval {resolve:genv} (tu : translation_unit) (ρ : region)
-             (e : Expr) (Q : ptr -> type -> FreeTemps -> epred) : mpred :=
+             (e : Expr) (Q : ptr -> FreeTemps -> epred) : mpred :=
     ∀ p : ptr, wp_init tu ρ (type_of e) p e (Q p).
   (* END wp_prval *)
 
@@ -681,7 +681,7 @@ Section with_cpp.
   (* BEGIN wp_init <-> wp_operand *)
   Axiom wp_operand_wp_init : forall {σ : genv} tu ρ ty addr e Q,
       is_value_type ty ->
-      wp_operand tu ρ e (fun v frees => _at addr (primR ty (cQp.mut 1) v) -* Q ty frees)
+      wp_operand tu ρ e (fun v frees => _at addr (primR ty (cQp.mut 1) v) -* Q frees)
     |-- wp_init tu ρ ty addr e Q.
 
   (** This is justified in the logic but technically not sactioned by the standard
@@ -907,10 +907,11 @@ Section with_cpp.
       match valcat_of e with
       | Lvalue => wp_lval tu ρ e (fun _ => Q)
       | Prvalue =>
-        if is_value_type (type_of e) then
+        let ty := type_of e in
+        if is_value_type ty then
           wp_operand tu ρ e (fun _ free => Q free)
         else
-          Forall p, wp_init tu ρ (type_of e) p e (fun ty frees => Q (FreeTemps.delete ty p >*> frees)%free)
+          Forall p, wp_init tu ρ (type_of e) p e (fun frees => Q (FreeTemps.delete ty p >*> frees)%free)
       | Xvalue => wp_xval tu ρ e (fun _ => Q)
       end.
 
@@ -930,7 +931,7 @@ Section with_cpp.
       + iIntros "a b" (p).
         iSpecialize ("b" $! p).
         iRevert "b"; iApply wp_init_frame; eauto.
-        iIntros (??); iApply "a".
+        iIntros (?); iApply "a".
     - intros. rewrite -wp_xval_frame; eauto.
       iIntros "h" (v f) "x"; iApply "h"; iFrame.
   Qed.
