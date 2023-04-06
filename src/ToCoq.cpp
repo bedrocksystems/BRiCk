@@ -35,7 +35,7 @@ using namespace fmt;
 template<typename CLOSURE>
 void
 with_open_file(const llvm::Optional<std::string> path, CLOSURE f /* void f(Formatter&) */) {
-    if (path.hasValue()) {
+    if (path.has_value()) {
         std::error_code ec;
         llvm::raw_fd_ostream output(*path, ec);
         if (ec.value()) {
@@ -69,7 +69,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
     ::Module mod;
 
-    bool templates = templates_file_.hasValue();
+    bool templates = templates_file_.has_value();
     build_module(decl, mod, filter, specs, compiler_, elaborate_, templates);
 
     with_open_file(output_file_, [this, &ctxt, &mod](Formatter& fmt){

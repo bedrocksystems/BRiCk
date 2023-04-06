@@ -195,7 +195,7 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             logging::debug()
                 << "ClassTemplateSpecializationDecl not supported for "
                    "simple contexts.\n";
-            ts->printName(logging::debug());
+            static_cast<const clang::NamedDecl*>(ts)->printName(logging::debug());
             logging::debug() << "\n";
             ts->printQualifiedName(print.output().nobreak());
             return true;
@@ -404,7 +404,7 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) const {
     } else {
         auto d = dyn_cast<ParmVarDecl>(decl);
         auto i = getParameterNumber(d);
-        if (i.hasValue()) {
+        if (i.has_value()) {
             print.output() << "#" << i;
         } else {
             logging::fatal() << "failed to find a parameter.";

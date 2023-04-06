@@ -368,9 +368,9 @@ write_spec(clang::CompilerInstance *compiler, ::Module *mod,
             if (c->isAttached()) {
                 // this comment is attached to a declaration
                 auto di = specs.decl_for_comment(c);
-                assert(di.hasValue());
+                assert(di.has_value());
 
-                const NamedDecl *decl = di.getValue();
+                const NamedDecl *decl = di.value();
                 auto comment = ctxt.getCommentForDecl(decl, nullptr);
                 if (!printer.has_specification(*comment)) {
                     continue;

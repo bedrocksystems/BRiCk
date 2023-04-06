@@ -158,9 +158,9 @@ private:
 #if CLANG_VERSION_MAJOR >= 9
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
                            ClangPrinter& cprint, OpaqueNames& li) {
-        if (expr.hasValue()) {
+        if (expr.has_value()) {
             print.some();
-            cprint.printExpr(expr.getValue(), print, li);
+            cprint.printExpr(expr.value(), print, li);
             print.end_ctor();
         } else {
             print.none();
@@ -169,9 +169,9 @@ private:
 
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
                            ClangPrinter& cprint) {
-        if (expr.hasValue()) {
+        if (expr.has_value()) {
             print.some();
-            cprint.printExpr(expr.getValue(), print);
+            cprint.printExpr(expr.value(), print);
             print.end_ctor();
         } else {
             print.none();
