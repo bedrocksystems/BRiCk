@@ -103,7 +103,8 @@ Module dfrac_agree : DFRAC_AGREE.
   (** CMRA *)
 
   #[local] Notation RA A := (dfrac_agreeR (leibnizO A)).
-  Class G (A : Type) (Σ : gFunctors) : Set := G_inG :> inG Σ (RA A).
+  Class G (A : Type) (Σ : gFunctors) : Set := G_inG : inG Σ (RA A).
+  #[global] Existing Instance G_inG.
   Definition Σ (A : Type) : gFunctors := #[ GFunctor (RA A) ].
   Lemma subG {A Σ} : subG (dfrac_agree.Σ A) Σ -> G A Σ.
   Proof. solve_inG. Qed.

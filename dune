@@ -24,6 +24,7 @@
       -w +deprecated-hint-without-locality
       -w +deprecated-instance-without-locality
       -w +unknown-option
+      -w +future-coercion-class-field
  )))))
 
 ; Explain Dune how to find and build cpp2v binary

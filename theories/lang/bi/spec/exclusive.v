@@ -32,8 +32,8 @@ Notation Exclusive6 P := (∀ a1 a2 b1 b2 c1 c2 d1 d2 e1 e2 f1 f2, Observe2 Fals
 
 (** [P] is an exclusive token. *)
 Class ExclusiveToken {PROP : bi} {P : PROP} : Prop :=
-{ token_timeless :> Timeless P
-; token_excl :> Exclusive0 P
+{ #[global] token_timeless :: Timeless P
+; #[global] token_excl :: Exclusive0 P
 }.
 Arguments ExclusiveToken {_} _.
 Notation ExclusiveToken0 := ExclusiveToken.
@@ -46,39 +46,39 @@ exclusive token per argument, then use [forall a, ExclusiveToken (P
 a)].
 *)
 Class ExclusiveToken1 (PROP : bi) {A} {P : A -> PROP} : Prop :=
-{ token1_timeless :> Timeless1 P
-; token1_excl :> Exclusive1 P
+{ #[global] token1_timeless :: Timeless1 P
+; #[global] token1_excl :: Exclusive1 P
 }.
 Arguments ExclusiveToken1 {_ _} _.
 
 Class ExclusiveToken2 (PROP : bi) {A B} {P : A -> B -> PROP} : Prop :=
-{ token2_timeless :> Timeless2 P
-; token2_excl :> Exclusive2 P
+{ #[global] token2_timeless :: Timeless2 P
+; #[global] token2_excl :: Exclusive2 P
 }.
 Arguments ExclusiveToken2 {_ _ _} _ : assert.
 
 Class ExclusiveToken3 (PROP : bi) {A B C} {P : A -> B -> C-> PROP} : Prop :=
-{ token3_timeless :> Timeless3 P
-; token3_excl :> Exclusive3 P
+{ #[global] token3_timeless :: Timeless3 P
+; #[global] token3_excl :: Exclusive3 P
 }.
 Arguments ExclusiveToken3 {_ _ _ _} _ : assert.
 
 Class ExclusiveToken4 (PROP : bi) {A B C D} {P : A -> B -> C-> D -> PROP} : Prop :=
-{ token4_timeless :> Timeless4 P
-; token4_excl :> Exclusive4 P
+{ #[global] token4_timeless :: Timeless4 P
+; #[global] token4_excl :: Exclusive4 P
 }.
 Arguments ExclusiveToken4 {_ _ _ _ _} _ : assert.
 
 Class ExclusiveToken5 (PROP : bi) {A B C D E}
   {P : A -> B -> C-> D -> E -> PROP} : Prop :=
-{ token5_timeless :> Timeless5 P
-; token5_excl :> Exclusive5 P
+{ #[global] token5_timeless :: Timeless5 P
+; #[global] token5_excl :: Exclusive5 P
 }.
 Arguments ExclusiveToken5 {_ _ _ _ _ _} _ : assert.
 
 Class ExclusiveToken6 (PROP : bi) {A B C D E F}
   {P : A -> B -> C-> D -> E -> F -> PROP} : Prop :=
-{ token6_timeless :> Timeless6 P
-; token6_excl :> Exclusive6 P
+{ #[global] token6_timeless :: Timeless6 P
+; #[global] token6_excl :: Exclusive6 P
 }.
 Arguments ExclusiveToken6 {_ _ _ _ _ _ _} _ : assert.

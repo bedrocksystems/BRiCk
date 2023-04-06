@@ -26,8 +26,8 @@ N] rather than [n : nat] for specs that cough up, e.g., [contender γ
 INT_MAX].
 *)
 Class ContenderToken {PROP : bi} (P : N → PROP) : Prop := {
-  contender_timeless n :> Timeless (P n);
-  contender_affine   n :> Affine (P n);
+  #[global] contender_timeless n :: Timeless (P n);
+  #[global] contender_affine   n :: Affine (P n);
 
   (**
   [contender_op] or the derived rule [contender_alloc] are used to
@@ -81,6 +81,9 @@ Section with_contender.
   #[global] Instance contender_from_sep n1 n2 :
     FromSep (P (n1 + n2)) (P n1) (P n2).
   Proof. by rewrite /FromSep contender_op. Qed.
+  #[global] Instance contender_combine_sep_as n1 n2 :
+    CombineSepAs (P n1) (P n2) (P (n1 + n2)).
+  Proof. by rewrite /CombineSepAs contender_op. Qed.
 
 End with_contender.
 

@@ -76,10 +76,14 @@ B") as "#Hv"] produce [embed (si_cmra_valid (a ⋅ b))] rather than [✓
 Class HasOwn {PROP : bi} {A : cmra} : Type := {
   own           : gname → A → PROP ;
   own_op        : ∀ γ (a b : A), own γ (a ⋅ b) ⊣⊢ own γ a ∗ own γ b ;
-  own_mono      :> ∀ γ, Proper (flip (≼) ==> (⊢)) (own γ) ;
-  own_ne        :> ∀ γ, NonExpansive (own γ) ;
-  own_timeless  :> ∀ γ (a : A), Discrete a → Timeless (own γ a) ;
-  own_core_persistent :> ∀ γ a, CoreId a → Persistent (own γ a)
+  #[global]
+  own_mono      :: ∀ γ, Proper (flip (≼) ==> (⊢)) (own γ) ;
+  #[global]
+  own_ne        :: ∀ γ, NonExpansive (own γ) ;
+  #[global]
+  own_timeless  :: ∀ γ (a : A), Discrete a → Timeless (own γ a) ;
+  #[global]
+  own_core_persistent :: ∀ γ a, CoreId a → Persistent (own γ a)
 }.
 
 Arguments HasOwn : clear implicits.
@@ -295,6 +299,9 @@ Section proofmode_instances.
   Global Instance from_sep_own γ a b1 b2 :
     IsOp a b1 b2 → FromSep (own γ a) (own γ b1) (own γ b2).
   Proof. intros. by rewrite /FromSep -own_op -is_op. Qed.
+  Global Instance combine_sep_own γ a b1 b2 :
+    IsOp a b1 b2 → CombineSepAs (own γ b1) (own γ b2) (own γ a).
+  Proof. intros. by rewrite /CombineSepAs -own_op -is_op. Qed.
   Global Instance from_and_own_persistent `{!BiAffine PROP} γ a b1 b2 :
     IsOp a b1 b2 → TCOr (CoreId b1) (CoreId b2) →
     FromAnd (own γ a) (own γ b1) (own γ b2).

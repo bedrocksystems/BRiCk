@@ -345,7 +345,7 @@ Lemma align_of_size_of {σ : genv} (t : type) sz :
           (* size is a multiple of alignment *)
           (sz mod al = 0)%N.
 Proof.
-  move=>/align_of_size_of' [al [? [? /N.mod_divide ?]]].
+  move=>/align_of_size_of' [al [? [? /N.Lcm0.mod_divide ?]]].
   eauto.
 Qed.
 

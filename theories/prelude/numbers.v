@@ -318,7 +318,7 @@ Qed.
 #[global] Instance N_divide_dec : RelDecision N.divide.
 Proof.
   refine (λ a b, cast_if (decide (N.gcd a b = a)));
-    abstract (by rewrite N.divide_gcd_iff').
+    abstract (by rewrite N.divide_gcd_iff).
 Defined.
 
 Lemma N_divide_add_cancel_l (n m p : N) : (n | m)%N → (n | p + m)%N → (n | p)%N.

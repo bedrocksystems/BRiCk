@@ -36,9 +36,9 @@ combined using [andb] on booleans and addition on fractions; and
 Ltac solve_cfrac := solve [intros; split; [apply _..|solve_cfrac_valid]].
 
 Class CFracSplittable_0 {PROP : bi} (R : cQp.t → PROP) : Prop := {
-  cfrac_splittable_0_fractional :> CFractional R;
-  cfrac_splittable_0_timeless :> Timeless1 R;
-  cfrac_splittable_0_frac_valid :> CFracValid0 R;
+  #[global] cfrac_splittable_0_fractional :: CFractional R;
+  #[global] cfrac_splittable_0_timeless :: Timeless1 R;
+  #[global] cfrac_splittable_0_frac_valid :: CFracValid0 R;
 }.
 Section cfrac_0.
   Context {PROP : bi} (R : cQp.t → PROP) `{!CFracSplittable_0 R}.
@@ -48,9 +48,9 @@ Section cfrac_0.
 End cfrac_0.
 
 Class CFracSplittable_1 {A} {PROP : bi} (R : cQp.t → A → PROP) : Prop := {
-  cfrac_splittable_1_fractional :> CFractional1 R;
-  cfrac_splittable_1_timeless :> Timeless2 R;
-  cfrac_splittable_1_frac_valid :> CFracValid1 R;
+  #[global] cfrac_splittable_1_fractional :: CFractional1 R;
+  #[global] cfrac_splittable_1_timeless :: Timeless2 R;
+  #[global] cfrac_splittable_1_frac_valid :: CFracValid1 R;
 }.
 Section cfrac_1.
   Context {A} {PROP : bi} (R : cQp.t → A → PROP) `{!CFracSplittable_1 R}.
@@ -60,9 +60,9 @@ Section cfrac_1.
 End cfrac_1.
 
 Class CFracSplittable_2 {A B} {PROP : bi} (R : cQp.t → A → B → PROP) : Prop := {
-  cfrac_splittable_2_fractional :> CFractional2 R;
-  cfrac_splittable_2_timeless :> Timeless3 R;
-  cfrac_splittable_2_frac_valid :> CFracValid2 R;
+  #[global] cfrac_splittable_2_fractional :: CFractional2 R;
+  #[global] cfrac_splittable_2_timeless :: Timeless3 R;
+  #[global] cfrac_splittable_2_frac_valid :: CFracValid2 R;
 }.
 Section cfrac_2.
   Context {A B} {PROP : bi} (R : cQp.t → A → B → PROP) `{!CFracSplittable_2 R}.
@@ -73,9 +73,9 @@ End cfrac_2.
 
 Class CFracSplittable_3 {A B C} {PROP : bi}
     (R : cQp.t → A → B → C → PROP) : Prop := {
-  cfrac_splittable_3_fractional :> CFractional3 R;
-  cfrac_splittable_3_timeless :> Timeless4 R;
-  cfrac_splittable_3_frac_valid :> CFracValid3 R;
+  #[global] cfrac_splittable_3_fractional :: CFractional3 R;
+  #[global] cfrac_splittable_3_timeless :: Timeless4 R;
+  #[global] cfrac_splittable_3_frac_valid :: CFracValid3 R;
 }.
 Section cfrac_3.
   Context {A B C} {PROP : bi} (R : cQp.t → A → B → C → PROP) `{!CFracSplittable_3 R}.
@@ -86,9 +86,9 @@ End cfrac_3.
 
 Class CFracSplittable_4 {A B C D} {PROP : bi}
     (R : cQp.t → A → B → C → D → PROP) : Prop := {
-  cfrac_splittable_4_fractional :> CFractional4 R;
-  cfrac_splittable_4_timeless :> Timeless5 R;
-  cfrac_splittable_4_frac_valid :> CFracValid4 R;
+  #[global] cfrac_splittable_4_fractional :: CFractional4 R;
+  #[global] cfrac_splittable_4_timeless :: Timeless5 R;
+  #[global] cfrac_splittable_4_frac_valid :: CFracValid4 R;
 }.
 Section cfrac_4.
   Context {A B C D} {PROP : bi} (R : cQp.t → A → B → C → D → PROP).
@@ -100,9 +100,9 @@ End cfrac_4.
 
 Class CFracSplittable_5 {A B C D E} {PROP : bi}
     (R : cQp.t → A → B → C → D → E → PROP) : Prop := {
-  cfrac_splittable_5_fractional :> CFractional5 R;
-  cfrac_splittable_5_timeless :> Timeless6 R;
-  cfrac_splittable_5_frac_valid :> CFracValid5 R;
+  #[global] cfrac_splittable_5_fractional :: CFractional5 R;
+  #[global] cfrac_splittable_5_timeless :: Timeless6 R;
+  #[global] cfrac_splittable_5_frac_valid :: CFracValid5 R;
 }.
 Section cfrac_5.
   Context {A B C D E} {PROP : bi} (R : cQp.t → A → B → C → D → E → PROP).

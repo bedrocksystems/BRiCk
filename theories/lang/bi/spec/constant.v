@@ -21,12 +21,12 @@ exists to track values that arise _dynamically_.
 *)
 
 Class Constant {A} {PROP : bi} (I : PROP) (P : A → PROP) : Prop := {
-  constant_inv_knowledge :> Knowledge I;
-  constant_exist :> Observe (Exists x, P x) I;
+  #[global] constant_inv_knowledge :: Knowledge I;
+  #[global] constant_exist :: Observe (Exists x, P x) I;
 
-  constant_unique    x y :> Observe2 [| x = y |] (P x) (P y);
-  constant_knowledge x :> Knowledge (P x);
-  constant_timeless  x :> Timeless (P x);
+  #[global] constant_unique x y :: Observe2 [| x = y |] (P x) (P y);
+  #[global] constant_knowledge x :: Knowledge (P x);
+  #[global] constant_timeless x :: Timeless (P x);
 }.
 Arguments constant_exist {_ _} (_ _)%I {_} : assert.
 Arguments constant_unique {_ _} (_ _)%I {_} _ _ : assert.
