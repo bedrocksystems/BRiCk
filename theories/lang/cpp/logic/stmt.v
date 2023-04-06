@@ -47,12 +47,6 @@ Module Type Stmt.
     (** * Declarations *)
 
     (* This definition performs allocation of local variables.
-     *
-     * note that references do not allocate anything in the semantics, they are
-     * just aliases.
-     *
-     * TODO there is a lot of overlap between this and [wp_initialize] (which does initialization
-     * of aggregate fields).
      *)
     Definition wp_decl_var (ρ ρ_init : region) (x : ident) (ty : type) (init : option Expr)
                (k : region -> FreeTemp -> epred)
