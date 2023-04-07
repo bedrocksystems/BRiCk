@@ -59,7 +59,6 @@ Module Type Expr.
     #[local] Notation wp_fptr := (wp_fptr resolve.(genv_tu).(types)).
     #[local] Notation mspec := (mspec resolve.(genv_tu).(types)).
 
-    #[local] Notation glob_def := (glob_def resolve) (only parsing).
     #[local] Notation size_of := (@size_of resolve) (only parsing).
 
     (** * References
