@@ -20,7 +20,7 @@ From bedrock.lang.cpp Require Import ast.
 From bedrock.lang.cpp.semantics Require Import sub_module values.
 From bedrock.lang.cpp.model Require Import simple_pointers_utils inductive_pointers_utils.
 
-Implicit Types (σ : genv).
+Implicit Types (σ : genv) (z : Z).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
@@ -65,9 +65,6 @@ Module PTRS_IMPL <: PTRS_INTF.
   Notation isnt o pattern :=
     (match o with | pattern => False | _ => True end).
 
-  Implicit Types (z : Z).
-  (* Close Scope nat_scope. *)
-  #[local] Open Scope Z_scope.
   Section roff_canon.
     (* Context {σ : genv}. *)
 

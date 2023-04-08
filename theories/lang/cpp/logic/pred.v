@@ -713,9 +713,6 @@ Module Type VALID_PTR_AXIOMS
 
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
-
-    (* We're ignoring virtual inheritance here, since we have no plans to
-    support it for now, but this might hold there too. *)
     Axiom o_base_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--
       [| directly_derives σ derived base |].

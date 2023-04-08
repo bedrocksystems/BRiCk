@@ -192,7 +192,7 @@ Section own_valid.
 
 End own_valid.
 
-Import derived_laws.bi.
+Import iris.bi.derived_laws.bi.
 
 Section update.
   Context `{!BiBUpd PROP} `{!HasOwn PROP A} `{!HasOwnUpd PROP A}.
