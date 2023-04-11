@@ -122,12 +122,21 @@ Module Type Expr__newdelete.
             - Currently, we do not model coalescing of multiple allocations
               (https://eel.is/c++draft/expr.new#14).
          *)
+        Definition wp_opt_initialize (oinit : option Expr) aty obj_ptr :=
+          match oinit with
+          | None => (* default_initialize the memory *)
+            default_initialize aty obj_ptr
+          | Some init => (* Use [init] to initialize the memory *)
+            wp_initialize aty obj_ptr init
+          end.
+        #[global] Arguments wp_opt_initialize !_ _ _ /.
+
         Axiom wp_operand_new :
           forall (oinit : option Expr)
             new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
             (_ : arg_types nfty = Some (Tnum sz Unsigned :: targs, Ar_Definite)),
-            wp_args  (targs, Ar_Definite) new_args (fun vs free =>
+            wp_args (targs, Ar_Definite) new_args (fun vs free =>
                 Exists sz al, [| size_of aty = Some sz |] ** [| has_type sz Tsize_t |] ** [| align_of aty = Some al |] **
                 Reduce (alloc_size_t sz (fun p FR =>
                 |> fspec tu.(globals) nfty (_global new_fn.1) (p :: vs) (fun res => FR $
@@ -144,26 +153,14 @@ Module Type Expr__newdelete.
                                   (* This also ensures these pointers share their
                                      address (see [provides_storage_same_address]) *)
                                   provides_storage storage_ptr obj_ptr aty -*
-                                  match oinit with
-                                  | None => (* default_initialize the memory *)
-                                    default_initialize aty obj_ptr
-                                      (fun free' =>
-                                         (* Track the type we are allocating
-                                            so it can be checked at [delete].
-                                            It is important that this preseves
-                                            `const`ness of the type.
-                                          *)
-                                         obj_ptr |-> new_tokenR (cQp.mut 1) aty -*
-                                         Q (Vptr obj_ptr) (free' >*> free))
-                                  | Some init => (* Use [init] to initialize the memory *)
-                                    wp_initialize aty obj_ptr init
-                                      (fun free' =>
-                                         (* Track the type we are allocating
-                                            so it can be checked at [delete]
-                                          *)
-                                         obj_ptr |-> new_tokenR (cQp.mut 1) aty -*
-                                         Q (Vptr obj_ptr) (free' >*> free))
-                                  end))))))
+                                  wp_opt_initialize oinit aty obj_ptr (fun free' =>
+                                    (* Track the type we are allocating
+                                      so it can be checked at [delete].
+                                      It is important that this preseves
+                                      `const`ness of the type.
+                                    *)
+                                    obj_ptr |-> new_tokenR (cQp.mut 1) aty -*
+                                    Q (Vptr obj_ptr) (free' >*> free))))))))
         |-- wp_operand (Enew new_fn new_args aty None oinit) Q.
 
         Axiom wp_operand_array_new :
