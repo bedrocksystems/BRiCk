@@ -745,14 +745,6 @@ Section pinned_ptr_def.
     by iDestruct exposed_aid_null_alloc_id as "$".
   Qed.
 
-  Lemma offset_exposed_ptr p o :
-    valid_ptr (p ,, o) |-- exposed_ptr p -* exposed_ptr (p ,, o).
-  Proof.
-    rewrite exposed_ptr_eq /exposed_ptr_def.
-    iIntros "#V' #[V E]". iDestruct (valid_ptr_alloc_id with "V'") as %?.
-    iFrame "V'". by rewrite ptr_alloc_id_offset.
-  Qed.
-
   Lemma offset2_exposed_ptr p o1 o2 :
     valid_ptr (p ,, o2) |-- exposed_ptr (p ,, o1) -* exposed_ptr (p ,, o2).
   Proof.
@@ -763,9 +755,21 @@ Section pinned_ptr_def.
     by rewrite ptr_alloc_id_offset // ptr_alloc_id_offset.
   Qed.
 
+  Lemma offset_exposed_ptr p o :
+    valid_ptr (p ,, o) |-- exposed_ptr p -* exposed_ptr (p ,, o).
+  Proof. rewrite -{2}(offset_ptr_id p). apply offset2_exposed_ptr. Qed.
+
   Lemma offset_inv_exposed_ptr p o :
     valid_ptr p |-- exposed_ptr (p ,, o) -* exposed_ptr p.
   Proof. rewrite -{1 3}(offset_ptr_id p). apply offset2_exposed_ptr. Qed.
+
+  Lemma offset_exposed_ptr_all p o :
+    valid_ptr p ∗ valid_ptr (p ,, o) ⊢ exposed_ptr p ∗-∗ exposed_ptr (p ,, o).
+  Proof.
+    iIntros "#[V V']"; iSplit.
+    by iApply offset_exposed_ptr.
+    by iApply offset_inv_exposed_ptr.
+  Qed.
 
   (** Physical representation of pointers. *)
   (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
