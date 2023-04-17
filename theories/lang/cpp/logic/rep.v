@@ -399,17 +399,6 @@ Section with_cpp.
   #[global] Instance _at_laterable p (P : Rep) : Laterable P → Laterable (p |-> P).
   Proof. rewrite _at_eq. apply _. Qed.
 
-  Lemma Rep_equiv_at (P Q : Rep)
-    (HPQ : forall p : ptr, p |-> P -|- p |-> Q) :
-    P -|- Q.
-  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_eq/_at_def => ->. Qed.
-
-  Lemma Rep_entails_at (P Q : Rep)
-    (HPQ : forall p : ptr, p |-> P |-- p |-> Q) :
-    P |-- Q.
-  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_eq. Qed.
-  (* Inverses of [Rep_equiv_at] and [Rep_entails_at] are [Proper] instances [_at_proper] and [_at_mono], applicable via [f_equiv] or [apply]. *)
-
   Lemma _at_as_Rep  p  (Q : ptr → mpred) : p |-> (as_Rep Q) ⊣⊢ Q p.
   Proof. by rewrite _at_eq. Qed.
 
@@ -571,6 +560,17 @@ Section with_cpp.
     Observe2 (|> (x ≡@{A} y)) R1 R2 ->
     Observe2 (|> (x ≡ y)) (p |-> R1) (p |-> R2).
   Proof. rewrite !_at_loc. apply _. Qed.
+
+  Lemma Rep_equiv_at (P Q : Rep)
+    (HPQ : forall p : ptr, p |-> P -|- p |-> Q) :
+    P -|- Q.
+  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_eq/_at_def => ->. Qed.
+
+  Lemma Rep_entails_at (P Q : Rep)
+    (HPQ : forall p : ptr, p |-> P |-- p |-> Q) :
+    P |-- Q.
+  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_eq. Qed.
+  (* Inverses of [Rep_equiv_at] and [Rep_entails_at] are [Proper] instances [_at_proper] and [_at_mono], applicable via [f_equiv] or [apply]. *)
 
   Lemma _at_obs  p  (r : Rep) P :
     r |-- r ** [| P |] →
