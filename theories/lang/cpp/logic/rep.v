@@ -564,13 +564,36 @@ Section with_cpp.
   Lemma Rep_equiv_at (P Q : Rep)
     (HPQ : forall p : ptr, p |-> P -|- p |-> Q) :
     P -|- Q.
-  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_eq/_at_def => ->. Qed.
+  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_loc. Qed.
 
   Lemma Rep_entails_at (P Q : Rep)
     (HPQ : forall p : ptr, p |-> P |-- p |-> Q) :
     P |-- Q.
-  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_eq. Qed.
-  (* Inverses of [Rep_equiv_at] and [Rep_entails_at] are [Proper] instances [_at_proper] and [_at_mono], applicable via [f_equiv] or [apply]. *)
+  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_loc. Qed.
+
+  Lemma Rep_emp_valid (P : Rep)
+    (HP : forall p : ptr, |-- p |-> P) :
+    |-- P.
+  Proof. apply Rep_entails_at => p. move: HP => /(_ p). by rewrite _at_emp. Qed.
+  (* Inverses of [Rep_equiv_at], [Rep_entails_at], [Rep_emp_valid] are
+  [_at_bi_equiv], [_at_bi_entails], [_at_bi_emp_valid];
+  also [Proper] instances [_at_proper] and [_at_mono], applicable via [f_equiv] or [apply]. *)
+
+  (** Lift entailments from [Rep] to [mpred] *)
+  Lemma _at_bi_equiv {R1 R2 : Rep} :
+    R1 -|- R2 ->
+    ∀ p, p |-> R1 -|- p |-> R2.
+  Proof. by move => /[swap] ? <-. Qed.
+
+  Lemma _at_bi_entails {R1 R2 : Rep} :
+    R1 |-- R2 ->
+    ∀ p, p |-> R1 |-- p |-> R2.
+  Proof. by move => /[swap] ? <-. Qed.
+
+  Lemma _at_bi_emp_valid {R : Rep} :
+    |-- R ->
+    ∀ p, |-- p |-> R.
+  Proof. move => /[swap] ? <-. by rewrite _at_emp. Qed.
 
   Lemma _at_obs  p  (r : Rep) P :
     r |-- r ** [| P |] →
@@ -735,6 +758,39 @@ Section with_cpp.
     Observe (pureR Q) R → Observe Q (p |-> R).
   Proof.
     rewrite /Observe=>->. rewrite -pureR_persistently _at_pureR. done.
+  Qed.
+
+  (** Introduce Observations at [Rep] by proving them more easily at [mpred] *)
+  Lemma observe_at (Q P : Rep) :
+    (∀ p : ptr, Observe (p |-> Q) (p |-> P)) ↔
+    Observe Q P.
+  Proof.
+    split; intros; last exact: _at_observe.
+    apply monPred_observe=> p. by rewrite -!_at_loc.
+  Qed.
+
+  Lemma observe_only_provable_at Q (P : Rep) :
+    (∀ p : ptr, Observe [| Q |] (p |-> P)) ↔
+    Observe [| Q |] P.
+  Proof.
+    rewrite -observe_at.
+    apply iff_forall => p. by rewrite _at_only_provable.
+  Qed.
+
+  Lemma observe_2_at (Q P1 P2 : Rep) :
+    (∀ p : ptr, Observe2 (p |-> Q) (p |-> P1) (p |-> P2)) ↔
+    Observe2 Q P1 P2.
+  Proof.
+    split; intros; last exact: _at_observe_2.
+    apply monPred_observe_2=> p. by rewrite -!_at_loc.
+  Qed.
+
+  Lemma observe_2_only_provable_at Q (P1 P2 : Rep) :
+    (∀ p : ptr, Observe2 [| Q |] (p |-> P1) (p |-> P2)) ↔
+    Observe2 [| Q |] P1 P2.
+  Proof.
+    rewrite -observe_2_at.
+    apply iff_forall => p. by rewrite _at_only_provable.
   Qed.
 
 End with_cpp.
