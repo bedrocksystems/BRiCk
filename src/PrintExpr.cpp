@@ -419,7 +419,7 @@ public:
             print.output() << fmt::nbsp;
         }
         cprint.printExpr(expr->getSubExpr(), print, li);
-        done(expr, print, cprint);
+        done(expr, print, cprint, print.templates() ? Done::O : Done::T);
     }
 
     void VisitDeclRefExpr(const DeclRefExpr* expr, CoqPrinter& print,
