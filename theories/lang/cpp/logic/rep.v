@@ -561,39 +561,29 @@ Section with_cpp.
     Observe2 (|> (x ≡ y)) (p |-> R1) (p |-> R2).
   Proof. rewrite !_at_loc. apply _. Qed.
 
-  Lemma Rep_equiv_at (P Q : Rep)
-    (HPQ : forall p : ptr, p |-> P -|- p |-> Q) :
+  Lemma Rep_equiv_at {P Q : Rep} :
+    (forall p : ptr, p |-> P -|- p |-> Q) <->
     P -|- Q.
-  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_loc. Qed.
+  Proof.
+    setoid_rewrite _at_loc; split; first by constructor.
+    by move => /[swap] ? <-.
+  Qed.
 
-  Lemma Rep_entails_at (P Q : Rep)
-    (HPQ : forall p : ptr, p |-> P |-- p |-> Q) :
+  Lemma Rep_entails_at {P Q : Rep} :
+    (forall p : ptr, p |-> P |-- p |-> Q) <->
     P |-- Q.
-  Proof. constructor => p. move: HPQ => /(_ p). by rewrite !_at_loc. Qed.
+  Proof.
+    setoid_rewrite _at_loc; split; first by constructor.
+    by move => /[swap] ? <-.
+  Qed.
 
-  Lemma Rep_emp_valid (P : Rep)
-    (HP : forall p : ptr, |-- p |-> P) :
+  Lemma Rep_emp_valid {P : Rep} :
+    (forall p : ptr, |-- p |-> P) <->
     |-- P.
-  Proof. apply Rep_entails_at => p. move: HP => /(_ p). by rewrite _at_emp. Qed.
-  (* Inverses of [Rep_equiv_at], [Rep_entails_at], [Rep_emp_valid] are
-  [_at_bi_equiv], [_at_bi_entails], [_at_bi_emp_valid];
-  also [Proper] instances [_at_proper] and [_at_mono], applicable via [f_equiv] or [apply]. *)
-
-  (** Lift entailments from [Rep] to [mpred] *)
-  Lemma _at_bi_equiv {R1 R2 : Rep} :
-    R1 -|- R2 ->
-    ∀ p, p |-> R1 -|- p |-> R2.
-  Proof. by move => /[swap] ? <-. Qed.
-
-  Lemma _at_bi_entails {R1 R2 : Rep} :
-    R1 |-- R2 ->
-    ∀ p, p |-> R1 |-- p |-> R2.
-  Proof. by move => /[swap] ? <-. Qed.
-
-  Lemma _at_bi_emp_valid {R : Rep} :
-    |-- R ->
-    ∀ p, |-- p |-> R.
-  Proof. move => /[swap] ? <-. by rewrite _at_emp. Qed.
+  Proof.
+    rewrite /bi_emp_valid -Rep_entails_at.
+    by setoid_rewrite _at_emp.
+  Qed.
 
   Lemma _at_obs p (r : Rep) P :
     r |-- r ** [| P |] →
