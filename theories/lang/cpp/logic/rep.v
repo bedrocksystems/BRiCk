@@ -29,12 +29,6 @@ Section with_cpp.
 
   Implicit Type (R : Rep).
 
-  (** See also [Rep_equiv_at] and [Rep_entails_at]. *)
-  Lemma Rep_ext (P Q : Rep) :
-      (forall p : ptr, P p -|- Q p) ->
-      P -|- Q.
-  Proof. by constructor. Qed.
-
   #[global] Instance as_Rep_ne n :
     Proper (pointwise_relation _ (dist n) ==> dist n) as_Rep.
   Proof. intros R1 R2 HR. constructor=>p. apply HR. Qed.
