@@ -399,7 +399,7 @@ Section with_cpp.
   #[global] Instance _at_laterable p (P : Rep) : Laterable P → Laterable (p |-> P).
   Proof. rewrite _at_eq. apply _. Qed.
 
-  Lemma _at_as_Rep  p  (Q : ptr → mpred) : p |-> (as_Rep Q) ⊣⊢ Q p.
+  Lemma _at_as_Rep p (Q : ptr → mpred) : p |-> (as_Rep Q) ⊣⊢ Q p.
   Proof. by rewrite _at_eq. Qed.
 
   (* Prefer [_at_as_Rep] *)
@@ -421,39 +421,39 @@ Section with_cpp.
       p |-> [| P |] -|- [| P |].
   Proof. by rewrite _at_loc monPred_at_only_provable. Qed.
 
-  Lemma _at_pure  p  (P : Prop) :
+  Lemma _at_pure p (P : Prop) :
       p |-> [! P !] -|- [! P !].
   Proof. by rewrite _at_loc monPred_at_pure. Qed.
 
-  Lemma _at_sep  p  (P Q : Rep) :
+  Lemma _at_sep p (P Q : Rep) :
       p |-> (P ** Q) -|- p |-> P ** p |-> Q.
   Proof. by rewrite !_at_loc monPred_at_sep. Qed.
 
-  Lemma _at_and  p  (P Q : Rep) :
+  Lemma _at_and p (P Q : Rep) :
       p |-> (P //\\ Q) -|- p |-> P //\\ p |-> Q.
   Proof. by rewrite !_at_loc monPred_at_and. Qed.
 
-  Lemma _at_or  p  (P Q : Rep) :
+  Lemma _at_or p (P Q : Rep) :
       p |-> (P \\// Q) -|- p |-> P \\// p |-> Q.
   Proof. by rewrite !_at_loc monPred_at_or. Qed.
 
-  Lemma _at_wand  p  (P Q : Rep) :
+  Lemma _at_wand p (P Q : Rep) :
       p |-> (P -* Q) -|- p |-> P -* p |-> Q.
   Proof. by rewrite !_at_loc Rep_wand_force. Qed.
 
   Lemma _at_impl p R1 R2 : p |-> (R1 -->> R2) -|- p |-> R1 -->> p |-> R2.
   Proof. by rewrite !_at_loc Rep_impl_force. Qed.
 
-  Lemma _at_pers  p  R : p |-> (<pers> R) -|- <pers> p |-> R.
+  Lemma _at_pers p R : p |-> (<pers> R) -|- <pers> p |-> R.
   Proof. by rewrite !_at_loc monPred_at_persistently. Qed.
 
-  Lemma _at_bupd  p  R : p |-> (|==> R) -|- |==> p |-> R.
+  Lemma _at_bupd p R : p |-> (|==> R) -|- |==> p |-> R.
   Proof. by rewrite !_at_loc monPred_at_bupd. Qed.
 
-  Lemma _at_fupd  p  R E1 E2 : p |-> (|={E1,E2}=> R) -|- |={E1,E2}=> p |-> R.
+  Lemma _at_fupd p R E1 E2 : p |-> (|={E1,E2}=> R) -|- |={E1,E2}=> p |-> R.
   Proof. by rewrite !_at_loc monPred_at_fupd. Qed.
 
-  Lemma _at_intuitionistically  p  (R : Rep) : p |-> □ R ⊣⊢ □ (p |-> R).
+  Lemma _at_intuitionistically p (R : Rep) : p |-> □ R ⊣⊢ □ (p |-> R).
   Proof. by rewrite !_at_eq/_at_def; rewrite monPred_at_intuitionistically. Qed.
   Lemma _at_intuitionistically_if (p : ptr) b R : p |-> (□?b R) -|- □?b (p |-> R).
   Proof. destruct b => //=. by rewrite _at_intuitionistically. Qed.
@@ -473,7 +473,7 @@ Section with_cpp.
   Lemma _at_internal_eq p {A : ofe} x y : p |-> (x ≡@{A} y) -|- x ≡ y.
   Proof. by rewrite _at_loc monPred_at_internal_eq. Qed.
 
-  Lemma _at_offsetR  p  (o : offset) (r : Rep) :
+  Lemma _at_offsetR p (o : offset) (r : Rep) :
       _at p (_offsetR o r) -|- _at (p ,, o) r.
   Proof. rewrite !_at_loc /flip. by unfold_at. Qed.
 
@@ -510,7 +510,7 @@ Section with_cpp.
     by apply big_opMS_proper => x _; rewrite _at_eq.
   Qed.
 
-  #[global] Instance _at_fractional (r : Qp → Rep)  p `{!Fractional r} :
+  #[global] Instance _at_fractional (r : Qp → Rep) p `{!Fractional r} :
     Fractional (λ q, p |-> (r q)).
   Proof.
     intros q1 q2; by rewrite fractional _at_sep.
@@ -595,7 +595,7 @@ Section with_cpp.
     ∀ p, |-- p |-> R.
   Proof. move => /[swap] ? <-. by rewrite _at_emp. Qed.
 
-  Lemma _at_obs  p  (r : Rep) P :
+  Lemma _at_obs p (r : Rep) P :
     r |-- r ** [| P |] →
     p |-> r |-- p |-> r ** [| P |].
   Proof. intros. apply observe_elim, _at_observe_only_provable. exact: observe_intro. Qed.
@@ -754,7 +754,7 @@ Section with_cpp.
       observations). It's handy under [#[local] Existing Instance
       _at_observe_pureR] to project a [pureR Q] conjunct out of
       representation predicates. *)
-  Lemma _at_observe_pureR Q  p  (R : Rep) :
+  Lemma _at_observe_pureR Q p (R : Rep) :
     Observe (pureR Q) R → Observe Q (p |-> R).
   Proof.
     rewrite /Observe=>->. rewrite -pureR_persistently _at_pureR. done.
