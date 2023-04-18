@@ -371,7 +371,9 @@ public:
     void VisitDecayedType(const DecayedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         print.ctor("Tdecay_type");
-        cprint.printQualType(type->getPointeeType(), print);
+        cprint.printQualType(type->getOriginalType(), print);
+        print.output() << fmt::nbsp;
+        cprint.printQualType(type->getAdjustedType(), print);
         print.end_ctor();
     }
 

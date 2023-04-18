@@ -111,7 +111,7 @@ Section type.
     underlying.
 
 End type.
-Notation Tdecay_type ty := (Qconst (Tptr ty)) (only parsing).
+Notation Tdecay_type original adjusted := (adjusted) (only parsing).
 Notation Tincomplete_array ty := (Qconst (Tptr ty)) (only parsing).
 Notation Tvariable_array ty e := (Qconst (Tptr ty)) (only parsing).
 
