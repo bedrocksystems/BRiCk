@@ -16,9 +16,6 @@
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/Version.inc"
 #include <bit>
-#if CLANG_MAJOR_VERSION >= 15
-#include <optional>
-#endif
 
 using namespace clang;
 using namespace fmt;

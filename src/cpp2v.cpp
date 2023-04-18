@@ -83,11 +83,11 @@ public:
     }
 
     template<typename T>
-    Optional<T> to_opt(const cl::opt<T> &val) {
+    std::optional<T> to_opt(const cl::opt<T> &val) {
         if (val.empty()) {
-            return Optional<T>();
+            return std::optional<T>();
         } else {
-            return Optional<T>(val.getValue());
+            return std::optional<T>(val.getValue());
         }
     }
 

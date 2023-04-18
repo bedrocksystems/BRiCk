@@ -13,6 +13,7 @@
 #include <clang/AST/Mangle.h>
 #include <clang/Basic/Version.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <optional>
 
 using namespace clang;
 
@@ -380,7 +381,7 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
 }
 
 namespace {
-Optional<int>
+std::optional<int>
 getParameterNumber(const ParmVarDecl *decl) {
     assert(decl->getDeclContext()->isFunctionOrMethod() &&
            "function or method");
@@ -388,12 +389,12 @@ getParameterNumber(const ParmVarDecl *decl) {
         int i = 0;
         for (auto p : fd->parameters()) {
             if (p == decl)
-                return Optional<int>(i);
+                return std::optional<int>(i);
             ++i;
         }
         llvm::errs() << "failed to find parameter\n";
     }
-    return Optional<int>();
+    return std::optional<int>();
 }
 } // namespace
 
@@ -406,7 +407,7 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) const {
         auto d = dyn_cast<ParmVarDecl>(decl);
         auto i = getParameterNumber(d);
         if (i.has_value()) {
-            print.output() << "#" << i;
+            print.output() << "#" << i.value();
         } else {
             logging::fatal() << "failed to find a parameter.";
             logging::die();

@@ -26,9 +26,9 @@ using namespace clang;
 class ToCoqConsumer : public clang::ASTConsumer {
 public:
     explicit ToCoqConsumer(clang::CompilerInstance *compiler,
-                           const llvm::Optional<std::string> output_file,
-                           const llvm::Optional<std::string> notations_file,
-                           const llvm::Optional<std::string> templates_file,
+                           const std::optional<std::string> output_file,
+                           const std::optional<std::string> notations_file,
+                           const std::optional<std::string> templates_file,
                            bool elaborate = true)
         : compiler_(compiler), output_file_(output_file),
           notations_file_(notations_file), templates_file_(templates_file),
@@ -43,8 +43,8 @@ private:
 
 private:
     clang::CompilerInstance *compiler_;
-    const Optional<std::string> output_file_;
-    const Optional<std::string> notations_file_;
-    const Optional<std::string> templates_file_;
+    const std::optional<std::string> output_file_;
+    const std::optional<std::string> notations_file_;
+    const std::optional<std::string> templates_file_;
     bool elaborate_;
 };
