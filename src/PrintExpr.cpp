@@ -16,9 +16,38 @@
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/Version.inc"
 #include <bit>
+#if CLANG_MAJOR_VERSION >= 15
+#include <optional>
+#endif
 
 using namespace clang;
 using namespace fmt;
+
+#if CLANG_VERSION_MAJOR >= 15
+void
+printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
+                  ClangPrinter& cprint, OpaqueNames& li) {
+    if (expr.has_value()) {
+        print.some();
+        cprint.printExpr(expr.value(), print, li);
+        print.end_ctor();
+    } else {
+        print.none();
+    }
+}
+#else
+void
+printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
+                  ClangPrinter& cprint, OpaqueNames& li) {
+    if (expr.hasValue()) {
+        print.some();
+        cprint.printExpr(expr.getValue(), print, li);
+        print.end_ctor();
+    } else {
+        print.none();
+    }
+}
+#endif
 
 bool
 is_dependent(const Expr* expr) {
@@ -152,53 +181,6 @@ private:
             print.end_ctor();
         }
     }
-
-#if CLANG_VERSION_MAJOR >= 9
-    void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
-                           ClangPrinter& cprint, OpaqueNames& li) {
-        if (expr.has_value()) {
-            print.some();
-            cprint.printExpr(expr.value(), print, li);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
-    }
-
-    void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
-                           ClangPrinter& cprint) {
-        if (expr.has_value()) {
-            print.some();
-            cprint.printExpr(expr.value(), print);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
-    }
-#else
-    void printOptionalExpr(const Expr* expr, CoqPrinter& print,
-                           ClangPrinter& cprint, LoopIndices& li) {
-        if (expr != nullptr) {
-            print.ctor("Some");
-            cprint.printExpr(expr, print, li);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
-    }
-
-    void printOptionalExpr(const Expr* expr, CoqPrinter& print,
-                           ClangPrinter& cprint) {
-        if (expr != nullptr) {
-            print.ctor("Some");
-            cprint.printExpr(expr, print);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
-    }
-
-#endif
 
 public:
     static PrintExpr printer;

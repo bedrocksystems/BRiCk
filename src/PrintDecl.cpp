@@ -549,7 +549,7 @@ public:
             case TemplateSpecializationKind::
                 TSK_ExplicitInstantiationDeclaration:
             case TemplateSpecializationKind::
-                TSK_ExplicitInstantiationDefinition:
+                TSK_ExplicitInstantiationDefinition: {
                 auto tdecl = info->getTemplate();
                 auto targs = info->TemplateArguments;
                 assert(tdecl &&
@@ -588,6 +588,7 @@ public:
                 });
                 print.end_ctor();
                 return true;
+            }
             default: {
                 using namespace logging;
                 fatal() << cprint.sourceRange(info->getPointOfInstantiation())
