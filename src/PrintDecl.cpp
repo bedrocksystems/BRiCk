@@ -588,6 +588,15 @@ public:
                 });
                 print.end_ctor();
                 return true;
+            default: {
+                using namespace logging;
+                fatal() << cprint.sourceRange(info->getPointOfInstantiation())
+                        << ": "
+                        << "error: unsupported template specialization kind: "
+                        << info->getTemplateSpecializationKind() << "\n";
+                die();
+                break;
+            }
             }
         } else {
             print.ctor("Dfunction");
