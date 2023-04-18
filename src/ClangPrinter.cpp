@@ -59,7 +59,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     sout = sout.substr(4, sout.length() - 4);
     print.output() << "\"_Z" << sout << "\"";
 }
-#else /* CLANG_NAMES */
+#else  /* CLANG_NAMES */
 #ifdef STRUCTURED_NAMES
 namespace {
 unsigned
@@ -195,7 +195,8 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             logging::debug()
                 << "ClassTemplateSpecializationDecl not supported for "
                    "simple contexts.\n";
-            static_cast<const clang::NamedDecl*>(ts)->printName(logging::debug());
+            static_cast<const clang::NamedDecl *>(ts)->printName(
+                logging::debug());
             logging::debug() << "\n";
             ts->printQualifiedName(print.output().nobreak());
             return true;
@@ -430,11 +431,10 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
             print.output() << "Prvalue";
         else if (d->isXValue())
             print.output() << "Xvalue";
-        else{
+        else {
             using namespace logging;
-            fatal()
-                << "Error: cannot determine value category"
-                << " (at " << sourceRange(d->getSourceRange()) << ")\n";
+            fatal() << "Error: cannot determine value category"
+                    << " (at " << sourceRange(d->getSourceRange()) << ")\n";
             die();
         }
         return;

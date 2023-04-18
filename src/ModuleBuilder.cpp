@@ -8,9 +8,9 @@
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
 #include "Formatter.hpp"
+#include "FromClang.hpp"
 #include "Logging.hpp"
 #include "SpecCollector.hpp"
-#include "FromClang.hpp"
 #include "clang/Basic/Builtins.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Sema.h"
@@ -19,10 +19,10 @@
 using namespace clang;
 
 static void
-unsupported_decl(const Decl* decl) {
+unsupported_decl(const Decl *decl) {
     using namespace logging;
     debug() << "[DEBUG] unsupported declaration kind \""
-        << decl->getDeclKindName() << "\", dropping.\n";
+            << decl->getDeclKindName() << "\", dropping.\n";
 }
 
 using Flags = ::Module::Flags;
@@ -36,7 +36,8 @@ private:
     const bool templates_;
 
 public:
-    Elaborate(clang::CompilerInstance *ci, bool templates) : ci_(ci), templates_(templates) {}
+    Elaborate(clang::CompilerInstance *ci, bool templates)
+        : ci_(ci), templates_(templates) {}
 
     void Visit(Decl *d, Flags flags) {
         if (visited_.find(d->getID()) == visited_.end()) {
@@ -55,7 +56,8 @@ public:
         }
     }
 
-    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl, Flags flags) {
+    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
+                                  Flags flags) {
         assert(flags.none());
 
         for (auto i : decl->decls()) {
@@ -76,7 +78,8 @@ public:
         if (decl->isImplicit()) {
             return;
         }
-        if (!flags.in_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
+        if (!flags.in_specialization &&
+            isa<ClassTemplateSpecializationDecl>(decl)) {
             return;
         }
 
@@ -156,7 +159,8 @@ public:
         }
     }
 
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, Flags flags) {
+    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
+                                   Flags flags) {
         for (auto i : decl->specializations()) {
             this->Visit(i, flags.set_specialization());
         }
@@ -187,7 +191,8 @@ private:
     std::set<int64_t> visited_;
 
 private:
-    Filter::What go(const NamedDecl *decl, Flags flags, bool definition = true) {
+    Filter::What go(const NamedDecl *decl, Flags flags,
+                    bool definition = true) {
         auto what = filter_.shouldInclude(decl);
         switch (what) {
         case Filter::What::DEFINITION:
@@ -207,9 +212,11 @@ private:
     }
 
 public:
-    BuildModule(::Module &m, Filter &filter, bool templates, clang::ASTContext *context,
-                SpecCollector &specs, clang::CompilerInstance *ci)
-        : module_(m), filter_(filter), templates_(templates), specs_(specs), context_(context) {}
+    BuildModule(::Module &m, Filter &filter, bool templates,
+                clang::ASTContext *context, SpecCollector &specs,
+                clang::CompilerInstance *ci)
+        : module_(m), filter_(filter), templates_(templates), specs_(specs),
+          context_(context) {}
 
     void Visit(const Decl *d, Flags flags) {
         if (visited_.find(d->getID()) == visited_.end()) {
@@ -243,7 +250,8 @@ public:
         // ignore
     }
 
-    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl, Flags flags) {
+    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
+                                  Flags flags) {
         assert(flags.none());
 
         for (auto i : decl->decls()) {
@@ -280,7 +288,8 @@ public:
         if (decl->isImplicit()) {
             return;
         }
-        if (!flags.in_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
+        if (!flags.in_specialization &&
+            isa<ClassTemplateSpecializationDecl>(decl)) {
             return;
         }
 
@@ -394,7 +403,8 @@ public:
         this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl, flags);
     }
 
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, Flags flags) {
+    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
+                                   Flags flags) {
         if (templates_)
             go(decl, flags.set_template());
 
@@ -429,10 +439,10 @@ public:
 
 void
 build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
-             SpecCollector &specs, clang::CompilerInstance *ci,
-             bool elaborate, bool templates) {
+             SpecCollector &specs, clang::CompilerInstance *ci, bool elaborate,
+             bool templates) {
 
-    Flags flags {};
+    Flags flags{};
 
     if (elaborate) {
         // First we do all of the elaboration that we want that is not strictly
@@ -466,14 +476,15 @@ build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
         .VisitTranslationUnitDecl(tu, flags);
 }
 
-void ::Module::add_assert(const clang::StaticAssertDecl* d) {
+void ::Module::add_assert(const clang::StaticAssertDecl *d) {
     asserts_.push_back(d);
 }
 
 using DeclList = ::Module::DeclList;
 
 static void
-add_decl(DeclList& decls, DeclList& tdecls, const clang::NamedDecl *d, Flags flags) {
+add_decl(DeclList &decls, DeclList &tdecls, const clang::NamedDecl *d,
+         Flags flags) {
     if (flags.in_template) {
         tdecls.push_back(d);
     } else {

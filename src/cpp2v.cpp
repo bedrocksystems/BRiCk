@@ -62,9 +62,8 @@ static cl::opt<bool> Version("cpp2v-version", cl::Optional, cl::ValueOptional,
                              cl::cat(Cpp2V));
 
 static cl::opt<std::string>
-    Templates("templates",
-        cl::desc("generate AST for templated code"),
-        cl::Optional, cl::cat(Cpp2V));
+    Templates("templates", cl::desc("generate AST for templated code"),
+              cl::Optional, cl::cat(Cpp2V));
 
 class ToCoqAction : public clang::ASTFrontendAction {
 public:
@@ -78,9 +77,8 @@ public:
             llvm::errs() << i << "\n";
         }
 #endif
-        auto result = new ToCoqConsumer(&Compiler,
-            to_opt(VFileOutput), to_opt(NamesFile),
-            to_opt(Templates));
+        auto result = new ToCoqConsumer(&Compiler, to_opt(VFileOutput),
+                                        to_opt(NamesFile), to_opt(Templates));
         return std::unique_ptr<clang::ASTConsumer>(result);
     }
 

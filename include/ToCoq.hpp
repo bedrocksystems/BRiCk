@@ -29,12 +29,10 @@ public:
                            const llvm::Optional<std::string> output_file,
                            const llvm::Optional<std::string> notations_file,
                            const llvm::Optional<std::string> templates_file,
-                           bool elaborate = true) :
-        compiler_(compiler),
-        output_file_(output_file),
-        notations_file_(notations_file),
-        templates_file_(templates_file),
-        elaborate_(elaborate) {}
+                           bool elaborate = true)
+        : compiler_(compiler), output_file_(output_file),
+          notations_file_(notations_file), templates_file_(templates_file),
+          elaborate_(elaborate) {}
 
     virtual void HandleTranslationUnit(clang::ASTContext &Context) {
         toCoqModule(&Context, Context.getTranslationUnitDecl());
