@@ -21,11 +21,9 @@ using namespace clang;
 using namespace fmt;
 
 bool
-is_dependent(const Expr *expr) {
-    return static_cast<bool>(
-        expr->getDependence() &
-        ExprDependence::TypeValueInstantiation
-    );
+is_dependent(const Expr* expr) {
+    return static_cast<bool>(expr->getDependence() &
+                             ExprDependence::TypeValueInstantiation);
 }
 
 // todo(gmm): this is duplicated!
@@ -213,16 +211,17 @@ public:
         logging::die();
     }
 
-    void unsupported_expr(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint) {
+    void unsupported_expr(const Expr* expr, CoqPrinter& print,
+                          ClangPrinter& cprint) {
         using namespace logging;
-        unsupported()
-            << cprint.sourceLocation(expr->getBeginLoc())
-            << ": warning: unsupported expression (" << expr->getStmtClassName() << ")\n";
-        #if CLANG_VERSION_MAJOR >= 11
-            expr->dump(debug(), cprint.getContext());
-        #else
-            expr->dump(debug());
-        #endif
+        unsupported() << cprint.sourceLocation(expr->getBeginLoc())
+                      << ": warning: unsupported expression ("
+                      << expr->getStmtClassName() << ")\n";
+#if CLANG_VERSION_MAJOR >= 11
+        expr->dump(debug(), cprint.getContext());
+#else
+        expr->dump(debug());
+#endif
 
         print.ctor("Eunsupported");
         print.str(expr->getStmtClassName());
@@ -470,8 +469,8 @@ public:
     }
 
     void VisitUnresolvedLookupExpr(const UnresolvedLookupExpr* expr,
-            CoqPrinter& print, ClangPrinter& cprint,
-            const ASTContext&, OpaqueNames&) {
+                                   CoqPrinter& print, ClangPrinter& cprint,
+                                   const ASTContext&, OpaqueNames&) {
         if (!print.templates())
             return unsupported_expr(expr, print, cprint);
 
@@ -1003,11 +1002,11 @@ public:
     }
 
     void VisitParenListExpr(const ParenListExpr* expr, CoqPrinter& print,
-            ClangPrinter& cprint, const ASTContext& ctxt,
-            OpaqueNames& names) {
+                            ClangPrinter& cprint, const ASTContext& ctxt,
+                            OpaqueNames& names) {
         if (!print.templates())
             return unsupported_expr(expr, print, cprint);
-        assert (is_dependent(expr));
+        assert(is_dependent(expr));
 
         print.ctor("Eunresolved_parenlist");
 
@@ -1023,7 +1022,7 @@ public:
             print.output() << "nil";
         else {
             print.begin_list();
-            for (auto i=0; i<n; i++){
+            for (unsigned i = 0; i < n; i++) {
                 cprint.printExpr(expr->getExpr(i), print, names);
                 print.cons();
             }

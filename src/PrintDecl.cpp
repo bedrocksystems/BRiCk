@@ -101,21 +101,23 @@ parameter(const ParmVarDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
 
 const std::string
 templateArgumentKindName(TemplateArgument::ArgKind kind) {
-    #define CASE(k) case TemplateArgument::ArgKind::k: return #k;
+#define CASE(k)                                                                \
+    case TemplateArgument::ArgKind::k:                                         \
+        return #k;
     switch (kind) {
-    CASE(Null)
-    CASE(Type)
-    CASE(Declaration)
-    CASE(NullPtr)
-    CASE(Integral)
-    CASE(Template)
-    CASE(TemplateExpansion)
-    CASE(Expression)
-    CASE(Pack)
+        CASE(Null)
+        CASE(Type)
+        CASE(Declaration)
+        CASE(NullPtr)
+        CASE(Integral)
+        CASE(Template)
+        CASE(TemplateExpansion)
+        CASE(Expression)
+        CASE(Pack)
     default:
         return "<unknown>";
     }
-    #undef CASE
+#undef CASE
 }
 
 void
@@ -250,8 +252,9 @@ public:
         return false;
     }
 
-    bool VisitTemplateTypeParmDecl(const TemplateTypeParmDecl* param,
-            CoqPrinter &print, ClangPrinter &cprint, const ASTContext &) {
+    bool VisitTemplateTypeParmDecl(const TemplateTypeParmDecl *param,
+                                   CoqPrinter &print, ClangPrinter &cprint,
+                                   const ASTContext &) {
         assert(print.templates() && "TemplateTypeParmDecl");
 
         print.ctor("TypeParam");
@@ -543,12 +546,16 @@ public:
 
             case TemplateSpecializationKind::TSK_ImplicitInstantiation:
             case TemplateSpecializationKind::TSK_ExplicitSpecialization:
-            case TemplateSpecializationKind::TSK_ExplicitInstantiationDeclaration:
-            case TemplateSpecializationKind::TSK_ExplicitInstantiationDefinition:
+            case TemplateSpecializationKind::
+                TSK_ExplicitInstantiationDeclaration:
+            case TemplateSpecializationKind::
+                TSK_ExplicitInstantiationDefinition:
                 auto tdecl = info->getTemplate();
                 auto targs = info->TemplateArguments;
-                assert(tdecl && "FunctionTemplateSpecializationInfo without template");
-                assert(targs && "FunctionTemplateSpecializationInfo without arguments");
+                assert(tdecl &&
+                       "FunctionTemplateSpecializationInfo without template");
+                assert(targs &&
+                       "FunctionTemplateSpecializationInfo without arguments");
 
                 auto function = tdecl->getTemplatedDecl();
                 assert(function && "FunctionTemplateDecl without function");
@@ -558,8 +565,9 @@ public:
                 print.output() << fmt::nbsp;
                 cprint.printObjName(function, print);
                 print.output() << fmt::nbsp;
-                print.list(targs->asArray(), [&cprint, &info](auto print, auto &arg){
-                    switch(arg.getKind()){
+                print.list(targs->asArray(), [&cprint, &info](auto print,
+                                                              auto &arg) {
+                    switch (arg.getKind()) {
 
                     case TemplateArgument::Type:
                         print.ctor("TypeArg");
@@ -570,11 +578,12 @@ public:
                     default:
                         using namespace logging;
                         fatal()
-                            << cprint.sourceRange(info->getPointOfInstantiation()) << ": "
+                            << cprint.sourceRange(
+                                   info->getPointOfInstantiation())
+                            << ": "
                             << "error: unsupported template argument kind: "
                             << templateArgumentKindName(arg.getKind()) << "\n";
                         die();
-                        break;
                     }
                 });
                 print.end_ctor();
@@ -893,9 +902,8 @@ public:
             return this->Visit(decl->getTemplatedDecl(), print, cprint, ctxt);
         else {
             using namespace logging;
-            unsupported()
-                << cprint.sourceRange(decl->getSourceRange()) << ": "
-                << "warning: unsupported class template\n";
+            unsupported() << cprint.sourceRange(decl->getSourceRange()) << ": "
+                          << "warning: unsupported class template\n";
             return false;
         }
     }

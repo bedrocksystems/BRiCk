@@ -245,7 +245,8 @@ public:
                 unsupported_type(type, print, cprint);
                 using namespace logging;
                 fatal()
-                    << "Clang failed to resolve type, due to earlier errors or unresolved templates\n"
+                    << "Clang failed to resolve type, due to earlier errors or "
+                       "unresolved templates\n"
                     << "Try fixing earlier errors, or ask for help. Aborting\n";
                 die();
                 break;
@@ -432,7 +433,7 @@ public:
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tmember_pointer");
         auto class_type = type->getClass();
-        if (! print.templates()) {
+        if (!print.templates()) {
             cprint.printTypeName(class_type->getAsCXXRecordDecl(), print);
         } else {
             /*
