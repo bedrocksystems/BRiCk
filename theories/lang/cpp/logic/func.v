@@ -505,8 +505,8 @@ Section with_cpp.
           |> let ρ va := Remp (Some thisp) va Tvoid in
              bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ cleanup =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (fun which => wp ρ body (Kcleanup cleanup (Kreturn_void (thisp |-> union_paddingR (cQp.mut 1) ctor.(c_class) which -*
-                                                                       |={⊤}=> |> Forall p, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p))))))
+                  (fun which => thisp |-> union_paddingR (cQp.mut 1) ctor.(c_class) which -*
+                             wp ρ body (Kcleanup cleanup (Kreturn_void (|={⊤}=> |> Forall p, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p))))))
         | Some _ =>
           ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         | None => False
