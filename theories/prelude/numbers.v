@@ -147,6 +147,12 @@ Lemma N_of_nat_le_mono (i j : nat) :
   (i ≤ j)%nat ↔ (N.of_nat i ≤ N.of_nat j)%N.
 Proof. rewrite /N.le -Nat2N.inj_compare. apply nat_compare_le. Qed.
 
+(* We flip this lemma: [apply N.succ_lt_mono] will always apply it left-to-right
+even when it could apply it right-to-left. *)
+Lemma N_succ_lt_mono_inv (n m : N) :
+  (N.succ n < N.succ m ↔ n < m)%N.
+Proof. by rewrite -N.succ_lt_mono. Qed.
+
 (** Adapter [N.eqb] into [bool_decide]. *)
 Lemma N_eqb_bool_decide (m n : N) : N.eqb m n = bool_decide (m = n).
 Proof.
