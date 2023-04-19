@@ -197,6 +197,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
     print.output() << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
+    print.output() << fmt::nbsp;
 
     if (decl->getBody()) {
         print.some();
