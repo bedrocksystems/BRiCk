@@ -37,6 +37,9 @@ Module fin.
     end.
   Definition to_N {n} (f : t n) : N := `f.
 
+  Lemma to_N_lt {n} (f : t n) : to_N f < n.
+  Proof. apply (proj2_sig f). Qed.
+
   Definition t_eq {n} (x1 x2 : t n)
     (Heq : to_N x1 = to_N x2) : x1 = x2.
   Proof. apply /sig_eq_pi /Heq. Qed.
@@ -163,4 +166,38 @@ Module fin.
   Definition decode `{Finite A} (f : fin.t (N.of_nat (card A))) : A :=
     decode_fin (to_idx_fin f).
   #[global] Arguments decode & {A _ _} f. (* [&] = infer [A] from return type. *)
+
+  (* Inductive-like interface. *)
+  Definition zero {n} : fin.t (N.succ n) := mk' 0 (N.lt_0_succ _).
+  (* eta-rule for [zero] *)
+  Lemma is_zero {n} {Hl : 0 < N.succ n} : 0 ↾ Hl = zero.
+  Proof. exact: t_eq. Qed.
+
+  #[program] Definition succ {n} (x : fin.t n) :
+    fin.t (N.succ n) := mk' (N.succ (to_N x)) _.
+  Next Obligation.
+    intros n x.
+    apply (N_succ_lt_mono_inv _ _), to_N_lt.
+  Qed.
+
+  (* eta-rule for [fin.succ] *)
+  Lemma is_succ {x n} {Hl : N.succ x < N.succ n} :
+    N.succ x ↾ Hl = fin.succ (mk' x (proj1 (N_succ_lt_mono_inv _ _) Hl)).
+  Proof. exact: t_eq. Qed.
+
+  (* Elimination principle. *)
+  Definition t_rect (P : ∀ n, fin.t n -> Type)
+    (Hz : ∀ n, P (N.succ n) fin.zero)
+    (Hs : ∀ n (x : fin.t n), P (N.succ n) (fin.succ x)) :
+    ∀ n (x : fin.t n), P n x.
+  Proof.
+    intros n [x Hl].
+    destruct n as [|n] using N.peano_rect; last clear IHn. {
+      exfalso; abstract lia.
+    }
+    destruct x as [|x] using N.peano_rect; last clear IHx. {
+      rewrite ->is_zero. apply Hz.
+    }
+    rewrite ->is_succ. apply Hs.
+  Defined.
 End fin.
