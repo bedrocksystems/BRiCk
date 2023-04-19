@@ -57,6 +57,7 @@ IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
 
   add_llvm_library(tocoq
     STATIC
+    src/Elaborate.cpp
     src/Version.cpp
     src/PrintExpr.cpp
     src/PrintStmt.cpp
@@ -82,6 +83,7 @@ ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
   add_llvm_library(tocoq
     STATIC
     PARTIAL_SOURCES_INTENDED
+    src/Elaborate.cpp
     src/Version.cpp
     src/PrintExpr.cpp
     src/PrintStmt.cpp

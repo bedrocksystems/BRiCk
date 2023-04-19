@@ -27,158 +27,6 @@ unsupported_decl(const Decl *decl) {
 
 using Flags = ::Module::Flags;
 
-class Elaborate : public DeclVisitorArgs<Elaborate, void, Flags> {
-private:
-    using Visitor = DeclVisitorArgs<Elaborate, void, Flags>;
-
-    clang::CompilerInstance *const ci_;
-    std::set<int64_t> visited_;
-    const bool templates_;
-
-public:
-    Elaborate(clang::CompilerInstance *ci, bool templates)
-        : ci_(ci), templates_(templates) {}
-
-    void Visit(Decl *d, Flags flags) {
-        if (visited_.find(d->getID()) == visited_.end()) {
-            visited_.insert(d->getID());
-            Visitor::Visit(d, flags);
-        }
-    }
-
-    void VisitDecl(const Decl *d, Flags) {
-        unsupported_decl(d);
-    }
-
-    void VisitVarTemplateDecl(const VarTemplateDecl *decl, Flags flags) {
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
-    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
-                                  Flags flags) {
-        assert(flags.none());
-
-        for (auto i : decl->decls()) {
-            this->Visit(i, flags);
-        }
-    }
-
-    void GenerateImplicitMembers(CXXRecordDecl *decl, bool deprecated) {
-        Sema &sema = ci_->getSema();
-        if (deprecated) {
-            sema.ForceDeclarationOfImplicitMembers(decl);
-            return;
-        }
-        GenerateUndeprecatedImplicitMembers(decl, sema);
-    }
-
-    void VisitCXXRecordDecl(CXXRecordDecl *decl, Flags flags) {
-        if (decl->isImplicit()) {
-            return;
-        }
-        if (!flags.in_specialization &&
-            isa<ClassTemplateSpecializationDecl>(decl)) {
-            return;
-        }
-
-        if (decl->isCompleteDefinition()) {
-            // Do *not* generate deprecated members
-            GenerateImplicitMembers(decl, false);
-        }
-
-        // find any static functions or fields
-        for (auto i : decl->decls()) {
-            Visit(i, flags);
-        }
-    }
-
-    void VisitCXXMethodDecl(CXXMethodDecl *decl, Flags) {
-        if (decl->isDeleted() || (!templates_ && decl->isDependentContext()))
-            return;
-
-        if (not decl->getBody() && decl->isDefaulted()) {
-            if (decl->isMoveAssignmentOperator()) {
-                ci_->getSema().DefineImplicitMoveAssignment(decl->getLocation(),
-                                                            decl);
-
-            } else if (decl->isCopyAssignmentOperator()) {
-                ci_->getSema().DefineImplicitCopyAssignment(decl->getLocation(),
-                                                            decl);
-            } else {
-                logging::log() << "Didn't generate body for defaulted method\n";
-            }
-        }
-    }
-
-    void VisitNamespaceDecl(const NamespaceDecl *decl, Flags flags) {
-        assert(flags.none());
-
-        for (auto d : decl->decls()) {
-            this->Visit(d, flags);
-        }
-    }
-
-    void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, Flags flags) {
-        assert(flags.none());
-
-        for (auto i : decl->decls()) {
-            this->Visit(i, flags);
-        }
-    }
-
-    void VisitCXXConstructorDecl(CXXConstructorDecl *decl, Flags flags) {
-        if (decl->isDeleted())
-            return;
-
-        if (not decl->getBody() && decl->isDefaulted()) {
-            if (decl->isDefaultConstructor()) {
-                ci_->getSema().DefineImplicitDefaultConstructor(
-                    decl->getLocation(), decl);
-            } else if (decl->isCopyConstructor()) {
-                ci_->getSema().DefineImplicitCopyConstructor(
-                    decl->getLocation(), decl);
-            } else if (decl->isMoveConstructor()) {
-                ci_->getSema().DefineImplicitMoveConstructor(
-                    decl->getLocation(), decl);
-            } else {
-                logging::debug() << "Unknown defaulted constructor.\n";
-            }
-        }
-
-        this->DeclVisitorArgs::VisitCXXConstructorDecl(decl, flags);
-    }
-
-    void VisitCXXDestructorDecl(CXXDestructorDecl *decl, Flags) {
-        if (decl->isDeleted())
-            return;
-
-        if (not decl->hasBody() && decl->isDefaulted()) {
-            ci_->getSema().DefineImplicitDestructor(decl->getLocation(), decl);
-        }
-    }
-
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
-                                   Flags flags) {
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
-    void VisitClassTemplateDecl(const ClassTemplateDecl *decl, Flags flags) {
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
-    void VisitFriendDecl(const FriendDecl *decl, Flags flags) {
-        if (decl->getFriendDecl()) {
-            this->Visit(decl->getFriendDecl(), flags);
-        }
-    }
-};
-
 class BuildModule : public ConstDeclVisitorArgs<BuildModule, void, Flags> {
 private:
     using Visitor = ConstDeclVisitorArgs<BuildModule, void, Flags>;
@@ -461,14 +309,14 @@ build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
         // these at all. This would decrease our file representation size and
         // bring us a little bit closer to the semantics rather than relying
         // on choices for how clang implements defaulted operations.
-        Elaborate(ci, templates).VisitTranslationUnitDecl(tu, flags);
+        // Elaborate(ci, templates).VisitTranslationUnitDecl(tu, flags);
 
         // Once we are done visiting the AST, we run all the actions that
         // are pending in the translation unit.
         // We need to do this because when we parse with elaboration enabled,
         // we parse in "incremental" mode. Ending the translation unit generates
         // all of the template specializations, etc.
-        ci->getSema().ActOnEndOfTranslationUnit();
+        // ci->getSema().ActOnEndOfTranslationUnit();
     }
 
     auto &ctxt = tu->getASTContext();
