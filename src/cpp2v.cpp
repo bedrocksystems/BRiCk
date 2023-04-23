@@ -92,12 +92,6 @@ public:
     }
 
     virtual bool BeginSourceFileAction(CompilerInstance &CI) override {
-        // Because we enable incremental processing, we must call [ActOnEndOfTranslationUnit]
-        // explicitly.
-        if (not Naked) {
-            //CI.getPreprocessor().enableIncrementalProcessing();
-            //CI.getPreprocessor().
-        }
         return this->clang::ASTFrontendAction::BeginSourceFileAction(CI);
     }
 };

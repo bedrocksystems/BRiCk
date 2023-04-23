@@ -289,39 +289,9 @@ void
 build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
              SpecCollector &specs, clang::CompilerInstance *ci, bool elaborate,
              bool templates) {
-
-    Flags flags{};
-
-    if (elaborate) {
-        // First we do all of the elaboration that we want that is not strictly
-        // necessary from the standard, e.g. generating defaultable operations
-        // such as constructors, destructors, assignment operators.
-        // Generating them eagerly makes it possible to verify them in the
-        // header file rather than waiting until they are first used.
-        //
-        // CAVEAT: this approach only gets 1-step of elaboration, if completing
-        // the translation unit below (by calling [ActOnEndOfTranslationUnit])
-        // introduces new classes, then we don't have an opportunity to elaborate
-        // those classes.
-        //
-        // An alternative (better?) solution is to express the semantics of
-        // defaulted operations within the semantics and *prevent* generating
-        // these at all. This would decrease our file representation size and
-        // bring us a little bit closer to the semantics rather than relying
-        // on choices for how clang implements defaulted operations.
-        // Elaborate(ci, templates).VisitTranslationUnitDecl(tu, flags);
-
-        // Once we are done visiting the AST, we run all the actions that
-        // are pending in the translation unit.
-        // We need to do this because when we parse with elaboration enabled,
-        // we parse in "incremental" mode. Ending the translation unit generates
-        // all of the template specializations, etc.
-        // ci->getSema().ActOnEndOfTranslationUnit();
-    }
-
     auto &ctxt = tu->getASTContext();
     BuildModule(mod, filter, templates, &ctxt, specs, ci)
-        .VisitTranslationUnitDecl(tu, flags);
+        .VisitTranslationUnitDecl(tu, {});
 }
 
 void ::Module::add_assert(const clang::StaticAssertDecl *d) {

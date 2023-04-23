@@ -49,13 +49,15 @@ public:
     virtual ASTMutationListener *GetASTMutationListener() override {
         return this;
     }
+
 public:
     // Implementation of clang::ASTMutationListener
     virtual void
     AddedCXXTemplateSpecialization(const ClassTemplateDecl *TD,
                                    const ClassTemplateSpecializationDecl *D) {
+        // TODO [const_cast] is a code-smell.
         // The implementation calls this method from a non-`const` method.
-        // it is not clear (to me) why this method should take a
+        // it is not clear why this method should take a
         // `const ClassTemplateSpecializationDecl` rather than a non-`const`
         elab(const_cast<ClassTemplateSpecializationDecl *>(D), true);
     }

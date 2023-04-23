@@ -148,8 +148,6 @@ public:
                 logging::debug() << "Unknown defaulted constructor.\n";
             }
         }
-
-        // this->DeclVisitorArgs::VisitCXXConstructorDecl(decl, flags);
     }
 
     void VisitCXXDestructorDecl(CXXDestructorDecl *decl, Flags) {
@@ -162,13 +160,7 @@ public:
     }
 
     void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
-                                   Flags flags) {
-#if 0
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-#endif
-    }
+                                   Flags flags) {}
 
     void VisitClassTemplateDecl(const ClassTemplateDecl *decl, Flags flags) {
         for (auto i : decl->specializations()) {
@@ -181,7 +173,10 @@ public:
             this->Visit(decl->getFriendDecl(), flags);
         }
     }
-    void VisitFunctionDecl(const FunctionDecl *, Flags) {}
+
+    void VisitFunctionDecl(const FunctionDecl *, Flags) {
+        // nothing to do, do not report "unsupported"
+    }
 };
 
 void
@@ -220,47 +215,4 @@ ToCoqConsumer::HandleTagDeclDefinition(TagDecl *decl) {
     if (elaborate_) {
         elab(decl);
     }
-#if 0
-    if (auto cxxrd = dyn_cast<CXXRecordDecl>(decl)) {
-        Sema &sema = compiler_->getSema();
-        if (true) {
-            sema.ForceDeclarationOfImplicitMembers(cxxrd);
-        } else
-            GenerateUndeprecatedImplicitMembers(cxxrd, sema);
-
-        for (auto c : cxxrd->ctors()) {
-            if (c->isDeleted())
-                continue;
-            if (not c->getBody() && c->isDefaulted()) {
-                if (c->isDefaultConstructor()) {
-                    sema.DefineImplicitDefaultConstructor(c->getLocation(), c);
-                } else if (c->isCopyConstructor()) {
-                    sema.DefineImplicitCopyConstructor(c->getLocation(), c);
-                } else if (c->isMoveConstructor()) {
-                    sema.DefineImplicitMoveConstructor(c->getLocation(), c);
-                } else {
-                    logging::debug() << "Unknown defaulted constructor.\n";
-                }
-            }
-        }
-
-        for (auto m : cxxrd->methods()) {
-            llvm::errs() << "Method: " << m->getNameAsString() << "\n";
-            if (m->isDeleted())
-                continue;
-
-            if (not m->getBody() && m->isDefaulted()) {
-                if (m->isMoveAssignmentOperator()) {
-                    sema.DefineImplicitMoveAssignment(m->getLocation(), m);
-
-                } else if (m->isCopyAssignmentOperator()) {
-                    sema.DefineImplicitCopyAssignment(m->getLocation(), m);
-                } else {
-                    logging::log()
-                        << "Didn't generate body for defaulted method\n";
-                }
-            }
-        }
-    }
-#endif
 }
