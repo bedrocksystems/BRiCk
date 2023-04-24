@@ -34,14 +34,15 @@ using namespace fmt;
 
 template<typename CLOSURE>
 void
-with_open_file(const llvm::Optional<std::string> path, CLOSURE f /* void f(Formatter&) */) {
-    if (path.hasValue()) {
+with_open_file(const std::optional<std::string> path,
+               CLOSURE f /* void f(Formatter&) */) {
+    if (path.has_value()) {
         std::error_code ec;
         llvm::raw_fd_ostream output(*path, ec);
         if (ec.value()) {
             llvm::errs() << *path << ": " << ec.message() << "\n";
         } else {
-            Formatter fmt {output};
+            Formatter fmt{output};
             f(fmt);
         }
     }
@@ -54,8 +55,8 @@ printDecl(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
 }
 
 void
-ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
-                           clang::TranslationUnitDecl *decl) {
+ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
+                           clang::TranslationUnitDecl* decl) {
 #if 0
     NoInclude noInclude(ctxt->getSourceManager());
     FromComment fromComment(ctxt);
@@ -69,10 +70,10 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
     ::Module mod;
 
-    bool templates = templates_file_.hasValue();
+    bool templates = templates_file_.has_value();
     build_module(decl, mod, filter, specs, compiler_, elaborate_, templates);
 
-    with_open_file(output_file_, [this, &ctxt, &mod](Formatter& fmt){
+    with_open_file(output_file_, [this, &ctxt, &mod](Formatter& fmt) {
         CoqPrinter print(fmt, false);
         ClangPrinter cprint(compiler_, ctxt);
 
@@ -109,8 +110,8 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
         print.output() << "." << fmt::outdent << fmt::line;
     });
 
-    with_open_file(notations_file_, [this, &decl, &mod](Formatter& spec_fmt){
-        auto &ctxt = decl->getASTContext();
+    with_open_file(notations_file_, [this, &decl, &mod](Formatter& spec_fmt) {
+        auto& ctxt = decl->getASTContext();
         ClangPrinter cprint(compiler_, &decl->getASTContext());
         CoqPrinter print(spec_fmt, false);
         // PrintSpec printer(ctxt);
@@ -124,26 +125,25 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
         //                           ctxt.getSourceManager().getMainFileID())
         //                       ->getName()
         //                << fmt::line << " *)" << fmt::line;
-        print.output() << "Require Export bedrock.lang.cpp.parser."
-                       << fmt::line << fmt::line;
+        print.output() << "Require Export bedrock.lang.cpp.parser." << fmt::line
+                       << fmt::line;
 
         // generate all of the record fields
         write_globals(mod, print, cprint);
     });
 
-    with_open_file(templates_file_, [this, &ctxt, &mod](Formatter& fmt){
+    with_open_file(templates_file_, [this, &ctxt, &mod](Formatter& fmt) {
         CoqPrinter print(fmt, true);
         ClangPrinter cprint(compiler_, ctxt);
 
         fmt << "Require Import bedrock.auto.cpp.templates.mparser." << fmt::line
-            << fmt::line
-            << "#[local] Open Scope bs_scope." << fmt::line;
+            << fmt::line << "#[local] Open Scope bs_scope." << fmt::line;
 
         fmt << fmt::line
-            << "Definition templates : Mtranslation_unit :="
-            << fmt::indent << fmt::line
-                << "Eval Mreduce_translation_unit in Mtranslation_unit.decls"
-                << fmt::nbsp;
+            << "Definition templates : Mtranslation_unit :=" << fmt::indent
+            << fmt::line
+            << "Eval Mreduce_translation_unit in Mtranslation_unit.decls"
+            << fmt::nbsp;
 
         print.begin_list();
         for (auto decl : mod.template_declarations()) {

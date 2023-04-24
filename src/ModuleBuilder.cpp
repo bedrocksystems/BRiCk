@@ -8,9 +8,9 @@
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
 #include "Formatter.hpp"
+#include "FromClang.hpp"
 #include "Logging.hpp"
 #include "SpecCollector.hpp"
-#include "FromClang.hpp"
 #include "clang/Basic/Builtins.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Sema.h"
@@ -19,161 +19,13 @@
 using namespace clang;
 
 static void
-unsupported_decl(const Decl* decl) {
+unsupported_decl(const Decl *decl) {
     using namespace logging;
     debug() << "[DEBUG] unsupported declaration kind \""
-        << decl->getDeclKindName() << "\", dropping.\n";
+            << decl->getDeclKindName() << "\", dropping.\n";
 }
 
 using Flags = ::Module::Flags;
-
-class Elaborate : public DeclVisitorArgs<Elaborate, void, Flags> {
-private:
-    using Visitor = DeclVisitorArgs<Elaborate, void, Flags>;
-
-    clang::CompilerInstance *const ci_;
-    std::set<int64_t> visited_;
-    const bool templates_;
-
-public:
-    Elaborate(clang::CompilerInstance *ci, bool templates) : ci_(ci), templates_(templates) {}
-
-    void Visit(Decl *d, Flags flags) {
-        if (visited_.find(d->getID()) == visited_.end()) {
-            visited_.insert(d->getID());
-            Visitor::Visit(d, flags);
-        }
-    }
-
-    void VisitDecl(const Decl *d, Flags) {
-        unsupported_decl(d);
-    }
-
-    void VisitVarTemplateDecl(const VarTemplateDecl *decl, Flags flags) {
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
-    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl, Flags flags) {
-        assert(flags.none());
-
-        for (auto i : decl->decls()) {
-            this->Visit(i, flags);
-        }
-    }
-
-    void GenerateImplicitMembers(CXXRecordDecl *decl, bool deprecated) {
-        Sema &sema = ci_->getSema();
-        if (deprecated) {
-            sema.ForceDeclarationOfImplicitMembers(decl);
-            return;
-        }
-        GenerateUndeprecatedImplicitMembers(decl, sema);
-    }
-
-    void VisitCXXRecordDecl(CXXRecordDecl *decl, Flags flags) {
-        if (decl->isImplicit()) {
-            return;
-        }
-        if (!flags.in_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
-            return;
-        }
-
-        if (decl->isCompleteDefinition()) {
-            // Do *not* generate deprecated members
-            GenerateImplicitMembers(decl, false);
-        }
-
-        // find any static functions or fields
-        for (auto i : decl->decls()) {
-            Visit(i, flags);
-        }
-    }
-
-    void VisitCXXMethodDecl(CXXMethodDecl *decl, Flags) {
-        if (decl->isDeleted() || (!templates_ && decl->isDependentContext()))
-            return;
-
-        if (not decl->getBody() && decl->isDefaulted()) {
-            if (decl->isMoveAssignmentOperator()) {
-                ci_->getSema().DefineImplicitMoveAssignment(decl->getLocation(),
-                                                            decl);
-
-            } else if (decl->isCopyAssignmentOperator()) {
-                ci_->getSema().DefineImplicitCopyAssignment(decl->getLocation(),
-                                                            decl);
-            } else {
-                logging::log() << "Didn't generate body for defaulted method\n";
-            }
-        }
-    }
-
-    void VisitNamespaceDecl(const NamespaceDecl *decl, Flags flags) {
-        assert(flags.none());
-
-        for (auto d : decl->decls()) {
-            this->Visit(d, flags);
-        }
-    }
-
-    void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, Flags flags) {
-        assert(flags.none());
-
-        for (auto i : decl->decls()) {
-            this->Visit(i, flags);
-        }
-    }
-
-    void VisitCXXConstructorDecl(CXXConstructorDecl *decl, Flags flags) {
-        if (decl->isDeleted())
-            return;
-
-        if (not decl->getBody() && decl->isDefaulted()) {
-            if (decl->isDefaultConstructor()) {
-                ci_->getSema().DefineImplicitDefaultConstructor(
-                    decl->getLocation(), decl);
-            } else if (decl->isCopyConstructor()) {
-                ci_->getSema().DefineImplicitCopyConstructor(
-                    decl->getLocation(), decl);
-            } else if (decl->isMoveConstructor()) {
-                ci_->getSema().DefineImplicitMoveConstructor(
-                    decl->getLocation(), decl);
-            } else {
-                logging::debug() << "Unknown defaulted constructor.\n";
-            }
-        }
-
-        this->DeclVisitorArgs::VisitCXXConstructorDecl(decl, flags);
-    }
-
-    void VisitCXXDestructorDecl(CXXDestructorDecl *decl, Flags) {
-        if (decl->isDeleted())
-            return;
-
-        if (not decl->hasBody() && decl->isDefaulted()) {
-            ci_->getSema().DefineImplicitDestructor(decl->getLocation(), decl);
-        }
-    }
-
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, Flags flags) {
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
-    void VisitClassTemplateDecl(const ClassTemplateDecl *decl, Flags flags) {
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
-    void VisitFriendDecl(const FriendDecl *decl, Flags flags) {
-        if (decl->getFriendDecl()) {
-            this->Visit(decl->getFriendDecl(), flags);
-        }
-    }
-};
 
 class BuildModule : public ConstDeclVisitorArgs<BuildModule, void, Flags> {
 private:
@@ -187,7 +39,8 @@ private:
     std::set<int64_t> visited_;
 
 private:
-    Filter::What go(const NamedDecl *decl, Flags flags, bool definition = true) {
+    Filter::What go(const NamedDecl *decl, Flags flags,
+                    bool definition = true) {
         auto what = filter_.shouldInclude(decl);
         switch (what) {
         case Filter::What::DEFINITION:
@@ -207,9 +60,11 @@ private:
     }
 
 public:
-    BuildModule(::Module &m, Filter &filter, bool templates, clang::ASTContext *context,
-                SpecCollector &specs, clang::CompilerInstance *ci)
-        : module_(m), filter_(filter), templates_(templates), specs_(specs), context_(context) {}
+    BuildModule(::Module &m, Filter &filter, bool templates,
+                clang::ASTContext *context, SpecCollector &specs,
+                clang::CompilerInstance *ci)
+        : module_(m), filter_(filter), templates_(templates), specs_(specs),
+          context_(context) {}
 
     void Visit(const Decl *d, Flags flags) {
         if (visited_.find(d->getID()) == visited_.end()) {
@@ -243,7 +98,8 @@ public:
         // ignore
     }
 
-    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl, Flags flags) {
+    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
+                                  Flags flags) {
         assert(flags.none());
 
         for (auto i : decl->decls()) {
@@ -280,7 +136,8 @@ public:
         if (decl->isImplicit()) {
             return;
         }
-        if (!flags.in_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
+        if (!flags.in_specialization &&
+            isa<ClassTemplateSpecializationDecl>(decl)) {
             return;
         }
 
@@ -394,7 +251,8 @@ public:
         this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl, flags);
     }
 
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, Flags flags) {
+    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
+                                   Flags flags) {
         if (templates_)
             go(decl, flags.set_template());
 
@@ -429,51 +287,22 @@ public:
 
 void
 build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
-             SpecCollector &specs, clang::CompilerInstance *ci,
-             bool elaborate, bool templates) {
-
-    Flags flags {};
-
-    if (elaborate) {
-        // First we do all of the elaboration that we want that is not strictly
-        // necessary from the standard, e.g. generating defaultable operations
-        // such as constructors, destructors, assignment operators.
-        // Generating them eagerly makes it possible to verify them in the
-        // header file rather than waiting until they are first used.
-        //
-        // CAVEAT: this approach only gets 1-step of elaboration, if completing
-        // the translation unit below (by calling [ActOnEndOfTranslationUnit])
-        // introduces new classes, then we don't have an opportunity to elaborate
-        // those classes.
-        //
-        // An alternative (better?) solution is to express the semantics of
-        // defaulted operations within the semantics and *prevent* generating
-        // these at all. This would decrease our file representation size and
-        // bring us a little bit closer to the semantics rather than relying
-        // on choices for how clang implements defaulted operations.
-        Elaborate(ci, templates).VisitTranslationUnitDecl(tu, flags);
-
-        // Once we are done visiting the AST, we run all the actions that
-        // are pending in the translation unit.
-        // We need to do this because when we parse with elaboration enabled,
-        // we parse in "incremental" mode. Ending the translation unit generates
-        // all of the template specializations, etc.
-        ci->getSema().ActOnEndOfTranslationUnit();
-    }
-
+             SpecCollector &specs, clang::CompilerInstance *ci, bool elaborate,
+             bool templates) {
     auto &ctxt = tu->getASTContext();
     BuildModule(mod, filter, templates, &ctxt, specs, ci)
-        .VisitTranslationUnitDecl(tu, flags);
+        .VisitTranslationUnitDecl(tu, {});
 }
 
-void ::Module::add_assert(const clang::StaticAssertDecl* d) {
+void ::Module::add_assert(const clang::StaticAssertDecl *d) {
     asserts_.push_back(d);
 }
 
 using DeclList = ::Module::DeclList;
 
 static void
-add_decl(DeclList& decls, DeclList& tdecls, const clang::NamedDecl *d, Flags flags) {
+add_decl(DeclList &decls, DeclList &tdecls, const clang::NamedDecl *d,
+         Flags flags) {
     if (flags.in_template) {
         tdecls.push_back(d);
     } else {

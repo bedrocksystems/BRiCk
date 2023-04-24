@@ -13,6 +13,7 @@
 #include <clang/AST/Mangle.h>
 #include <clang/Basic/Version.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <optional>
 
 using namespace clang;
 
@@ -59,7 +60,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     sout = sout.substr(4, sout.length() - 4);
     print.output() << "\"_Z" << sout << "\"";
 }
-#else /* CLANG_NAMES */
+#else  /* CLANG_NAMES */
 #ifdef STRUCTURED_NAMES
 namespace {
 unsigned
@@ -195,7 +196,8 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             logging::debug()
                 << "ClassTemplateSpecializationDecl not supported for "
                    "simple contexts.\n";
-            ts->printName(logging::debug());
+            static_cast<const clang::NamedDecl *>(ts)->printName(
+                logging::debug());
             logging::debug() << "\n";
             ts->printQualifiedName(print.output().nobreak());
             return true;
@@ -379,7 +381,7 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
 }
 
 namespace {
-Optional<int>
+std::optional<int>
 getParameterNumber(const ParmVarDecl *decl) {
     assert(decl->getDeclContext()->isFunctionOrMethod() &&
            "function or method");
@@ -387,12 +389,12 @@ getParameterNumber(const ParmVarDecl *decl) {
         int i = 0;
         for (auto p : fd->parameters()) {
             if (p == decl)
-                return Optional<int>(i);
+                return std::optional<int>(i);
             ++i;
         }
         llvm::errs() << "failed to find parameter\n";
     }
-    return Optional<int>();
+    return std::optional<int>();
 }
 } // namespace
 
@@ -404,8 +406,8 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) const {
     } else {
         auto d = dyn_cast<ParmVarDecl>(decl);
         auto i = getParameterNumber(d);
-        if (i.hasValue()) {
-            print.output() << "#" << i;
+        if (i.has_value()) {
+            print.output() << "#" << i.value();
         } else {
             logging::fatal() << "failed to find a parameter.";
             logging::die();
@@ -430,11 +432,10 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
             print.output() << "Prvalue";
         else if (d->isXValue())
             print.output() << "Xvalue";
-        else{
+        else {
             using namespace logging;
-            fatal()
-                << "Error: cannot determine value category"
-                << " (at " << sourceRange(d->getSourceRange()) << ")\n";
+            fatal() << "Error: cannot determine value category"
+                    << " (at " << sourceRange(d->getSourceRange()) << ")\n";
             die();
         }
         return;

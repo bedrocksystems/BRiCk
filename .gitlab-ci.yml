@@ -50,6 +50,11 @@ variables:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
+.llvm16:
+  extends: .base
+  variables:
+    LLVM_MAJ_VER: 16
+
 .llvm15:
   extends: .base
   variables:
@@ -152,6 +157,11 @@ build_llvm15:
     - .build_aux
     - .llvm15
 
+build_llvm16:
+  extends:
+    - .build_aux
+    - .llvm16
+
 build_public:
   extends:
     - .build_aux
@@ -182,6 +192,13 @@ test_llvm15:
     - .llvm15
   needs:
     - build_llvm15
+
+test_llvm16:
+  extends:
+    - .test
+    - .llvm16
+  needs:
+    - build_llvm16
 
 test_public:
   extends:

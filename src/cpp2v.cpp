@@ -62,9 +62,8 @@ static cl::opt<bool> Version("cpp2v-version", cl::Optional, cl::ValueOptional,
                              cl::cat(Cpp2V));
 
 static cl::opt<std::string>
-    Templates("templates",
-        cl::desc("generate AST for templated code"),
-        cl::Optional, cl::cat(Cpp2V));
+    Templates("templates", cl::desc("generate AST for templated code"),
+              cl::Optional, cl::cat(Cpp2V));
 
 class ToCoqAction : public clang::ASTFrontendAction {
 public:
@@ -78,27 +77,21 @@ public:
             llvm::errs() << i << "\n";
         }
 #endif
-        auto result = new ToCoqConsumer(&Compiler,
-            to_opt(VFileOutput), to_opt(NamesFile),
-            to_opt(Templates));
+        auto result = new ToCoqConsumer(&Compiler, to_opt(VFileOutput),
+                                        to_opt(NamesFile), to_opt(Templates));
         return std::unique_ptr<clang::ASTConsumer>(result);
     }
 
     template<typename T>
-    Optional<T> to_opt(const cl::opt<T> &val) {
+    std::optional<T> to_opt(const cl::opt<T> &val) {
         if (val.empty()) {
-            return Optional<T>();
+            return std::optional<T>();
         } else {
-            return Optional<T>(val.getValue());
+            return std::optional<T>(val.getValue());
         }
     }
 
     virtual bool BeginSourceFileAction(CompilerInstance &CI) override {
-        // Because we enable incremental processing, we must call [ActOnEndOfTranslationUnit]
-        // explicitly.
-        if (not Naked) {
-            CI.getPreprocessor().enableIncrementalProcessing();
-        }
         return this->clang::ASTFrontendAction::BeginSourceFileAction(CI);
     }
 };

@@ -6,7 +6,7 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(cpp2v)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 # Picks the newest version of clang, see https://github.com/CastXML/CastXML/issues/148
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -57,6 +57,7 @@ IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
 
   add_llvm_library(tocoq
     STATIC
+    src/Elaborate.cpp
     src/Version.cpp
     src/PrintExpr.cpp
     src/PrintStmt.cpp
@@ -82,6 +83,7 @@ ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
   add_llvm_library(tocoq
     STATIC
     PARTIAL_SOURCES_INTENDED
+    src/Elaborate.cpp
     src/Version.cpp
     src/PrintExpr.cpp
     src/PrintStmt.cpp
