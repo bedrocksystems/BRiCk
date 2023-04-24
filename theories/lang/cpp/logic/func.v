@@ -553,9 +553,7 @@ Section with_cpp.
              (Q : ptr -> epred) : mpred :=
     match dtor.(d_body) with
     | None => False
-    | Some Defaulted => UNSUPPORTED "defaulted destructors"
-      (* ^ defaulted destructors are not supported *)
-    | Some (UserDefined body) =>
+    | Some body =>
       let epilog :=
           match tu !! dtor.(d_class) with
           | Some (Gstruct s) => Some $ fun (thisp : ptr) =>
@@ -590,7 +588,10 @@ Section with_cpp.
       | Some epilog , thisp :: nil =>
         let ρ := Remp (Some thisp) None Tvoid in
           |> (* the function prolog consumes a step. *)
-             wp ρ body (Kreturn_void (epilog thisp))
+             match body return Kpred -> mpred with
+             | Defaulted => fun k => k Normal
+             | UserDefined body => wp ρ body
+             end (Kreturn_void (epilog thisp))
       | _ , _ => False
       end
     end%bs%I.
