@@ -59,6 +59,7 @@ public:
         // The implementation calls this method from a non-`const` method.
         // it is not clear why this method should take a
         // `const ClassTemplateSpecializationDecl` rather than a non-`const`
+        // See question: https://stackoverflow.com/questions/76085015/using-clangs-astconsumer-to-force-generation-of-implicit-members
         elab(const_cast<ClassTemplateSpecializationDecl *>(D), true);
     }
 
