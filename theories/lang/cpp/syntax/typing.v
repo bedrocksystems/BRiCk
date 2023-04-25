@@ -437,3 +437,7 @@ Lemma vctype_of_type e : vctype_type (vctype_of e) = type_of e.
 Proof. done. Qed.
 Lemma vctype_of_valcat e : vctype_valcat (vctype_of e) = valcat_of e.
 Proof. done. Qed.
+Lemma vctype_of_inv e vt :
+  vctype_of e = vt ->
+  type_of e = vt.(vctype_type) /\ valcat_of e = vt.(vctype_valcat).
+Proof. by intros <-. Qed.
