@@ -427,7 +427,7 @@ Module SimpleCPP.
           else False
         | Tnullptr =>
           vs = cptr 0 /\ v = Vptr nullptr
-        | Tfloat _ => False
+        | Tfloat_ _ => False
         | Tarch _ _ => False
         | Tpointer _ =>
           match v with

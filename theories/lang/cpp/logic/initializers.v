@@ -94,7 +94,7 @@ Module Type Init.
       | Tchar_ _
       | Tptr _
       | Tbool
-      | Tfloat _
+      | Tfloat_ _
       | Tnullptr
       | Tenum _ =>
           let rty := erase_qualifiers ty in
@@ -167,7 +167,7 @@ Module Type Init.
       | Tnum _ _ as ty
       | Tchar_ _ as ty
       | Tenum _ as ty
-      | Tfloat _ as ty
+      | Tfloat_ _ as ty
       | Tnullptr as ty =>
         wp_operand init (fun v free =>
                           addr |-> primR (erase_qualifiers ty) qf v -* k free)
