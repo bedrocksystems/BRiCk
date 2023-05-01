@@ -8,6 +8,93 @@ From bedrock.lang.cpp.syntax Require Import names types.
 
 Set Primitive Projections.
 
+(** Overloadable operators *)
+Variant OverloadableOperator : Set :=
+  (* Unary operators *)
+  | OOTilde | OOExclaim
+  | OOPlusPlus | OOMinusMinus
+  (* Unary & Binary operators *)
+  | OOStar | OOPlus | OOMinus
+  (* Binary operators *)
+  | OOSlash | OOPercent
+  | OOCaret | OOAmp | OOPipe | OOEqual (* = *)
+  | OOLessLess | OOGreaterGreater
+  | OOPlusEqual | OOMinusEqual | OOStarEqual
+  | OOSlashEqual | OOPercentEqual | OOCaretEqual | OOAmpEqual
+  | OOPipeEqual  | OOLessLessEqual | OOGreaterGreaterEqual
+  | OOEqualEqual | OOExclaimEqual
+  | OOLess | OOGreater
+  | OOLessEqual | OOGreaterEqual | OOSpaceship
+  | OOComma
+  | OOArrowStar | OOArrow
+  | OOSubscript
+  (* short-circuiting *)
+  | OOAmpAmp | OOPipePipe
+  (* n-ary *)
+  | OONew (array : bool) | OODelete (array : bool) | OOCall
+  | OOCoawait (* | Conditional *)
+.
+#[global] Instance: EqDecision OverloadableOperator := ltac:(solve_decision).
+
+Module evaluation_order.
+  Variant t : Set :=
+  | nd (* fully non-deterministic *)
+  | l_nd (* left then non-deterministic, calls.
+            We use this for left-to-right *binary* operators *)
+  | rl (* right-to-left, assignment operators (post C++17) *).
+
+  (* The order of evaluation for each operator *when overloaded* *)
+  Definition ooe (oo : OverloadableOperator) : t :=
+    match oo with
+    | OOTilde | OOExclaim => nd
+    | OOPlusPlus | OOMinusMinus =>
+      (* The evaluation order only matters for operator calls. For those, these
+         are unary operators with a possible [Eint 0] as a second argument (to
+         distinguish post-fix). The implicit argument is *always* a constant
+         integer, so nothing is needed *)
+      l_nd
+    | OOStar => nd (* multiplication or deref *)
+    | OOArrow => nd (* deref *)
+
+    (* binary operators *)
+    | OOPlus | OOMinus | OOSlash | OOPercent
+    | OOCaret | OOAmp | OOPipe => nd
+
+    (* shift operators are sequenced left-to-right: https://eel.is/c++draft/expr.shift#4. *)
+    | OOLessLess | OOGreaterGreater => l_nd
+    (* Assignment operators -- ordered right-to-left*)
+    | OOEqual
+    | OOPlusEqual  | OOMinusEqual | OOStarEqual
+    | OOSlashEqual | OOPercentEqual | OOCaretEqual | OOAmpEqual
+    | OOPipeEqual  | OOLessLessEqual | OOGreaterGreaterEqual => rl
+    (* Comparison operators -- non-deterministic *)
+    | OOEqualEqual | OOExclaimEqual
+    | OOLess | OOGreater
+    | OOLessEqual | OOGreaterEqual
+    | OOSpaceship => nd
+
+    | OOComma => l_nd (* http://eel.is/c++draft/expr.compound#expr.comma-1 *)
+    | OOArrowStar => l_nd  (* left-to-right: http://eel.is/c++draft/expr.mptr.oper#4*)
+
+    | OOSubscript => l_nd
+    (* ^^ for primitives, the order is determined by the types, but when overloading
+       the "object" is always on the left. http://eel.is/c++draft/expr.sub#1 *)
+
+    (* Short circuiting *)
+    | OOAmpAmp | OOPipePipe => l_nd
+    (* ^^ for primitives, the evaluation is based on short-circuiting, but when
+       overloading it is left-to-right. <http://eel.is/c++draft/expr.log.and#1>
+       and <http://eel.is/c++draft/expr.log.and#1> *)
+
+    | OOCall => l_nd
+    (* ^^ post-C++17, the evaluation order for calls is the function first and then the
+       arguments, sequenced non-deterministically. This holds for <<f(x)>> as well as
+       <<(f.*foo)(x)>> (where <<(f.*foo)>> is sequenced before the evaluation of <<x>> *)
+    | OONew _ | OODelete _ | OOCoawait => nd
+    end.
+End evaluation_order.
+
+
 Variant UnOp : Set :=
 | Uminus	(* - *)
 | Uplus	(* + *)
@@ -284,6 +371,14 @@ Variant OffsetInfo : Set :=
 #[global] Instance: EqDecision OffsetInfo.
 Proof. solve_decision. Defined.
 
+Module operator_impl.
+  Variant t : Set :=
+    | Func (_ : obj_name) (_ : type)
+    | MFunc (_ : obj_name) (_ : call_type) (_ : type).
+
+  #[global] Instance: EqDecision t := ltac:(solve_decision).
+End operator_impl.
+
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : type)
   (* ^ these are different because they do not have addresses *)
@@ -329,6 +424,9 @@ Inductive Expr : Set :=
 | Emember  (obj : Expr) (_ : field) (_ : type)
   (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * call_type * type) + Expr) (obj : Expr) (_ : list Expr) (_ : type)
+
+| Eoperator_call (_ : OverloadableOperator) (_ : operator_impl.t) (ls : list Expr) (_ : type)
+  (* ^^ in the case of a [Mfunc], [ls] is non-empty and the first expression is the object *)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)

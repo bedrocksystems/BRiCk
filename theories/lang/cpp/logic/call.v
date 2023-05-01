@@ -125,57 +125,69 @@ Section with_resolve.
         destruct H0. eauto. } }
   Qed.
 
-  Definition wp_args (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> FreeTemps -> mpred)
+  Definition wp_args (eo : evaluation_order.t) (pre : list (wp.WPE.M ptr)) (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> list ptr -> FreeTemps -> mpred)
     : mpred :=
     match zipTypes ts_ar.1 ts_ar.2 es with
     | Some (args, va_info) =>
-        nd_seqs args (fun ps fs =>
-                        match va_info with
-                        | Some (non_va, types) =>
-                            let real := firstn non_va ps in
-                            let vargs := skipn non_va ps in
-                            let va_info := zip types vargs in
-                            Forall p, p |-> varargsR va_info -*
-                                      Q (real ++ [p]) (FreeTemps.delete_va va_info p >*> fs)%free
-                        | None => Q ps fs
-                        end)
+        letI* ps, fs := eval eo (pre ++ args) in
+        let pre := firstn (length pre) ps in
+        let ps := skipn (length pre) ps in
+        match va_info with
+        | Some (non_va, types) =>
+            let real := firstn non_va ps in
+            let vargs := skipn non_va ps in
+            let va_info := zip types vargs in
+            Forall p, p |-> varargsR va_info -*
+                        Q pre (real ++ [p]) (FreeTemps.delete_va va_info p >*> fs)%free
+        | None =>
+            Q pre ps fs
+        end
     | _ => False
     end.
 
-  Lemma wp_args_frame_strong : forall ts_ar es Q Q',
-      (Forall vs free, [| if ts_ar.2 is Ar_Variadic then
-                            length vs = length ts_ar.1 + 1
-                          else length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args ts_ar es Q -* wp_args ts_ar es Q'.
+  Lemma wp_args_frame_strong : forall eo pres ts_ar es Q Q',
+      ([∗list] m ∈ pres, wp.WPE.Mframe m m)%I
+      |-- (Forall ps vs free,
+        [| length ps = length pres |] -*
+        [| if ts_ar.2 is Ar_Variadic then
+             length vs = length ts_ar.1 + 1
+           else length vs = length es |] -*
+        Q ps vs free -* Q' ps vs free) -*
+      wp_args eo pres ts_ar es Q -* wp_args eo pres ts_ar es Q'.
   Proof.
     intros.
-    iIntros "X".
+    iIntros "PRS X".
     rewrite /wp_args. destruct ts_ar; simpl.
     generalize (zipTypes_ok l f es).
     destruct (zipTypes l f es); eauto.
     destruct p; eauto.
     intros X. destruct (X _ _ eq_refl); clear X.
     forward_reason.
-    iApply (nd_seqs_frame_strong with "[X] []"); eauto.
-    iIntros (??).
+    iApply (eval_frame_strong with "[PRS] [X]"); eauto.
+    { iFrame. iApply H1. }
+    rewrite app_length.
+    iIntros (???).
     destruct o.
     { destruct p.
-      iIntros "% Y" (p) "Z"; iSpecialize ("Y" $! p with "Z"); iRevert "Y".
-      iApply "X". destruct H; subst.
-      iPureIntro.
-      rewrite app_length/=.
-      rewrite firstn_length_le; try lia.
-      forward_reason; subst. eauto. }
-    { destruct H. subst.
-      iIntros "%"; iApply "X".
-      iPureIntro. eauto. }
+      iIntros "Y" (p) "Z"; iSpecialize ("Y" $! p with "Z"); iRevert "Y".
+      iApply "X".
+      { rewrite firstn_length. iPureIntro.
+        lia. }
+      { destruct H0 as [?[??]].
+        iPureIntro. subst.
+        rewrite !firstn_length app_length !firstn_length !skipn_length /=; lia. } }
+    { subst. iApply "X";
+      iPureIntro; rewrite !firstn_length ?skipn_length /=; lia. }
   Qed.
 
-  Lemma wp_args_frame : forall ts_ar es Q Q',
-      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args ts_ar es Q -* wp_args ts_ar es Q'.
+  Lemma wp_args_frame : forall eo pres ts_ar es Q Q',
+      ([∗list] m ∈ pres, wp.WPE.Mframe m m)%I
+      |-- (Forall ps vs free, Q ps vs free -* Q' ps vs free) -*
+          wp_args eo pres ts_ar es Q -* wp_args eo pres ts_ar es Q'.
   Proof.
-    intros; iIntros "X".
-    iApply wp_args_frame_strong.
-      by iIntros (vs free) "% H"; iApply "X".
+    intros; iIntros "X Y".
+    iApply (wp_args_frame_strong with "X").
+    iIntros (?????); iApply "Y".
   Qed.
 
   (*

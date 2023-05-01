@@ -136,13 +136,13 @@ Module Type Expr__newdelete.
             new_fn new_args aty Q targs
             (nfty := normalize_type new_fn.2)
             (_ : arg_types nfty = Some (Tsize_t :: targs, Ar_Definite)),
-            wp_args (targs, Ar_Definite) new_args (fun vs free =>
+            wp_args evaluation_order.nd nil (targs, Ar_Definite) new_args (fun _ vs free =>
                 Exists alloc_sz alloc_al,
                   [| size_of aty = Some alloc_sz |] ** [| has_type_prop alloc_sz Tsize_t |] **
-                  [| align_of aty = Some alloc_al |] ** (** <-- TODO FM-975 *)
-                  Reduce (alloc_size_t alloc_sz (fun p FR =>
-                  |> wp_fptr tu.(types) nfty (_global new_fn.1) (p :: vs) (fun res => FR $
-                      Exists (storage_ptr : ptr),
+                  [| align_of aty = Some alloc_al |] **  (** <-- TODO FM-975 *)
+                Reduce (alloc_size_t alloc_sz (fun p FR =>
+                |> wp_fptr tu.(types) nfty (_global new_fn.1) (p :: vs) (fun res => FR $
+                      Exists storage_ptr : ptr,
                         res |-> primR (Tptr Tvoid) (cQp.mut 1) (Vptr storage_ptr) **
                         if bool_decide (storage_ptr = nullptr) then
                           [| new_args <> nil |] ** Q (Vptr storage_ptr) free
@@ -268,7 +268,7 @@ Module Type Expr__newdelete.
               Exists array_sizeN, [| v = Vn array_sizeN |] **
                 (* The size must be greater than zero (see the quote from [expr.new#7] above). *)
                 [| 0 < array_sizeN |]%N **
-                wp_args (targs, Ar_Definite) new_args (fun vs free' =>
+                wp_args evaluation_order.nd nil (targs, Ar_Definite) new_args (fun _ vs free' =>
                   Exists alloc_sz alloc_al,
                     let array_ty := Tarray aty array_sizeN in
                     [| size_of array_ty = Some alloc_sz |] **

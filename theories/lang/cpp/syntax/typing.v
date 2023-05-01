@@ -33,6 +33,7 @@ Fixpoint type_of (e : Expr) : type :=
   | Ecast _ _ _ t
   | Emember _ _ t
   | Emember_call _ _ _ t
+  | Eoperator_call _ _ _ t
   | Esubscript _ _ t
   | Esize_of _ t
   | Ealign_of _ t
@@ -501,6 +502,12 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
     | inr (Ecast Cl2r _  _ (Tmember_pointer _ t)) => valcat_from_function_type t
     | _ => UNEXPECTED_valcat e
     end
+  | Eoperator_call _ f _ _ =>
+    match f with
+    | operator_impl.Func _ t => valcat_from_function_type t
+    | operator_impl.MFunc _ _ ft => valcat_from_function_type ft
+    end
+
   | Esubscript e1 e2 _ =>
     (**
     Neither operand ever has type [Tarray _ _] due to implicitly

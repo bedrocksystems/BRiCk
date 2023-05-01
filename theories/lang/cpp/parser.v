@@ -112,24 +112,11 @@ Notation Tvariable_array ty e := (Qconst (Tptr ty)) (only parsing).
 
 (** ** Expressions *)
 
-(** NOTE: this should move when we make [Eoperator_call] and [Eoperator_member_call] into constructors. *)
-Variant OverloadableOperator : Set :=
-  | OONew (array : bool) | OODelete (array : bool)
-  | OOPlus | OOMinus | OOStar | OOSlash | OOPercent
-  | OOCaret | OOAmp | OOPipe | OOTilde | OOExclaim | OOEqual
-  | OOLess | OOGreater | OOPlusEqual | OOMinusEqual | OOStarEqual
-  | OOslashequal | OOPercentEqual | OOCaretEqual | OOAmpEqual
-  | OOPipeEqual | OOLessLess | OOGreaterGreater | OOLessLessEqual
-  | OOGreaterGreaterEqual | OOEqualEqual | OOExclaimEqual | OOLessEqual
-  | OOGreaterEqual | OOSpaceship | OOAmpAmp | OOPipePipe | OOPlusPlus
-  | OOMinusMinus | OOComma | OOArrowStar | OOArrow | OOCall | OOSubscript | OOConditional | OOCoawait
-.
-
 Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : call_type) (ft : type) (obj : Expr) (es : list Expr) (ty : type) : Expr :=
-  Emember_call (inl (nm, ct, ft)) obj es ty.
+  Eoperator_call oo (operator_impl.MFunc nm ct ft) (obj :: es) ty.
 
-Definition Eoperator_call (oo : OverloadableOperator) (nm : obj_name) (ft : type) (es : list Expr) (ty : type) : Expr :=
-  Ecall (Ecast Cfun2ptr (Evar (Gname nm) ft) Prvalue (Tptr ft)) es ty.
+Definition Eoperator_call (oo : OverloadableOperator) (f : obj_name) (ft : type) (es : list Expr) (ty : type) : Expr :=
+  Eoperator_call oo (operator_impl.Func f ft) es ty.
 
 Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
   Ecast Cintegral (Econst_ref (Gname e) ety) Prvalue ty.
