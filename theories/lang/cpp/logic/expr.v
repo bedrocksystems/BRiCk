@@ -984,49 +984,7 @@ Module Type Expr.
     Axiom wp_init_member_call : forall ct f fty es (addr : ptr) ty obj Q,
         (letI* res, fress :=wp_mcall (dispatch ct fty f (type_of obj)) evaluation_order.l_nd obj fty es in
            init_receive ty addr res $ Q free)
-        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
-
-    (** virtual functions
-        these are slightly more complex because we need to compute the address of the function
-        using the most-derived-class of the [this] object. This is done using [resolve_virtual].
-
-        NOTE The [resolve_virtual] below means that caller justifies the cast to the dynamic type.
-             This is necessary because the function is expecting the correct [this] pointer.
-
-        [tq] is passed on to [wp_mcall] because that contains the information whether or not
-        the called method is a [const] method. This matches the construction of [SMethod].
-     *)
-
-(*
-    Definition wp_virtual_call (f : obj_name) (this : ptr) (this_type : type) (fty : type) (es : list Expr)
-               (Q : ptr -> FreeTemps -> epred) : mpred :=
-      match decompose_type this_type with
-      | (tq, Tnamed cls) =>
-        resolve_virtual this cls f (fun fimpl_addr impl_class thisp => (* this would have to go away *)
-            wp_mcall (Vptr fimpl_addr) thisp (tqualified tq (Tnamed impl_class)) fty es $ fun res free_args => Q res free_args)
-      | _ => False
-      end.
-
-    Axiom wp_xval_virtual_call : forall ty fty f obj es Q,
-        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
-                   xval_receive ty res $ fun v => Q v (free_args >*> free_this))
-      |-- wp_xval (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
-
-    Axiom wp_lval_virtual_call : forall ty fty f obj es Q,
-        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
-                   lval_receive ty res $ fun v => Q v (free_args >*> free_this))
-      |-- wp_lval (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
-
-    Axiom wp_operand_virtual_call : forall ty fty f obj es Q,
-        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
-           operand_receive ty res $ fun v => Q v (free_args >*> free_this))
-        |-- wp_operand (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
-
-    Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty obj Q,
-        wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
-           init_receive addr res $ Q (free_args >*> free_this))
-        |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
- *)
+        |-- wp_init ty addr (Emember_call (inl (f, ct, fty)) obj es ty) Q.
 
     (** * Operator Calls
         These are calls or member calls that are written as operators and
