@@ -104,10 +104,10 @@ Section with_cpp.
         False
       end).
 
-  Lemma resolve_virtual_frame {σ : genv} (cls : globname) (this : ptr) (s : Struct)
+  Lemma resolve_virtual_frame {σ : genv} (cls : globname) (this : ptr) f
     (Q Q' : ptr → globname → ptr → mpredI) :
         Forall (a : ptr) (b : globname) (c : ptr), Q a b c -* Q' a b c
-    |-- resolve_virtual this cls (s_dtor s) Q -* resolve_virtual this cls (s_dtor s) Q'.
+    |-- resolve_virtual this cls f Q -* resolve_virtual this cls f Q'.
   Proof.
     intros.
     rewrite /resolve_virtual.
