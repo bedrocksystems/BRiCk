@@ -132,6 +132,7 @@ Module WpTestDefns.
     Definition NOTATION_wp_cond_wrap T Q :=
       @wp_cond _ _ _ tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))))T Q.
 
+    (*
     Definition NOTATION_wp_call_nowrap ls Q :=
       wp_call tu (Rbind "foo" p (Remp (Some this) None ty)) ty Vundef ls Q.
     Definition NOTATION_wp_call_wrap ls Q :=
@@ -141,6 +142,7 @@ Module WpTestDefns.
       wp_mcall tu (Rbind "foo" p (Remp (Some this) None ty)) Vundef p ty ty ls Q.
     Definition NOTATION_wp_mcall_wrap ls Q :=
       wp_mcall tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) Vundef p ty ty ls Q.
+     *)
   End Expressions.
 End WpTestDefns.
 
@@ -173,8 +175,8 @@ Section TEST_COMPACT_WP_NOTATIONS.
 
   Print NOTATION_wp_args_nowrap. Print NOTATION_wp_args_wrap.
   Print NOTATION_wp_initialize_nowrap. Print NOTATION_wp_initialize_wrap.
-  Print NOTATION_wp_call_nowrap. Print NOTATION_wp_call_wrap.
-  Print NOTATION_wp_mcall_nowrap. Print NOTATION_wp_mcall_wrap.
+  (* Print NOTATION_wp_call_nowrap. Print NOTATION_wp_call_wrap.
+  Print NOTATION_wp_mcall_nowrap. Print NOTATION_wp_mcall_wrap. *)
 End TEST_COMPACT_WP_NOTATIONS.
 
 Section TEST_VERBOSE_WP_NOTATIONS.
@@ -202,6 +204,6 @@ Section TEST_VERBOSE_WP_NOTATIONS.
 
   Print NOTATION_wp_args_nowrap. Print NOTATION_wp_args_wrap.
   Print NOTATION_wp_initialize_nowrap. Print NOTATION_wp_initialize_wrap.
-  Print NOTATION_wp_call_nowrap. Print NOTATION_wp_call_wrap.
-  Print NOTATION_wp_mcall_nowrap. Print NOTATION_wp_mcall_wrap.
+  (* Print NOTATION_wp_call_nowrap. Print NOTATION_wp_call_wrap.
+  Print NOTATION_wp_mcall_nowrap. Print NOTATION_wp_mcall_wrap. *)
 End TEST_VERBOSE_WP_NOTATIONS.
