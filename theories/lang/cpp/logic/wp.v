@@ -35,7 +35,7 @@ Module FreeTemps.
   (* BEGIN FreeTemps.t *)
   Inductive t : Set :=
   | id (* = fun x => x *)
-  | delete (ty : type) (p : ptr) (* = delete_val ty p *)
+  | delete (ty : decltype) (p : ptr) (* = delete_val ty p *)
   | delete_va (va : list (type * ptr)) (p : ptr)
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t) (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x) *)
@@ -203,7 +203,7 @@ End Kpred.
     (implemented as an association list).
 *)
 Inductive region : Set :=
-| Remp (this var_arg : option ptr) (ret_type : type)
+| Remp (this var_arg : option ptr) (ret_type : decltype)
 | Rbind (_ : localname) (_ : ptr) (_ : region).
 
 Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
@@ -220,7 +220,7 @@ Fixpoint get_this (ρ : region) : option ptr :=
   | Rbind _ _ rs => get_this rs
   end.
 
-Fixpoint get_return_type (ρ : region) : type :=
+Fixpoint get_return_type (ρ : region) : decltype :=
   match ρ with
   | Remp _ _ ty => ty
   | Rbind _ _ rs => get_return_type rs
@@ -708,7 +708,7 @@ Section with_cpp.
      ellide the [unit] value. *)
   Parameter wp_init
     : forall {resolve:genv}, translation_unit -> region ->
-                        type -> ptr -> Expr ->
+                        exprtype -> ptr -> Expr ->
                         (FreeTemps -> epred) -> (* free -> post *)
                         mpred. (* pre-condition *)
   (* END wp_init *)
@@ -1177,7 +1177,7 @@ Section with_cpp.
    * note: the [list ptr] will be related to the register set.
    *)
   Parameter wp_fptr
-    : forall (tt : type_table) (fun_type : type)
+    : forall (tt : type_table) (fun_type : functype)
         (addr : ptr) (ls : list ptr) (Q : ptr -> epred), mpred.
 
   Axiom wp_fptr_complete_type : forall te ft a ls Q,
@@ -1191,7 +1191,7 @@ Section with_cpp.
      This effectively means that there is enough information to determine the
      calling convention.
    *)
-  Definition callable_type (tt : type_table) (t : type) : Prop :=
+  Definition callable_type (tt : type_table) (t : functype) : Prop :=
     match t with
     | Tfunction ret args => complete_type tt ret /\ List.Forall (complete_type tt) args
     | _ => False
@@ -1280,7 +1280,7 @@ Section with_cpp.
            exploit this is to use [reinterpret_cast< >] to cast a function pointer
            to an member pointer or vice versa.
    *)
-  Definition mspec (tt : type_table) (this_type : type) (fun_type : type)
+  Definition mspec (tt : type_table) (this_type : exprtype) (fun_type : functype)
     : ptr -> list ptr -> (ptr -> epred) -> mpred :=
     wp_fptr tt (Tmember_func this_type fun_type).
 

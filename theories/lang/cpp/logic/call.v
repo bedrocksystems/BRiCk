@@ -43,15 +43,15 @@ Proof.
   rewrite IHls; done.
 Qed.
 
-Definition check_arity (ts : list type) (ar : function_arity) (es : list Expr) : bool :=
+Definition check_arity (ts : list decltype) (ar : function_arity) (es : list Expr) : bool :=
   match Nat.compare (length ts) (length es) with
   | Eq => true
   | Lt => bool_decide (ar = Ar_Variadic)
   | Gt => false
   end.
 
-Definition setup_args (ts : list type) (ar : function_arity) (es : list Expr)
-  : (list (type * Expr) * option nat) :=
+Definition setup_args (ts : list decltype) (ar : function_arity) (es : list Expr)
+    : (list (decltype * Expr) * option nat) :=
   let normal_params := length ts in
   let (regular, variadic) := split_at normal_params es in
   (combine ts regular ++ map (fun e => (type_of e, e)) variadic,
@@ -96,7 +96,7 @@ Section with_resolve.
   Variables (ρ : region).
   Implicit Types (p : ptr).
 
-  Definition arg_types (ty : type) : option (list type * function_arity) :=
+  Definition arg_types (ty : functype) : option (list decltype * function_arity) :=
     match ty with
     | @Tfunction _ ar _ args => Some (args, ar)
     | _ => None
@@ -113,7 +113,7 @@ Section with_resolve.
            not observable.
    *)
   #[local]
-  Definition wp_arg ty e K :=
+  Definition wp_arg (ty : decltype) e K :=
     Forall p,
       letI* free := wp_initialize tu ρ ty p e in
       K p (if is_trivially_destructible tu ty
@@ -147,9 +147,8 @@ Section with_resolve.
      as a gl-value) or to evaluate the function in [f()] (which is evaluated as a pointer-typed operand).
    *)
   Definition wp_args (eo : evaluation_order.t) (pre : list (wp.WPE.M ptr))
-    (ts_ar : list type * function_arity) (es : list Expr)
-    (Q : list ptr -> list ptr -> FreeTemps -> FreeTemps -> mpred)
-    : mpred :=
+      (ts_ar : list decltype * function_arity) (es : list Expr)
+      (Q : list ptr -> list ptr -> FreeTemps -> FreeTemps -> mpred) : mpred :=
     (let '(ts,ar) := ts_ar in
     if check_arity ts ar es then
       let '(tes, va_info) := setup_args ts ar es in
@@ -247,7 +246,7 @@ We consolidate these definitions here because they are shared between
 all function calls.
 *)
 Definition xval_receive `{Σ : cpp_logic, σ : genv}
-    (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
+    (ty : exprtype) (res : ptr) (Q : ptr -> epred) : mpred :=
   (**
   [primR] is enough because C++ code never uses the raw bytes
   underlying an inhabitant of a reference type.
@@ -256,7 +255,7 @@ Definition xval_receive `{Σ : cpp_logic, σ : genv}
 #[global] Arguments xval_receive {_ _ _} _ _ _ / : assert.
 
 Definition lval_receive `{Σ : cpp_logic, σ : genv}
-    (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
+    (ty : exprtype) (res : ptr) (Q : ptr -> epred) : mpred :=
   (**
   [primR] is enough because C++ code never uses the raw bytes
   underlying an inhabitant of a reference type.
@@ -265,7 +264,7 @@ Definition lval_receive `{Σ : cpp_logic, σ : genv}
 #[global] Arguments lval_receive {_ _ _} _ _ _ / : assert.
 
 mlock Definition operand_receive `{Σ : cpp_logic, σ : genv}
-    (ty : type) (res : ptr) (Q : val -> epred) : mpred :=
+    (ty : exprtype) (res : ptr) (Q : val -> epred) : mpred :=
   Exists v,
   let cv := qual_norm (fun cv _ => cv) ty in
   res |-> tptsto_fuzzyR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) v **

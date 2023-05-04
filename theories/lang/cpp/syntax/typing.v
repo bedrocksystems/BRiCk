@@ -7,7 +7,7 @@ From bedrock.prelude Require Import base list_numbers.
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
 (** [type_of e] returns the type of the expression [e]. *)
-Fixpoint type_of (e : Expr) : type :=
+Fixpoint type_of (e : Expr) : exprtype :=
   match e with
   | Econst_ref _ t
   | Evar _ t
@@ -247,7 +247,7 @@ Definition unptr (t : type) : option type :=
 (** [drop_reference t] drops leading reference and qualifiers to get the underlying
     type.
  *)
-Fixpoint drop_reference (t : type) : type :=
+Fixpoint drop_reference (t : type) : exprtype :=
   match t with
   | Tref t => drop_reference t
   | Trv_ref t => drop_reference t
@@ -386,12 +386,12 @@ return the underlying type [u] (defaulting, respectively, to a dummy
 type and to [None]).
 *)
 
-Definition as_ref' {A} (f : type -> A) (x : A) (t : type) : A :=
+Definition as_ref' {A} (f : exprtype -> A) (x : A) (t : type) : A :=
   if drop_qualifiers t is (Tref u | Trv_ref u) then f u else x.
 Notation as_ref := (as_ref' (fun u => u) Tvoid).
 Notation as_ref_option := (as_ref' Some None).
 
-Lemma as_ref'_erase_qualifiers {A} (f : type -> A) (x : A) t :
+Lemma as_ref'_erase_qualifiers {A} (f : exprtype -> A) (x : A) t :
   as_ref' f x (erase_qualifiers t) = as_ref' (f ∘ erase_qualifiers) x t.
 Proof. induction t; cbn; auto. Qed.
 Lemma as_ref_erase_qualifiers t :
@@ -399,7 +399,7 @@ Lemma as_ref_erase_qualifiers t :
 Proof. induction t; cbn; auto. Qed.
 
 Section as_ref'.
-  Context {A : Type} (f : type -> A) (x : A).
+  Context {A : Type} (f : exprtype -> A) (x : A).
   #[local] Notation as_ref' := (as_ref' f x).
 
   Lemma as_ref_drop_qualifiers t : as_ref' (drop_qualifiers t) = as_ref' t.
@@ -459,7 +459,7 @@ Proof. exact Prvalue. Qed.
 The value category of an explicit cast to type [t] or a call to a
 function returning type [t] or a [__builtin_va_arg] of type [t].
 *)
-Definition valcat_from_type (t : type) : ValCat :=
+Definition valcat_from_type (t : decltype) : ValCat :=
   (*
   Dropping qualifiers may not be necessary. Cppreference says
   "Reference types cannot be cv-qualified at the top level".
@@ -472,7 +472,7 @@ Definition valcat_from_type (t : type) : ValCat :=
   end.
 
 (* See <https://eel.is/c++draft/expr.call#13> *)
-Definition valcat_from_function_type (t : type) : ValCat :=
+Definition valcat_from_function_type (t : functype) : ValCat :=
   match t with
   | @Tfunction _ _ ret _ => valcat_from_type ret
   | _ => UNEXPECTED_valcat t
@@ -578,7 +578,7 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
   | Eif2 _ _ _ _ _ vc _ => vc
   | Ethis _ => Prvalue
   | Enull => Prvalue
-  | Einitlist _ _ t => Prvalue (* operand | init *)
+  | Einitlist _ _ _ => Prvalue (* operand | init *)
   | Eimplicit_init _ =>
     (**
     "References cannot be value-initialized".
@@ -601,7 +601,7 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
 #[global] Arguments valcat_of !_ / : simpl nomatch, assert.
 
 #[projections(primitive)]
-Record vctype : Set := VCType { vctype_type : type; vctype_valcat : ValCat }.
+Record vctype : Set := VCType { vctype_type : exprtype; vctype_valcat : ValCat }.
 Add Printing Constructor vctype.
 
 #[global] Instance vctype_eq_dec : EqDecision vctype.

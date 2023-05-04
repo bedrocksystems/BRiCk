@@ -242,9 +242,9 @@ End float_type.
 
 (* types *)
 Inductive type : Set :=
-| Tptr (_ : type)
-| Tref (_ : type)
-| Trv_ref (_ : type)
+| Tptr (_ : (*expr*)type)
+| Tref (_ : (*expr*)type)
+| Trv_ref (_ : (*expr*)type)
   (**
   Note: cpp2v (really, clang's parser) handles so-called "reference
   collapsing": We do not see references to references.
@@ -259,9 +259,9 @@ Inductive type : Set :=
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
 | Tenum (_ : globname) (* enumerations *)
-| Tfunction {cc : calling_conv} {ar : function_arity} (_ : type) (_ : list type)
+| Tfunction {cc : calling_conv} {ar : function_arity} (_ : (*decl*)type) (_ : list (*decl*)type)
 | Tbool
-| Tmember_pointer (_ : globname) (_ : type)
+| Tmember_pointer (_ : globname) (_ : (*expr*)type)
 | Tfloat_ (_ : float_type.t)
 | Tqualified (_ : type_qualifiers) (_ : type)
 | Tnullptr
@@ -269,6 +269,25 @@ Inductive type : Set :=
    some [Tarch] types, e.g. ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
 .
+(**
+For documentation purposes, we often use the following aliases.
+
+- [decltype] _declaration types_ arise in variable declarations
+(including function arguments)
+
+- [exprtype] _expression types_ are assigned to expressions
+(together with value categories) by the static semantics of C++
+
+- [functype] _function types_ are known to be [Tfunction]
+
+Roughly, we have an isomorphism [decltype ≅ exprtype × ValCat]. While
+variables can be declared with reference types, expressions never have
+reference types (that information being present in the expression's
+value category).
+*)
+Definition decltype : Set := type.
+Definition exprtype : Set := type.
+Definition functype : Set := type.
 
 #[only(inhabited)] derive type.
 
