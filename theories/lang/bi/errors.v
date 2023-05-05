@@ -11,9 +11,11 @@ Module Type ERRORS.
 
     Parameter ERROR : forall {T : Type}, T -> PROP.
     Parameter UNSUPPORTED : forall {T : Type}, T -> PROP.
+    Parameter UNREACHABLE : forall {T : Type}, T -> PROP.
 
     Parameter ERROR_elim : forall {T} (t : T), ERROR t ⊢ False.
     Parameter UNSUPPORTED_elim : forall {T} (t : T), UNSUPPORTED t ⊢ False.
+    Parameter UNREACHABLE_elim : forall {T} (t : T), UNREACHABLE t ⊢ False.
   End with_bi.
 End ERRORS.
 
@@ -25,10 +27,15 @@ Module Errors : ERRORS.
       fun _ _ => False%I.
     Definition UNSUPPORTED : forall {T : Type}, T -> PROP :=
       fun _ _ => False%I.
+    Definition UNREACHABLE : forall {T : Type}, T -> PROP :=
+      fun _ _ => False%I.
+
 
     Theorem ERROR_elim : forall {T} (t : T), ERROR t ⊢ False.
     Proof. reflexivity. Qed.
     Theorem UNSUPPORTED_elim : forall {T} (t : T), UNSUPPORTED t ⊢ False.
+    Proof. reflexivity. Qed.
+    Theorem UNREACHABLE_elim : forall {T} (t : T), UNREACHABLE t ⊢ False.
     Proof. reflexivity. Qed.
 
   End with_bi.
