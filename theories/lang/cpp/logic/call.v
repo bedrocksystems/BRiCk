@@ -32,7 +32,7 @@ Section with_resolve.
      specified in C++.
      NOTE this definition is *not* sound in the presence of exceptions.
   *)
-  Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (wp.WPE.M ptr) * option (nat * list type)) :=
+  #[local] Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (wp.WPE.M ptr) * option (nat * list type)) :=
     let wp_arg_init ty init K :=
       (* top-level qualifiers on arguments are ignored, they are taken from the definition,
          not the declaration. Dropping qualifiers here makes it possible to support code
@@ -85,7 +85,7 @@ Section with_resolve.
     by apply fmap_None in CONTRA.
   Qed.
 
-  Lemma zipTypes_ok : forall ts ar es ms r,
+  #[local] Lemma zipTypes_ok : forall ts ar es ms r,
       zipTypes ts ar es = Some (ms, r) ->
       length ms = length es /\
       match r with
@@ -125,7 +125,19 @@ Section with_resolve.
         destruct H0. eauto. } }
   Qed.
 
-  Definition wp_args (eo : evaluation_order.t) (pre : list (wp.WPE.M ptr)) (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> list ptr -> FreeTemps -> mpred)
+  (**
+     [wp_args eo pre ts_ar es] evaluates [pre ++ es] according to the evaluation order [eo].
+     The expressions in [es] are evaluated using initialization semantics for the argument types
+     described in [ts_ar] (including handling for variadic functions). The continuation [Q] is applied
+     to the evaluated results of each argument, and the [FreeTemps] accounts for the correct destruction
+     of all temporaries.
+
+     Unlike [es], [pre] is expressed directly as a semantic computation in order to unify the
+     different ways that it can be used, e.g. to evaluate the object in [o.f()] (which is evaluated
+     as a gl-value) or to evaluate the function in [f()] (which is evaluated as a pointer-typed operand).
+   *)
+  Definition wp_args (eo : evaluation_order.t) (pre : list (wp.WPE.M ptr))
+    (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> list ptr -> FreeTemps -> mpred)
     : mpred :=
     match zipTypes ts_ar.1 ts_ar.2 es with
     | Some (args, va_info) =>
