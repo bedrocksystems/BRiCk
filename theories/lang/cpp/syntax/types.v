@@ -45,17 +45,23 @@ Definition CV (const volatile : bool) :=
 Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
   CV (q_const a || q_const b) (q_volatile a || q_volatile b).
 
-Lemma merge_tq_QM q : merge_tq QM q = q.
-Proof. destruct q; done. Qed.
-Lemma merge_tq__QM q : merge_tq q QM = q.
-Proof. destruct q; done. Qed.
-Lemma merge_tq_comm : forall q1 q2, merge_tq q1 q2 = merge_tq q2 q1.
-Proof. destruct q1, q2; done. Qed.
-Lemma merge_tq_assoc : forall q q' q'',
-    merge_tq q (merge_tq q' q'') = merge_tq (merge_tq q q') q''.
-Proof. destruct q, q', q''; done. Qed.
+#[global] Instance merge_tq_idemp : IdemP (=) merge_tq.
+Proof. by intros []. Qed.
+#[global] Instance merge_tq_left_id : LeftId (=) QM merge_tq.
+Proof. by intros []. Qed.
+#[global] Instance merge_tq_right_id : RightId (=) QM merge_tq.
+Proof. by intros []. Qed.
+#[global] Instance merge_tq_left_absorb : LeftAbsorb (=) QCV merge_tq.
+Proof. by intros []. Qed.
+#[global] Instance merge_tq_right_absorb : RightAbsorb (=) QCV merge_tq.
+Proof. by intros []. Qed.
+#[global] Instance merge_tq_comm : Comm (=) merge_tq.
+Proof. by intros [] []. Qed.
+#[global] Instance merge_tq_assoc : Assoc (=) merge_tq.
+Proof. by intros [] [] []. Qed.
+
 Lemma merge_tq_QM_inj q1 q2 : merge_tq q1 q2 = QM -> q1 = QM /\ q2 = QM.
-Proof. destruct q1, q2; compute; try congruence; auto. Qed.
+Proof. destruct q1, q2; naive_solver. Qed.
 
 
 (* Calling conventions are a little bit beyond what is formally blessed by
@@ -337,7 +343,6 @@ Section type_countable.
   #[local] Notation CHAR_TYPE x := (GenLeaf (inl (inl (inl (inl (inl (inl (inl (inr x))))))))).
   #[local] Notation FLOAT_TYPE x := (GenLeaf (inl (inl (inl (inl (inl (inl (inl (inl x))))))))).
 
-
   #[global] Instance type_countable : Countable type.
   Proof.
     set enc := fix go (t : type) :=
@@ -401,6 +406,13 @@ Definition Qmut_volatile : type -> type :=
 Definition Qmut : type -> type :=
   Tqualified QM.
 
+(**
+[decompose_type t] strips any top-level qualifiers from [t] and
+returns them, paired with the rest of the type.
+
+The underlying functions [qual_norm] and [qual_norm'] are similar
+(see, e.g., [qual_norm_decompose_type]).
+*)
 Section qual_norm.
   Context {A : Type}.
   Variable f : type_qualifiers -> type -> A.
@@ -413,35 +425,150 @@ Section qual_norm.
 
   Definition qual_norm : type -> A :=
     qual_norm' QM.
-
 End qual_norm.
 
 Definition decompose_type : type -> type_qualifiers * type :=
   qual_norm (fun q t => (q, t)).
+#[global] Arguments decompose_type !_ / : simpl nomatch, assert.
+(**
+It would be nice to make this the default.
+*)
+#[local] Arguments decompose_type : simpl never.
 
-Fixpoint decompose_type_alt (t : type) : type_qualifiers * type :=
-  match t with
-  | Tqualified q t => let '(cv, t) := decompose_type_alt t in (merge_tq q cv, t)
-  | _ => (QM, t)
-  end.
+(**
+[Unqualified t] means [t] lacks top-level qualifiers.
 
-Lemma qual_norm_decompose_type_eq : forall {A} t (f : _ -> _ -> A) q,
-    qual_norm' f q t = let '(cv, t) := decompose_type_alt t in
-                       f (merge_tq cv q) t.
+Aside: An equivalence relation on types identifying [Tqualified QM t]
+and [t] might enable simplifications elsewhere.
+*)
+Definition Unqualified (t : type) : Prop := ∀ q t', t <> Tqualified q t'.
+#[global] Arguments Unqualified : simpl never.
+#[global] Hint Opaque Unqualified : typeclass_instances.
+
+#[local] Definition qualifiedb (t : type) : bool :=
+  if t is Tqualified _ _ then true else false.
+#[local] Lemma Unqualified_qualifiedb t : Unqualified t <-> ¬ qualifiedb t.
 Proof.
-  induction t; simpl; intros; try rewrite merge_tq_QM; eauto.
-  rewrite IHt. case_match.
-  f_equal. rewrite merge_tq_assoc. f_equal. rewrite merge_tq_comm. done.
+  split=>Hu.
+  - rewrite /qualifiedb=>Hq. case_match; try done. exact: Hu.
+  - move=>q t' Heq. by rewrite Heq in Hu.
 Qed.
 
-Lemma decompose_type_qual : forall q t,
-    decompose_type (Tqualified q t) = let '(cv, t) := decompose_type t in
-                                      (merge_tq q cv, t).
+#[global] Instance Unqualified_dec t : Decision (Unqualified t).
 Proof.
-  intros. rewrite /decompose_type/qual_norm.
-  rewrite !qual_norm_decompose_type_eq. simpl.
-  repeat case_match. inversion H; subst. f_equal.
-  rewrite merge_tq_assoc. done.
+  refine (cast_if (decide (¬ qualifiedb t)));
+    abstract (by rewrite Unqualified_qualifiedb).
+Defined.
+
+Lemma unqualified_qual q t : ¬ Unqualified (Tqualified q t).
+Proof. by rewrite Unqualified_qualifiedb dec_stable_iff. Qed.
+
+(**
+Teach TC resolution to prove [Unqualified t] when [t] a constructor.
+*)
+Existing Class Unqualified.
+#[global] Hint Mode Unqualified ! : typeclass_instances.
+#[global] Instance Unqualified_instance t :
+  TCEq (qualifiedb t) false -> Unqualified t | 50.
+Proof. rewrite TCEq_eq Unqualified_qualifiedb=>->. tauto. Qed.
+
+Section qual_norm.
+  Context {A : Type}.
+  Implicit Types (f : type_qualifiers -> type -> A).
+
+  (** [qual_norm'] *)
+
+  Lemma qual_norm'_unfold f q t :
+    qual_norm' f q t =
+      if t is Tqualified q' t
+      then qual_norm' f (merge_tq q' q) t
+      else f q t.
+  Proof. by destruct t. Qed.
+
+  Lemma qual_norm'_prepost
+      (Pre : type_qualifiers -> type -> Prop)
+      (Post : A -> Prop) q t f :
+    Pre q t ->
+    (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q' q) t') ->
+    (∀ q' t', Unqualified t' -> Pre q' t' -> Post (f q' t')) ->
+    Post (qual_norm' f q t).
+  Proof.
+    intros Hpre HR Hf. move: q Hpre. induction t=>q; try exact: Hf.
+    rewrite qual_norm'_unfold. move/HR. apply IHt.
+  Qed.
+
+  (** [qual_norm] *)
+
+  Lemma qual_norm_unfold f t :
+    qual_norm f t =
+      if t is Tqualified q t
+      then qual_norm' f q t
+      else f QM t.
+  Proof.
+    rewrite /qual_norm qual_norm'_unfold. f_equiv.
+    by rewrite right_id_L.
+  Qed.
+
+  Lemma qual_norm_prepost
+      (Pre : type_qualifiers -> type -> Prop)
+      (Post : A -> Prop) f t :
+    Pre QM t ->
+    (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q' q) t') ->
+    (∀ q' t', Unqualified t' -> Pre q' t' -> Post (f q' t')) ->
+    Post (qual_norm f t).
+  Proof. apply qual_norm'_prepost. Qed.
+End qual_norm.
+
+(** [decompose_type] *)
+
+Lemma decompose_type_unfold t :
+  decompose_type t =
+    if t is Tqualified q t then
+      let p := decompose_type t in
+      (merge_tq q p.1, p.2)
+    else (QM, t).
+Proof.
+  rewrite /decompose_type qual_norm_unfold.
+  destruct t as [| | | | | | | | | | | | |q t| |]; try done. set pair := fun x y => (x, y).
+  move: q. induction t=>q; try by rewrite right_id_L.
+  cbn. rewrite right_id_L !IHt /=. f_equal.
+  rewrite assoc_L. f_equal. by rewrite comm_L.
+Qed.
+
+Lemma decompose_type_qual q t :
+  decompose_type (Tqualified q t) =
+    let p := decompose_type t in
+    (merge_tq q p.1, p.2).
+Proof. by rewrite decompose_type_unfold. Qed.
+
+Lemma decompose_type_prepost
+    (Pre : type_qualifiers -> type -> Prop)
+    (Post : type_qualifiers * type -> Prop) t :
+  Pre QM t ->
+  (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q' q) t') ->
+  (∀ q' t', Unqualified t' -> Pre q' t' -> Post (q', t')) ->
+  Post (decompose_type t).
+Proof. apply qual_norm_prepost. Qed.
+
+(** [qual_norm], [qual_norm'] in terms of [decompose_type] *)
+
+Lemma qual_norm'_decompose_type {A} (f : type_qualifiers -> type -> A) q t :
+  qual_norm' f q t =
+    let p := decompose_type t in
+    f (merge_tq p.1 q) p.2.
+Proof.
+  move: q. induction t=>q /=; try by rewrite left_id_L.
+  rewrite decompose_type_unfold IHt /=.
+  f_equal. rewrite assoc_L. f_equal. by rewrite comm_L.
+Qed.
+
+Lemma qual_norm_decompose_type {A} (f : type_qualifiers -> type -> A) t :
+  qual_norm f t =
+    let p := decompose_type t in
+    f p.1 p.2.
+Proof.
+  rewrite /qual_norm qual_norm'_decompose_type. cbn.
+  by rewrite right_id_L.
 Qed.
 
 (** Smart constructors *)
@@ -451,6 +578,11 @@ Definition tqualified (q : type_qualifiers) (t : type) : type :=
   | QM => t
   | _ => Tqualified q t
   end.
+
+Lemma tqualified_QM t : tqualified QM t = t.
+Proof. done. Qed.
+Lemma tqualified_not_QM q : q <> QM -> tqualified q = Tqualified q.
+Proof. by destruct q. Qed.
 
 (**
 [tref], [trv_ref] implement reference collapsing.
@@ -474,17 +606,16 @@ Fixpoint trv_ref (cv : type_qualifiers) (t : type) : type :=
   | _ => Trv_ref (tqualified cv t)
   end.
 
-(** normalization of types
-    - compresses adjacent [Tqualified] constructors
-    - drops (irrelevant) qualifiers on function arguments and return types
+(**
+normalization of types
+- compresses adjacent [Tqualified] constructors
+- drops (irrelevant) qualifiers on function arguments and return types
  *)
 Fixpoint normalize_type (t : type) : type :=
-  let drop_norm :=
-      qual_norm (fun _ t => normalize_type t)
-  in
+  let drop_norm := qual_norm (fun _ t => normalize_type t) in
   let qual_norm :=
-      (* merge adjacent qualifiers and then normalize *)
-      qual_norm' (fun q t => tqualified q (normalize_type t))
+    (* merge adjacent qualifiers and then normalize *)
+    qual_norm' (fun q t => tqualified q (normalize_type t))
   in
   match t with
   | Tpointer t => Tpointer (normalize_type t)
@@ -524,7 +655,7 @@ Section normalize_type_idempotent.
       - rewrite map_map /qual_norm !IHty /merge_tq/=;
           erewrite map_ext_Forall; eauto; eapply Forall_impl;
           [|eassumption]; intros * HForall; simpl in HForall; apply HForall.
-      - rewrite IHty !merge_tq_assoc. f_equal. f_equal. apply merge_tq_comm.
+      - rewrite IHty !assoc_L. f_equal. f_equal. by rewrite comm_L.
     }
     { (* _qual_norm_involutive *)
       intros *; generalize dependent q;
@@ -549,6 +680,10 @@ Section normalize_type_idempotent.
     }
   Qed.
 End normalize_type_idempotent.
+
+Lemma normalize_type_qual_norm t :
+  normalize_type t = qual_norm (fun q t' => tqualified q (normalize_type t')) t.
+Proof. rewrite qual_norm_unfold. by destruct t. Qed.
 
 (** ** Notation for character types *)
 Coercion Tchar_ : char_type.t >-> type.
