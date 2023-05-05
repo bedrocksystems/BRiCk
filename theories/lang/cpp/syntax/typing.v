@@ -431,6 +431,7 @@ Definition valcat_from_type (t : type) : ValCat :=
   | _ => Prvalue
   end.
 
+(* See <https://eel.is/c++draft/expr.call#13> *)
 Definition valcat_from_function_type (t : type) : ValCat :=
   match t with
   | @Tfunction _ _ ret _ => valcat_from_type ret
