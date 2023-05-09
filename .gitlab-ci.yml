@@ -454,6 +454,7 @@ dune-build:
     - time dune build -j ${NJOBS} 2>&1 | tee -a ${CODEQ_LOG}
     - time dune build -j ${NJOBS} coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | tee -a ${CODEQ_LOG}
     - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin 2>&1 | tee -a ${CODEQ_LOG}
+    - dune runtest
     - cd $CI_PROJECT_DIR/
     # Adding built files to the artifact.
     - cp /tmp/build-dir/_build/default/fmdeps/cpp2v-core/build/cpp2v build/cpp2v
