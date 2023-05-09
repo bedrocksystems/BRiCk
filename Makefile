@@ -85,7 +85,7 @@ coq: coq-minimal
 
 # Tests for `cpp2v`
 
-test: test-cpp2v test-coq
+test: test-cpp2v
 .PHONY: test
 
 minimal-install:
@@ -106,10 +106,6 @@ test-cpp2v: build-minimal cpp2v
 test-cpp2v-vos: build-minimal-vos cpp2v
 	$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v vos
 .PHONY: test-cpp2v
-
-test-coq: cpp2v coq
-	$(MAKE) -C tests CPP2V=$(ROOT)/build/cpp2v
-.PHONY: test-coq
 
 
 # Build Coq docs

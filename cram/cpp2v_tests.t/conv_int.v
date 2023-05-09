@@ -5,7 +5,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.cpp.semantics.cast.
-Require Import bedrocktest.conv_int_cpp.
+Require Import test.conv_int_cpp.
 
 Import syntax.types.
 

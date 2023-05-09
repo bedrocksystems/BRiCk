@@ -7,7 +7,7 @@ From stdpp Require Import fin_maps.
 From bedrock.prelude Require Import base bytestring.
 From bedrock.lang.cpp Require Import syntax.translation_unit syntax.types.
 
-Require Import bedrocktest.test_translation_unit_validity_cpp.
+Require Import test.test_translation_unit_validity_cpp.
 
 #[local] Hint Constructors complete_decl complete_basic_type complete_type
   complete_pointee_type wellscoped_type wellscoped_types : core.
