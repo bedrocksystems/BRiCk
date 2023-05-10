@@ -1,0 +1,829 @@
+  $ bash ../gen-project.sh
+  $ export COQPATH="$DUNE_SOURCEROOT/_build/install/default/lib/coq/user-contrib"
+  $ dune build test.vo
+  "~~~TESTING COMPACT NOTATIONS~~~"%bs
+       : bs
+  NOTATION_wp_nowrap =
+  ::wpS
+    [region:
+      "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+      [this := WpTestDefns.this]; return ptr<void>]
+    ({s: ($"foo" + $"bar");
+         break; 
+         continue; 
+         ($"foo" + $"bar");
+         ($"foo" + $"bar");
+         return; 
+         return ($"foo" + $"bar"); 
+         // end block})
+       : mpred
+  NOTATION_wp_wrap =
+  ::wpS
+    [region:
+      "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+      "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+      [this := WpTestDefns.this]; return ptr<void>]
+    ({s: ($"foo" + $"bar");
+         break; 
+         continue; 
+         ($"foo" + $"bar");
+         ($"foo" + $"bar");
+         return; 
+         return ($"foo" + $"bar"); 
+         // end block
+         ($"foo" + $"bar");
+         break; 
+         continue; 
+         ($"foo" + $"bar");
+         ($"foo" + $"bar");
+         return; 
+         return ($"foo" + $"bar"); 
+         // end block
+         ($"foo" + $"bar");
+         break; 
+         continue; 
+         ($"foo" + $"bar");
+         ($"foo" + $"bar");
+         return; 
+         return ($"foo" + $"bar"); 
+         // end block
+         ($"foo" + $"bar");
+         break; 
+         continue; 
+         ($"foo" + $"bar");
+         ($"foo" + $"bar");
+         return; 
+         return ($"foo" + $"bar"); 
+         // end block
+         // end block})
+       : mpred
+  NOTATION_wp_decl_nowrap =
+  λ (decl : VarDecl) (Q : region → FreeTemps → epred),
+    ::wpD
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      decl
+      ([region:
+         "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+         [this := WpTestDefns.this]; return ptr<void>])
+       : VarDecl → (region → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_decl_nowrap decl%CPP_stmt_scope Q%function_scope
+  NOTATION_wp_atomic_nil =
+  λ (M : coPset) (Q : val → mpred),
+    ::wpAtomic (Mask ↦ M; Type ↦ ptr<void>) {e: {?: expr.AO__atomic_load}()}
+       : coPset → (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_atomic_nil M Q%function_scope
+  NOTATION_wp_atomic_cons_nowrap =
+  λ (M : coPset) (Q : val → mpred),
+    ::wpAtomic
+      (Mask ↦ M; Type ↦ ptr<void>) 
+      {e: {?: expr.AO__atomic_load}(Vundef, Vundef, Vundef)}
+       : coPset → (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_atomic_cons_nowrap M Q%function_scope
+  NOTATION_wp_atomic_cons_wrap =
+  λ (M : coPset) (Q : val → mpred),
+    ::wpAtomic
+      (Mask ↦ M; Type ↦ ptr<void>) 
+      {e: {?: expr.AO__atomic_load}(Vundef,
+                                    Vundef,
+                                    Vundef,
+                                    Vundef,
+                                    Vundef,
+                                    Vundef,
+                                    Vundef,
+                                    1123784018923740981723509817230984710298374098123740981723490817230984710293840891273489012734089%Z)}
+       : coPset → (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_atomic_cons_wrap M Q%function_scope
+  NOTATION_wp_builtin_nil =
+  λ Q : val → mpred, ::wpBuiltin (Type ↦ ptr<void>) {e: __builtin_popcount()}
+       : (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_builtin_nil Q%function_scope
+  NOTATION_wp_builtin_cons_nowrap =
+  λ Q : val → mpred,
+    ::wpBuiltin
+      (Type ↦ ptr<void>) {e: __builtin_popcount(Vundef, Vundef, Vundef)}
+       : (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_builtin_cons_nowrap Q%function_scope
+  NOTATION_wp_builtin_cons_wrap =
+  λ Q : val → mpred,
+    ::wpBuiltin
+      (Type ↦ ptr<void>) 
+      {e: __builtin_popcount(Vundef,
+                             Vundef,
+                             Vundef,
+                             Vundef,
+                             Vundef,
+                             Vundef,
+                             Vundef,
+                             1123784018923740981723509817230984710298374098123740981723490817230984710293840891273489012734089%Z)}
+       : (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
+  NOTATION_destroy_val_nowrap =
+  destroy_val WpTestDefns.tu ({t: ptr<void>}) WpTestDefns.p WpTestDefns.E
+       : mpred
+  NOTATION_destroy_val_wrap =
+  λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
+    destroy_val WpTestDefns.tu ({t: ptr<void>})
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      WpTestDefns.E
+       : ptr → mpred
+  
+  Arguments NOTATION_destroy_val_wrap
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  NOTATION_interp_nowrap = ::interp { WpTestDefns.free }
+       : mpred
+  NOTATION_interp_wrap =
+  ::interp
+    { (((((((((FreeTemps.id |*| FreeTemps.id) |*| FreeTemps.id)
+             |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
+          |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
+       |*| FreeTemps.id)%free |*| FreeTemps.id }
+       : mpred
+  NOTATION_wp_lval_nowrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpL
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_lval_nowrap Q%function_scope
+  NOTATION_wp_lval_wrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpL
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_lval_wrap Q%function_scope
+  NOTATION_wp_init_nowrap =
+  λ Q : type → FreeTemps → epred,
+    ::wpPRᵢ
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Pointer ↦ WpTestDefns.this) 
+      ({e: ($"foo" + $"bar")})
+       : (type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_init_nowrap Q%function_scope
+  NOTATION_wp_init_wrap =
+  λ Q : type → FreeTemps → epred,
+    ::wpPRᵢ
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Pointer ↦ WpTestDefns.this) 
+      ({e: ($"foo" + $"bar")})
+       : (type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_init_wrap Q%function_scope
+  NOTATION_wp_prval_nowrap =
+  λ Q : ptr → type → FreeTemps → epred,
+    ::wpPR
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_prval_nowrap Q%function_scope
+  NOTATION_wp_prval_wrap =
+  λ Q : ptr → type → FreeTemps → epred,
+    ::wpPR
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_prval_wrap Q%function_scope
+  NOTATION_wp_operand_nowrap =
+  λ Q : val → FreeTemps → epred,
+    ::wpOperand
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (val → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_operand_nowrap Q%function_scope
+  NOTATION_wp_operand_wrap =
+  λ Q : val → FreeTemps → epred,
+    ::wpOperand
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (val → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_operand_wrap Q%function_scope
+  NOTATION_wp_xval_nowrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpX
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_xval_nowrap Q%function_scope
+  NOTATION_wp_xval_wrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpX
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_xval_wrap Q%function_scope
+  NOTATION_wp_glval_nowrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpGL
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_glval_nowrap Q%function_scope
+  NOTATION_wp_glval_wrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpGL
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_glval_wrap Q%function_scope
+  NOTATION_wp_discard_nowrap =
+  λ Q : FreeTemps → mpred,
+    ::wpGLₓ
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_discard_nowrap Q%function_scope
+  NOTATION_wp_discard_nowrap =
+  λ Q : FreeTemps → mpred,
+    ::wpGLₓ
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      ({e: ($"foo" + $"bar")})
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_discard_nowrap Q%function_scope
+  NOTATION_wp_func =
+  λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
+    ::wpFunc Q
+       : translation_unit → Func → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
+  NOTATION_wp_method =
+  λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
+    ::wpMethod Q
+       : translation_unit → Method → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
+  NOTATION_wp_ctor =
+  λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
+    ::wpCtor Q
+       : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
+  NOTATION_wp_dtor =
+  λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
+    ::wpDtor Q
+       : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
+  NOTATION_wp_args_nowrap =
+  λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
+    (Q : list ptr → FreeTemps → mpred),
+    ::wpArgs
+      ([region:
+         "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+         [this := WpTestDefns.this]; return ptr<void>])
+       : list type * function_arity
+         → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_args_nowrap tys_ar es%list_scope Q%function_scope
+  NOTATION_wp_args_wrap =
+  λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
+    (Q : list ptr → FreeTemps → mpred),
+    ::wpArgs
+      ([region:
+         "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+         "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+         [this := WpTestDefns.this]; return ptr<void>])
+       : list type * function_arity
+         → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_args_wrap tys_ar es%list_scope Q%function_scope
+  NOTATION_wp_initialize_nowrap =
+  λ Q : FreeTemps → mpred,
+    ::wpInitialize
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      (WpTestDefns.p |-> type_ptrR ptr<void>)
+      ({e: ($"foo" + $"bar")})
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_initialize_nowrap Q%function_scope
+  NOTATION_wp_initialize_wrap =
+  λ Q : FreeTemps → mpred,
+    ::wpInitialize
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (WpTestDefns.p |-> type_ptrR ptr<void>)
+      ({e: ($"foo" + $"bar")})
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_initialize_wrap Q%function_scope
+  NOTATION_wp_call_nowrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpCall
+      ([region:
+         "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>])
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_call_nowrap ls%list_scope Q%function_scope
+  NOTATION_wp_call_wrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpCall
+      ([region:
+         "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+         "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+         [this := WpTestDefns.this]; return ptr<void>])
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_call_wrap ls%list_scope Q%function_scope
+  NOTATION_wp_mcall_nowrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpMCall
+      ([region:
+         "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>])
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_mcall_nowrap ls%list_scope Q%function_scope
+  NOTATION_wp_mcall_wrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpMCall
+      ([region:
+         "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+         "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+         [this := WpTestDefns.this]; return ptr<void>])
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_mcall_wrap ls%list_scope Q%function_scope
+  "~~~TESTING Verbose NOTATIONS~~~"%bs
+       : bs
+  NOTATION_wp_nowrap =
+  ::wpS
+    [region:
+      "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+      [this := WpTestDefns.this]; return ptr<void>]
+    {s: ($"foo" + $"bar");
+        break; 
+        continue; 
+        ($"foo" + $"bar");
+        ($"foo" + $"bar");
+        return; 
+        return ($"foo" + $"bar"); 
+        // end block}
+    (WpTestDefns.K)
+       : mpred
+  NOTATION_wp_wrap =
+  ::wpS
+    [region:
+      "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+      "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+      [this := WpTestDefns.this]; return ptr<void>]
+    {s: ($"foo" + $"bar");
+        break; 
+        continue; 
+        ($"foo" + $"bar");
+        ($"foo" + $"bar");
+        return; 
+        return ($"foo" + $"bar"); 
+        // end block
+        ($"foo" + $"bar");
+        break; 
+        continue; 
+        ($"foo" + $"bar");
+        ($"foo" + $"bar");
+        return; 
+        return ($"foo" + $"bar"); 
+        // end block
+        ($"foo" + $"bar");
+        break; 
+        continue; 
+        ($"foo" + $"bar");
+        ($"foo" + $"bar");
+        return; 
+        return ($"foo" + $"bar"); 
+        // end block
+        ($"foo" + $"bar");
+        break; 
+        continue; 
+        ($"foo" + $"bar");
+        ($"foo" + $"bar");
+        return; 
+        return ($"foo" + $"bar"); 
+        // end block
+        // end block}
+    (WpTestDefns.K)
+       : mpred
+  NOTATION_wp_decl_nowrap =
+  λ (decl : VarDecl) (Q : region → FreeTemps → epred),
+    ::wpD
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      decl
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Q)
+       : VarDecl → (region → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_decl_nowrap decl%CPP_stmt_scope Q%function_scope
+  NOTATION_wp_atomic_nil =
+  λ (M : coPset) (Q : val → mpred),
+    ::wpAtomic (Mask ↦ M; Type ↦ ptr<void>)  {e: expr.AO__atomic_load()} (Q)
+       : coPset → (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_atomic_nil M Q%function_scope
+  NOTATION_wp_atomic_cons_nowrap =
+  λ (M : coPset) (Q : val → mpred),
+    ::wpAtomic
+      (Mask ↦ M; Type ↦ ptr<void>) 
+       {e: expr.AO__atomic_load(Vundef, Vundef, Vundef)}
+      (Q)
+       : coPset → (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_atomic_cons_nowrap M Q%function_scope
+  NOTATION_wp_atomic_cons_wrap =
+  λ (M : coPset) (Q : val → mpred),
+    ::wpAtomic
+      (Mask ↦ M; Type ↦ ptr<void>) 
+       {e: expr.AO__atomic_load(Vundef,
+                                Vundef,
+                                Vundef,
+                                Vundef,
+                                Vundef,
+                                Vundef,
+                                Vundef,
+                                1123784018923740981723509817230984710298374098123740981723490817230984710293840891273489012734089%Z)}
+      (Q)
+       : coPset → (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_atomic_cons_wrap M Q%function_scope
+  NOTATION_wp_builtin_nil =
+  λ Q : val → mpred,
+    ::wpBuiltin (Type ↦ ptr<void>) {e: {e: __builtin_popcount}()} (Q)
+       : (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_builtin_nil Q%function_scope
+  NOTATION_wp_builtin_cons_nowrap =
+  λ Q : val → mpred,
+    ::wpBuiltin
+      (Type ↦ ptr<void>) {e: {e: __builtin_popcount}(Vundef, Vundef, Vundef)}
+      (Q)
+       : (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_builtin_cons_nowrap Q%function_scope
+  NOTATION_wp_builtin_cons_wrap =
+  λ Q : val → mpred,
+    ::wpBuiltin
+      (Type ↦ ptr<void>) 
+      {e: {e: __builtin_popcount}(Vundef,
+                                  Vundef,
+                                  Vundef,
+                                  Vundef,
+                                  Vundef,
+                                  Vundef,
+                                  Vundef,
+                                  1123784018923740981723509817230984710298374098123740981723490817230984710293840891273489012734089%Z)}
+      (Q)
+       : (val → mpred) → mpred
+  
+  Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
+  NOTATION_destroy_val_nowrap =
+  destroy_val WpTestDefns.tu ({t: ptr<void>}) WpTestDefns.p WpTestDefns.E
+       : mpred
+  NOTATION_destroy_val_wrap =
+  λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
+    destroy_val WpTestDefns.tu ({t: ptr<void>})
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      WpTestDefns.E
+       : ptr → mpred
+  
+  Arguments NOTATION_destroy_val_wrap
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  NOTATION_interp_nowrap =
+  ::interp { WpTestDefns.free }  (WpTestDefns.E)
+       : mpred
+  NOTATION_interp_wrap =
+  ::interp
+    { (((((((((FreeTemps.id |*| FreeTemps.id) |*| FreeTemps.id)
+             |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
+          |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
+       |*| FreeTemps.id)%free |*| FreeTemps.id }
+    (WpTestDefns.E)
+       : mpred
+  NOTATION_wp_lval_nowrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpL
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_lval_nowrap Q%function_scope
+  NOTATION_wp_lval_wrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpL
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_lval_wrap Q%function_scope
+  NOTATION_wp_init_nowrap =
+  λ Q : type → FreeTemps → epred,
+    ::wpPRᵢ
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Pointer ↦ {t: ptr<void>}) 
+      WpTestDefns.this
+      ({e: ($"foo" + $"bar")}) Q
+       : (type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_init_nowrap Q%function_scope
+  NOTATION_wp_init_wrap =
+  λ Q : type → FreeTemps → epred,
+    ::wpPRᵢ
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Pointer ↦ {t: ptr<void>}) 
+      WpTestDefns.this
+      ({e: ($"foo" + $"bar")}) Q
+       : (type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_init_wrap Q%function_scope
+  NOTATION_wp_prval_nowrap =
+  λ Q : ptr → type → FreeTemps → epred,
+    ::wpPR
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_prval_nowrap Q%function_scope
+  NOTATION_wp_prval_wrap =
+  λ Q : ptr → type → FreeTemps → epred,
+    ::wpPR
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → type → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_prval_wrap Q%function_scope
+  NOTATION_wp_operand_nowrap =
+  λ Q : val → FreeTemps → epred,
+    ::wpOperand
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (val → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_operand_nowrap Q%function_scope
+  NOTATION_wp_operand_wrap =
+  λ Q : val → FreeTemps → epred,
+    ::wpOperand
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (val → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_operand_wrap Q%function_scope
+  NOTATION_wp_xval_nowrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpX
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_xval_nowrap Q%function_scope
+  NOTATION_wp_xval_wrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpX
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_xval_wrap Q%function_scope
+  NOTATION_wp_glval_nowrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpGL
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_glval_nowrap Q%function_scope
+  NOTATION_wp_glval_wrap =
+  λ Q : ptr → FreeTemps → epred,
+    ::wpGL
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_glval_wrap Q%function_scope
+  NOTATION_wp_discard_nowrap =
+  λ Q : FreeTemps → mpred,
+    ::wpGLₓ
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_discard_nowrap Q%function_scope
+  NOTATION_wp_discard_nowrap =
+  λ Q : FreeTemps → mpred,
+    ::wpGLₓ
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_discard_nowrap Q%function_scope
+  NOTATION_wp_func =
+  λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
+    ::wpFunc (Q)
+       : translation_unit → Func → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
+  NOTATION_wp_method =
+  λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
+    ::wpMethod (Q)
+       : translation_unit → Method → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
+  NOTATION_wp_ctor =
+  λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
+    ::wpCtor (Q)
+       : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
+  NOTATION_wp_dtor =
+  λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
+    ::wpDtor (Q)
+       : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
+  
+  Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
+  NOTATION_wp_args_nowrap =
+  λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
+    (Q : list ptr → FreeTemps → mpred),
+    ::wpArgs
+      [region:
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Q)
+       : list type * function_arity
+         → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_args_nowrap tys_ar es%list_scope Q%function_scope
+  NOTATION_wp_args_wrap =
+  λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
+    (Q : list ptr → FreeTemps → mpred),
+    ::wpArgs
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Q)
+       : list type * function_arity
+         → list expr.Expr → (list ptr → FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_args_wrap tys_ar es%list_scope Q%function_scope
+  NOTATION_wp_initialize_nowrap =
+  λ Q : FreeTemps → mpred,
+    ::wpInitialize
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      (WpTestDefns.p |-> type_ptrR ptr<void>)
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_initialize_nowrap Q%function_scope
+  NOTATION_wp_initialize_wrap =
+  λ Q : FreeTemps → mpred,
+    ::wpInitialize
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (WpTestDefns.p |-> type_ptrR ptr<void>)
+      {e: ($"foo" + $"bar")}
+      (Q)
+       : (FreeTemps → mpred) → mpred
+  
+  Arguments NOTATION_wp_initialize_wrap Q%function_scope
+  NOTATION_wp_call_nowrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpCall
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      (Q)
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_call_nowrap ls%list_scope Q%function_scope
+  NOTATION_wp_call_wrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpCall
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Q)
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_call_wrap ls%list_scope Q%function_scope
+  NOTATION_wp_mcall_nowrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpMCall
+      [region:
+        "foo" @ WpTestDefns.p; [this := WpTestDefns.this]; return ptr<void>]
+      (Q)
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_mcall_nowrap ls%list_scope Q%function_scope
+  NOTATION_wp_mcall_wrap =
+  λ (ls : list expr.Expr) (Q : ptr → FreeTemps → epred),
+    ::wpMCall
+      [region:
+        "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
+        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
+        [this := WpTestDefns.this]; return ptr<void>]
+      (Q)
+       : list expr.Expr → (ptr → FreeTemps → epred) → mpred
+  
+  Arguments NOTATION_wp_mcall_wrap ls%list_scope Q%function_scope
