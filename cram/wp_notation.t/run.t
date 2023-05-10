@@ -1,5 +1,4 @@
-  $ bash ../gen-project.sh
-  $ export COQPATH="$DUNE_SOURCEROOT/_build/install/default/lib/coq/user-contrib"
+  $ . ../setup-project.sh
   $ dune build test.vo
   "~~~TESTING COMPACT NOTATIONS~~~"%bs
        : bs

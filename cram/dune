@@ -5,4 +5,4 @@
   %{bin:coqdep}
   (package coq-cpp2v)
   (package coq-cpp2v-bin)
-  gen-project.sh))
+  setup-project.sh))

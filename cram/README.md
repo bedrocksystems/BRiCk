@@ -10,7 +10,7 @@ Cram test can be added by creating a directory whose name ends with the `.t`
 extension, and which contains a file `run.t`.
 
 For example, you can create a Cram test that does not test anything using the
-following commands form the directory containing the current `README.md`.
+following commands from the directory containing the current `README.md`.
 ```sh
 mkdir -p dummy/my_test.t
 touch dummy/my_test.t/run.t
@@ -69,8 +69,7 @@ files `test1.v`, `test2.v` and `test3.v`, you will need to put your three
 files in a new folder `new_test.t`, and add a `new_test.t/run.t` file with
 the following contents.
 ```sh
-  $ bash ../gen-project.sh
-  $ export COQPATH="$DUNE_SOURCEROOT/_build/install/default/lib/coq/user-contrib"
+  $ . ../setup-project.sh
   $ dune build test1.vo
   $ dune build test2.vo
   $ dune build test3.vo

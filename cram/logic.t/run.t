@@ -1,5 +1,4 @@
-  $ bash ../gen-project.sh
-  $ export COQPATH="$DUNE_SOURCEROOT/_build/install/default/lib/coq/user-contrib"
+  $ . ../setup-project.sh
   $ dune build test.vo
   mpred_sep :
   ∀ {thread_info : biIndex} {Σ : cpp_logic thread_info}, mpred → mpred → mpredI
