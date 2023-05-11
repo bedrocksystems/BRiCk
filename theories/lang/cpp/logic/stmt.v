@@ -28,18 +28,6 @@ Module Type Stmt.
 
     Implicit Types Q : Kpred.
 
-    Definition Kseq (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
-      KP (funI rt =>
-          match rt with
-          | Normal => Q k
-          | rt => k rt
-          end).
-    #[global] Instance Kseq_mono : Proper (((⊢) ==> (⊢)) ==> (⊢) ==> (⊢)) Kseq.
-    Proof.
-      constructor => rt; rewrite /Kseq/KP/=.
-      destruct rt; try apply H; apply H0.
-    Qed.
-
     Definition Kfree (free : FreeTemp) : Kpred -> Kpred :=
       Kat_exit (interp free).
 

@@ -140,16 +140,16 @@ Canonical Structure rt_biIndex : biIndex :=
   {| bi_index_type := ReturnType
    ; bi_index_rel := eq
    |}.
+Definition KpredI `{Σ : cpp_logic} : bi := monPredI rt_biIndex mpredI.
+#[global] Notation Kpred := (bi_car KpredI).
 
 Section Kpred.
   Context `{Σ : cpp_logic thread_info}.
 
-  Definition KpredI : bi := monPredI rt_biIndex mpredI.
-  #[local] Notation Kpred := KpredI.
-  Definition KP (P : ReturnType -> mpred) : KpredI := MonPred P _.
+  Definition KP (P : ReturnType -> mpred) : Kpred := MonPred P _.
   #[global] Arguments KP _%I.
 
-  Definition Kreturn {σ : genv} (P : ptr -> mpred) : KpredI :=
+  Definition Kreturn {σ : genv} (P : ptr -> mpred) : Kpred :=
     KP (funI rt =>
           match rt with
           | Normal | ReturnVoid => Forall p : ptr, p |-> primR Tvoid (cQp.mut 1) Vvoid -* P p
@@ -163,6 +163,12 @@ Section Kpred.
         | Normal => Q k
         | rt => k rt
         end).
+
+  #[global] Instance Kseq_mono : Proper (((⊢) ==> (⊢)) ==> (⊢) ==> (⊢)) Kseq.
+  Proof.
+    constructor => rt; rewrite /Kseq/KP/=.
+    destruct rt; try apply H; apply H0.
+  Qed.
 
   (* loop with invariant `I` *)
   Definition Kloop (I : mpred) (Q : Kpred) : Kpred :=
@@ -188,7 +194,6 @@ Section Kpred.
      existentials.
    *)
 End Kpred.
-#[global] Notation Kpred := (bi_car KpredI).
 
 (** * Regions
     To model the stack frame in separation logic, we use a notion of regions
