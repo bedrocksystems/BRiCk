@@ -962,7 +962,7 @@ Section with_cpp.
     by iApply offset_inv_exposed_ptr.
   Qed.
 
-  Lemma offset2_pinned_ptr o1 o2 z1 z2 va p :
+  Lemma offset_2_pinned_ptr o1 o2 z1 z2 va p :
     eval_offset σ o1 = Some z1 ->
     eval_offset σ o2 = Some z2 ->
     valid_ptr p |-- valid_ptr (p ,, o1) -* valid_ptr (p ,, o2) -*
@@ -1126,6 +1126,13 @@ Section with_cpp.
 
   Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
   Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
+
+  Lemma type_ptr__valid ty p vt : type_ptr ty p |-- _valid_ptr vt p.
+  Proof.
+    case: vt.
+    apply type_ptr_strict_valid.
+    apply type_ptr_valid.
+  Qed.
 
   #[global] Instance type_ptr_size_observe ty p :
     Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).

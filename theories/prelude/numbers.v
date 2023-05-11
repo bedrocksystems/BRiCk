@@ -340,6 +340,15 @@ Proof.
   intros [a ->]. rewrite N2Z.inj_mul. by exists (Z.of_N a).
 Qed.
 
+Lemma Z2N_inj_divide (n m : Z) :
+  (0 < n)%Z -> (0 <= m)%Z ->
+  (n | m)%Z -> (Z.to_N n | Z.to_N m)%N.
+Proof.
+  (** It's odd that this isn't already in [Z2N], so check. *)
+  Fail apply Z2N.inj_divide.
+  intros ?? [a ->]. rewrite Z2N.inj_mul; [|lia..]. by exists (Z.to_N a).
+Qed.
+
 Lemma N_mul_divide_weaken_l (m n o : N) :
   (m * n | o)%N -> (m | o)%N.
 Proof. case => q ->. exists (q * n)%N. lia. Qed.
