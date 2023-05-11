@@ -732,9 +732,8 @@ mlock Definition pinned_ptr `{Σ : cpp_logic} (va : vaddr) (p : ptr) : mpred :=
   [| ptr_vaddr p = Some va |] ** exposed_ptr p.
 #[global] Arguments pinned_ptr {_ _} va p : assert.
 
-mlock Definition pinned_ptr_Z `{Σ : cpp_logic} (va : Z) (p : ptr) : mpred :=
-  [| 0 <= va |]%Z ** pinned_ptr (Z.to_N va) p.
-#[global] Arguments pinned_ptr_Z {_ _} va p : assert.
+Notation pinned_ptr_Z va p :=
+  ([| 0 <= va |]%Z ** pinned_ptr (Z.to_N va) p).
 
 Section pinned_ptr_def.
   Context `{Σ : cpp_logic}.
@@ -944,7 +943,7 @@ Section with_cpp.
     pinned_ptr va p -*
     pinned_ptr_Z (Z.of_N va + z) (p ,, o).
   Proof.
-    rewrite pinned_ptr_Z.unlock pinned_ptr.unlock.
+    rewrite pinned_ptr.unlock.
     iIntros (He) "#V' #(%P & E)".
     iDestruct (offset_pinned_ptr_pure with "V'") as "[$ $]"; [done..|].
     by iApply offset_exposed_ptr.
@@ -956,8 +955,8 @@ Section with_cpp.
     pinned_ptr va p -*
     pinned_ptr (Z.to_N (Z.of_N va + z)) (p ,, o).
   Proof.
-    iIntros (?) "V P". iDestruct (offset_pinned_ptr_Z with "V P") as "H" => //.
-    rewrite pinned_ptr_Z.unlock; iDestruct "H" as "[_ $]".
+    iIntros (?) "V P".
+    by iDestruct (offset_pinned_ptr_Z with "V P") as "[_ $]".
   Qed.
 
   Lemma offset_inv_pinned_ptr_Z o z va p :
@@ -966,7 +965,7 @@ Section with_cpp.
     pinned_ptr va (p ,, o) -*
     pinned_ptr_Z (Z.of_N va - z) p.
   Proof.
-    rewrite pinned_ptr_Z.unlock pinned_ptr.unlock.
+    rewrite pinned_ptr.unlock.
     iIntros (He) "#V #(%P & E)".
     iDestruct (offset_inv_pinned_ptr_pure with "[]") as "-#[$$]"; [done..| |].
     { by iApply (observe with "E"). }
@@ -980,7 +979,7 @@ Section with_cpp.
     pinned_ptr va (p ,, o1) -*
     pinned_ptr_Z (Z.of_N va - z1 + z2) (p ,, o2).
   Proof.
-    rewrite pinned_ptr_Z.unlock pinned_ptr.unlock.
+    rewrite pinned_ptr.unlock.
     iIntros (He1 He2) "V V1 #V2 #(%P & E)".
     iDestruct (offset_2_pinned_ptr_pure with "V V1 V2") as "[$$]"; [done..|].
     by iApply offset2_exposed_ptr.
@@ -1028,8 +1027,8 @@ Section with_cpp.
         valid_ptr p2 ** pinned_ptr va p1
     |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
-    iIntros (??) "VP". iDestruct (shift_pinned_ptr_Z_sub with "VP") as "H" => //.
-    rewrite pinned_ptr_Z.unlock; iDestruct "H" as "[_ $]".
+    iIntros (??) "VP".
+    by iDestruct (shift_pinned_ptr_Z_sub with "VP") as "[_ $]".
   Qed.
 
   Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
