@@ -732,6 +732,10 @@ mlock Definition pinned_ptr `{Σ : cpp_logic} (va : vaddr) (p : ptr) : mpred :=
   [| ptr_vaddr p = Some va |] ** exposed_ptr p.
 #[global] Arguments pinned_ptr {_ _} va p : assert.
 
+mlock Definition pinned_ptr_Z `{Σ : cpp_logic} (va : Z) (p : ptr) : mpred :=
+  [| 0 <= va |]%Z ** pinned_ptr (Z.to_N va) p.
+#[global] Arguments pinned_ptr_Z {_ _} va p : assert.
+
 Section pinned_ptr_def.
   Context `{Σ : cpp_logic}.
 
@@ -930,46 +934,53 @@ Section with_cpp.
     same_address pp1 pp2 ->
     exposed_ptr pp2 |-- pinned_ptr v pp1 -* pinned_ptr v pp2.
   Proof.
-    rewrite pinned_ptr.unlock/pinned_ptr_def.
+    rewrite pinned_ptr.unlock.
     by iIntros ((? & -> & ->)%same_address_iff) "$ [%Hp _] !%".
+  Qed.
+
+  Lemma offset_pinned_ptr_Z o z va p :
+    eval_offset _ o = Some z ->
+    valid_ptr (p ,, o) |--
+    pinned_ptr va p -*
+    pinned_ptr_Z (Z.of_N va + z) (p ,, o).
+  Proof.
+    rewrite pinned_ptr_Z.unlock pinned_ptr.unlock.
+    iIntros (He) "#V' #(%P & E)".
+    iDestruct (offset_pinned_ptr_pure with "V'") as "[$ $]"; [done..|].
+    by iApply offset_exposed_ptr.
   Qed.
 
   Lemma offset_pinned_ptr o z va p :
     eval_offset _ o = Some z ->
     valid_ptr (p ,, o) |--
     pinned_ptr va p -*
-    [| 0 <= Z.of_N va + z |]%Z **
     pinned_ptr (Z.to_N (Z.of_N va + z)) (p ,, o).
   Proof.
-    rewrite pinned_ptr.unlock.
-    iIntros (He) "#V' #(%P & E)".
-    iDestruct (offset_pinned_ptr_pure with "V'") as "[$ $]"; [done..|].
-    by iApply offset_exposed_ptr.
+    iIntros (?) "V P". iDestruct (offset_pinned_ptr_Z with "V P") as "H" => //.
+    rewrite pinned_ptr_Z.unlock; iDestruct "H" as "[_ $]".
   Qed.
 
-  Lemma offset_inv_pinned_ptr o z va p :
+  Lemma offset_inv_pinned_ptr_Z o z va p :
     eval_offset _ o = Some z ->
     valid_ptr p |--
     pinned_ptr va (p ,, o) -*
-    [| 0 <= Z.of_N va - z |]%Z **
-    pinned_ptr (Z.to_N (Z.of_N va - z)) p.
+    pinned_ptr_Z (Z.of_N va - z) p.
   Proof.
-    rewrite pinned_ptr.unlock.
+    rewrite pinned_ptr_Z.unlock pinned_ptr.unlock.
     iIntros (He) "#V #(%P & E)".
     iDestruct (offset_inv_pinned_ptr_pure with "[]") as "-#[$$]"; [done..| |].
     { by iApply (observe with "E"). }
     by iApply offset_inv_exposed_ptr.
   Qed.
 
-  Lemma offset_2_pinned_ptr o1 o2 z1 z2 va p :
+  Lemma offset_2_pinned_ptr_Z o1 o2 z1 z2 va p :
     eval_offset σ o1 = Some z1 ->
     eval_offset σ o2 = Some z2 ->
     valid_ptr p |-- valid_ptr (p ,, o1) -* valid_ptr (p ,, o2) -*
     pinned_ptr va (p ,, o1) -*
-    [| 0 <= Z.of_N va - z1 + z2 |]%Z **
-    pinned_ptr (Z.to_N (Z.of_N va - z1 + z2)) (p ,, o2).
+    pinned_ptr_Z (Z.of_N va - z1 + z2) (p ,, o2).
   Proof.
-    rewrite pinned_ptr.unlock.
+    rewrite pinned_ptr_Z.unlock pinned_ptr.unlock.
     iIntros (He1 He2) "V V1 #V2 #(%P & E)".
     iDestruct (offset_2_pinned_ptr_pure with "V V1 V2") as "[$$]"; [done..|].
     by iApply offset2_exposed_ptr.
@@ -999,17 +1010,26 @@ Section with_cpp.
     iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
   Qed.
 
+  Lemma shift_pinned_ptr_Z_sub ty z va (p1 p2 : ptr) o:
+    p1 ,, o_sub _ ty z = p2 ->
+    size_of σ ty = Some o ->
+        valid_ptr p2 ** pinned_ptr va p1
+    |-- pinned_ptr_Z (Z.of_N va + z * Z.of_N o) p2.
+  Proof.
+    move => <- o_eq.
+    iIntros "[val pin1]".
+    iApply (offset_pinned_ptr_Z with "val") => //.
+    rewrite eval_o_sub o_eq /= Z.mul_comm //.
+  Qed.
+
   Lemma shift_pinned_ptr_sub ty z va (p1 p2 : ptr) o:
     p1 ,, o_sub _ ty z = p2 ->
     size_of σ ty = Some o ->
         valid_ptr p2 ** pinned_ptr va p1
-    |-- [| 0 <= Z.of_N va + z * Z.of_N o |]%Z **
-    pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
+    |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
-    move => <- o_eq.
-    iIntros "[val pin1]".
-    iApply (offset_pinned_ptr _ with "val") => //.
-    rewrite eval_o_sub o_eq /= Z.mul_comm //.
+    iIntros (??) "VP". iDestruct (shift_pinned_ptr_Z_sub with "VP") as "H" => //.
+    rewrite pinned_ptr_Z.unlock; iDestruct "H" as "[_ $]".
   Qed.
 
   Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
