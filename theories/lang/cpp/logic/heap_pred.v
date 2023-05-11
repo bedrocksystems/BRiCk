@@ -42,6 +42,10 @@ Section defs.
   Definition type_ptrR := type_ptrR_aux.(unseal).
   Definition type_ptrR_eq : @type_ptrR = _ := type_ptrR_aux.(seal_eq).
 
+  Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
+  Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
+  Definition alignedR := alignedR_aux.(unseal).
+  Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
 End defs.
 
 Arguments type_ptrR {_ Σ σ} _.
@@ -345,10 +349,7 @@ Section with_cpp.
   #[global] Instance nonnullR_timeless : Timeless nonnullR.
   Proof. rewrite nonnullR_eq. apply _. Qed.
 
-  Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
-  Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
-  Definition alignedR := alignedR_aux.(unseal).
-  Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
+  (** ** [alignedR] *)
   #[global] Instance alignedR_persistent {al} : Persistent (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
   #[global] Instance alignedR_affine {al} : Affine (alignedR al).
@@ -372,6 +373,11 @@ Section with_cpp.
     (n | m)%N ->
     alignedR m ⊢ alignedR n.
   Proof. by move->. Qed.
+
+  (* To use sparingly: we're deprecating [aligned_ptr] *)
+  Lemma _at_alignedR (p : ptr) n :
+    p |-> alignedR n -|- [| aligned_ptr n p |].
+  Proof. by rewrite alignedR_eq /alignedR_def _at_as_Rep. Qed.
 
   Lemma null_nonnull (R : Rep) : nullR |-- nonnullR -* R.
   Proof.
