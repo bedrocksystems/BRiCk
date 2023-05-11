@@ -245,4 +245,10 @@ Section with_Σ.
            _sub t (Z.of_nat i) |-> tblockR t q.
   Proof. Admitted.
 
+  #[global] Instance struct_paddingR_nonnull q cls : Observe nonnullR (struct_paddingR q cls).
+  Proof.
+    iIntros "H".
+    iDestruct (observe (type_ptrR _) with "H") as "#T".
+    iApply (observe with "T").
+  Qed.
 End with_Σ.
