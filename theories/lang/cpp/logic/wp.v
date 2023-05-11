@@ -166,8 +166,8 @@ Section Kpred.
 
   #[global] Instance Kseq_mono : Proper (((⊢) ==> (⊢)) ==> (⊢) ==> (⊢)) Kseq.
   Proof.
-    constructor => rt; rewrite /Kseq/KP/=.
-    destruct rt; try apply H; apply H0.
+    intros Q1 Q2 HQ k1 k2 Hk; constructor => rt; rewrite /Kseq/KP/=.
+    destruct rt; try apply HQ; apply Hk.
   Qed.
 
   (* loop with invariant `I` *)
