@@ -834,9 +834,6 @@ Section pinned_ptr_def.
   Proof. rewrite provides_storage_same_address. by iIntros (HP <-). Qed.
 End pinned_ptr_def.
 
-#[deprecated(note="Use pinned_ptr_ptr_vaddr", since="2022-01-18")]
-Notation pinned_ptr_pinned_ptr_pure := pinned_ptr_ptr_vaddr (only parsing).
-
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
 

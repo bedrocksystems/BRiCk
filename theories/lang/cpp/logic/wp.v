@@ -189,8 +189,6 @@ Section Kpred.
    *)
 End Kpred.
 #[global] Notation Kpred := (bi_car KpredI).
-#[global,deprecated(since="2021-02-15",note="use KpredI")] Notation KpredsI := KpredI (only parsing).
-#[global,deprecated(since="2021-02-15",note="use Kpred")] Notation Kpreds := Kpred (only parsing).
 
 (** * Regions
     To model the stack frame in separation logic, we use a notion of regions
