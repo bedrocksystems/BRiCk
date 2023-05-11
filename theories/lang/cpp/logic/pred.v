@@ -11,6 +11,7 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
+From elpi.apps Require Import locker.
 Require Export bedrock.prelude.addr.
 
 From bedrock.lang.bi Require Export prelude observe.
@@ -718,30 +719,35 @@ Section valid_ptr_code.
   Proof. intros. rewrite dtor_at_strict_valid; apply strict_valid_valid. Qed.
 End valid_ptr_code.
 
+mlock Definition exposed_ptr `{Σ : cpp_logic} p : mpred :=
+  valid_ptr p ** ∃ aid, [| ptr_alloc_id p = Some aid |] ** exposed_aid aid.
+#[global] Arguments exposed_ptr {_ _} p : assert.
+
+(** Physical representation of pointers. *)
+(** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
+  virtual address [va].
+  [pinned_ptr] will only hold on pointers that are associated to addresses,
+  but other pointers exist. *)
+mlock Definition pinned_ptr `{Σ : cpp_logic} (va : vaddr) (p : ptr) : mpred :=
+  [| ptr_vaddr p = Some va |] ** exposed_ptr p.
+#[global] Arguments pinned_ptr {_ _} va p : assert.
+
 Section pinned_ptr_def.
   Context `{Σ : cpp_logic}.
 
-  Definition exposed_ptr_def p : mpred :=
-    valid_ptr p ** ∃ aid, [| ptr_alloc_id p = Some aid |] ** exposed_aid aid.
-  Definition exposed_ptr_aux : seal exposed_ptr_def. Proof. by eexists. Qed.
-  Definition exposed_ptr := exposed_ptr_aux.(unseal).
-  Definition exposed_ptr_eq : exposed_ptr = _ := exposed_ptr_aux.(seal_eq).
-
-  #[global] Hint Opaque exposed_ptr : typeclass_instances.
-
   #[global] Instance exposed_ptr_persistent p : Persistent (exposed_ptr p).
-  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+  Proof. rewrite exposed_ptr.unlock. apply _. Qed.
   #[global] Instance exposed_ptr_affine p : Affine (exposed_ptr p).
-  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+  Proof. rewrite exposed_ptr.unlock. apply _. Qed.
   #[global] Instance exposed_ptr_timeless p : Timeless (exposed_ptr p).
-  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+  Proof. rewrite exposed_ptr.unlock. apply _. Qed.
   #[global] Instance exposed_ptr_valid p :
     Observe (valid_ptr p) (exposed_ptr p).
-  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+  Proof. rewrite exposed_ptr.unlock. apply _. Qed.
 
   Lemma exposed_ptr_nullptr : |-- exposed_ptr nullptr.
   Proof.
-    rewrite exposed_ptr_eq /exposed_ptr_def ptr_alloc_id_nullptr.
+    rewrite exposed_ptr.unlock ptr_alloc_id_nullptr.
     iDestruct valid_ptr_nullptr as "$". iExists _.
     by iDestruct exposed_aid_null_alloc_id as "$".
   Qed.
@@ -749,7 +755,7 @@ Section pinned_ptr_def.
   Lemma offset2_exposed_ptr p o1 o2 :
     valid_ptr (p ,, o2) |-- exposed_ptr (p ,, o1) -* exposed_ptr (p ,, o2).
   Proof.
-    rewrite exposed_ptr_eq /exposed_ptr_def.
+    rewrite exposed_ptr.unlock.
     iIntros "#V2 #[V1 E]"; iFrame "V2".
     iDestruct (valid_ptr_alloc_id with "V1") as %?.
     iDestruct (valid_ptr_alloc_id with "V2") as %?.
@@ -772,33 +778,20 @@ Section pinned_ptr_def.
     by iApply offset_inv_exposed_ptr.
   Qed.
 
-  (** Physical representation of pointers. *)
-  (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
-    virtual address [va].
-    [pinned_ptr] will only hold on pointers that are associated to addresses,
-    but other pointers exist. *)
-  Definition pinned_ptr_def (va : vaddr) (p : ptr) : mpred :=
-    [| ptr_vaddr p = Some va |] ** exposed_ptr p.
-  Definition pinned_ptr_aux : seal pinned_ptr_def. Proof. by eexists. Qed.
-  Definition pinned_ptr := pinned_ptr_aux.(unseal).
-  Definition pinned_ptr_eq : pinned_ptr = _ := pinned_ptr_aux.(seal_eq).
-
-  #[global] Hint Opaque pinned_ptr : typeclass_instances.
-
   #[global] Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p).
-  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+  Proof. rewrite pinned_ptr.unlock. apply _. Qed.
   #[global] Instance pinned_ptr_affine va p : Affine (pinned_ptr va p).
-  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+  Proof. rewrite pinned_ptr.unlock. apply _. Qed.
   #[global] Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p).
-  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+  Proof. rewrite pinned_ptr.unlock. apply _. Qed.
 
   Lemma pinned_ptr_intro p va :
     ptr_vaddr p = Some va -> exposed_ptr p |-- pinned_ptr va p.
-  Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "$". Qed.
+  Proof. rewrite pinned_ptr.unlock. by iIntros (?) "$". Qed.
 
   #[global] Instance pinned_ptr_ptr_vaddr va p :
     Observe [| ptr_vaddr p = Some va |] (pinned_ptr va p).
-  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+  Proof. rewrite pinned_ptr.unlock. apply _. Qed.
 
   Lemma pinned_ptr_change_va_eq (p : ptr) (va va' : vaddr)
     (Heq : ptr_vaddr p = Some va) :
@@ -825,7 +818,7 @@ Section pinned_ptr_def.
 
   #[global] Instance pinned_ptr_valid va p :
     Observe (valid_ptr p) (pinned_ptr va p).
-  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+  Proof. rewrite pinned_ptr.unlock. apply _. Qed.
 
   (** Just a corollary of [provides_storage_same_address] in the style of
   [provides_storage_pinned_ptr]. *)
@@ -892,7 +885,7 @@ Section with_cpp.
   #[global] Instance pinned_ptr_unique va va' p :
     Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
   Proof.
-    rewrite pinned_ptr_eq.
+    rewrite pinned_ptr.unlock.
     iIntros "[%H1 _] [%H2 _] !> !%". congruence.
   Qed.
 
@@ -912,7 +905,7 @@ Section with_cpp.
 
   Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def.
+    rewrite pinned_ptr.unlock.
     iFrame (ptr_vaddr_nullptr).
     iApply exposed_ptr_nullptr.
   Qed.
@@ -920,7 +913,7 @@ Section with_cpp.
   #[global] Instance pinned_ptr_zero_is_null (p : ptr) :
     Observe [| p = nullptr |] (pinned_ptr 0 p).
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def.
+    rewrite pinned_ptr.unlock.
     iIntros "[%Heq #E]".
     rewrite -valid_ptr_zero_null //.
     by iApply (exposed_ptr_valid with "E").
@@ -929,7 +922,7 @@ Section with_cpp.
   #[global] Instance pinned_ptr_null_is_zero addr :
     Observe [| addr = 0 |]%N (pinned_ptr addr nullptr).
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def ptr_vaddr_nullptr.
+    rewrite pinned_ptr.unlock ptr_vaddr_nullptr.
     apply: (observe_derive_only_provable (Some 0%N = Some addr)); naive_solver.
   Qed.
 
@@ -937,7 +930,7 @@ Section with_cpp.
     same_address pp1 pp2 ->
     exposed_ptr pp2 |-- pinned_ptr v pp1 -* pinned_ptr v pp2.
   Proof.
-    rewrite pinned_ptr_eq/pinned_ptr_def.
+    rewrite pinned_ptr.unlock/pinned_ptr_def.
     by iIntros ((? & -> & ->)%same_address_iff) "$ [%Hp _] !%".
   Qed.
 
@@ -948,7 +941,7 @@ Section with_cpp.
     [| 0 <= Z.of_N va + z |]%Z **
     pinned_ptr (Z.to_N (Z.of_N va + z)) (p ,, o).
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def.
+    rewrite pinned_ptr.unlock.
     iIntros (He) "#V' #(%P & E)".
     iDestruct (offset_pinned_ptr_pure with "V'") as "[$ $]"; [done..|].
     by iApply offset_exposed_ptr.
@@ -961,7 +954,7 @@ Section with_cpp.
     [| 0 <= Z.of_N va - z |]%Z **
     pinned_ptr (Z.to_N (Z.of_N va - z)) p.
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def.
+    rewrite pinned_ptr.unlock.
     iIntros (He) "#V #(%P & E)".
     iDestruct (offset_inv_pinned_ptr_pure with "[]") as "-#[$$]"; [done..| |].
     { by iApply (observe with "E"). }
@@ -976,7 +969,7 @@ Section with_cpp.
     [| 0 <= Z.of_N va - z1 + z2 |]%Z **
     pinned_ptr (Z.to_N (Z.of_N va - z1 + z2)) (p ,, o2).
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def.
+    rewrite pinned_ptr.unlock.
     iIntros (He1 He2) "V V1 #V2 #(%P & E)".
     iDestruct (offset_2_pinned_ptr_pure with "V V1 V2") as "[$$]"; [done..|].
     by iApply offset2_exposed_ptr.
@@ -986,7 +979,7 @@ Section with_cpp.
     pinned_ptr va p ⊢
     [| aligned_ptr n p <-> (n | va)%N |].
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def; iIntros "(%P & _) !%".
+    rewrite pinned_ptr.unlock; iIntros "(%P & _) !%".
     exact: pinned_ptr_pure_aligned_divide.
   Qed.
 
@@ -1002,7 +995,7 @@ Section with_cpp.
     (Hal : align_of ty = Some n) :
     type_ptr ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
   Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def.
+    rewrite pinned_ptr.unlock.
     iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
   Qed.
 
