@@ -97,10 +97,10 @@ Section with_cpp.
 
   (* NOTE this is not exposed as a hint *)
   Lemma as_Rep_observe P Q (o : forall p, Observe (P p) (Q p)) : Observe (as_Rep P) (as_Rep Q).
-  Proof. apply monPred_observe =>p; apply o. Qed.
+  Proof. apply: monPred_observe=>p. Qed.
   Lemma as_Rep_observe_2 P Q R (o : forall p, Observe2 (P p) (Q p) (R p)) :
     Observe2 (as_Rep P) (as_Rep Q) (as_Rep R).
-  Proof. apply monPred_observe_2=>p. apply o. Qed.
+  Proof. apply: monPred_observe_2=>p. Qed.
 
   #[global] Instance as_Rep_only_provable_observe Q (P : ptr → mpred) :
     (∀ p, Observe [| Q |] (P p)) → Observe [| Q |] (as_Rep P).
