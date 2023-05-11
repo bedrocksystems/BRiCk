@@ -441,7 +441,7 @@ It would be nice to make this the default.
 Aside: An equivalence relation on types identifying [Tqualified QM t]
 and [t] might enable simplifications elsewhere.
 *)
-Definition Unqualified (t : type) : Prop := ∀ q t', t <> Tqualified q t'.
+Definition Unqualified (t : type) : Prop := ¬ ∃ q t', t = Tqualified q t'.
 #[global] Arguments Unqualified : simpl never.
 #[global] Hint Opaque Unqualified : typeclass_instances.
 
@@ -449,9 +449,9 @@ Definition Unqualified (t : type) : Prop := ∀ q t', t <> Tqualified q t'.
   if t is Tqualified _ _ then true else false.
 #[local] Lemma Unqualified_qualifiedb t : Unqualified t <-> ¬ qualifiedb t.
 Proof.
-  split=>Hu.
-  - rewrite /qualifiedb=>Hq. case_match; try done. exact: Hu.
-  - move=>q t' Heq. by rewrite Heq in Hu.
+  rewrite /Unqualified. f_equiv. split.
+  - by intros (q & t' & ->).
+  - rewrite /qualifiedb. case_match; naive_solver.
 Qed.
 
 #[global] Instance Unqualified_dec t : Decision (Unqualified t).
@@ -573,16 +573,18 @@ Qed.
 
 (** Smart constructors *)
 
-Definition tqualified (q : type_qualifiers) (t : type) : type :=
-  match q with
-  | QM => t
-  | _ => Tqualified q t
+(**
+Qualify a type, merging nested qualifiers, suppressing [QM]
+qualifiers, and (https://www.eel.is/c++draft/dcl.ref#1) discarding any
+cv-qualifiers on reference types.
+*)
+Definition tqualified : type_qualifiers -> type -> type :=
+  qual_norm' $ fun q t =>
+  match t with
+  | Tref _ | Trv_ref _ => t
+  | _ => match q with QM => t | _ => Tqualified q t end
   end.
-
-Lemma tqualified_QM t : tqualified QM t = t.
-Proof. done. Qed.
-Lemma tqualified_not_QM q : q <> QM -> tqualified q = Tqualified q.
-Proof. by destruct q. Qed.
+#[global] Arguments tqualified _ !_ / : simpl nomatch, assert.
 
 (**
 [tref], [trv_ref] implement reference collapsing.
@@ -591,20 +593,168 @@ Background:
 https://en.cppreference.com/w/cpp/language/reference#Reference_collapsing
 https://www.eel.is/c++draft/dcl.ref#5
 *)
-Fixpoint tref (cv : type_qualifiers) (t : type) {struct t} : type :=
+Fixpoint tref (acc : type_qualifiers) (t : type) : type :=
   match t with
-  | Tref t => tref cv t
-  | Trv_ref t => tref cv t
-  | Tqualified q t => tref (merge_tq cv q) t
-  | _ => Tref (tqualified cv t)
+  | Tref t | Trv_ref t => tref QM t
+  | Tqualified q t => tref (merge_tq q acc) t
+  | _ => Tref (tqualified acc t)
   end.
-Fixpoint trv_ref (cv : type_qualifiers) (t : type) : type :=
+#[global] Arguments tref _ !_ / : simpl nomatch, assert.
+
+Fixpoint trv_ref (acc : type_qualifiers) (t : type) : type :=
   match t with
-  | Tref t => tref cv t
-  | Trv_ref t => trv_ref cv t
-  | Tqualified q t => trv_ref (merge_tq cv q) t
-  | _ => Trv_ref (tqualified cv t)
+  | Tref t => tref QM t
+  | Trv_ref t => trv_ref QM t
+  | Tqualified q t => trv_ref (merge_tq q acc) t
+  | _ => Trv_ref (tqualified acc t)
   end.
+#[global] Arguments trv_ref _ !_ / : simpl nomatch, assert.
+
+(** [IsRef] vs [NonRef] types *)
+
+(**
+[IsRef t] ([NonRef t]) means [t] is (is not) a reference type.
+*)
+Definition IsRef (t : type) : Prop := ∃ t', t = Tref t' \/ t = Trv_ref t'.
+#[global] Arguments IsRef : simpl never.
+#[global] Hint Opaque IsRef : typeclass_instances.
+
+Definition NonRef (t : type) : Prop := ¬ IsRef t.
+#[global] Arguments NonRef : simpl never.
+#[global] Hint Opaque NonRef : typeclass_instances.
+
+#[local] Definition is_refb (t : type) : bool :=
+  if t is (Tref _ | Trv_ref _) then true else false.
+#[local] Lemma IsRef_is_refb t : IsRef t <-> is_refb t.
+Proof.
+  split.
+  - by intros (t' & [-> | ->]).
+  - rewrite /IsRef. destruct t; first [done|naive_solver].
+Qed.
+#[local] Lemma NonRef_is_refb t : NonRef t <-> ¬ is_refb t.
+Proof. by rewrite /NonRef IsRef_is_refb. Qed.
+
+#[global] Instance IsRef_dec t : Decision (IsRef t).
+Proof.
+  refine (cast_if (decide (is_refb t)));
+    abstract (by rewrite IsRef_is_refb).
+Defined.
+
+#[global] Instance NonRef_dec t : Decision (NonRef t).
+Proof.
+  refine (cast_if (decide (¬ is_refb t)));
+    abstract (by rewrite NonRef_is_refb).
+Defined.
+
+Lemma ref_unqualified t : IsRef t -> Unqualified t.
+Proof. intros (t' & [-> | ->]); apply _. Qed.
+
+Lemma ref_nonref {t} : IsRef t -> NonRef t -> False.
+Proof. rewrite /NonRef. auto. Qed.
+
+Lemma ref_cases t : IsRef t \/ NonRef t.
+Proof.
+  rewrite /NonRef. destruct (decide (IsRef t)); auto.
+Qed.
+
+(**
+Teach TC resolution to prove [IsRef t], [NonRef t] when [t] a
+constructor.
+*)
+
+Existing Class IsRef.
+#[global] Hint Mode IsRef ! : typeclass_instances.
+#[global] Instance IsRef_instance t :
+  TCEq (is_refb t) true -> IsRef t | 50.
+Proof. by rewrite TCEq_eq IsRef_is_refb=>->. Qed.
+
+Existing Class NonRef.
+#[global] Hint Mode NonRef ! : typeclass_instances.
+#[global] Instance NonRef_instance t :
+  TCEq (is_refb t) false -> NonRef t | 50.
+Proof. rewrite TCEq_eq NonRef_is_refb=>->. tauto. Qed.
+
+(** [tqualified] *)
+
+Lemma tqualified_unfold q t :
+  tqualified q t =
+    match t with
+    | Tqualified q' t => tqualified (merge_tq q' q) t
+    | Tref _ | Trv_ref _ => t
+    | _ => match q with QM => t | _ => Tqualified q t end
+    end.
+Proof.
+  rewrite {1}/tqualified qual_norm'_unfold -/tqualified.
+  by destruct t.
+Qed.
+
+Lemma tqualified_prepost
+    (Pre : type_qualifiers -> type -> Prop)
+    (Post : type -> Prop) q t :
+  Pre q t ->
+  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q' q) t) ->
+  (∀ q t, Pre q t -> IsRef t -> Post t) ->
+  (∀ q t, Pre q t -> Unqualified t -> NonRef t -> Post (if q is QM then t else Tqualified q t)) ->
+  Post (tqualified q t).
+Proof.
+  intros. apply (qual_norm'_prepost Pre Post); [done..|]=>q' t'.
+  destruct (ref_cases t') as [Hr|Hnr].
+  - intros _ ?. move: (Hr). intros (t'' & [-> | ->]); by eauto.
+  - destruct t'; first [by auto|by case: (ref_nonref _ Hnr)].
+Qed.
+
+(** [tref] *)
+
+Lemma tref_unfold q t :
+  tref q t =
+    qual_norm' (fun q' t' =>
+      match t' with
+      | Tref t'' | Trv_ref t'' => tref QM t''
+      | _ => Tref (tqualified q' t')
+      end
+    ) q t.
+Proof. move: q. by induction t; cbn. Qed.
+
+Lemma tref_prepost
+    (Pre : type_qualifiers -> type -> Prop)
+    (Post : type -> Prop) q t :
+  Pre q t ->
+  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q' q) t) ->
+  (∀ q t, Pre q (Tref t) -> Pre QM t) ->
+  (∀ q t, Pre q (Trv_ref t) -> Pre QM t) ->
+  (∀ q t, Pre q t -> Unqualified t -> NonRef t -> Post $ Tref $ tqualified q t) ->
+  Post (tref q t).
+Proof.
+  intros Hpre Hq Hl Hr Hret.
+  move: q Hpre. induction t=>q Hpre; cbn; first [exact: Hret|eauto].
+Qed.
+
+(** [trv_ref] *)
+
+Lemma trv_ref_unfold q t :
+  trv_ref q t =
+    qual_norm' (fun q' t' =>
+      match t' with
+      | Tref t'' => tref QM t''
+      | Trv_ref t'' => trv_ref QM t''
+      | _ => Trv_ref (tqualified q' t')
+      end
+    ) q t.
+Proof. move: q. by induction t; cbn. Qed.
+
+Lemma trv_ref_prepost
+    (Pre : type_qualifiers -> type -> Prop)
+    (Post : type -> Prop) q t :
+  Pre q t ->
+  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q' q) t) ->
+  (∀ q t, Pre q (Trv_ref t) -> Pre QM t) ->
+  (∀ q t, Pre q (Tref t) -> Post (tref QM t)) ->
+  (∀ q t, Pre q t -> Unqualified t -> NonRef t -> Post $ Trv_ref $ tqualified q t) ->
+  Post (trv_ref q t).
+Proof.
+  intros Hpre ??? Hret.
+  move: q Hpre. induction t=>q ?; cbn; first [exact: Hret|eauto].
+Qed.
 
 (**
 normalization of types
