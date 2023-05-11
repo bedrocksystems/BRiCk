@@ -308,6 +308,7 @@ Module Type CPP_LOGIC
       eval_offset σ o = Some z ->
       ptr_vaddr p = Some va ->
       valid_ptr (p ,, o) |--
+      [| 0 <= Z.of_N va + z |]%Z **
       [| ptr_vaddr (p ,, o) = Some (Z.to_N (Z.of_N va + z)) |].
 
     Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
@@ -900,12 +901,13 @@ Section with_cpp.
     eval_offset σ o2 = Some z2 ->
     ptr_vaddr (p ,, o1) = Some va ->
     valid_ptr p |-- valid_ptr (p ,, o1) -* valid_ptr (p ,, o2) -*
+    [| 0 <= Z.of_N va - z1 + z2 |]%Z **
     [| ptr_vaddr (p ,, o2) = Some (Z.to_N (Z.of_N va - z1 + z2)) |].
   Proof.
     iIntros (He1 He2 Hpin1) "V V1 V2".
-    iDestruct (offset_inv_pinned_ptr_pure with "V1") as %[??]; [done..|].
-    iDestruct (offset_pinned_ptr_pure with "V2") as %Hgoal; [done..|].
-    iIntros "!%". by rewrite Z2N.id in Hgoal.
+    iDestruct (offset_inv_pinned_ptr_pure with "V1") as %[Hle1 Hp]; [done..|].
+    iDestruct (offset_pinned_ptr_pure with "V2") as %[Hle2 Hgoal]; [done..|].
+    iIntros "!%". by rewrite Z2N.id in Hgoal, Hle2.
   Qed.
 
   Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
@@ -942,18 +944,22 @@ Section with_cpp.
   Lemma offset_pinned_ptr o z va p :
     eval_offset _ o = Some z ->
     valid_ptr (p ,, o) |--
-    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + z)) (p ,, o).
+    pinned_ptr va p -*
+    [| 0 <= Z.of_N va + z |]%Z **
+    pinned_ptr (Z.to_N (Z.of_N va + z)) (p ,, o).
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros (He) "#V' #(%P & E)".
-    iDestruct (offset_pinned_ptr_pure with "V'") as "$"; [done..|].
+    iDestruct (offset_pinned_ptr_pure with "V'") as "[$ $]"; [done..|].
     by iApply offset_exposed_ptr.
   Qed.
 
   Lemma offset_inv_pinned_ptr o z va p :
     eval_offset _ o = Some z ->
-    valid_ptr p |-- pinned_ptr va (p ,, o) -*
-    [| 0 <= Z.of_N va - z |]%Z ** pinned_ptr (Z.to_N (Z.of_N va - z)) p.
+    valid_ptr p |--
+    pinned_ptr va (p ,, o) -*
+    [| 0 <= Z.of_N va - z |]%Z **
+    pinned_ptr (Z.to_N (Z.of_N va - z)) p.
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros (He) "#V #(%P & E)".
@@ -967,11 +973,12 @@ Section with_cpp.
     eval_offset σ o2 = Some z2 ->
     valid_ptr p |-- valid_ptr (p ,, o1) -* valid_ptr (p ,, o2) -*
     pinned_ptr va (p ,, o1) -*
+    [| 0 <= Z.of_N va - z1 + z2 |]%Z **
     pinned_ptr (Z.to_N (Z.of_N va - z1 + z2)) (p ,, o2).
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros (He1 He2) "V V1 #V2 #(%P & E)".
-    iDestruct (offset_2_pinned_ptr_pure with "V V1 V2") as "$"; [done..|].
+    iDestruct (offset_2_pinned_ptr_pure with "V V1 V2") as "[$$]"; [done..|].
     by iApply offset2_exposed_ptr.
   Qed.
 
@@ -1003,7 +1010,8 @@ Section with_cpp.
     p1 ,, o_sub _ ty z = p2 ->
     size_of σ ty = Some o ->
         valid_ptr p2 ** pinned_ptr va p1
-    |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
+    |-- [| 0 <= Z.of_N va + z * Z.of_N o |]%Z **
+    pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
     move => <- o_eq.
     iIntros "[val pin1]".
