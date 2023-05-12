@@ -662,7 +662,7 @@ Module Type Expr.
       |-- wp_xval (Ecast (Cderived2base path) e Xvalue ty) Q.
 
     Axiom wp_operand_cast_derived2base : forall e ty path Q,
-      match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr  ty with
+      match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
       | Some (Tnamed derived) , Some (Tnamed base) =>
           wp_operand e (fun addr free =>
             let addr' := _eqv addr ,, derived_to_base derived path in

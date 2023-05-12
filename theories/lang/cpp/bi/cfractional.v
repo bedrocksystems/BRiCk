@@ -157,7 +157,7 @@ Section cfractional.
     CFractional F -> CFractional (fun q => embed (F q) : PROP').
   Proof. intros ???. by rewrite cfractional embed_sep. Qed.
 
-  #[global] Instance  as_cfractional_embed `{!BiEmbed PROP PROP'} P F q :
+  #[global] Instance as_cfractional_embed `{!BiEmbed PROP PROP'} P F q :
     AsCFractional P F q -> AsCFractional (embed P) (fun q => embed (F q)) q.
   Proof. split; [by rewrite ->!as_cfractional | apply _]. Qed.
 

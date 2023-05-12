@@ -809,16 +809,6 @@ Module SimpleCPP.
     Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
     Proof. iSplit; by [iApply valid_ptr_nullptr | iLeft]. Qed.
 
-    (* Not provable in the current model without tying to a concrete model of pointers. *)
-    Lemma offset_pinned_ptr_pure σ o n va p :
-      eval_offset σ o = Some n ->
-      pinned_ptr_pure va p ->
-      valid_ptr (p ,, o) |--
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va + n)) (p ,, o) |].
-    Proof.
-      rewrite pinned_ptr_pure_eq. intros E P.
-    Abort.
-
     Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
       [| p <> nullptr |] **
       [| aligned_ptr_ty ty p |] **
@@ -1106,11 +1096,23 @@ Module SimpleCPP.
       type_ptr ty p1 ∧ type_ptr ty p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
         |={↑pred_ns}=> [| p1 = p2 |].
 
+    (* Not provable in the current model without tying to a concrete model of pointers. *)
+    Lemma offset_pinned_ptr_pure σ o z va p :
+      eval_offset σ o = Some z ->
+      ptr_vaddr p = Some va ->
+      valid_ptr (p ,, o) |--
+      [| 0 <= Z.of_N va + z |]%Z **
+      [| ptr_vaddr (p ,, o) = Some (Z.to_N (Z.of_N va + z)) |].
+    Proof.
+      intros E P.
+    Abort.
+
     Axiom offset_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->
       pinned_ptr_pure va p ->
       valid_ptr (p ,, o) |--
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p ,, o) |].
+      [| 0 <= Z.of_N va + z |]%Z **
+      [| ptr_vaddr (p ,, o) = Some (Z.to_N (Z.of_N va + z)) |].
 
     Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->

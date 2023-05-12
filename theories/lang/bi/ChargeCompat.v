@@ -25,17 +25,17 @@ Section with_PROP.
   Proof. rewrite -bi.forall_elim. apply. Qed.
   Lemma lforallR {T : Type} (P: T -> PROP) C : (forall x, C |-- P x) -> C |-- Forall y, P y.
   Proof. apply bi.forall_intro. Qed.
-  Lemma landL1 (P Q C : PROP) : P |-- C  ->  P //\\ Q |-- C.
+  Lemma landL1 (P Q C : PROP) : P |-- C -> P //\\ Q |-- C.
   Proof. apply bi.and_elim_l'. Qed.
-  Lemma landL2 (P Q C : PROP) : Q |-- C  ->  P //\\ Q |-- C.
+  Lemma landL2 (P Q C : PROP) : Q |-- C -> P //\\ Q |-- C.
   Proof. apply bi.and_elim_r'. Qed.
-  Lemma lorR1 (P Q C : PROP) :  C |-- P  ->  C |-- P \\// Q.
+  Lemma lorR1 (P Q C : PROP) :  C |-- P -> C |-- P \\// Q.
   Proof. apply bi.or_intro_l'. Qed.
-  Lemma lorR2 (P Q C : PROP) :  C |-- Q  ->  C |-- P \\// Q.
+  Lemma lorR2 (P Q C : PROP) :  C |-- Q -> C |-- P \\// Q.
   Proof. apply bi.or_intro_r'. Qed.
-  Lemma landR (P Q C : PROP) :  C |-- P  ->  C |-- Q  ->  C |-- P //\\ Q.
+  Lemma landR (P Q C : PROP) :  C |-- P -> C |-- Q -> C |-- P //\\ Q.
   Proof. apply bi.and_intro. Qed.
-  Lemma lorL  (P Q C : PROP) :  P |-- C  ->  Q |-- C  ->  P \\// Q |-- C.
+  Lemma lorL (P Q C : PROP) :  P |-- C -> Q |-- C -> P \\// Q |-- C.
   Proof. apply bi.or_elim. Qed.
   Lemma landAdj (P Q C : PROP) : C |-- (P -->> Q) -> C //\\ P |-- Q.
   Proof. apply bi.impl_elim_l'. Qed.

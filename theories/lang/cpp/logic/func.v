@@ -178,7 +178,7 @@ Section with_cpp.
         end
     | (x,ty) :: xs =>
         match ptrs with
-        | p :: ps  =>
+        | p :: ps =>
             let '(cv, ty) := decompose_type ty in
             if q_const cv then
               wp_make_const tu p ty $ bind_vars xs ar ps (fun vap => Rbind x p $ ρ vap)

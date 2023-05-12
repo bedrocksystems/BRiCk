@@ -278,7 +278,7 @@ Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
   Definition compare (x y : t) : OrderedType.Compare lt eq x y.
   Proof.
     refine (
-      match bs_cmp x y as X return bs_cmp x y = X -> OrderedType.Compare lt eq x y  with
+      match bs_cmp x y as X return bs_cmp x y = X -> OrderedType.Compare lt eq x y with
       | Eq => fun pf => OrderedType.EQ _
       | Lt => fun pf => OrderedType.LT pf
       | Gt => fun pf => OrderedType.GT _

@@ -70,7 +70,7 @@ Example e_int : Rep := intR q z. (** similarly, [sintR] and [uingR] *)
 Example e_short : Rep := shortR q z. (** similarly, [ushortR] and [sshortR] *)
 Example e_long : Rep := longR q z. (** similarly, [ulongR] and [slongR] *)
 Example e_longlong : Rep := longlongR q z. (** similarly, [ulonglongR] and [slonglongR] *)
-Example e_i8 : Rep  := i8R q z. (** similarly, [int16], [int32], [uint64]. Prefix 'u' for the unsigned variants *)
+Example e_i8 : Rep := i8R q z. (** similarly, [int16], [int32], [uint64]. Prefix 'u' for the unsigned variants *)
 
 (** Character types work a little bit differently because they are represented
     in an architecture-indepenent way as *unsigned* numbers *)

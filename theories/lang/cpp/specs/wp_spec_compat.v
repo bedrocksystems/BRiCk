@@ -62,7 +62,7 @@ Section with_prop.
        *)
       spec_internal : forall (acc_arg : list ARG) (acc_pre : list PROP) (acc_post : list (RESULT -> PROP)),
         list ARG -> (RESULT -> PROP) -> PROP
-    ; spec_internal_frame : forall  args' P Q args K K',
+    ; spec_internal_frame : forall args' P Q args K K',
         (∀ r, K r -∗ K' r) ⊢ spec_internal args' P Q args K -∗ spec_internal args' P Q args K'
       (* the following three fields formally capture the meaning of the accumulators
        *)
@@ -322,8 +322,8 @@ Section with_AR.
       magic wand, which is much nicer to deal with.
    *)
   #[program] Definition add_post_with (P : R -> PROP) (wpp : WPP) : WPP :=
-    {| spec_internal := funI args' PRE Q  =>
-         wpp.(spec_internal) args' PRE (P  :: Q) |}.
+    {| spec_internal := funI args' PRE Q =>
+         wpp.(spec_internal) args' PRE (P :: Q) |}.
   Next Obligation.
     simpl; intros.
     iIntros "A"; by iApply spec_internal_frame.

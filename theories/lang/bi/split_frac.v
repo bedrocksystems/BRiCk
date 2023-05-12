@@ -222,12 +222,12 @@ Module split_frac.
   *)
 
   (** [(q1 + q2)*p --> q1*p + q2*p] *)
-  #[global] Instance on_add_mul_r p q q1 q2 q1p q2p  :
+  #[global] Instance on_add_mul_r p q q1 q2 q1p q2p :
     ON_ADD q q1 q2 -> QpTC.MUL q1 p q1p -> QpTC.MUL q2 p q2p ->
     OnAdd (q * p) q1p q2p | 20.
   Proof.
     intros [?] [?] [?]. rewrite /OnAdd.
-    by rewrite (on_add q) Qp.mul_add_distr_r  !QpTC.mul.
+    by rewrite (on_add q) Qp.mul_add_distr_r !QpTC.mul.
   Qed.
 
   (** [p*(q1 + q2) --> p*q1 + p*q2] *)
@@ -236,7 +236,7 @@ Module split_frac.
     OnAdd (p * q) pq1 pq2 | 21.
   Proof.
     intros [?] [?] [?]. rewrite /OnAdd.
-    by rewrite (on_add q) Qp.mul_add_distr_l  !QpTC.mul.
+    by rewrite (on_add q) Qp.mul_add_distr_l !QpTC.mul.
   Qed.
 
   (**
@@ -250,7 +250,7 @@ Module split_frac.
     OnAdd (q / p) q1p q2p | 20.
   Proof.
     intros [?] [?] [?]. rewrite /OnAdd.
-    by rewrite (on_add q) Qp.div_add_distr  !QpTC.div.
+    by rewrite (on_add q) Qp.div_add_distr !QpTC.div.
   Qed.
 
   (**
@@ -266,7 +266,7 @@ Module split_frac.
     ON_ADD q q1 q2 -> Split q q1 q2 | 10.
   Proof. by case. Qed.
 
-  #[global] Instance split_div_2 q qout  :
+  #[global] Instance split_div_2 q qout :
     QpTC.DIV q 2 qout -> Split q qout qout | 50.
   Proof.
     intros [?]. rewrite /Split. rewrite -(Qp.div_2 q). by f_equal.

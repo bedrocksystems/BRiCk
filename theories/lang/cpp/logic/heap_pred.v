@@ -3,6 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+From elpi.apps Require Export locker.
+
 From iris.proofmode Require Import proofmode.
 From bedrock.lang.bi Require Import fractional.
 
@@ -42,9 +44,18 @@ Section defs.
   Definition type_ptrR := type_ptrR_aux.(unseal).
   Definition type_ptrR_eq : @type_ptrR = _ := type_ptrR_aux.(seal_eq).
 
+  Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
+  Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
+  Definition alignedR := alignedR_aux.(unseal).
+  Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
 End defs.
 
 Arguments type_ptrR {_ Σ σ} _.
+
+(* [Rep] version of (to be deprecated) [aligned_ptr_ty] *)
+mlock Definition aligned_ofR `{Σ : cpp_logic} {σ} (ty : type) : Rep :=
+  ∃ align : N, [| align_of ty = Some align |] ** alignedR align.
+Arguments aligned_ofR {_ Σ σ} _.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -345,10 +356,7 @@ Section with_cpp.
   #[global] Instance nonnullR_timeless : Timeless nonnullR.
   Proof. rewrite nonnullR_eq. apply _. Qed.
 
-  Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
-  Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
-  Definition alignedR := alignedR_aux.(unseal).
-  Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
+  (** ** [alignedR] *)
   #[global] Instance alignedR_persistent {al} : Persistent (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
   #[global] Instance alignedR_affine {al} : Affine (alignedR al).
@@ -372,6 +380,37 @@ Section with_cpp.
     (n | m)%N ->
     alignedR m ⊢ alignedR n.
   Proof. by move->. Qed.
+
+  (* To use sparingly: we're deprecating [aligned_ptr] *)
+  Lemma _at_alignedR (p : ptr) n :
+    p |-> alignedR n -|- [| aligned_ptr n p |].
+  Proof. by rewrite alignedR_eq /alignedR_def _at_as_Rep. Qed.
+
+  #[global] Instance aligned_ofR_persistent {ty} : Persistent (aligned_ofR ty).
+  Proof. rewrite aligned_ofR.unlock. apply _. Qed.
+  #[global] Instance aligned_ofR_affine {ty} : Affine (aligned_ofR ty).
+  Proof. rewrite aligned_ofR.unlock. apply _. Qed.
+  #[global] Instance aligned_ofR_timeless {ty} : Timeless (aligned_ofR ty).
+  Proof. rewrite aligned_ofR.unlock. apply _. Qed.
+
+  Lemma aligned_ofR_aligned_ptr_ty p ty :
+    p |-> aligned_ofR ty -|- [| aligned_ptr_ty ty p |].
+  Proof.
+    rewrite aligned_ofR.unlock alignedR_eq /alignedR_def /aligned_ptr_ty _at_exists only_provable_exist.
+    f_equiv => n. rewrite _at_sep _at_as_Rep _at_only_provable.
+    by iIntros "!%".
+  Qed.
+
+  Lemma type_ptrR_aligned_ofR ty :
+    type_ptrR ty |-- aligned_ofR ty.
+  Proof.
+    apply Rep_entails_at => p.
+    by rewrite _at_type_ptrR type_ptr_aligned_pure aligned_ofR_aligned_ptr_ty.
+  Qed.
+
+  Lemma type_ptr_aligned_ofR p ty :
+    type_ptr ty p |-- p |-> aligned_ofR ty.
+  Proof. by rewrite -type_ptrR_aligned_ofR _at_type_ptrR. Qed.
 
   Lemma null_nonnull (R : Rep) : nullR |-- nonnullR -* R.
   Proof.

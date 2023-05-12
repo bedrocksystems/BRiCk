@@ -31,7 +31,7 @@ Section FreeTemps.
   (* BEGIN FreeTemps.t *)
   Inductive t : Type :=
   | id (* = fun x => x *)
-  | delete (ty : type) (p : ptr) (* = delete_val ty p  *)
+  | delete (ty : type) (p : ptr) (* = delete_val ty p *)
   | delete_va (va : list (type * ptr)) (p : ptr)
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t)

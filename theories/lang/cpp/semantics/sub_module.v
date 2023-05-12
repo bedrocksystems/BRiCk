@@ -25,7 +25,7 @@ Require Import bedrock.lang.cpp.ast.
  *)
 
 
-(* Some tactics  *)
+(* Some tactics *)
 #[local] Ltac do_bool_decide :=
   repeat match goal with
     | H : False |- _ => contradiction

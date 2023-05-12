@@ -93,9 +93,9 @@ Module agree : AGREE.
   (** Ghosts *)
 
   Definition gname (A : Type) : Set := iprop.gname.
-  #[local] Instance  gname_inhabited A : Inhabited (gname A) := _.
-  #[local] Instance  gname_eq_dec A : EqDecision (gname A) := _.
-  #[local] Instance  gname_countable A : Countable (gname A) := _.
+  #[local] Instance gname_inhabited A : Inhabited (gname A) := _.
+  #[local] Instance gname_eq_dec A : EqDecision (gname A) := _.
+  #[local] Instance gname_countable A : Countable (gname A) := _.
 
   (** Predicates *)
 

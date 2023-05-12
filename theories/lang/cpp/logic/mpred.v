@@ -46,6 +46,10 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
     (* TODO: seal *)
     Canonical Structure mpredO : ofe
       := Ofe mpred (ofe_mixin (monPredO ti (iPropI _Σ))).
+
+    (* We name this, for manual use later when importing [linearity]. *)
+    Lemma mpred_BiAffine : BiAffine mpred.
+    Proof. apply _. Qed.
   End with_cpp.
 
   Bind Scope bi_scope with mpred.
