@@ -1000,12 +1000,12 @@ Section with_cpp.
   Qed.
 
   Lemma shift_pinned_ptr_sub ty z va (p1 p2 : ptr) o:
-    size_of σ ty = Some o ->
     p1 ,, o_sub _ ty z = p2 ->
+    size_of σ ty = Some o ->
         valid_ptr p2 ** pinned_ptr va p1
     |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
-    move => o_eq <-.
+    move => <- o_eq.
     iIntros "[val pin1]".
     iApply (offset_pinned_ptr _ with "val") => //.
     rewrite eval_o_sub o_eq /= Z.mul_comm //.
