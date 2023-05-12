@@ -35,7 +35,7 @@ Elpi Db derive.finite.db lp:{{
       */
       /*
       * [mk-finite-constructor.aux Constructor ConstrType InputList ResType OutputTerm]
-      * will return  in [OutputTerm] the list
+      * will return in [OutputTerm] the list
       * [(Constructor <$> enum _ <*> enum _) ++ InputList], passing as many
       * arguments to [Constructor] as needed.
       *

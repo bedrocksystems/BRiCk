@@ -435,7 +435,7 @@ Section with_array_R.
     rewrite -_at_offsetR. by apply _at_observe, arrayR_sub_type_ptr_obs.
   Qed.
 
-  Lemma arrayR_sub_svalidR_obs (i : Z) xs  :
+  Lemma arrayR_sub_svalidR_obs (i : Z) xs :
     (0 ≤ i < Z.of_nat $ length xs)%Z →
     Observe (.[ ty ! i ] |-> svalidR) (arrayR ty R xs).
   Proof. intros. rewrite -type_ptrR_svalidR. exact: arrayR_sub_type_ptr_obs. Qed.
@@ -580,7 +580,7 @@ Section arrayR_agree.
 
   (** This is *not* an instance because TC resolution cannot
       always solve the unification problem for [R]. *)
-  Lemma arrayR_agree_prefix  q1 q2 l k :
+  Lemma arrayR_agree_prefix q1 q2 l k :
     (∀ q1 q2 x1 x2, Observe2 [| x1 = x2 |] (R q1 x1) (R q2 x2)) ->
     length l <= length k ->
     Observe2 [| l = take (length l) k |] (arrayR ty (R q1) l) (arrayR ty (R q2) k).

@@ -512,7 +512,7 @@ Section listN.
     takeN n (resizeN (n + m) x l) = resizeN n x l.
   Proof. by rewrite /takeN /resizeN N2Nat.inj_add take_resize_add. Qed.
 
-  Lemma takeN_resizeN_le l n m x  :
+  Lemma takeN_resizeN_le l n m x :
     n ≤ m →
     takeN n (resizeN m x l) = resizeN n x l.
   Proof. move=> /N2Nat_inj_le. apply take_resize_le. Qed.

@@ -82,7 +82,7 @@ Section finset.
   #[global] Instance list_to_set_mono :
     Proper (subseteq ==> subseteq) (list_to_set (C := C)).
   Proof. move=>x y Heq. set_solver. Qed.
-  (* [Proper]ness of [list_to_set] wrt  *)
+  (* [Proper]ness of [list_to_set] wrt *)
   (* [list_to_set_perm] and [list_to_set_perm_L] already exists. *)
 
   (** [size] *)

@@ -251,7 +251,7 @@ Section theory.
     Lemma excl_op_validI a1 a2 : ✓ (Excl a1 ⋅ Excl a2) ⊣⊢ False.
     Proof. by rewrite excl_validI. Qed.
 
-    Lemma Excl_includedI a b  : Excl' a ≼ Excl' b ⊣⊢ a ≡ b.
+    Lemma Excl_includedI a b : Excl' a ≼ Excl' b ⊣⊢ a ≡ b.
     Proof. rewrite -embed_includedI -embed_internal_eq. solve_equiv Excl_includedN. Qed.
   End excl.
 

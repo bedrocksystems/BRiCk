@@ -20,7 +20,7 @@ Notation WithPrePostO PROP := (WpSpecO PROP ptr ptr).
 
 #[local] Notation SPEC := (WpSpec_cpp_ptr) (only parsing).
 
-(* A specification for a function  *)
+(* A specification for a function *)
 Definition SFunction `{Σ : cpp_logic} {cc : calling_conv} {ar : function_arity}
     (ret : type) (targs : list type) (PQ : SPEC)
     : function_spec :=
@@ -84,7 +84,7 @@ Section with_cpp.
 
   (** The following monotonicity lemmas are (i) stated so that they
       don't force a pair of related SPECs to share universes and (ii)
-      proved so that they don't constrain the  universes [Y1], [Y2]
+      proved so that they don't constrain the universes [Y1], [Y2]
       from above. The TC instances are strictly less useful, as they
       necessarily give up on both (i) and (ii). *)
   Section SFunction.

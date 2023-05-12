@@ -119,7 +119,7 @@ Section big_sepL.
 End big_sepL.
 
 Lemma big_sepL_mono_elem {PROP : bi} {A : Type} (Φ Ψ : A → PROP) (l : list A):
-  (∀ (y : A),  y ∈ l -> Φ y  ⊢ Ψ y)
+  (∀ (y : A), y ∈ l -> Φ y ⊢ Ψ y)
   → ([∗ list] y ∈ l, Φ y) ⊢ ([∗ list] y ∈ l, Ψ y).
 Proof.
   intros Hin. apply big_sepL_mono => k y Hl. eapply Hin, elem_of_list_lookup_2, Hl.
