@@ -745,14 +745,6 @@ Section pinned_ptr_def.
     by iDestruct exposed_aid_null_alloc_id as "$".
   Qed.
 
-  Lemma offset_exposed_ptr p o :
-    valid_ptr (p ,, o) |-- exposed_ptr p -* exposed_ptr (p ,, o).
-  Proof.
-    rewrite exposed_ptr_eq /exposed_ptr_def.
-    iIntros "#V' #[V E]". iDestruct (valid_ptr_alloc_id with "V'") as %?.
-    iFrame "V'". by rewrite ptr_alloc_id_offset.
-  Qed.
-
   Lemma offset2_exposed_ptr p o1 o2 :
     valid_ptr (p ,, o2) |-- exposed_ptr (p ,, o1) -* exposed_ptr (p ,, o2).
   Proof.
@@ -763,9 +755,21 @@ Section pinned_ptr_def.
     by rewrite ptr_alloc_id_offset // ptr_alloc_id_offset.
   Qed.
 
+  Lemma offset_exposed_ptr p o :
+    valid_ptr (p ,, o) |-- exposed_ptr p -* exposed_ptr (p ,, o).
+  Proof. rewrite -{2}(offset_ptr_id p). apply offset2_exposed_ptr. Qed.
+
   Lemma offset_inv_exposed_ptr p o :
     valid_ptr p |-- exposed_ptr (p ,, o) -* exposed_ptr p.
   Proof. rewrite -{1 3}(offset_ptr_id p). apply offset2_exposed_ptr. Qed.
+
+  Lemma offset_exposed_ptr_all p o :
+    valid_ptr p ∗ valid_ptr (p ,, o) ⊢ exposed_ptr p ∗-∗ exposed_ptr (p ,, o).
+  Proof.
+    iIntros "#[V V']"; iSplit.
+    by iApply offset_exposed_ptr.
+    by iApply offset_inv_exposed_ptr.
+  Qed.
 
   (** Physical representation of pointers. *)
   (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
@@ -829,9 +833,6 @@ Section pinned_ptr_def.
     provides_storage storage_ptr obj_ptr aty |-- [| ptr_vaddr obj_ptr = Some va |].
   Proof. rewrite provides_storage_same_address. by iIntros (HP <-). Qed.
 End pinned_ptr_def.
-
-#[deprecated(note="Use pinned_ptr_ptr_vaddr", since="2022-01-18")]
-Notation pinned_ptr_pinned_ptr_pure := pinned_ptr_ptr_vaddr (only parsing).
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
@@ -999,12 +1000,12 @@ Section with_cpp.
   Qed.
 
   Lemma shift_pinned_ptr_sub ty z va (p1 p2 : ptr) o:
-    size_of σ ty = Some o ->
     p1 ,, o_sub _ ty z = p2 ->
+    size_of σ ty = Some o ->
         valid_ptr p2 ** pinned_ptr va p1
     |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
-    move => o_eq <-.
+    move => <- o_eq.
     iIntros "[val pin1]".
     iApply (offset_pinned_ptr _ with "val") => //.
     rewrite eval_o_sub o_eq /= Z.mul_comm //.

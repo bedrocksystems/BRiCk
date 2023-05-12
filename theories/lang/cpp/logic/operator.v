@@ -56,7 +56,7 @@ Section with_Σ.
     [| forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res |] ∗
     valid_ptr p1 ∗ valid_ptr p2.
 
-  (* Two pointers into the same array are [ptr_ord_comparable]. *)
+  (* Two pointers into the same object are [ptr_ord_comparable]. *)
   Lemma ptr_ord_comparable_off_off o1 o2 base p1 p2 f res :
     p1 = base ,, o1 ->
     p2 = base ,, o2 ->

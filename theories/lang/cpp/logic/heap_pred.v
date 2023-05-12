@@ -204,7 +204,7 @@ Section with_cpp.
   Proof.
     intros * Hv' Hval_related; induction Hval_related;
       try (by inversion Hv'); auto.
-  Qed.
+  Succeed Qed. Abort.
 
   (** This seems odd, but it's relevant to the (former) proof that [anyR] is
   fractional; currently unused. *)
