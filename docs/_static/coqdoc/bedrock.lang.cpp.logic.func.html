@@ -96,7 +96,7 @@ Early to get the right <span class="inlinecode"><a class="idref" href="bedrock.l
 </div>
 
 <div class="doc">
-<a id="lab204"></a><h1 class="section">Aggregate identity</h1>
+<a id="lab205"></a><h1 class="section">Aggregate identity</h1>
 
 </div>
 <div class="code">
@@ -223,7 +223,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab205"></a><h1 class="section">Binding parameters</h1>
+<a id="lab206"></a><h1 class="section">Binding parameters</h1>
 
 </div>
 <div class="code">
@@ -288,7 +288,7 @@ sanity chect that initialization and revert are inverses
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">x</span><a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a><span class="id" title="var">ty</span><a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#::list_scope:x_'::'_x"><span class="id" title="notation">::</span></a> <span class="id" title="var">xs</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.logic.func.html#ptrs:45"><span class="id" title="variable">ptrs</span></a> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">p</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#::list_scope:x_'::'_x"><span class="id" title="notation">::</span></a> <span class="id" title="var">ps</span>  =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">p</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#::list_scope:x_'::'_x"><span class="id" title="notation">::</span></a> <span class="id" title="var">ps</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> '<a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">cv</span><a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">ty</span><a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#decompose_type"><span class="id" title="definition">decompose_type</span></a> <span class="id" title="var">ty</span> <span class="id" title="tactic">in</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.ssr.ssreflect.html#::general_if_scope:'if'_x_'then'_x_'else'_x"><span class="id" title="notation">if</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#q_const"><span class="id" title="definition">q_const</span></a> <span class="id" title="var">cv</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.ssr.ssreflect.html#::general_if_scope:'if'_x_'then'_x_'else'_x"><span class="id" title="notation">then</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.const.html#wp_make_const"><span class="id" title="abbreviation">wp_make_const</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a> <span class="id" title="var">p</span> <span class="id" title="var">ty</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#bind_vars:48"><span class="id" title="definition">bind_vars</span></a> <span class="id" title="var">xs</span> <a class="idref" href="bedrock.lang.cpp.logic.func.html#ar:44"><span class="id" title="variable">ar</span></a> <span class="id" title="var">ps</span> (<span class="id" title="keyword">fun</span> <a id="vap:57" class="idref" href="#vap:57"><span class="id" title="binder">vap</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.wp.html#Rbind"><span class="id" title="constructor">Rbind</span></a> <span class="id" title="var">x</span> <span class="id" title="var">p</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#c8791f27ce5e57c15c7485d9f646fbc1"><span class="id" title="variable">ρ</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#vap:57"><span class="id" title="variable">vap</span></a>)<br/>
@@ -320,11 +320,11 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab206"></a><h1 class="section">Weakest preconditions of the flavors of C++ "functions"</h1>
+<a id="lab207"></a><h1 class="section">Weakest preconditions of the flavors of C++ "functions"</h1>
 
 <div class="paragraph"> </div>
 
-<a id="lab207"></a><h2 class="section">the weakest precondition of a function</h2>
+<a id="lab208"></a><h2 class="section">the weakest precondition of a function</h2>
 
 </div>
 <div class="code">
@@ -354,7 +354,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab208"></a><h2 class="section">The weakest precondition of a method</h2>
+<a id="lab209"></a><h2 class="section">The weakest precondition of a method</h2>
 
 
 <div class="paragraph"> </div>
@@ -391,7 +391,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab209"></a><h2 class="section">Weakest precondition of a constructor</h2>
+<a id="lab210"></a><h2 class="section">Weakest precondition of a constructor</h2>
 
 </div>
 <div class="code">
@@ -696,7 +696,7 @@ A special version of return to match the C++ rule that
 </div>
 
 <div class="doc">
-<a id="lab210"></a><h2 class="section">Weakest precondition of a destructor</h2>
+<a id="lab211"></a><h2 class="section">Weakest precondition of a destructor</h2>
 
 </div>
 <div class="code">

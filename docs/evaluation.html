@@ -114,7 +114,7 @@ C++ semantics guarantees that the lifetime of temporaries is well-bracketed, mea
 In BRiCk we capture the stack of objects to be destroyed using the type <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#FreeTemps.t">t</a>.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inductive t : Type :=
 | id (* = fun x =&gt; x *)
-| delete (ty : type) (p : ptr) (* = delete_val ty p  *)
+| delete (ty : type) (p : ptr) (* = delete_val ty p *)
 | delete_va (va : list (type * ptr)) (p : ptr)
 | seq (f g : t) (* = fun x =&gt; f $ g x *)
 | par (f g : t)
