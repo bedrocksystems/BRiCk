@@ -116,6 +116,7 @@ theories/lang/cpp/bi/cfractional.v
 theories/lang/cpp/bi/cfractional_tests.v
 theories/lang/cpp/bi/spec.v
 theories/lang/cpp/bi/spec/cfrac_splittable.v
+theories/lang/cpp/bi/spec/typed.v
 
 # Spec building blocks
 theories/lang/bi/spec.v
