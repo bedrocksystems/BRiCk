@@ -70,7 +70,6 @@ stages:
   - dune-build
   - build
   - test
-  - release
   - prepare_pages
   - pages
   - prepare_env_for_downstream
@@ -258,34 +257,6 @@ test_public:
 #  extends: .build_cpp2v_base
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master"'
-
-.release:
-  stage: release
-  script:
-    - cp -r build cpp2v-core
-  artifacts:
-    name: cpp2v-${LLVM_MAJ_VER}
-    paths:
-      - cpp2v-core/cpp2v
-      - cpp2v-core/bedrock
-  only:
-    - tags
-    - master
-
-release_latest:
-  extends:
-    - .release
-    - .latest
-  needs:
-    - build_latest
-
-# release_llvm10:
-#   extends:
-#   - .release
-#   - .llvm10
-#   needs:
-#     - build_llvm10
-
 
 prepare_pages:
   extends:
