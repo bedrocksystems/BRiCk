@@ -23,6 +23,7 @@ Require Import bedrock.lang.bi.errors.
  *)
 Definition epred `{Σ : cpp_logic thread_info} := mpred.
 Notation epredO := mpredO (only parsing).
+Bind Scope bi_scope with epred.
 
 Module FreeTemps.
 Section FreeTemps.
