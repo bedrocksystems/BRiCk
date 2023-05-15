@@ -117,6 +117,13 @@ change.
 Lemma foldr_cons {A B} (f : A -> B -> B) x y ys : foldr f x (y :: ys) = f y (foldr f x ys).
 Proof. done. Qed.
 
+Lemma foldr_rev {A B} (f : B -> A -> A) acc l :
+  foldr f acc (rev l) = foldl (fun acc x => f x acc) acc l.
+Proof. move: acc. induction l=>acc //=. by rewrite foldr_app IHl. Qed.
+Lemma foldl_rev {A B} (f : A -> B -> A) acc l :
+  foldl f acc (rev l) = foldr (fun x acc => f acc x) acc l.
+Proof. by rewrite -foldr_rev rev_involutive. Qed.
+
 (* From stdlib's [repeat] to stdpp's [replicate]. *)
 Lemma repeat_replicate {A} (x : A) n :
   repeat x n = replicate n x.
