@@ -226,7 +226,11 @@ Module Type Expr.
     (** * Unary Operators
      *)
 
-    (** the `*` operator is an lvalue
+    (** The `*` operator is an lvalue, but this does not perform an access yet
+        (see [wp_operand_cast_l2r] instead).
+
+        We check pointer [p] is strictly valid and aligned.
+        The official standard says (https://eel.is/c++draft/expr.unary.op#1):
 
         > The unary * operator performs indirection: the expression to which it is applied
         > shall be a pointer to an object type, or a pointer to a function type and the
@@ -234,12 +238,23 @@ Module Type Expr.
         > points. If the type of the expression is “pointer to T”, the type of the result
         > is “T”.
 
-        https://eel.is/c++draft/expr.unary.op#1
+        "The object or function" means we must require at least strict validity
+        (to exclude null and past-the-end pointers).
+        We don't ask for [type_ptrR]: that would forbid (unnecessarily?) code like:
+        <<
+        struct A { int x; int *y{&*x}; };
+        >>
+        TODO: make alignment redundant, by incorporating it into "invariants"
+        for C++ pointers of type T reliably.
      *)
     Axiom wp_lval_deref : forall ty e Q,
         wp_operand e (fun v free =>
                       match v with
-                      | Vptr p => Q p free
+                      | Vptr p =>
+                        (* This side-condition is not redundant for [&*p].
+                        Technically, [aligned_ofR] should be implied by *)
+                        p |-> aligned_ofR (erase_qualifiers ty) ** p |-> svalidR **
+                        Q p free
                       | _ => False
                       end)
         |-- wp_lval (Ederef e ty) Q.
@@ -249,7 +264,7 @@ Module Type Expr.
         https://eel.is/c++draft/expr.unary.op#3
      *)
     Axiom wp_operand_addrof : forall e Q,
-        wp_lval e (fun p free => Q (Vptr p) free)
+            wp_lval e (fun p free => Q (Vptr p) free)
         |-- wp_operand (Eaddrof e) Q.
 
     (** "pure" unary operators on primmitives, e.g. `-`, `!`, etc.
@@ -408,7 +423,10 @@ Module Type Expr.
         are represented as overloaded functions.
      *)
 
-    (** [Cl2r] represents reads of locations. *)
+    (** [Cl2r] represents reads of locations.
+    This counts as an _access_, so it must happen at one of the types listed in
+    https://eel.is/c++draft/basic.lval#11.
+    *)
     Axiom wp_operand_cast_l2r : forall ty e Q,
         wp_glval e (fun a free => Exists v,
            (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
