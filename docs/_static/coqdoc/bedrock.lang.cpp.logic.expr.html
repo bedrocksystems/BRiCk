@@ -326,26 +326,39 @@
      
 <div class="paragraph"> </div>
 
- the `*` operator is an lvalue
+ The `*` operator is an lvalue, but this does not perform an access yet
+        (see <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_operand_cast_l2r"><span class="id" title="axiom">wp_operand_cast_l2r</span></a></span> instead).
 
 <div class="paragraph"> </div>
 
-        &gt; The unary * operator performs indirection: the expression to which it is applied
-        &gt; shall be a pointer to an object type, or a pointer to a function type and the
-        &gt; result is an lvalue referring to the object or function to which the expression
-        &gt; points. If the type of the expression is “pointer to T”, the type of the result
-        &gt; is “T”.
+        We check pointer <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> is strictly valid and aligned.
+        The official standard says (https://eel.is/c++draft/expr.unary.op1):
 
-<div class="paragraph"> </div>
+        > The unary * operator performs indirection: the expression to which it is applied
+        > shall be a pointer to an object type, or a pointer to a function type and the
+        > result is an lvalue referring to the object or function to which the expression
+        > points. If the type of the expression is “pointer to T”, the type of the result
+        > is “T”.
 
-        https://eel.is/c++draft/expr.unary.op1
+        "The object or function" means we must require at least strict validity
+        (to exclude null and past-the-end pointers).
+        We don't ask for [type_ptrR]: that would forbid (unnecessarily?) code like:
+        <<
+        struct A { int x; int *y{&*x}; };
+        >>
+        TODO: make alignment redundant, by incorporating it into "invariants"
+        for C++ pointers of type T reliably.
      
 </div>
 <div class="code">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="Expr.wp_lval_deref" class="idref" href="#Expr.wp_lval_deref"><span class="id" title="axiom">wp_lval_deref</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a id="ty:87" class="idref" href="#ty:87"><span class="id" title="binder">ty</span></a> <a id="e:88" class="idref" href="#e:88"><span class="id" title="binder">e</span></a> <a id="Q:89" class="idref" href="#Q:89"><span class="id" title="binder">Q</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_operand"><span class="id" title="abbreviation">wp_operand</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#e:88"><span class="id" title="variable">e</span></a> (<span class="id" title="keyword">fun</span> <a id="v:90" class="idref" href="#v:90"><span class="id" title="binder">v</span></a> <a id="free:91" class="idref" href="#free:91"><span class="id" title="binder">free</span></a> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#v:90"><span class="id" title="variable">v</span></a> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.Vptr"><span class="id" title="constructor">Vptr</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.expr.html#Q:89"><span class="id" title="variable">Q</span></a> <span class="id" title="var">p</span> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#free:91"><span class="id" title="variable">free</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.Vptr"><span class="id" title="constructor">Vptr</span></a> <span class="id" title="var">p</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;This&nbsp;side-condition&nbsp;is&nbsp;not&nbsp;redundant&nbsp;for&nbsp;<span class="inlinecode">&amp;*<span class="id" title="var">p</span></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Technically,&nbsp;<span class="inlinecode"><span class="id" title="var">aligned_ofR</span></span>&nbsp;should&nbsp;be&nbsp;implied&nbsp;by&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">p</span> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#62731479375849aa261b6fbaae1406e9"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#aligned_ofR"><span class="id" title="abbreviation">aligned_ofR</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#erase_qualifiers"><span class="id" title="definition">erase_qualifiers</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#ty:87"><span class="id" title="variable">ty</span></a>) <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">**</span></a> <span class="id" title="var">p</span> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#62731479375849aa261b6fbaae1406e9"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#svalidR"><span class="id" title="definition">svalidR</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">**</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.expr.html#Q:89"><span class="id" title="variable">Q</span></a> <span class="id" title="var">p</span> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#free:91"><span class="id" title="variable">free</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'False'"><span class="id" title="notation">False</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.bi.prelude.html#0582ac70d883d93be3a66ac50f1c9225"><span class="id" title="notation">|--</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_lval"><span class="id" title="abbreviation">wp_lval</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Ederef"><span class="id" title="constructor">Ederef</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#e:88"><span class="id" title="variable">e</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#ty:87"><span class="id" title="variable">ty</span></a>) <a class="idref" href="bedrock.lang.cpp.logic.expr.html#Q:89"><span class="id" title="variable">Q</span></a>.<br/>
@@ -363,7 +376,7 @@ the `&amp;` operator
 </div>
 <div class="code">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="Expr.wp_operand_addrof" class="idref" href="#Expr.wp_operand_addrof"><span class="id" title="axiom">wp_operand_addrof</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a id="e:94" class="idref" href="#e:94"><span class="id" title="binder">e</span></a> <a id="Q:95" class="idref" href="#Q:95"><span class="id" title="binder">Q</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_lval"><span class="id" title="abbreviation">wp_lval</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#e:94"><span class="id" title="variable">e</span></a> (<span class="id" title="keyword">fun</span> <a id="p:96" class="idref" href="#p:96"><span class="id" title="binder">p</span></a> <a id="free:97" class="idref" href="#free:97"><span class="id" title="binder">free</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.expr.html#Q:95"><span class="id" title="variable">Q</span></a> (<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.Vptr"><span class="id" title="constructor">Vptr</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#p:96"><span class="id" title="variable">p</span></a>) <a class="idref" href="bedrock.lang.cpp.logic.expr.html#free:97"><span class="id" title="variable">free</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_lval"><span class="id" title="abbreviation">wp_lval</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#e:94"><span class="id" title="variable">e</span></a> (<span class="id" title="keyword">fun</span> <a id="p:96" class="idref" href="#p:96"><span class="id" title="binder">p</span></a> <a id="free:97" class="idref" href="#free:97"><span class="id" title="binder">free</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.expr.html#Q:95"><span class="id" title="variable">Q</span></a> (<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.Vptr"><span class="id" title="constructor">Vptr</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#p:96"><span class="id" title="variable">p</span></a>) <a class="idref" href="bedrock.lang.cpp.logic.expr.html#free:97"><span class="id" title="variable">free</span></a>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.bi.prelude.html#0582ac70d883d93be3a66ac50f1c9225"><span class="id" title="notation">|--</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_operand"><span class="id" title="abbreviation">wp_operand</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Eaddrof"><span class="id" title="constructor">Eaddrof</span></a> <a class="idref" href="bedrock.lang.cpp.logic.expr.html#e:94"><span class="id" title="variable">e</span></a>) <a class="idref" href="bedrock.lang.cpp.logic.expr.html#Q:95"><span class="id" title="variable">Q</span></a>.<br/>
 
 <br/>
@@ -590,7 +603,10 @@ short-circuting operators
      
 <div class="paragraph"> </div>
 
- <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Cl2r"><span class="id" title="constructor">Cl2r</span></a></span> represents reads of locations. 
+ <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Cl2r"><span class="id" title="constructor">Cl2r</span></a></span> represents reads of locations.
+    This counts as an <i>access</i>, so it must happen at one of the types listed in
+    https://eel.is/c++draft/basic.lval11.
+    
 </div>
 <div class="code">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="Expr.wp_operand_cast_l2r" class="idref" href="#Expr.wp_operand_cast_l2r"><span class="id" title="axiom">wp_operand_cast_l2r</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a id="ty:227" class="idref" href="#ty:227"><span class="id" title="binder">ty</span></a> <a id="e:228" class="idref" href="#e:228"><span class="id" title="binder">e</span></a> <a id="Q:229" class="idref" href="#Q:229"><span class="id" title="binder">Q</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a><br/>
