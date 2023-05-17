@@ -9,7 +9,7 @@ Require Import bedrock.prelude.list.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 
-Require Import bedrocktest.virt_cpp.
+Require Import test.virt_cpp.
 
 #[local] Open Scope bs_scope.
 

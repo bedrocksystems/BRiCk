@@ -13,7 +13,7 @@ From bedrock.lang.cpp.logic Require Import
      translation_unit
      dispatch layout
      const.
-Require Import bedrocktest.const.const_cpp.
+Require Import test.const_cpp.
 
 #[local] Open Scope bs_scope.
 

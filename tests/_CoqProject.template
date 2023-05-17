@@ -1,7 +1,0 @@
--arg -w -arg -notation-overridden
-
--Q ../theories bedrock
--Q . bedrocktest
-
-virt_cpp.v
-virt_cpp_test.v

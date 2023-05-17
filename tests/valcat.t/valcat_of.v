@@ -7,7 +7,7 @@
 Require Import bedrock.prelude.base.
 Require Import bedrock.lang.cpp.ast.
 
-From bedrocktest Require valcat_of_11_cpp valcat_of_14_cpp valcat_of_17_cpp valcat_of_20_cpp.
+From test Require valcat_of_11_cpp valcat_of_14_cpp valcat_of_17_cpp valcat_of_20_cpp.
 
 Variant Error :=
 | ValCatError (_ : Expr) (observed expected : ValCat)
