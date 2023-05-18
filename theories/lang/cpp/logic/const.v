@@ -22,18 +22,24 @@ Section defs.
      This is used to implement [wp_downcast_to_const] and [wp_upcast_to_const].
    *)
   Parameter wp_const : forall (tu : translation_unit) {σ : genv} (from to : cQp.t) (addr : ptr) (ty : type) (Q : mpred), mpred.
-  Axiom wp_const_frame : forall tu tu' f t a ty Q Q',
+  Axiom wp_const_frame : forall tu tu' f t a ty (Q Q' : mpred),
       type_table_le tu.(globals) tu'.(globals) ->
       Q -* Q' |-- wp_const tu f t a ty Q -* wp_const tu' f t a ty Q'.
 
+  Axiom wp_const_shift : forall tu f t a ty Q,
+      (|={top}=> wp_const tu f t a ty (|={top}=> Q)) |-- wp_const tu f t a ty Q.
+
   (* TODO this needs to be extended because if it is casting [volatile],
      then it needs to descend under [const] *)
+  #[local] Notation "|={ E }=> P" := (|={E}=> P)%I (only parsing).
   Definition wp_const_body (wp_const : forall (from to : cQp.t) (addr : ptr) (ty : type) (Q : epred), mpred)
-    (tu : translation_unit) (from to : cQp.t)  (addr : ptr) (ty : type) (Q : epred) : mpred :=
+      (tu : translation_unit) (from to : cQp.t)  (addr : ptr) (ty : type) (Q : epred) : mpred :=
     let '(cv, rty) := decompose_type ty in
+    let Q := |={top}=> Q in
     if q_const cv then Q
     else
       let UNSUPPORTED Q := wp_const from to addr ty Q in
+      |={top}=>
       match rty with
       | Tptr _
       | Tnum _ _
@@ -57,7 +63,7 @@ Section defs.
       | Tarray ety sz =>
         (* NOTE the order here is irrelevant because the operation is "atomic" *)
         fold_left (fun Q i =>
-            wp_const from to (addr .[ erase_qualifiers ety ! sz ]) ty Q)
+            wp_const from to (addr .[ erase_qualifiers ety ! Z.of_N i ]) ty Q)
                     (seqN 0 sz) Q
 
       | Tnamed cls =>
@@ -130,39 +136,48 @@ Section defs.
   Proof.
     rewrite /wp_const_body/=; intros.
     destruct (decompose_type ty) as [cv t].
-    case_match.
-    { iIntros "$ _"; eauto. }
-    destruct t; eauto.
+    iIntros "F #C".
+    case_match; first by iIntros ">X"; iApply "F".
+    destruct t.
+
+    (* unreachable *)
+    all:try by
+      lazymatch goal with
+      | |- context [ False%I ] => by iIntros ">X"; iExFalso
+      end.
 
     (* unsupported *)
-    all: try by iIntros "X C"; iApply "C"; eauto.
+    #[local] Ltac solve_unsupported :=
+      by iIntros ">X"; iApply ("C" with "[F] X"); iIntros ">X"; iApply "F".
+    all: try solve_unsupported.
 
     (* primitives *)
-    all: try solve [ iIntros "F #C X"; iDestruct "X" as "[X | X]";
-        [ iLeft; iDestruct "X" as (v) "[? X]"; iExists v; iFrame; iIntros "?"; iApply "F"; iApply "X"; eauto
-        | iRight; iDestruct "X" as "[$ X]"; iIntros "Y"; iApply "F"; iApply "X"; eauto ] ].
+    all: try by iIntros ">[X | X]";
+      [ iLeft; iDestruct "X" as (v) "[? X]"; iExists v; iFrame; iIntros "!> ?"; iApply "F"; iApply "X";  iFrame
+      | iRight; iDestruct "X" as "[$ X]"; iIntros "!> ?"; iApply "F"; iApply "X"; iFrame ].
 
     (* references *)
-    all: try solve [ iIntros "F #C X";
-                     iDestruct "X" as (v) "[? X]"; iExists v; iFrame; iIntros "?"; iApply "F"; iApply "X"; eauto ].
+    all: try by iIntros ">(%v & [? X])"; iExists v; iFrame; iIntros "!> ?"; iApply "F"; iApply "X"; iFrame.
 
     { (* arrays *)
-      iIntros "F #C"; iApply (fold_left_frame with "F"); iModIntro. iIntros (???) "F"; iApply "C"; eauto.
+      iIntros ">X !>". iRevert "X". iApply (fold_left_frame with "[F]").
+      - iIntros ">X". by iApply "F".
+      - iIntros "!>" (???) "F". by iApply "C".
     }
 
     { (* aggregates *)
-      case_match; last by iIntros "X C"; iApply "C"; eauto.
-      case_match; try by iIntros "X C"; iApply "C"; eauto.
+      case_match; last solve_unsupported.
+      case_match; try solve_unsupported.
       { (* unions *)
-        iIntros "F #C X"; iDestruct "X" as (?) "X".
+        iIntros ">X". iDestruct "X" as (?) "X".
         iExists _; iDestruct "X" as "[$ X]".
-        iIntros "Y"; iSpecialize ("X" with "Y").
+        iIntros "!> Y"; iSpecialize ("X" with "Y").
         case_match; last by iApply "F".
-        case_match; last by iRevert "X"; iApply "C"; eauto.
+        case_match; last by iApply ("C" with "[F] X"); iIntros ">?"; by iApply "F".
         case_match; first by iApply "F".
-        iRevert "X"; iApply "C"; eauto. }
-      { (* struct *)
-        iIntros "F #C".
+        iApply ("C" with "[F] X"). iIntros ">?". by iApply "F". }
+      { (* structs *)
+        iIntros ">X !>". iRevert "X".
         iApply (fold_left_frame with "[F]").
         { iApply (fold_left_frame with "[F]").
           { case_match; iIntros "[$ X] Y".
