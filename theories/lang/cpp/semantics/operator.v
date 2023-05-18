@@ -53,8 +53,8 @@ Module Type OPERATOR_INTF_FUNCTOR
    *)
 
   (** [eval_unop tu op argT resT arg res] holds when evaluating
-      [op] on [arg] (such that [has_type arg argT]) result in [res]
-      (and [has_type res resT]).
+      [op] on [arg] (such that [has_type_prop arg argT]) result in [res]
+      (and [has_type_prop res resT]).
 
       NOTE: the reasoning principles for [eval_unop] require that
             the values are well-typed.
@@ -64,12 +64,12 @@ Module Type OPERATOR_INTF_FUNCTOR
 
   Axiom eval_unop_pure_well_typed : forall `{MOD : tu ⊧ σ} uo ty1 ty2 v1 v2,
       eval_unop tu uo ty1 ty2 v1 v2 ->
-      has_type v1 ty1 /\ has_type v2 ty2.
+      has_type_prop v1 ty1 /\ has_type_prop v2 ty2.
 
   (** [eval_binop_pure tu op lhsT rhsT resultT lhsV rhsV resultV] holds when
-      evaluating [lhsV `op` rhsV] (such that [has_type lhsV lhsT] and
-      [has_type rhsV rhsT]) results in [resultT] (and
-      [has_type resultV resultT]).
+      evaluating [lhsV `op` rhsV] (such that [has_type_prop lhsV lhsT] and
+      [has_type_prop rhsV rhsT]) results in [resultT] (and
+      [has_type_prop resultV resultT]).
 
       NOTE: the reasoning principles for [eval_binop_pure] require that
             the values are well-typed.
@@ -79,7 +79,7 @@ Module Type OPERATOR_INTF_FUNCTOR
 
   Axiom eval_binop_pure_well_typed : forall `{MOD : tu ⊧ σ} bo ty1 ty2 ty3 v1 v2 v3,
       eval_binop_pure tu bo ty1 ty2 ty3 v1 v2 v3 ->
-      has_type v1 ty1 /\ has_type v2 ty2 /\ has_type v3 ty3.
+      has_type_prop v1 ty1 /\ has_type_prop v2 ty2 /\ has_type_prop v3 ty3.
 
 Section operator_axioms.
   Context {σ : genv} (tu : translation_unit).
@@ -105,7 +105,7 @@ Axiom eval_unop_not : forall (w : bitsize) (sgn : signed) (a : Z),
              | Signed => -1 - a
              | Unsigned => bitFlipZU w a
              end in
-    has_type (Vint b) (Tnum w sgn) ->
+    has_type_prop (Vint b) (Tnum w sgn) ->
     eval_unop Ubnot (Tnum w sgn) (Tnum w sgn)
               (Vint a) (Vint b).
 
@@ -113,7 +113,7 @@ Axiom eval_unop_not : forall (w : bitsize) (sgn : signed) (a : Z),
    https://eel.is/c++draft/expr.unary.op#7
  *)
 Axiom eval_plus_int : forall `{supports_arith ty} a,
-    has_type (Vint a) ty ->
+    has_type_prop (Vint a) ty ->
     eval_unop Uplus ty ty (Vint a) (Vint a).
 
 (* The builtin unary `-` operator calculates the negative of its
@@ -122,13 +122,13 @@ Axiom eval_plus_int : forall `{supports_arith ty} a,
    https://eel.is/c++draft/expr.unary.op#8
  *)
 Axiom eval_minus_int : forall ty a c,
-    has_type (Vint a) ty ->
+    has_type_prop (Vint a) ty ->
     match arith_as ty with
     | Some (_, Signed) => c = 0 - a
     | Some (w, Unsigned) => c = trim (bitsN w) (0 - a)
     | None => False
     end ->
-    has_type (Vint c) ty ->
+    has_type_prop (Vint c) ty ->
     eval_unop Uminus ty ty (Vint a) (Vint c).
 
 (** * Binary Operators *)
@@ -145,14 +145,14 @@ Axiom eval_minus_int : forall ty a c,
  *)
 Let eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall ty (a b c : Z),
-    has_type (Vint a) ty ->
-    has_type (Vint b) ty ->
+    has_type_prop (Vint a) ty ->
+    has_type_prop (Vint b) ty ->
     match arith_as ty with
     | Some (_, Signed) => c = o a b
     | Some (sz, Unsigned) => c = trim (bitsN sz) (o a b)
     | None => False
     end ->
-    has_type (Vint c) ty ->
+    has_type_prop (Vint c) ty ->
     eval_binop_pure bo ty ty ty (Vint a) (Vint b) (Vint c).
 
 Axiom eval_add : Hnf (eval_int_op Badd Z.add).
@@ -170,16 +170,16 @@ Axiom eval_mul : Hnf (eval_int_op Bmul Z.mul).
  *)
 Axiom eval_div : forall `{supports_arith ty} (a b : Z),
     b <> 0%Z ->
-    has_type (Vint a) ty ->
-    has_type (Vint b) ty ->
+    has_type_prop (Vint a) ty ->
+    has_type_prop (Vint b) ty ->
     let c := Z.quot a b in
-    has_type (Vint c) ty ->
+    has_type_prop (Vint c) ty ->
     eval_binop_pure Bdiv ty ty ty (Vint a) (Vint b) (Vint c).
 Axiom eval_mod : forall `{supports_arith ty} (a b : Z),
     b <> 0%Z ->
-    has_type (Vint a) ty ->
-    has_type (Vint b) ty ->
-    has_type (Vint (Z.quot a b)) ty ->
+    has_type_prop (Vint a) ty ->
+    has_type_prop (Vint b) ty ->
+    has_type_prop (Vint (Z.quot a b)) ty ->
     let c := Z.rem a b in
     eval_binop_pure Bmod ty ty ty (Vint a) (Vint b) (Vint c).
 
@@ -196,8 +196,8 @@ Axiom eval_mod : forall `{supports_arith ty} (a b : Z),
  *)
 Let eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall ty (_ : supports_arith ty) (a b : Z),
-    has_type (Vint a) ty ->
-    has_type (Vint b) ty ->
+    has_type_prop (Vint a) ty ->
+    has_type_prop (Vint b) ty ->
     let c := o a b in (* note that bitwise operators respect bounds *)
     eval_binop_pure bo ty ty ty (Vint a) (Vint b) (Vint c).
 
@@ -242,13 +242,13 @@ Axiom eval_shl : forall ty `{supports_arith ty_by} w sgn (a b : Z),
     arith_as ty = Some (w, sgn) ->
     (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
-    has_type (Vint a) ty ->
-    has_type (Vint b) ty_by ->
+    has_type_prop (Vint a) ty ->
+    has_type_prop (Vint b) ty_by ->
     let c := match sgn with
              | Signed => Z.shiftl a b
              | Unsigned => trim (bitsN w) (Z.shiftl a b)
              end in
-    has_type (Vint c) ty ->
+    has_type_prop (Vint c) ty ->
     eval_binop_pure Bshl ty ty_by ty (Vint a) (Vint b) (Vint c).
 
 (* C++14 <= VER < C++20: The value of E1 >> E2 is E1 right-shifted E2 bit
@@ -260,13 +260,13 @@ Axiom eval_shr : forall ty `{supports_arith ty_by} w sgn (a b : Z),
     arith_as ty = Some (w, sgn) ->
     (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
-    has_type (Vint a) ty ->
-    has_type (Vint b) ty_by ->
+    has_type_prop (Vint a) ty ->
+    has_type_prop (Vint b) ty_by ->
     let c := match sgn with
              | Signed => Z.shiftr a b
              | Unsigned => trim (bitsN w) (Z.shiftr a b)
              end in
-    has_type (Vint c) ty ->
+    has_type_prop (Vint c) ty ->
     eval_binop_pure Bshr ty ty_by ty (Vint a) (Vint b) (Vint c).
 
 (** ** comparison operators
@@ -328,7 +328,7 @@ Definition b2i (b : bool) : Z := if b then 1 else 0.
    scoped ones. Therefore, we include comparisons on enum. The values are
    compared after integer conversion.
 
-   Note that the [has_type] facts guarantees that the enum is valid if [ty] is
+   Note that the [has_type_prop] facts guarantees that the enum is valid if [ty] is
    an enum.
  *)
 #[local] Definition eval_int_rel_op (o : Z -> Z -> Prop) {RD : RelDecision o} (bo : BinOp) : Prop :=
@@ -336,8 +336,8 @@ Definition b2i (b : bool) : Z := if b then 1 else 0.
     let a := Vint av in
     let b := Vint bv in
     relop_result_type ty' ->
-    has_type a ty ->
-    has_type b ty ->
+    has_type_prop a ty ->
+    has_type_prop b ty ->
     eval_binop_pure bo ty ty ty' a b (Vbool $ bool_decide (o av bv)).
 
 Axiom eval_eq : Hnf (eval_int_rel_op eq Beq).

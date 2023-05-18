@@ -72,7 +72,7 @@ Section with_cpp.
   Definition primR_def {resolve:genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
     as_Rep (fun p : ptr => tptsto ty q p v **
              [| not(exists raw, v = Vraw raw) |] **
-             [| has_type v (drop_qualifiers ty) |]).
+             [| has_type_prop v (drop_qualifiers ty) |]).
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
   Definition primR := primR_aux.(unseal).
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
@@ -138,8 +138,8 @@ Section with_cpp.
       (primR ty q2 v2).
   Proof.
     rewrite primR_eq/primR_def; apply: as_Rep_only_provable_observe_2=> p.
-    iIntros "(Htptsto1 & %Hnotraw1 & %Hhas_type1)
-             (Htptsto2 & %Hnotraw2 & %Hhas_type2)".
+    iIntros "(Htptsto1 & %Hnotraw1 & %Hhas_type_prop1)
+             (Htptsto2 & %Hnotraw2 & %Hhas_type_prop2)".
     iApply (observe_2 with "Htptsto1 Htptsto2").
     iApply observe_2_derive_only_provable => Hvs.
     induction Hvs; subst; auto; exfalso;
@@ -154,18 +154,18 @@ Section with_cpp.
       (primR ty q2 (f v2)).
   Proof. apply (observe2_inj f), _. Qed.
 
-  #[global] Instance primR_observe_has_type resolve ty q v :
-    Observe [| has_type v (drop_qualifiers ty) |] (primR ty q v).
+  #[global] Instance primR_observe_has_type_prop resolve ty q v :
+    Observe [| has_type_prop v (drop_qualifiers ty) |] (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
-  Lemma primR_has_type {σ} ty q v :
+  Lemma primR_has_type_prop {σ} ty q v :
     primR (resolve:=σ) ty q v |--
-    primR (resolve:=σ) ty q v ** [| has_type v (drop_qualifiers ty) |].
+    primR (resolve:=σ) ty q v ** [| has_type_prop v (drop_qualifiers ty) |].
   Proof. apply: observe_elim. Qed.
 
   (**
      [uninitR ty q]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
-     Unlike [primR], does not imply [has_type].
+     Unlike [primR], does not imply [has_type_prop].
 
      NOTE the [ty] argument *must* be a primitive type.
 

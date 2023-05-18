@@ -12,8 +12,8 @@ Require Import bedrock.lang.cpp.semantics.values.
 Section with_σ.
   Context {σ : genv}.
 
-  Lemma _Z_to_bytes_has_type (cnt : nat) (endianness : endian) sign (z : Z) :
-    List.Forall (fun (v : N) => has_type (Vn v) Tu8) (_Z_to_bytes cnt endianness sign z).
+  Lemma _Z_to_bytes_has_type_prop (cnt : nat) (endianness : endian) sign (z : Z) :
+    List.Forall (fun (v : N) => has_type_prop (Vn v) Tu8) (_Z_to_bytes cnt endianness sign z).
   Proof.
     eapply List.Forall_impl.
     2: { exact: _Z_to_bytes_range. }

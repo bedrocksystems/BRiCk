@@ -178,7 +178,7 @@ Section with_Σ.
   Axiom wp_atom_store_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
+      [| has_type_prop v acc_type |] **
       wrap_shift (fun Q => _eqv p |-> anyR acc_type (cQp.mut 1) ** (* pre *)
                           (_eqv p |-> primR acc_type (cQp.mut 1) v -* Q Vundef)) Q (* post *)
       |-- wp_atom' AO__atomic_store_n acc_type [p; memorder; v] Q.
@@ -195,7 +195,7 @@ Section with_Σ.
   Axiom wp_atom_exchange_n_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
+      [| has_type_prop v acc_type |] **
       wrap_shift (fun Q => Exists w,
                           _eqv p |-> primR acc_type (cQp.mut 1) w ** (* pre *)
                           (_eqv p |-> primR acc_type (cQp.mut 1) v -* Q w)) Q (* post *)
@@ -358,7 +358,7 @@ Section with_Σ.
     forall p arg memorder Q sz sgn,
       let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
-      [| has_type (Vint arg) acc_type |] **
+      [| has_type_prop (Vint arg) acc_type |] **
       wrap_shift (fun Q =>
                     Exists n,
                     _eqv p |-> primR acc_type (cQp.mut 1) (Vint n) **
@@ -383,7 +383,7 @@ Section with_Σ.
     forall p arg memorder Q sz sgn,
       let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
-      [| has_type (Vint arg) acc_type |] **
+      [| has_type_prop (Vint arg) acc_type |] **
       wrap_shift (fun Q =>
                     Exists n,
                     _eqv p |-> primR acc_type (cQp.mut 1) (Vint n) **
@@ -431,7 +431,7 @@ Section with_Σ.
   Lemma AU1_atom_store_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
+      [| has_type_prop v acc_type |] **
       atom_store_cst_AU1 acc_type p Q v
       |-- wp_atom' AO__atomic_store_n acc_type [p; memorder; v] Q.
   Proof.
@@ -450,7 +450,7 @@ Section with_Σ.
   Lemma AU1_atom_exchange_n_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
+      [| has_type_prop v acc_type |] **
       atom_exchange_n_cst_AU1 acc_type p Q v
       |-- wp_atom' AO__atomic_exchange_n acc_type [p; memorder; v] Q.
   Proof.
@@ -474,7 +474,7 @@ Section with_Σ.
     forall p arg memorder Q sz sgn,
       let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
-      [| has_type (Vint arg) acc_type |] **
+      [| has_type_prop (Vint arg) acc_type |] **
       atom_fetch_xxx_cst_AU1 op acc_type p arg Q sz sgn
       |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
   Proof.
@@ -511,7 +511,7 @@ Section with_Σ.
     forall p arg memorder Q sz sgn,
       let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
-      [| has_type (Vint arg) acc_type |] **
+      [| has_type_prop (Vint arg) acc_type |] **
       atom_xxx_fetch_cst_AU1 op acc_type p arg Q sz sgn
       |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
   Proof.

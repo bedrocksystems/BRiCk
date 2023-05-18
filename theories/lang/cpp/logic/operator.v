@@ -13,7 +13,7 @@ Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {σ : genv},
 
 Axiom eval_binop_impure_well_typed : forall `{has_cpp : cpp_logic} `{σ : genv} tu bo ty1 ty2 ty3 v1 v2 v3,
     tu ⊧ σ ->
-    eval_binop_impure tu bo ty1 ty2 ty3 v1 v2 v3 |-- [| has_type v1 ty1 /\ has_type v2 ty2 /\ has_type v3 ty3 |].
+    eval_binop_impure tu bo ty1 ty2 ty3 v1 v2 v3 |-- [| has_type_prop v1 ty1 /\ has_type_prop v2 ty2 /\ has_type_prop v3 ty3 |].
 
 (** Pointer [p'] is not at the beginning of a block. *)
 Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
@@ -39,7 +39,7 @@ Section with_Σ.
 
   Theorem eval_binop_well_typed : forall tu bo ty1 ty2 ty3 v1 v2 v3,
     tu ⊧ resolve ->
-    eval_binop tu bo ty1 ty2 ty3 v1 v2 v3 |-- [| has_type v1 ty1 /\ has_type v2 ty2 /\ has_type v3 ty3 |].
+    eval_binop tu bo ty1 ty2 ty3 v1 v2 v3 |-- [| has_type_prop v1 ty1 /\ has_type_prop v2 ty2 /\ has_type_prop v3 ty3 |].
   Proof.
     intros.
     iIntros "X"; iDestruct "X" as "[% | X]".
@@ -308,7 +308,7 @@ Section with_Σ.
       p1 = base ,, _sub ty o1 ->
       p2 = base ,, _sub ty o2 ->
       (* Side condition to prevent overflow; needed per https://eel.is/c++draft/expr.add#note-1 *)
-      has_type (Vint (o1 - o2)) (Tnum w Signed) ->
+      has_type_prop (Vint (o1 - o2)) (Tnum w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure tu Bsub
                 (Tpointer ty) (Tpointer ty) (Tnum w Signed)

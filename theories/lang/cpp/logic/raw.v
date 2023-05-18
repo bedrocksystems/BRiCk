@@ -90,7 +90,7 @@ Section with_Σ.
           type_ptrR (Tnum sz Unsigned).
 
         Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
-          List.Forall (fun v => has_type (Vn v) Tu8) l /\
+          List.Forall (fun v => has_type_prop (Vn v) Tu8) l /\
           _Z_from_bytes endianness sgn l = z.
 
         (* JH: TODO: Deprecate the following stuff *)
@@ -245,7 +245,7 @@ Module Endian.
     Lemma decodes_Z_to_bytes_Unsigned:
       forall (sz : bitsize) (n : nat)  (endianness : endian) (z : Z),
         (bytesNat sz = n)%nat ->
-        has_type z (Tnum sz Unsigned) ->
+        has_type_prop z (Tnum sz Unsigned) ->
         decodes endianness Unsigned (_Z_to_bytes n endianness Unsigned z) z.
     Proof.
       intros * Hsz Hty; subst.
@@ -258,11 +258,11 @@ Module Endian.
         rewrite/bound/min_val/max_val.
         destruct sz; rewrite/bytesNat; split; lia.
       }
-      exact: _Z_to_bytes_has_type.
+      exact: _Z_to_bytes_has_type_prop.
     Qed.
 
     Lemma raw_bytes_of_val_raw_int_byte (z : Z) :
-      has_type z Tu16 ->
+      has_type_prop z Tu16 ->
       raw_bytes_of_val σ Tu16 (to_big_end W16 z) (map raw_int_byte (_Z_to_bytes 2 Big Unsigned z)).
     Proof.
       rewrite raw_byte_of_int_eq.
