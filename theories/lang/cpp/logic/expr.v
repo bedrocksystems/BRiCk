@@ -87,7 +87,7 @@ Module Type Expr.
 
     (* integer literals are prvalues *)
     Axiom wp_operand_int : forall n ty Q,
-      [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) FreeTemps.id
+      [! has_type_prop (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) FreeTemps.id
       |-- wp_operand (Eint n ty) Q.
 
     (* NOTE: character literals represented in the AST as 32-bit unsigned integers
@@ -1054,15 +1054,15 @@ Module Type Expr.
     Qed.
 
     Lemma well_typed_zero_init_val (MOD : tu ⊧ resolve) : forall ty v,
-        zero_init_val ty = Some v -> has_type v ty.
+        zero_init_val ty = Some v -> has_type_prop v ty.
     Proof.
       rewrite /zero_init_val/representation_type. intros.
-      eapply has_type_drop_qualifiers; revert H.
+      eapply has_type_prop_drop_qualifiers; revert H.
       destruct (drop_qualifiers ty) eqn:Heq; simpl; try inversion 1; subst.
       - apply has_nullptr_type.
       - apply has_int_type. rewrite /bound. destruct size, signed; compute; intuition congruence.
-      - apply has_type_char_0.
-      - eapply has_type_enum.
+      - apply has_type_prop_char_0.
+      - eapply has_type_prop_enum.
         clear H1. revert H.
         rewrite /underlying_type/=.
         destruct (globals tu !! g) eqn:Hglobal => /= //.
@@ -1071,11 +1071,11 @@ Module Type Expr.
         case_match; try congruence; inversion H; subst; simpl; split; try tauto.
         + apply has_nullptr_type.
         + apply has_int_type. rewrite /bound; destruct size,signed; compute; intuition congruence.
-        + apply has_type_char_0.
-        + apply has_type_bool; eauto.
-        + eapply has_type_nullptr; eauto.
-      - apply has_type_bool. eauto.
-      - eapply has_type_nullptr; eauto.
+        + apply has_type_prop_char_0.
+        + apply has_type_prop_bool; eauto.
+        + eapply has_type_prop_nullptr; eauto.
+      - apply has_type_prop_bool. eauto.
+      - eapply has_type_prop_nullptr; eauto.
     Qed.
 
     Lemma zero_init_val_erase_drop ty :
@@ -1416,7 +1416,7 @@ Module Type Expr.
                                  rest (N.succ idx))) sz idx.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) src init ety ty Q,
-          has_type (Vn sz) Tu64 ->
+          has_type_prop (Vn sz) Tu64 ->
           is_array_of ty ety ->
           wp_glval tu ρ src
                    (fun p free =>

@@ -134,7 +134,7 @@ Module Type CPP_LOGIC
     3. Pointer [p] points to a memory location with C++ type [t].
     However:
     1. Value [v] need not be initialized.
-    2. Hence, [v] might not satisfy [has_type t v].
+    2. Hence, [v] might not satisfy [has_type_prop t v].
 
     We use this predicate both for pointers to actual memory and for pointers to
     C++ locations that are not stored in memory (as an optimization).

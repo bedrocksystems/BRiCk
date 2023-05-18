@@ -16,16 +16,16 @@ Section with_genv.
   Context {σ : genv}.
 
   Goal conv_int module Tbool (Tnum W8 Signed) (Vbool false) (Vint 0).
-  Proof. by vm_compute; split; first (rewrite has_type_bool; exists false). Qed.
+  Proof. by vm_compute; split; first (rewrite has_type_prop_bool; exists false). Qed.
 
   Goal ~ (conv_int module Tbool (Tnum W8 Signed) (Vbool true) (Vint 0)).
   Proof. by vm_compute=>[][]. Qed.
 
-  Goal  has_type 0%Z (Tenum "_Z3Foo")
+  Goal  has_type_prop 0%Z (Tenum "_Z3Foo")
         -> conv_int module (Tenum "_Z3Foo") (Tnum W8 Unsigned) (Vint 0) (Vint 0).
   Proof. by vm_compute. Qed.
 
-  Goal  has_type 0%Z (Tenum "_Z3Bar")
+  Goal  has_type_prop 0%Z (Tenum "_Z3Bar")
         -> conv_int module (Tenum "_Z3Bar") (Tenum "_Z3Foo") (Vint 0) (Vint 0).
   Proof. by vm_compute. Qed.
 

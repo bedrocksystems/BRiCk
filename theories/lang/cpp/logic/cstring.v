@@ -138,7 +138,7 @@ Module cstring.
           (H : zstring.WF char_type.Cchar zs) :
       to_zstring (from_zstring zs) = zs.
     Proof.
-      have X : List.Forall (fun c => has_type (Vchar c) Tchar) zs by
+      have X : List.Forall (fun c => has_type_prop (Vchar c) Tchar) zs by
         rewrite /_WF in H; naive_solver.
       induction zs. 1: exfalso; by eapply not_WF_nil.
       unfold from_zstring, to_zstring, to_zstring' in *; simpl in *.
@@ -158,7 +158,7 @@ Module cstring.
             inversion H''; by subst.
           }
           rewrite -{2}IHzs; auto; f_equal.
-          * apply has_type_char in H2.
+          * apply has_type_prop_char in H2.
             rewrite ascii_of_byte_of_ascii N_ascii_embedding; eauto.
             simpl in H2. destruct H2 as [?[Hchar?]].
             inversion Hchar; subst. lia.
@@ -171,7 +171,7 @@ Module cstring.
             -- rewrite map_map IHzs; auto.
                destruct (length zs) eqn:Hlen'=> //=.
                f_equal.
-               ++ inversion H3; apply has_type_char in H4;
+               ++ inversion H3; apply has_type_prop_char in H4;
                     rewrite /bound/= in H4; subst.
                   destruct H4 as [?[Hchar?]].
                   inversion Hchar; subst.
@@ -184,7 +184,7 @@ Module cstring.
                        inversion H3.
                        rewrite -> (@List.Forall_forall _ _ zs) in H5.
                        specialize (H5 x HIn).
-                       apply has_type_char in H5; rewrite /bound/= in H5.
+                       apply has_type_prop_char in H5; rewrite /bound/= in H5.
                        inversion H5 as [?[Hchar?]]; inversion Hchar;
                        rewrite -> ascii_of_byte_of_ascii, N_ascii_embedding by lia.
                        over.
@@ -199,7 +199,7 @@ Module cstring.
                        inversion H3.
                        rewrite -> (@List.Forall_forall _ _ zs) in H5.
                        specialize (H5 x HIn).
-                       apply has_type_char in H5; rewrite /bound/= in H5.
+                       apply has_type_prop_char in H5; rewrite /bound/= in H5.
                        destruct H5 as [?[Hchar?]]; inversion Hchar; subst.
                        rewrite /=.
                        rewrite -> ascii_of_byte_of_ascii, N_ascii_embedding by lia.
@@ -273,7 +273,7 @@ Module cstring.
       exists []; split.
       - by rewrite app_nil_l.
       - split; [intro CONTRA; by inversion CONTRA |].
-        repeat constructor. apply has_type_char_0.
+        repeat constructor. apply has_type_prop_char_0.
     Qed.
 
     Lemma WF_string_inj :
@@ -309,7 +309,7 @@ Module cstring.
         induction cstr as [| b' cstr' IHcstr']; intros.
       - unfold zstring.WF, to_zstring, to_zstring'.
         exists []; simpl; intuition.
-        repeat constructor. apply has_type_char_0.
+        repeat constructor. apply has_type_prop_char_0.
       - unfold zstring.WF, to_zstring in Hzstring; simpl in Hzstring;
           unfold zstring.WF, to_zstring, _to_zstring';
           destruct Hzstring as [zs [Hzstring [Hnonzero Hforall]]];
@@ -348,7 +348,7 @@ Module cstring.
       end.
       split. 2: {
         constructor.
-        - apply has_type_char. simpl.
+        - apply has_type_prop_char. simpl.
           generalize (N_ascii_bounded (ascii_of_byte b)).
           intros. eexists; split; eauto.
         - unfold to_zstring, to_zstring' in Hforall.
@@ -1111,7 +1111,7 @@ Module cstring.
           iIntros "R";
             iDestruct (observe [| zstring.WF char_type.Cchar zs |] with "R") as "%WF";
             iStopProof.
-          rewrite zstring.R_has_type; iIntros "[? %]".
+          rewrite zstring.R_has_type_prop; iIntros "[? %]".
           rewrite /R to_from_zstring //.
         Qed.
       End Extra.
@@ -1134,7 +1134,7 @@ Section core_string.
     rewrite only_provable_True // right_id; f_equiv.
     elim: bytes HWF => [|b bs IH] /= HWF.
     by rewrite !(arrayR_cons, arrayR_nil) !N_to_char_Cchar_eq.
-    move: HWF => /zstring.WF_cons' [_ [/has_type_char' /= Hbt Hbs]].
+    move: HWF => /zstring.WF_cons' [_ [/has_type_prop_char' /= Hbt Hbs]].
     rewrite !(arrayR_cons, arrayR_nil) -IH ?N_to_char_Cchar_eq //; lia.
   Qed.
 

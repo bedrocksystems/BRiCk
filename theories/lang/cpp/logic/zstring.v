@@ -53,12 +53,12 @@ Section with_ct.
 
   Definition _WF {σ : genv} (zs : t) : Prop :=
     exists zs', zs = zs' ++ [0]%N /\ not (In 0%N zs') /\
-    List.Forall (λ c : N, has_type (Vchar c) Tchar) zs.
+    List.Forall (λ c : N, has_type_prop (Vchar c) Tchar) zs.
   #[global] Arguments _WF {σ} zs : simpl never.
 
   Lemma _WF_WF_alt {σ : genv} zs : _WF zs <-> _WF_alt zs.
   Proof.
-    rewrite /_WF /_WF_alt elem_of_list_In; setoid_rewrite <-has_type_char'; split. {
+    rewrite /_WF /_WF_alt elem_of_list_In; setoid_rewrite <-has_type_prop_char'; split. {
       move=> [] zs' [] -> [].
       rewrite last_app /= app_length Nat.add_sub take_app Forall_app Forall_singleton.
       naive_solver.
@@ -82,7 +82,7 @@ Section with_ct.
   Definition _WF' {σ : genv} (zs : t) : Prop :=
     (exists v, nth_error zs 0 = Some v) /\
     (forall i, Z.of_nat i <= strlen zs ->
-          exists z, nth_error zs i = Some z /\ has_type (Vchar z) Tchar) /\
+          exists z, nth_error zs i = Some z /\ has_type_prop (Vchar z) Tchar) /\
     (forall i, Z.of_nat i < strlen zs ->
           exists z, nth_error zs i = Some z /\ z <> 0%N) /\
     forall i, Z.of_nat i = strlen zs -> nth_error zs i = Some 0%N.
@@ -102,7 +102,7 @@ Section with_ct.
     Proof.
       rewrite /_WF; exists []; repeat split.
       - intro CONTRA; by inversion CONTRA.
-      - repeat constructor. apply has_type_char_0.
+      - repeat constructor. apply has_type_prop_char_0.
     Qed.
 
     Lemma WF_singleton_inj :
@@ -130,7 +130,7 @@ Section with_ct.
     Lemma WF_cons :
       forall (z : N) (zs : t),
         (z <> 0)%N ->
-        has_type (Vchar z) Tchar ->
+        has_type_prop (Vchar z) Tchar ->
         WF (z :: zs) <->
         WF zs.
     Proof.
@@ -153,7 +153,7 @@ Section with_ct.
     (* Unlike WF_cons, here the explicit tail [++ [0]] lets us write a more elegant lemma. *)
     Lemma WF_cons' (z : N) (zs : t) :
       WF (z :: zs ++ [0%N]) <->
-      (z <> 0)%N /\ has_type (Vchar z) Tchar /\ WF (zs ++ [0%N]).
+      (z <> 0)%N /\ has_type_prop (Vchar z) Tchar /\ WF (zs ++ [0%N]).
     Proof.
       rewrite /_WF/=. setoid_rewrite Forall_cons.
       split.
@@ -359,10 +359,10 @@ Section with_ct.
 
       Lemma forall_not0 (zs : t)
             (H : ∀ i : nat, (i <= strlen zs)%Z →
-                          ∃ z : N, nth_error zs i = Some z ∧ has_type (Vchar z) Tchar)
+                          ∃ z : N, nth_error zs i = Some z ∧ has_type_prop (Vchar z) Tchar)
             (H' : forall i : nat, (i < strlen zs)%Z ->
                           ∃ z : N, nth_error zs i = Some z /\ z <> 0%N):
-        List.Forall (fun z : N => z <> 0%N /\ has_type (Vchar z) Tchar) (take (List.length zs - 1) zs).
+        List.Forall (fun z : N => z <> 0%N /\ has_type_prop (Vchar z) Tchar) (take (List.length zs - 1) zs).
       Proof.
         induction zs; first by constructor.
         simpl. have ->: (List.length zs - 0 = List.length zs)%nat by lia. destruct zs.
@@ -430,10 +430,10 @@ Section with_ct.
           - specialize (h2 n ltac:(lia)) as [? ?]; intuition; congruence.
           - specialize (h4 n Hn).
             rewrite h4 in Hnth; inversion Hnth.
-            apply has_type_char_0.
+            apply has_type_prop_char_0.
           - exfalso; eapply nth_error_strlen_contra; by eauto.
         }
-        suff: List.Forall (fun x => x <> 0%N /\ has_type (σ:=σ) (Vchar x) Tchar)
+        suff: List.Forall (fun x => x <> 0%N /\ has_type_prop (σ:=σ) (Vchar x) Tchar)
                           (take (Datatypes.length zs - 1) zs).
         { clear - zs. elim: zs => //= [_ [] //|a zs IH /=]. rewrite Nat.sub_0_r.
           destruct zs as [|z zs]; first done. move => /= /Forall_cons [[??]?].
@@ -448,7 +448,7 @@ Section with_ct.
           as [h2' | h2'] by lia; clear h2. 2: {
           subst; exists 0%N; clear h1; split.
           - by induction zs'=> //=.
-          - apply has_type_char_0.
+          - apply has_type_prop_char_0.
         }
         rewrite nth_error_app1 => //.
         elim: zs' i h1 h2' => /=; first by lia.
@@ -500,7 +500,7 @@ Section with_ct.
     Lemma WF'_cons :
       forall (z : _) (zs : t),
         (z <> 0)%N ->
-        has_type (Vchar z) Tchar ->
+        has_type_prop (Vchar z) Tchar ->
         WF' (z :: zs) <->
         WF' zs.
     Proof. intros *; rewrite !WFs_equiv; by apply WF_cons. Qed.
@@ -595,7 +595,7 @@ Section with_ct.
           - rewrite /bufR arrayR_cons.
             iIntros "[%Hsz [[? [Hz Hzs]] [%HWF Hrest]]]".
             assert (size zs <= sz - 1) by (rewrite size_cons in Hsz; by lia).
-            iDestruct (observe [| has_type (Vchar z) _ |] with "Hz") as "%".
+            iDestruct (observe [| has_type_prop (Vchar z) _ |] with "Hz") as "%".
             assert (WF zs) by (apply WF_cons in HWF; assumption).
             rewrite !_offsetR_sep !_offsetR_only_provable
                     size_cons -_offsetR_sub_sub
@@ -605,7 +605,7 @@ Section with_ct.
               iIntros "[H [%Hsz [? [%HWF Hrest]]]]".
             iDestruct (observe (type_ptrR Tchar) with "H") as "#?".
             assert (size (z :: zs) <= sz) by (rewrite size_cons; by lia).
-            iDestruct (observe [| has_type (Vchar z) _ |] with "H") as "%".
+            iDestruct (observe [| has_type_prop (Vchar z) _ |] with "H") as "%".
             assert (WF (z :: zs)) by (apply WF_cons; assumption).
             rewrite size_cons -!_offsetR_sub_sub Z.sub_add_distr.
             iFrame "∗#%"; iPureIntro; by lia.
@@ -625,11 +625,11 @@ Section with_ct.
             by constructor.
         Qed.
 
-        Lemma bufR_has_type :
+        Lemma bufR_has_type_prop :
           forall (q : cQp.t) (sz : Z) (zs : t),
             strlen zs < sz ->
                 bufR q sz zs
-            |-- bufR q sz zs ** [| List.Forall (fun c => has_type (Vchar c) Tchar) zs |].
+            |-- bufR q sz zs ** [| List.Forall (fun c => has_type_prop (Vchar c) Tchar) zs |].
         Proof.
           intros **; generalize dependent sz; induction zs; intros **.
           - rewrite {1}bufR_nil; by iIntros.
@@ -637,7 +637,7 @@ Section with_ct.
             + iIntros "H"; iDestruct (observe [| a = 0 |]%N with "H") as "%H'".
               iFrame "∗"; iPureIntro.
               try repeat constructor; subst.
-              apply has_type_char_0.
+              apply has_type_prop_char_0.
             + iIntros "H"; iDestruct (observe [| WF (a :: n :: zs) |] with "H") as "%H'".
               assert (1 <= size (a :: n :: zs)). {
                 rewrite -> size_cons in *.
@@ -645,10 +645,10 @@ Section with_ct.
                 by lia.
               }
               iDestruct (observe [| a <> 0 |]%N with "H") as "%H''"; iStopProof.
-              rewrite {1}bufR_cons; auto; rewrite primR_has_type IHzs.
-              iIntros "[[? %has_type] ?]"; iStopProof.
+              rewrite {1}bufR_cons; auto; rewrite primR_has_type_prop IHzs.
+              iIntros "[[? %has_type_prop] ?]"; iStopProof.
               rewrite _offsetR_sep _offsetR_only_provable.
-              iIntros "[head [tail %has_types]]"; iCombine "head tail" as "H".
+              iIntros "[head [tail %has_type_props]]"; iCombine "head tail" as "H".
               rewrite -bufR_cons; [| done]; iFrame "∗"; iPureIntro.
               apply Forall_cons_2; auto.
               rewrite -> !strlen_cons in *.
@@ -772,12 +772,12 @@ Section with_ct.
             Observe [| z <> 0 |]%N (bufR' q sz (z :: z' :: zs)).
         Proof.  lift_WF2WF' bufR_cons_cons_head_nonzero. Qed.
 
-        Lemma bufR'_has_type :
+        Lemma bufR'_has_type_prop :
           forall (q : cQp.t) (sz : Z) (zs : t),
             strlen zs < sz ->
                 bufR' q sz zs
-            |-- bufR' q sz zs ** [| List.Forall (fun c => has_type (Vchar c) Tchar) zs |].
-        Proof. lift_WF2WF' bufR_has_type. Qed.
+            |-- bufR' q sz zs ** [| List.Forall (fun c => has_type_prop (Vchar c) Tchar) zs |].
+        Proof. lift_WF2WF' bufR_has_type_prop. Qed.
 
         #[global] Instance bufR'_type_ptrR_observe :
           forall q (sz : Z) (zs : t),
@@ -861,12 +861,12 @@ Section with_ct.
             Observe [| z <> 0 |]%N (R q (z :: z' :: zs)).
         Proof. try_lift_bufR bufR_cons_cons_head_nonzero. Qed.
 
-        Lemma R_has_type :
+        Lemma R_has_type_prop :
           forall (q : cQp.t) (zs : t),
                 R q zs
-            |-- R q zs ** [| List.Forall (fun c => has_type (Vchar c) Tchar) zs |].
+            |-- R q zs ** [| List.Forall (fun c => has_type_prop (Vchar c) Tchar) zs |].
         Proof.
-          try_lift_bufR bufR_has_type.
+          try_lift_bufR bufR_has_type_prop.
           unfold strlen; by lia.
         Qed.
 
@@ -936,11 +936,11 @@ Section with_ct.
             Observe [| z <> 0 |]%N (R' q (z :: z' :: zs)).
         Proof. lift_WF2WF' R_cons_cons_head_nonzero. Qed.
 
-        Lemma R'_has_type :
+        Lemma R'_has_type_prop :
           forall (q : cQp.t) (zs : t),
                 R' q zs
-            |-- R' q zs ** [| List.Forall (fun c => has_type (Vchar c) Tchar) zs |].
-        Proof. lift_WF2WF' R_has_type. Qed.
+            |-- R' q zs ** [| List.Forall (fun c => has_type_prop (Vchar c) Tchar) zs |].
+        Proof. lift_WF2WF' R_has_type_prop. Qed.
 
         #[global] Instance R'_type_ptrR_observe :
           forall q (zs : t),
