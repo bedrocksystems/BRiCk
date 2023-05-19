@@ -358,13 +358,13 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     Context {σ : genv}.
 
     Axiom has_type_prop_pointer : forall v ty,
-        has_type_prop v (Tpointer ty) -> exists p, v = Vptr p.
+        has_type_prop v (Tpointer ty) <-> exists p, v = Vptr p.
     Axiom has_type_prop_nullptr : forall v,
         has_type_prop v Tnullptr <-> v = Vptr nullptr.
     Axiom has_type_prop_ref : forall v ty,
-        has_type_prop v (Tref ty) -> exists p, v = Vref p /\ p <> nullptr.
+        has_type_prop v (Tref ty) <-> exists p, v = Vref p /\ p <> nullptr.
     Axiom has_type_prop_rv_ref : forall v ty,
-        has_type_prop v (Trv_ref ty) -> exists p, v = Vref p /\ p <> nullptr.
+        has_type_prop v (Trv_ref ty) <-> exists p, v = Vref p /\ p <> nullptr.
     Axiom has_type_prop_array : forall v ty n,
         has_type_prop v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
     Axiom has_type_prop_function : forall v cc rty args,
