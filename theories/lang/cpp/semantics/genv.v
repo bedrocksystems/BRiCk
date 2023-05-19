@@ -45,6 +45,8 @@ Existing Class genv.
 Definition genv_byte_order (g : genv) : endian :=
   g.(genv_tu).(byte_order).
 Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).
+Definition genv_type_table (g : genv) : type_table :=
+  g.(genv_tu).(globals).
 
 Module integral_type.
   Record t : Set := mk { size : int_type.t ; signedness : signed }.
@@ -184,6 +186,10 @@ Qed.
 (** TODO deprecate this in favor of inlining it *)
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu) !! gn.
+
+Lemma glob_def_alt σ gn :
+  glob_def σ gn = genv_type_table σ !! gn.
+Proof. done. Qed.
 
 (* Supersedes glob_def_submodule *)
 Lemma glob_def_genv_compat_struct {σ gn tu} {Hσ : tu ⊧ σ} st
