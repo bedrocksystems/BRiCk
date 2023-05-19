@@ -7,6 +7,7 @@
 (** Most clients should import [bedrock.lang.cpp.logic.rep] instead of this file.
 This file defines the core type [Rep] of representation predicates, for use in [heap_notations].
 *)
+From elpi Require Import locker.
 From bedrock.lang.bi Require Import prelude monpred.
 From bedrock.lang.cpp Require Import semantics.values logic.mpred heap_notations.
 
@@ -38,22 +39,6 @@ Section defs.
 
   Definition as_Rep (P : ptr -> mpred) : Rep := MonPred P _.
 
-  (** [_at base R] states that [R base] holds.
-
-      NOTE This is "weakly at"
-   *)
-  Definition _at_def (base : ptr) (R : Rep) : mpred :=
-    R.(monPred_at) base.
-  Definition _at_aux : seal (@_at_def). Proof. by eexists. Qed.
-  Definition _at := _at_aux.(unseal).
-  Definition _at_eq : @_at = _ := _at_aux.(seal_eq).
-
-  Definition _offsetR_def (o : offset) (r : Rep) : Rep :=
-    as_Rep (fun base => r.(monPred_at) (base ,, o)).
-  Definition _offsetR_aux : seal (@_offsetR_def). Proof. by eexists. Qed.
-  Definition _offsetR := _offsetR_aux.(unseal).
-  Definition _offsetR_eq : @_offsetR = _ := _offsetR_aux.(seal_eq).
-
   (** Values
    * These `Rep` predicates wrap `ptsto` facts
    *)
@@ -61,25 +46,39 @@ Section defs.
   Definition pureR (P : mpred) : Rep :=
     as_Rep (fun _ => P).
 End defs.
-
-#[global] Instance: Params (@_at) 3 := {}.
 #[global] Instance: Params (@as_Rep) 2 := {}.
-#[global] Instance: Params (@_offsetR) 3 := {}.
 #[global] Instance: Params (@pureR) 2 := {}.
 
-Canonical Structure AT_ptr `{Σ : cpp_logic} : AT :=
-  {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := _at |}.
-Canonical Structure AT_offset `{Σ : cpp_logic} : AT :=
-  {| AT_LHS := offset; AT_RHS := Rep; AT_Result := Rep; AT_at := _offsetR |}.
+mlock Definition at_aux `{Σ : cpp_logic} (p : ptr) (R : Rep) : mpred :=
+  R.(monPred_at) p.
+#[global] Arguments at_aux {_ _} _ _ : assert.
 
+mlock Definition offsetR_aux `{Σ : cpp_logic} (o : offset) (R : Rep) : Rep :=
+  as_Rep (fun base => R.(monPred_at) (base ,, o)).
+#[global] Arguments offsetR_aux {_ _} _ _ : assert.
+
+(* TODO replace by the right instances. *)
+#[global] Instance: Params (@at_aux) 3 := {}.
+#[global] Instance: Params (@offsetR_aux) 3 := {}.
+
+Canonical Structure AT_ptr `{Σ : cpp_logic} : AT :=
+  {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := at_aux |}.
+Canonical Structure AT_offset `{Σ : cpp_logic} : AT :=
+  {| AT_LHS := offset; AT_RHS := Rep; AT_Result := Rep; AT_at := offsetR_aux |}.
+
+(** [_at base R] states that [R base] holds.
+
+    NOTE This is "weakly at"
+  *)
 #[global] Notation _at := (@__at AT_ptr) (only parsing).
 #[global] Notation _offsetR := (@__at AT_offset) (only parsing).
 
 Module INTERNAL.
-  Ltac unfold_at := rewrite __at.unlock /AT_at/=; try rewrite rep_defs._at_eq; try rewrite rep_defs._offsetR_eq.
-  Lemma _at_eq `{Σ : cpp_logic} p R : p |-> R = rep_defs._at_def p R.
+  Ltac unfold_at := rewrite __at.unlock /AT_at/= 1?at_aux.unlock 1?offsetR_aux.unlock.
+  Lemma _at_eq `{Σ : cpp_logic} p R : p |-> R = R.(monPred_at) p.
   Proof. by unfold_at. Qed.
-  Lemma _offsetR_eq `{Σ : cpp_logic} o R : o |-> R = rep_defs._offsetR_def o R.
+  Lemma _offsetR_eq `{Σ : cpp_logic} o R : o |-> R =
+    as_Rep (fun p => R.(monPred_at) (p ,, o)).
   Proof. by unfold_at. Qed.
 End INTERNAL.
 

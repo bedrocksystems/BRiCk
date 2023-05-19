@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From elpi Require Import locker.
+From bedrock.lang Require Import bi.prelude.
 
 (* points-to *)
 Structure AT : Type :=
