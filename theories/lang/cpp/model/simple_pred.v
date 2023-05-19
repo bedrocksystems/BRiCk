@@ -1218,6 +1218,88 @@ Module SimpleCPP.
       ptr_congP σ p1 p2 |-- @tptsto σ Tu8 q p1 v -* @tptsto σ Tu8 q p2 v.
     Proof. Admitted.
 
+    Definition has_type {σ : genv} (v : val) (ty : type) : mpred :=
+      [| has_type_prop v ty |] **
+      match v with
+      | Vptr p =>
+        match drop_qualifiers ty with
+        | Tptr ty =>
+          valid_ptr p ** [| aligned_ptr_ty ty p |]
+        | Tref ty | Trv_ref ty =>
+          strict_valid_ptr p ** [| aligned_ptr_ty ty p |]
+        | Tnullptr => valid_ptr p
+        | _ => emp
+        end
+      | _ => [| nonptr_prim_type ty |]
+      end.
+    Section with_genv.
+      Context {σ : genv}.
+
+      #[global] Instance has_type_knowledge : Knowledge2 has_type.
+      Proof.
+        intros v ty; rewrite /has_type; split; last apply _.
+        apply: bi.sep_persistent.
+        destruct v; refine _.
+        case_match; apply _.
+      Qed.
+      Lemma has_type_has_type_prop v ty :
+        has_type v ty |-- [| has_type_prop v ty |].
+      Proof. iIntros "[$ _]". Qed.
+
+      Lemma has_type_prop_has_type_noptr v ty :
+        nonptr_prim_type ty ->
+        [| has_type_prop v ty |] |-- has_type v ty.
+      Proof.
+        rewrite /has_type /nonptr_prim_type; intros.
+        iIntros "$".
+        destruct v => //. by case_match.
+      Qed.
+
+      Lemma has_type_qual_iff ty tq v :
+        has_type v ty -|- has_type v (Tqualified tq ty).
+      Proof. by rewrite /has_type has_type_prop_qual_iff. Qed.
+
+      Lemma has_type_nullptr' p :
+        has_type (Vptr p) Tnullptr -|- [| p = nullptr |].
+      Proof.
+        rewrite /has_type/= has_type_prop_nullptr.
+        rewrite (inj_iff Vptr).
+        iSplit; first iIntros "[$ _]".
+        iIntros "->". rewrite -valid_ptr_nullptr. by iIntros "!%".
+      Qed.
+
+      Lemma has_type_ptr' p ty :
+        has_type (Vptr p) (Tpointer ty) -|- valid_ptr p ** [| aligned_ptr_ty ty p |].
+      Proof.
+        rewrite /has_type/= has_type_prop_pointer.
+        rewrite only_provable_True ?(left_id emp) //. eauto.
+      Qed.
+
+      #[local] Instance strict_valid_ptr_nonnull p :
+        Observe [| p <> nullptr |] (strict_valid_ptr p).
+      Proof.
+        iIntros "#? !>"; destruct (decide (p = nullptr)) as [-> | Hne]; last done.
+        by rewrite not_strictly_valid_ptr_nullptr.
+      Qed.
+
+      Lemma has_type_ref' p ty :
+        has_type (Vref p) (Tref ty) -|- strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+      Proof.
+        rewrite /has_type/= has_type_prop_ref.
+        iSplit. { iIntros "[_ $]". }
+        iIntros "[#S $]". iFrame "S".
+        iDestruct (strict_valid_ptr_nonnull with "S") as %?.
+        iIntros "!%". eauto.
+      Qed.
+
+      Lemma has_type_rv_ref' p ty :
+        has_type (Vref p) (Trv_ref ty) -|- strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+      Proof.
+        rewrite -has_type_ref'.
+        by rewrite /has_type/= has_type_prop_ref has_type_prop_rv_ref.
+      Qed.
+    End with_genv.
+
   End with_cpp.
 
 End SimpleCPP.
