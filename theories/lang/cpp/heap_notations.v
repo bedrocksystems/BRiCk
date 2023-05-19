@@ -8,7 +8,7 @@ From bedrock.lang Require Import bi.prelude.
 
 (* points-to *)
 Structure AT : Type :=
-  { #[canonical=yes] AT_LHS : Type
+  { #[canonical=yes] AT_LHS :> Type
   ; #[canonical=no] AT_RHS : Type
   ; #[canonical=yes] AT_Result : Type
   ; #[canonical=no] AT_at : AT_LHS -> AT_RHS -> AT_Result }.

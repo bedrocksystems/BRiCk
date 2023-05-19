@@ -61,17 +61,17 @@ mlock Definition offsetR_aux `{Σ : cpp_logic} (o : offset) (R : Rep) : Rep :=
 #[global] Instance: Params (@at_aux) 3 := {}.
 #[global] Instance: Params (@offsetR_aux) 3 := {}.
 
-Canonical Structure AT_ptr `{Σ : cpp_logic} : AT :=
+Canonical Structure ptrA `{Σ : cpp_logic} : AT :=
   {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := at_aux |}.
-Canonical Structure AT_offset `{Σ : cpp_logic} : AT :=
+Canonical Structure offsetA `{Σ : cpp_logic} : AT :=
   {| AT_LHS := offset; AT_RHS := Rep; AT_Result := Rep; AT_at := offsetR_aux |}.
 
 (** [_at base R] states that [R base] holds.
 
     NOTE This is "weakly at"
   *)
-#[global] Notation _at := (@__at AT_ptr) (only parsing).
-#[global] Notation _offsetR := (@__at AT_offset) (only parsing).
+#[global] Notation _at := (@__at ptrA) (only parsing).
+#[global] Notation _offsetR := (@__at offsetA) (only parsing).
 
 Module INTERNAL.
   Ltac unfold_at := rewrite __at.unlock /AT_at/= 1?at_aux.unlock 1?offsetR_aux.unlock.
