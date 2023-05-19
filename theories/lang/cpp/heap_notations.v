@@ -5,30 +5,31 @@
  *)
 From elpi Require Import locker.
 
-From bedrock.lang.cpp.semantics Require Import values.
-From bedrock.lang.cpp.logic Require Import mpred rep_defs.
-
 (* points-to *)
 Structure AT : Type :=
   { #[canonical=yes] AT_LHS : Type
   ; #[canonical=no] AT_RHS : Type
   ; #[canonical=yes] AT_Result : Type
   ; #[canonical=no] AT_at : AT_LHS -> AT_RHS -> AT_Result }.
-Canonical Structure AT_ptr `{Σ : cpp_logic} : AT :=
-  {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := _at |}.
-Canonical Structure AT_offset `{Σ : cpp_logic} : AT :=
-  {| AT_LHS := offset; AT_RHS := Rep; AT_Result := Rep; AT_at := _offsetR |}.
 #[global] Arguments AT_at {AT} _ _ : rename, simpl never.
 #[global] Bind Scope bi_scope with AT_RHS.
 
 mlock Definition __at := @AT_at.
 #[global] Arguments __at {AT} _ _ : rename.
 
-#[global] Notation _at := (@__at AT_ptr) (only parsing).
-#[global] Notation _offsetR := (@__at AT_offset) (only parsing).
-
 #[global] Notation "p |-> r" := (__at p r)
   (at level 15, r at level 20, right associativity) : stdpp_scope.
+
+From bedrock.lang.cpp.semantics Require Import values.
+From bedrock.lang.cpp.logic Require Import mpred rep_defs.
+
+Canonical Structure AT_ptr `{Σ : cpp_logic} : AT :=
+  {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := _at |}.
+Canonical Structure AT_offset `{Σ : cpp_logic} : AT :=
+  {| AT_LHS := offset; AT_RHS := Rep; AT_Result := Rep; AT_at := _offsetR |}.
+
+#[global] Notation _at := (@__at AT_ptr) (only parsing).
+#[global] Notation _offsetR := (@__at AT_offset) (only parsing).
 
 Module INTERNAL.
   Ltac unfold_at := rewrite __at.unlock /AT_at/=; try rewrite rep_defs._at_eq; try rewrite rep_defs._offsetR_eq.
