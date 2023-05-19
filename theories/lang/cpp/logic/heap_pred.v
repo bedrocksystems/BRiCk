@@ -43,19 +43,18 @@ Section defs.
   Definition type_ptrR_aux : seal (@type_ptrR_def). Proof. by eexists. Qed.
   Definition type_ptrR := type_ptrR_aux.(unseal).
   Definition type_ptrR_eq : @type_ptrR = _ := type_ptrR_aux.(seal_eq).
-
-  Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
-  Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
-  Definition alignedR := alignedR_aux.(unseal).
-  Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
 End defs.
 
 Arguments type_ptrR {_ Σ σ} _.
 
+mlock Definition alignedR `{Σ : cpp_logic} (al : N) : Rep :=
+  as_Rep (λ p, [| aligned_ptr al p |]).
+#[global] Arguments alignedR {_ Σ} _.
+
 (* [Rep] version of (to be deprecated) [aligned_ptr_ty] *)
 mlock Definition aligned_ofR `{Σ : cpp_logic} {σ} (ty : type) : Rep :=
   ∃ align : N, [| align_of ty = Some align |] ** alignedR align.
-Arguments aligned_ofR {_ Σ σ} _.
+#[global] Arguments aligned_ofR {_ Σ σ} _.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -358,17 +357,17 @@ Section with_cpp.
 
   (** ** [alignedR] *)
   #[global] Instance alignedR_persistent {al} : Persistent (alignedR al).
-  Proof. rewrite alignedR_eq. apply _. Qed.
+  Proof. rewrite alignedR.unlock. apply _. Qed.
   #[global] Instance alignedR_affine {al} : Affine (alignedR al).
-  Proof. rewrite alignedR_eq. apply _. Qed.
+  Proof. rewrite alignedR.unlock. apply _. Qed.
   #[global] Instance alignedR_timeless {al} : Timeless (alignedR al).
-  Proof. rewrite alignedR_eq. apply _. Qed.
+  Proof. rewrite alignedR.unlock. apply _. Qed.
 
   #[global] Instance alignedR_divide_mono :
     Proper (flip N.divide ==> bi_entails) alignedR.
   Proof.
     intros m n ?.
-    rewrite alignedR_eq /alignedR_def. constructor=>p/=. iIntros "!%".
+    rewrite alignedR.unlock. constructor=>p/=. iIntros "!%".
     exact: aligned_ptr_divide_weaken.
   Qed.
 
@@ -384,7 +383,7 @@ Section with_cpp.
   (* To use sparingly: we're deprecating [aligned_ptr] *)
   Lemma _at_alignedR (p : ptr) n :
     p |-> alignedR n -|- [| aligned_ptr n p |].
-  Proof. by rewrite alignedR_eq /alignedR_def _at_as_Rep. Qed.
+  Proof. by rewrite alignedR.unlock _at_as_Rep. Qed.
 
   #[global] Instance aligned_ofR_persistent {ty} : Persistent (aligned_ofR ty).
   Proof. rewrite aligned_ofR.unlock. apply _. Qed.
@@ -396,7 +395,7 @@ Section with_cpp.
   Lemma aligned_ofR_aligned_ptr_ty p ty :
     p |-> aligned_ofR ty -|- [| aligned_ptr_ty ty p |].
   Proof.
-    rewrite aligned_ofR.unlock alignedR_eq /alignedR_def /aligned_ptr_ty _at_exists only_provable_exist.
+    rewrite aligned_ofR.unlock alignedR.unlock /aligned_ptr_ty _at_exists only_provable_exist.
     f_equiv => n. rewrite _at_sep _at_as_Rep _at_only_provable.
     by iIntros "!%".
   Qed.
@@ -622,7 +621,7 @@ Section with_cpp.
 End with_cpp.
 
 #[global] Typeclasses Opaque identityR.
-#[global] Typeclasses Opaque type_ptrR validR svalidR alignedR.
+#[global] Typeclasses Opaque type_ptrR validR svalidR.
 
 #[deprecated(note="since 2022-04-07; use `nonnullR` instead")]
 Notation is_nonnull := nonnullR (only parsing).
