@@ -9,7 +9,7 @@ This file defines the core type [Rep] of representation predicates, for use in [
 *)
 From elpi Require Import locker.
 From bedrock.lang.bi Require Import prelude monpred.
-From bedrock.lang.cpp Require Import semantics.values logic.mpred heap_notations.
+From bedrock.lang.cpp Require Import semantics.values logic.mpred.
 
 Import ChargeNotation.
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
@@ -61,17 +61,31 @@ mlock Definition offsetR_aux `{Σ : cpp_logic} (o : offset) (R : Rep) : Rep :=
 #[global] Instance: Params (@at_aux) 3 := {}.
 #[global] Instance: Params (@offsetR_aux) 3 := {}.
 
+(* points-to *)
+#[projections(primitive=yes)]
+Structure AT `{Σ : cpp_logic} : Type :=
+  { #[canonical=yes] AT_LHS :> Type
+  ; #[canonical=yes] AT_Result : Type
+  ; #[canonical=no] AT_at : AT_LHS -> Rep -> AT_Result }.
+#[global] Arguments AT_at {AT} _ _ : rename, simpl never.
+
+mlock Definition __at := @AT_at.
+#[global] Arguments __at {ti Σ AT} _ _ : rename.
+
+#[global] Notation "p |-> r" := (__at p r)
+  (at level 15, r at level 20, right associativity) : stdpp_scope.
+
 Canonical Structure ptrA `{Σ : cpp_logic} : AT :=
-  {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := at_aux |}.
+  {| AT_LHS := ptr; AT_Result := mpred; AT_at := at_aux |}.
 Canonical Structure offsetA `{Σ : cpp_logic} : AT :=
-  {| AT_LHS := offset; AT_RHS := Rep; AT_Result := Rep; AT_at := offsetR_aux |}.
+  {| AT_LHS := offset; AT_Result := Rep; AT_at := offsetR_aux |}.
 
 (** [_at base R] states that [R base] holds.
 
     NOTE This is "weakly at"
   *)
-#[global] Notation _at := (@__at ptrA) (only parsing).
-#[global] Notation _offsetR := (@__at offsetA) (only parsing).
+#[global] Notation _at := (__at (AT := ptrA)) (only parsing).
+#[global] Notation _offsetR := (__at (AT := offsetA)) (only parsing).
 
 Module INTERNAL.
   Ltac unfold_at := rewrite __at.unlock /AT_at/= 1?at_aux.unlock 1?offsetR_aux.unlock.
