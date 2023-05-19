@@ -72,9 +72,6 @@ Structure AT `{Σ : cpp_logic} : Type :=
 mlock Definition __at := @AT_at.
 #[global] Arguments __at {ti Σ AT} _ _ : rename.
 
-#[global] Notation "p |-> r" := (__at p r)
-  (at level 15, r at level 20, right associativity) : stdpp_scope.
-
 Canonical Structure ptrA `{Σ : cpp_logic} : AT :=
   {| AT_LHS := ptr; AT_Result := mpred; AT_at := at_aux |}.
 Canonical Structure offsetA `{Σ : cpp_logic} : AT :=
@@ -84,8 +81,12 @@ Canonical Structure offsetA `{Σ : cpp_logic} : AT :=
 
     NOTE This is "weakly at"
   *)
-#[global] Notation _at := (__at (AT := ptrA)) (only parsing).
-#[global] Notation _offsetR := (__at (AT := offsetA)) (only parsing).
+#[global] Notation _at := (__at (AT := ptrA)).
+#[global] Notation _offsetR := (__at (AT := offsetA)).
+
+(* Added later to have higher priority. *)
+#[global] Notation "p |-> r" := (__at p r)
+  (at level 15, r at level 20, right associativity) : stdpp_scope.
 
 Module INTERNAL.
   Ltac unfold_at := rewrite __at.unlock /AT_at/= 1?at_aux.unlock 1?offsetR_aux.unlock.
