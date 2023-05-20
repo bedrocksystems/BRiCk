@@ -409,15 +409,12 @@ dune-build:
 build-cpp2v-trigger:
   rules:
     - !reference [.proof-trigger-mr-releases, rules]
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /FM-CI-Compare/'
-      variables:
-        UPSTREAM_CPP2V_CORE_COMMIT_REF_HASH: $CPP2V_CORE_COMMIT_REF_HASH
-      when: on_success
   stage: build_proofs_downstream
   needs:
     - prepare_cpp2v_env
   variables:
     UPSTREAM_CPP2V_CORE_COMMIT_HASH: $CPP2V_CORE_COMMIT_HASH
+    UPSTREAM_CPP2V_CORE_COMMIT_REF_HASH: $CPP2V_CORE_COMMIT_REF_HASH
     DOWNSTREAM_BRANCH: $DOWNSTREAM_BRANCH
     FULL_TIMING: $FULL_TIMING
     # TODO remove eventually; only for legacy builds
