@@ -394,8 +394,8 @@ dune-build:
     - ${DUNE_TAG}
 
 build-cpp2v-trigger:
-  extends:
-    - .proof-trigger-mr-releases
+  rules:
+    - !reference [.proof-trigger-mr-releases, rules]
   stage: build_proofs_downstream
   needs:
     - prepare_cpp2v_env
