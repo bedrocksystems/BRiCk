@@ -125,14 +125,27 @@
        : (val → mpred) → mpred
   
   Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
+  NOTATION_wp_destroy_val_nowrap =
+  ::destroy_val {pointer: WpTestDefns.p; qualifiers: const; type: ptr<void>}
+       : mpred
+  NOTATION_wp_destroy_val_wrap =
+  λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
+    ::destroy_val
+      {pointer: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+          qualifiers: const;
+          type: ptr<void>}
+       : ptr → mpred
+  
+  Arguments NOTATION_wp_destroy_val_wrap
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   NOTATION_destroy_val_nowrap =
-  destroy_val WpTestDefns.tu ({t: ptr<void>}) WpTestDefns.p WpTestDefns.E
+  ::destroy_val {pointer: WpTestDefns.p; type: ptr<void>}
        : mpred
   NOTATION_destroy_val_wrap =
   λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
-    destroy_val WpTestDefns.tu ({t: ptr<void>})
-      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      WpTestDefns.E
+    ::destroy_val
+      {pointer: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+          type: ptr<void>}
        : ptr → mpred
   
   Arguments NOTATION_destroy_val_wrap
@@ -531,13 +544,14 @@
   
   Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
   NOTATION_destroy_val_nowrap =
-  destroy_val WpTestDefns.tu ({t: ptr<void>}) WpTestDefns.p WpTestDefns.E
+  ::destroy_val {pointer: WpTestDefns.p; type: ptr<void>} (WpTestDefns.E)
        : mpred
   NOTATION_destroy_val_wrap =
   λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
-    destroy_val WpTestDefns.tu ({t: ptr<void>})
-      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      WpTestDefns.E
+    ::destroy_val
+      {pointer: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+          type: ptr<void>}
+      (WpTestDefns.E)
        : ptr → mpred
   
   Arguments NOTATION_destroy_val_wrap
