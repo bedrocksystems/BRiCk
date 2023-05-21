@@ -220,7 +220,6 @@ theories/lang/cpp/specs/cpp_specs.v
 theories/lang/cpp/specs.v
 
 # Notations
-theories/lang/cpp/heap_notations.v
 theories/lang/cpp/notations.v
 theories/lang/cpp/primitives.v
 theories/lang/cpp/specs/elaborate.v

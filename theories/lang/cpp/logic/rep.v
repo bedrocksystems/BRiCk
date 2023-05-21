@@ -17,7 +17,7 @@ From bedrock.lang.bi Require Export monpred.
 Export order can affect CS inference. *)
 
 From bedrock.lang.cpp Require Import semantics.values logic.mpred bi.cfractional.
-From bedrock.lang.cpp Require Export logic.rep_defs heap_notations.
+From bedrock.lang.cpp Require Export logic.rep_defs.
 (** ^^ Delicate; export canonical structure (CS) for [Rep].
 Export order can affect CS inference. *)
 

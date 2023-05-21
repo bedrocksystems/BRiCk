@@ -5,7 +5,8 @@
  *)
 
 (** Most clients should import [bedrock.lang.cpp.logic.rep] instead of this file.
-This file defines the core type [Rep] of representation predicates, for use in [heap_notations].
+This file defines the core type [Rep] of representation predicates.
+TODO: merge back into [rep.v]?
 *)
 From elpi Require Import locker.
 From bedrock.lang.bi Require Import prelude monpred.
