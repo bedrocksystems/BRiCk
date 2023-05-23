@@ -151,7 +151,7 @@ Section with_Σ.
     (* To ease rearranging conjuncts or changing connectives, we repeat the
     body (which is easy to update), not the nesting structure. *)
     rewrite !(comm and (is_Some (ptr_vaddr p2)), comm same_address_bool p2, comm _ (_valid_ptr vt2 _),
-      comm same_alloc p2, comm _ [| p2 = _ |]%I, comm _ (live_ptr p2), comm _ (ptr_unambiguous_cmp vt2 _)).
+      symmetry_iff same_alloc p2, comm _ [| p2 = _ |]%I, comm _ (live_ptr p2), comm _ (ptr_unambiguous_cmp vt2 _)).
     iStopProof. repeat f_equiv.
   Qed.
 

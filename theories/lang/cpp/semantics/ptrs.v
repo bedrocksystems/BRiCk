@@ -424,8 +424,6 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Proof. rewrite same_address_eq. apply _. Qed.
   #[global] Instance same_address_per : RelationClasses.PER same_address.
   Proof. rewrite same_address_eq. apply _. Qed.
-  #[global] Instance same_address_comm : Comm iff same_address.
-  Proof. apply: symmetry_iff. Qed.
   #[global] Instance same_address_RewriteRelation : RewriteRelation same_address := {}.
 
   Lemma same_address_iff p1 p2 :
@@ -454,7 +452,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Definition same_address_bool p1 p2 := bool_decide (same_address p1 p2).
 
   #[global] Instance same_address_bool_comm : Comm eq same_address_bool.
-  Proof. move=> p1 p2. apply bool_decide_ext, comm, _. Qed.
+  Proof. move=> p1 p2. exact: bool_decide_ext. Qed.
 
   Lemma same_address_bool_eq {p1 p2 va1 va2} :
     ptr_vaddr p1 = Some va1 → ptr_vaddr p2 = Some va2 →
@@ -478,8 +476,6 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Proof. rewrite same_alloc_eq. apply _. Qed.
   #[global] Instance same_alloc_per : RelationClasses.PER same_alloc.
   Proof. rewrite same_alloc_eq. apply _. Qed.
-  #[global] Instance same_alloc_comm : Comm iff same_alloc.
-  Proof. apply: symmetry_iff. Qed.
 
   Lemma same_alloc_iff p1 p2 :
     same_alloc p1 p2 <-> ∃ aid, ptr_alloc_id p1 = Some aid ∧ ptr_alloc_id p2 = Some aid.

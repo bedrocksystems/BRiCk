@@ -50,7 +50,7 @@
   (deps
     ; This code depends on the LLVM library, to try rebuilding `cpp2v` if LLVM
     ; is upgraded.
-    ; TODO: Check this is sound — does `cmake` might detect LLVM/Clang in other ways?
+    ; TODO: Check this is sound — could `cmake` detect LLVM/Clang in other ways?
     %{read-lines:llvm-lib-path.txt}
     ../Makefile ../Makefile.doc ../CMakeLists.txt (source_tree ../src)
     (source_tree ../cmake) (source_tree ../include) (source_tree ../doc)

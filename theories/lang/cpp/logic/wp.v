@@ -1061,7 +1061,7 @@ Section with_cpp.
 
      NOTE: This is informally justified by the fact that (in the absence
      of ODR) the implementation of the function is encapsulated and only
-     the public interface (the type) is need to know how to call the function.
+     the public interface (the type) is needed to know how to call the function.
    *)
   Axiom fspec_strengthen : forall tt1 tt2 ft a ls Q,
       callable_type tt2.(globals) ft ->

@@ -128,7 +128,7 @@ Section observe.
       Qed.
       #[global] Instance own_exclusive_r g a b `{!Exclusive b} :
         Observe2 False (own g a) (own g b).
-      Proof. GUARD. rewrite comm. apply _. Qed.
+      Proof. GUARD. symmetry. apply _. Qed.
     End own.
   End cmra.
 
@@ -164,7 +164,7 @@ Section observe.
     Proof. GUARD. apply observe_2_pure, own_2_obs, excl_validI_inv_l. Qed.
     #[global] Instance own_excl_inv_r g mx a :
       Observe2 [| mx = None |] (own g mx) (own g (Excl' a)).
-    Proof. GUARD. rewrite comm. apply _. Qed.
+    Proof. GUARD. symmetry. apply _. Qed.
   End option_excl.
 
   (** iris.algebra.frac *)
@@ -239,7 +239,7 @@ Section observe.
     Qed.
     #[global] Instance own_view_auth_frac_valid_exclusive_r g q a1 a2 :
       Observe2 False (own g (●V{#q} a1)) (own g (●V a2)).
-    Proof. GUARD. rewrite comm. apply _. Qed.
+    Proof. GUARD. symmetry. apply _. Qed.
 
     #[global] Instance own_view_auth_agreeI g q1 q2 a1 a2 :
       Observe2 (a1 ≡ a2) (own g (●V{#q1} a1)) (own g (●V{#q2} a2)).
@@ -297,7 +297,7 @@ Section observe.
 
     #[global] Instance own_auth_frac_valid_exclusive_r g q a1 a2 :
       Observe2 False (own g (●{#q} a1)) (own g (● a2)).
-    Proof. GUARD. rewrite comm. apply _. Qed.
+    Proof. GUARD. symmetry. apply _. Qed.
     Lemma test g q a1 a2 : Observe2 False (own g (●{#q} a1)) (own g (● a2)).
     Proof. by apply _. Abort.
 
@@ -387,7 +387,7 @@ Section observe.
 
     #[global] Instance own_excl_auth_frac_valid_exclusive_r g q a1 a2 :
       Observe2 False (own g (●E{q} a1)) (own g (●E{1} a2)).
-    Proof. GUARD. rewrite comm. apply _. Qed.
+    Proof. GUARD. symmetry. apply _. Qed.
     Lemma test g q a1 a2 : Observe2 False (own g (●E{q} a1)) (own g (●E a2)).
     Proof. by apply _. Abort.
 
@@ -493,7 +493,7 @@ Section observe.
 
     #[global] Instance own_frac_auth_auth_frac_exclusive_r g q a1 a2 :
       Observe2 False (own g (●F{q} a1)) (own g (●F{1} a2)).
-    Proof. GUARD. rewrite comm. apply _. Qed.
+    Proof. GUARD. symmetry. apply _. Qed.
     Lemma test g q a1 a2 : Observe2 False (own g (●F{q} a1)) (own g (●F a2)).
     Proof. by apply _. Abort.
 
@@ -532,7 +532,7 @@ Section observe.
 
     #[global] Instance own_frac_auth_frag_frac_exclusive_r g q a1 a2 :
       Observe2 False (own g (◯F{q} a1)) (own g (◯F{1} a2)).
-    Proof. GUARD. rewrite comm. apply _. Qed.
+    Proof. GUARD. symmetry. apply _. Qed.
     Lemma test g q a1 a2 : Observe2 False (own g (◯F{q} a1)) (own g (◯F a2)).
     Proof. by apply _. Abort.
 
@@ -763,7 +763,7 @@ Section observe.
     Qed.
     #[global] Instance own_gset_bij_auth_exclusive_r g q L1 L2 :
       Observe2 False (own g (gset_bij_auth (DfracOwn q) L1)) (own g (gset_bij_auth (DfracOwn 1) L2)).
-    Proof. GUARD. rewrite comm. apply _. Qed.
+    Proof. GUARD. symmetry. apply _. Qed.
 
     #[global] Instance own_gset_bij_auth_agree g dq1 dq2 L1 L2 :
       Observe2 [| L1 = L2 |]
