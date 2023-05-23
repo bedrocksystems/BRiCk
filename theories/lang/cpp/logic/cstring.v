@@ -1022,9 +1022,9 @@ Module cstring.
         Proof.
           case: (bool_decide_reflect
                    (length (cstring.to_zstring a1) <= length (cstring.to_zstring a2))%nat).
-          - by apply: observe_2_aux.
-          - rewrite -Nat.lt_nge Observe2_comm eq_comm=>/Nat.lt_le_incl.
-            by apply: observe_2_aux.
+          - exact: observe_2_aux.
+          - rewrite -Nat.lt_nge eq_comm=>/Nat.lt_le_incl ?.
+            symmetry. exact: observe_2_aux.
         Qed.
 
       End R.

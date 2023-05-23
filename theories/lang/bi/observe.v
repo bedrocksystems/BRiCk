@@ -128,12 +128,8 @@ Section observe.
   Context {PROP : bi}.
   Implicit Types P Q : PROP.
 
-  #[global] Instance Observe2_comm Q : Comm iff (Observe2 Q).
-  Proof.
-    suff observe_2_comm P1 P2 : Observe2 Q P1 P2 → Observe2 Q P2 P1.
-    - by split; apply observe_2_comm.
-    - iIntros (HQ) "P1 P2". iApply (HQ with "P2 P1").
-  Qed.
+  #[global] Instance Observe2_symm Q : Symmetric (Observe2 Q).
+  Proof. Fail apply _. iIntros (P1 P2 HQ) "P2 P1". iApply (HQ with "P1 P2"). Qed.
 
   Lemma observe_2_observe Q P1 P2 : Observe2 Q P1 P2 ↔ Observe Q (P1 ∗ P2).
   Proof. by rewrite /Observe bi.entails_curry. Qed.
