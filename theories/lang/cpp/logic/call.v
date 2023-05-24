@@ -54,7 +54,10 @@ Section with_resolve.
           let rest := map (fun e => let ty := drop_qualifiers (type_of e) in
                                  (ty, wp_arg_init ty e)) es in
           Some (map snd rest, Some (0, map fst rest))
-        else None
+        else match es with
+             | [] => Some ([], None)
+             | _ :: _ => None
+             end
     | t :: ts =>
         match es with
         | [] => None
@@ -66,6 +69,22 @@ Section with_resolve.
         end
     end.
 
+  Lemma zipTypes_definite_base_case :
+    zipTypes [] Ar_Definite [] = Some ([], None).
+  Proof. reflexivity. Qed.
+
+  Lemma zipTypes_definite_nonnull :
+    forall (ts : list type) (es : list Expr)
+      (Hlengths : lengthN ts = lengthN es),
+      zipTypes ts Ar_Definite es <> None.
+  Proof.
+    intros ts; induction ts as [| t ts' IHts'];
+      intros [| e es'] Hlengths; cbn; try done.
+    rewrite !lengthN_cons in Hlengths.
+    intro CONTRA; apply (IHts' es'); first by lia.
+    by apply fmap_None in CONTRA.
+  Qed.
+
   Lemma zipTypes_ok : forall ts ar es ms r,
       zipTypes ts ar es = Some (ms, r) ->
       length ms = length es /\
@@ -75,7 +94,7 @@ Section with_resolve.
       end /\ |-- [∗list] m ∈ ms, wp.WPE.Mframe m m.
   Proof.
     induction ts; simpl; intros.
-    { destruct ar; try congruence.
+    { destruct ar; first by destruct es; inversion H.
       inversion H; clear H; subst.
       rewrite !map_map !map_length.
       split; eauto.
