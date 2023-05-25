@@ -76,7 +76,7 @@ Early to get the right <span class="inlinecode"><a class="idref" href="bedrock.l
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="wp" class="idref" href="#wp"><span class="id" title="abbreviation">wp</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp"><span class="id" title="axiom">wp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="wpi" class="idref" href="#wpi"><span class="id" title="abbreviation">wpi</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wpi"><span class="id" title="definition">wpi</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="wp_init" class="idref" href="#wp_init"><span class="id" title="abbreviation">wp_init</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_init"><span class="id" title="axiom">wp_init</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
-&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="interp" class="idref" href="#interp"><span class="id" title="abbreviation">interp</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp"><span class="id" title="definition">interp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="interp" class="idref" href="#interp"><span class="id" title="abbreviation">interp</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp"><span class="id" title="abbreviation">interp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
 
 <br/>
 &nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">free_scope</span>.<br/>
@@ -96,7 +96,7 @@ Early to get the right <span class="inlinecode"><a class="idref" href="bedrock.l
 </div>
 
 <div class="doc">
-<a id="lab205"></a><h1 class="section">Aggregate identity</h1>
+<a id="lab210"></a><h1 class="section">Aggregate identity</h1>
 
 </div>
 <div class="code">
@@ -223,7 +223,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab206"></a><h1 class="section">Binding parameters</h1>
+<a id="lab211"></a><h1 class="section">Binding parameters</h1>
 
 </div>
 <div class="code">
@@ -320,11 +320,11 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab207"></a><h1 class="section">Weakest preconditions of the flavors of C++ "functions"</h1>
+<a id="lab212"></a><h1 class="section">Weakest preconditions of the flavors of C++ "functions"</h1>
 
 <div class="paragraph"> </div>
 
-<a id="lab208"></a><h2 class="section">the weakest precondition of a function</h2>
+<a id="lab213"></a><h2 class="section">the weakest precondition of a function</h2>
 
 </div>
 <div class="code">
@@ -354,7 +354,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab209"></a><h2 class="section">The weakest precondition of a method</h2>
+<a id="lab214"></a><h2 class="section">The weakest precondition of a method</h2>
 
 
 <div class="paragraph"> </div>
@@ -391,7 +391,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab210"></a><h2 class="section">Weakest precondition of a constructor</h2>
+<a id="lab215"></a><h2 class="section">Weakest precondition of a constructor</h2>
 
 </div>
 <div class="code">
@@ -696,7 +696,7 @@ A special version of return to match the C++ rule that
 </div>
 
 <div class="doc">
-<a id="lab211"></a><h2 class="section">Weakest precondition of a destructor</h2>
+<a id="lab216"></a><h2 class="section">Weakest precondition of a destructor</h2>
 
 </div>
 <div class="code">
@@ -723,7 +723,7 @@ A special version of return to match the C++ rule that
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.func.html#wp_dtor"><span class="id" title="definition">wp_dtor</span></a></span> <span class="inlinecode"><span class="id" title="var">dtor</span></span> <span class="inlinecode"><span class="id" title="var">args</span></span> <span class="inlinecode"><span class="id" title="var">Q</span></span> defines the semantics of the destructor <span class="inlinecode"><span class="id" title="var">dtor</span></span> when
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.func.html#wp_dtor"><span class="id" title="definition">wp_dtor</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#dtor"><span class="id" title="section">dtor</span></a></span> <span class="inlinecode"><span class="id" title="var">args</span></span> <span class="inlinecode"><span class="id" title="var">Q</span></span> defines the semantics of the destructor <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#dtor"><span class="id" title="section">dtor</span></a></span> when
       applied to <span class="inlinecode"><span class="id" title="var">args</span></span> with post-condition <span class="inlinecode"><span class="id" title="var">Q</span></span>.
 
 <div class="paragraph"> </div>

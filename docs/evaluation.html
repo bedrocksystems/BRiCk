@@ -130,20 +130,22 @@ Note that virtual dispatch is <em>not</em> used when invoking the destructor.
 <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">seq</span></span> <span class="n"><span class="pre">a</span></span> <span class="n"><span class="pre">b</span></span></code> means that the temporaries in <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">a</span></span></code> must be destroyed <em>before</em> the temporaries in <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">b</span></span></code>.
 <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">par</span></span> <span class="n"><span class="pre">a</span></span> <span class="n"><span class="pre">b</span></span></code> means that the temporaries in <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">a</span></span></code> and the temporaries in <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">b</span></span></code> are destroyed in an interleaved manner <a class="footnote-reference brackets" href="#parallel-destruction" id="id2">1</a>.</p>
 <p>The meaning of these constructs is made precise by interpreting the syntax using <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.destroy.html#interp">interp</a>.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(** [interp free Q] &quot;runs&quot; [free] and then acts like [Q].
-
-    NOTE this could directly support update modalities like regular [wp]s
-         but in practice it is always going to occur at the end of a [wp] which
-         means it will already have access to a fancy update.
- *)
-Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>#[local] Definition interp_body `{Σ : cpp_logic, σ : genv}
+    (interp : translation_unit -&gt; FreeTemps -&gt; epred -&gt; mpred)
+    (tu : translation_unit) (free : FreeTemps) (Q : epred) : mpred :=
   match free with
-  | FreeTemps.id =&gt; Q
-  | FreeTemps.seq f g =&gt; interp f $ interp g Q
-  | FreeTemps.par f g =&gt; Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
+  | FreeTemps.id =&gt; |={top}=&gt; Q
+  | FreeTemps.seq f g =&gt; interp tu f $ interp tu g Q
+  | FreeTemps.par f g =&gt; |={top}=&gt; Exists Qf Qg, interp tu f Qf ** interp tu g Qg ** (Qf -* Qg -* |={top}=&gt; Q)
   | FreeTemps.delete ty addr =&gt; destroy_val tu ty addr Q
-  | FreeTemps.delete_va va addr =&gt; addr |-&gt; varargsR va ** Q
+  | FreeTemps.delete_va va addr =&gt; |={top}=&gt; addr |-&gt; varargsR va ** Q
   end.
+
+mlock Definition interp `{Σ : cpp_logic, σ : genv}
+    : translation_unit -&gt; FreeTemps -&gt; epred -&gt; mpred :=
+  fix interp tu free :=
+  interp_body interp tu free.
+#[global] Arguments interp {_ _ _} _ free Q : assert.	(* set names *)
 </pre></div>
 </div>
 </div>
