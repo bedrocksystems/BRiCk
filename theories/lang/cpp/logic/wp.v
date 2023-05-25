@@ -23,6 +23,7 @@ Require Import bedrock.lang.bi.errors.
  *)
 Definition epred `{Σ : cpp_logic thread_info} := mpred.
 Notation epredO := mpredO (only parsing).
+Bind Scope bi_scope with epred.
 
 Module FreeTemps.
 Section FreeTemps.
@@ -1091,6 +1092,12 @@ Section with_cpp.
   Axiom fupd_spec : forall te ft a ls Q,
       (|={top}=> fspec te ft a ls Q) |-- fspec te ft a ls Q.
 
+  Lemma fspec_shift te ft a ls Q :
+    (|={top}=> fspec te ft a ls (λ v, |={top}=> Q v)) |-- fspec te ft a ls Q.
+  Proof.
+    by rewrite fupd_spec fspec_fupd.
+  Qed.
+
   #[global] Instance Proper_fspec : forall tt ft a ls,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft a ls).
   Proof.
@@ -1134,6 +1141,16 @@ Section with_cpp.
   Definition mspec (tt : type_table) (this_type : type) (fun_type : type)
     : ptr -> list ptr -> (ptr -> epred) -> mpred :=
     fspec tt (Tmember_func this_type fun_type).
+
+  Lemma mspec_frame_fupd_strong tt1 tt2 t t0 v l Q1 Q2 :
+    type_table_le tt1 tt2 ->
+    (Forall v, Q1 v -* |={top}=> Q2 v)
+    |-- mspec tt1 t t0 v l Q1 -* mspec tt2 t t0 v l Q2.
+  Proof. apply fspec_frame_fupd. Qed.
+
+  Lemma mspec_shift tt t t0 v l Q :
+    (|={top}=> mspec tt t t0 v l (λ v, |={top}=> Q v)) |-- mspec tt t t0 v l Q.
+  Proof. apply fspec_shift. Qed.
 
   Lemma mspec_frame:
     ∀ (t : type) (l : list ptr) (v : ptr) (t0 : type) (t1 : type_table) (Q Q' : ptr -> _),

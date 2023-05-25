@@ -419,7 +419,7 @@ Section qual_norm.
 
   Fixpoint qual_norm' (q : type_qualifiers) (t : type) : A :=
     match t with
-    | Tqualified q' t => qual_norm' (merge_tq q' q) t
+    | Tqualified q' t => qual_norm' (merge_tq q q') t
     | _ => f q t
     end.
 
@@ -478,10 +478,18 @@ Section qual_norm.
 
   (** [qual_norm'] *)
 
+  Lemma qual_norm'_ind (P : type_qualifiers -> type -> A -> Prop) f
+    (IHqual : ∀ q q' t' x, P (merge_tq q q') t' x -> P q (Tqualified q' t') x)
+    (IHnorm : ∀ q' t', Unqualified t' -> P q' t' (f q' t')) :
+    ∀ q t, P q t (qual_norm' f q t).
+  Proof.
+    move=>q t. move: q. induction t=>q; cbn; auto with typeclass_instances.
+  Qed.
+
   Lemma qual_norm'_unfold f q t :
     qual_norm' f q t =
       if t is Tqualified q' t
-      then qual_norm' f (merge_tq q' q) t
+      then qual_norm' f (merge_tq q q') t
       else f q t.
   Proof. by destruct t. Qed.
 
@@ -489,12 +497,12 @@ Section qual_norm.
       (Pre : type_qualifiers -> type -> Prop)
       (Post : A -> Prop) q t f :
     Pre q t ->
-    (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q' q) t') ->
+    (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q q') t') ->
     (∀ q' t', Unqualified t' -> Pre q' t' -> Post (f q' t')) ->
     Post (qual_norm' f q t).
   Proof.
-    intros Hpre HR Hf. move: q Hpre. induction t=>q; try exact: Hf.
-    rewrite qual_norm'_unfold. move/HR. apply IHt.
+    intros Hpre HR Hf. move: Hpre. pattern (qual_norm' f q t).
+    apply qual_norm'_ind; auto.
   Qed.
 
   (** [qual_norm] *)
@@ -506,14 +514,14 @@ Section qual_norm.
       else f QM t.
   Proof.
     rewrite /qual_norm qual_norm'_unfold. f_equiv.
-    by rewrite right_id_L.
+    by rewrite left_id_L.
   Qed.
 
   Lemma qual_norm_prepost
       (Pre : type_qualifiers -> type -> Prop)
       (Post : A -> Prop) f t :
     Pre QM t ->
-    (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q' q) t') ->
+    (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q q') t') ->
     (∀ q' t', Unqualified t' -> Pre q' t' -> Post (f q' t')) ->
     Post (qual_norm f t).
   Proof. apply qual_norm'_prepost. Qed.
@@ -530,9 +538,8 @@ Lemma decompose_type_unfold t :
 Proof.
   rewrite /decompose_type qual_norm_unfold.
   destruct t as [| | | | | | | | | | | | |q t| |]; try done. set pair := fun x y => (x, y).
-  move: q. induction t=>q; try by rewrite right_id_L.
-  cbn. rewrite right_id_L !IHt /=. f_equal.
-  rewrite assoc_L. f_equal. by rewrite comm_L.
+  move: q. induction t=>q; cbn; try by rewrite right_id_L.
+  rewrite left_id_L !IHt /=. f_equal. by rewrite assoc_L.
 Qed.
 
 Lemma decompose_type_qual q t :
@@ -545,7 +552,7 @@ Lemma decompose_type_prepost
     (Pre : type_qualifiers -> type -> Prop)
     (Post : type_qualifiers * type -> Prop) t :
   Pre QM t ->
-  (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q' q) t') ->
+  (∀ q q' t', Pre q (Tqualified q' t') -> Pre (merge_tq q q') t') ->
   (∀ q' t', Unqualified t' -> Pre q' t' -> Post (q', t')) ->
   Post (decompose_type t).
 Proof. apply qual_norm_prepost. Qed.
@@ -555,11 +562,10 @@ Proof. apply qual_norm_prepost. Qed.
 Lemma qual_norm'_decompose_type {A} (f : type_qualifiers -> type -> A) q t :
   qual_norm' f q t =
     let p := decompose_type t in
-    f (merge_tq p.1 q) p.2.
+    f (merge_tq q p.1) p.2.
 Proof.
-  move: q. induction t=>q /=; try by rewrite left_id_L.
-  rewrite decompose_type_unfold IHt /=.
-  f_equal. rewrite assoc_L. f_equal. by rewrite comm_L.
+  move: q. induction t=>q /=; try by rewrite right_id_L.
+  rewrite decompose_type_unfold IHt /=. by rewrite assoc_L.
 Qed.
 
 Lemma qual_norm_decompose_type {A} (f : type_qualifiers -> type -> A) t :
@@ -568,7 +574,7 @@ Lemma qual_norm_decompose_type {A} (f : type_qualifiers -> type -> A) t :
     f p.1 p.2.
 Proof.
   rewrite /qual_norm qual_norm'_decompose_type. cbn.
-  by rewrite right_id_L.
+  by rewrite left_id_L.
 Qed.
 
 (** Smart constructors *)
@@ -596,7 +602,7 @@ https://www.eel.is/c++draft/dcl.ref#5
 Fixpoint tref (acc : type_qualifiers) (t : type) : type :=
   match t with
   | Tref t | Trv_ref t => tref QM t
-  | Tqualified q t => tref (merge_tq q acc) t
+  | Tqualified q t => tref (merge_tq acc q) t
   | _ => Tref (tqualified acc t)
   end.
 #[global] Arguments tref _ !_ / : simpl nomatch, assert.
@@ -605,7 +611,7 @@ Fixpoint trv_ref (acc : type_qualifiers) (t : type) : type :=
   match t with
   | Tref t => tref QM t
   | Trv_ref t => trv_ref QM t
-  | Tqualified q t => trv_ref (merge_tq q acc) t
+  | Tqualified q t => trv_ref (merge_tq acc q) t
   | _ => Trv_ref (tqualified acc t)
   end.
 #[global] Arguments trv_ref _ !_ / : simpl nomatch, assert.
@@ -679,7 +685,7 @@ Proof. rewrite TCEq_eq NonRef_is_refb=>->. tauto. Qed.
 Lemma tqualified_unfold q t :
   tqualified q t =
     match t with
-    | Tqualified q' t => tqualified (merge_tq q' q) t
+    | Tqualified q' t => tqualified (merge_tq q q') t
     | Tref _ | Trv_ref _ => t
     | _ => match q with QM => t | _ => Tqualified q t end
     end.
@@ -692,7 +698,7 @@ Lemma tqualified_prepost
     (Pre : type_qualifiers -> type -> Prop)
     (Post : type -> Prop) q t :
   Pre q t ->
-  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q' q) t) ->
+  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q q') t) ->
   (∀ q t, Pre q t -> IsRef t -> Post t) ->
   (∀ q t, Pre q t -> Unqualified t -> NonRef t -> Post (if q is QM then t else Tqualified q t)) ->
   Post (tqualified q t).
@@ -719,7 +725,7 @@ Lemma tref_prepost
     (Pre : type_qualifiers -> type -> Prop)
     (Post : type -> Prop) q t :
   Pre q t ->
-  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q' q) t) ->
+  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q q') t) ->
   (∀ q t, Pre q (Tref t) -> Pre QM t) ->
   (∀ q t, Pre q (Trv_ref t) -> Pre QM t) ->
   (∀ q t, Pre q t -> Unqualified t -> NonRef t -> Post $ Tref $ tqualified q t) ->
@@ -746,7 +752,7 @@ Lemma trv_ref_prepost
     (Pre : type_qualifiers -> type -> Prop)
     (Post : type -> Prop) q t :
   Pre q t ->
-  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q' q) t) ->
+  (∀ q q' t, Pre q (Tqualified q' t) -> Pre (merge_tq q q') t) ->
   (∀ q t, Pre q (Trv_ref t) -> Pre QM t) ->
   (∀ q t, Pre q (Tref t) -> Post (tref QM t)) ->
   (∀ q t, Pre q t -> Unqualified t -> NonRef t -> Post $ Trv_ref $ tqualified q t) ->
@@ -805,7 +811,7 @@ Section normalize_type_idempotent.
       - rewrite map_map /qual_norm !IHty /merge_tq/=;
           erewrite map_ext_Forall; eauto; eapply Forall_impl;
           [|eassumption]; intros * HForall; simpl in HForall; apply HForall.
-      - rewrite IHty !assoc_L. f_equal. f_equal. by rewrite comm_L.
+      - by rewrite IHty !assoc_L.
     }
     { (* _qual_norm_involutive *)
       intros *; generalize dependent q;

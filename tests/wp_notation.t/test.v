@@ -11,6 +11,7 @@ Module WpTestDefns.
   Context (ti : biIndex) (Σ : cpp_logic ti) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)
           (v : val) (p p' p'' p''' this : ptr)
           (free : FreeTemps) (E : epred) (K : Kpred).
+  #[local] Notation cv := (types.QC).
   #[local] Notation ty := (types.Tptr types.Tvoid).
   #[local] Notation e := (expr.Ebinop expr.Badd
                                       (expr.Evar (expr.Lname "foo") types.Tint)
@@ -53,6 +54,11 @@ Module WpTestDefns.
   End Special.
 
   Section Cleanup.
+    Definition NOTATION_wp_destroy_val_nowrap :=
+      wp_destroy_val tu cv ty p E.
+    Definition NOTATION_wp_destroy_val_wrap (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr) :=
+      wp_destroy_val tu cv ty aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa E.
+
     Definition NOTATION_destroy_val_nowrap :=
       destroy_val tu ty p E.
     Definition NOTATION_destroy_val_wrap (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr) :=
@@ -152,6 +158,7 @@ Section TEST_COMPACT_WP_NOTATIONS.
   Print NOTATION_wp_atomic_nil. Print NOTATION_wp_atomic_cons_nowrap. Print NOTATION_wp_atomic_cons_wrap.
   Print NOTATION_wp_builtin_nil. Print NOTATION_wp_builtin_cons_nowrap. Print NOTATION_wp_builtin_cons_wrap.
 
+  Print NOTATION_wp_destroy_val_nowrap. Print NOTATION_wp_destroy_val_wrap.
   Print NOTATION_destroy_val_nowrap. Print NOTATION_destroy_val_wrap.
   Print NOTATION_interp_nowrap. Print NOTATION_interp_wrap.
 
