@@ -327,21 +327,22 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
   *)
 
   (**
-  [has_type_prop v ty] is an approximation in [Prop] of "[v] is an initialized value
-  of type [t]." This implies:
-  - if [ty <> Tvoid], then [v <> Vundef] <--
-    ^---- TODO: <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/319>
+  [has_type_prop v ty] is an under-approximation in [Prop] of "[v] is an initialized value
+  of type [t]."
+  Assuming [ty] isn't qualified, this implies:
+  - if [ty <> Tvoid], then [v <> Vundef] in all provable cases <--
+    ^---- TODO: <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/319>.
+    See aborted lemma [has_type_prop_not_vundef] below.
   - if [ty = Tvoid], then [v = Vundef].
   - if [ty = Tnullptr], then [v = Vptr nullptr].
   - if [ty = Tnum sz sgn], then [v] fits the appropriate bounds (see
     [has_int_type']).
-  - if [ty] is a type of pointers/aggregates, we only ensure that [v = Vptr p].
-    + NOTE: We require that - for a type [Tnamed nm] - the name resolves to some
-      [GlobDecl] other than [Gtype] in a given [σ : genv].
+  - if [ty] is a type of pointers, we only ensure that [v = Vptr p].
   - if [ty] is a type of references, we ensure that [v = Vref p] and
     that [p <> nullptr]; [Vref] is an alias for [Vptr]
-  - if [ty] is a type of arrays, we ensure that [v = Vptr p] and
-    that [p <> nullptr].
+  See [has_type] for a stronger version.
+
+  TODO: Currently, [has_type_prop] isn't the maximal pure part of [has_type].
     *)
   Parameter has_type_prop : forall {σ : genv}, val -> type -> Prop.
 
@@ -365,10 +366,18 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
         has_type_prop v (Tref ty) <-> exists p, v = Vref p /\ p <> nullptr.
     Axiom has_type_prop_rv_ref : forall v ty,
         has_type_prop v (Trv_ref ty) <-> exists p, v = Vref p /\ p <> nullptr.
+    (* TODO FM-3760: the next axioms were not used and have unclear status. *)
+    (*
+    (* - if [ty] is a type of arrays, we ensure that [v = Vptr p] and
+      that [p <> nullptr]. *)
     Axiom has_type_prop_array : forall v ty n,
         has_type_prop v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
     Axiom has_type_prop_function : forall v cc rty args,
         has_type_prop v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+
+    (* + NOTE: We require that - for a type [Tnamed nm] - the name resolves to some
+      [GlobDecl] other than [Gtype] in a given [σ : genv]. *)
+    *)
 
     Axiom has_type_prop_char : forall ct v,
         (exists n, v = Vchar n /\ 0 <= n < 2^(char_type.bitsN ct))%N <-> has_type_prop v (Tchar_ ct).
@@ -447,6 +456,35 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     Proof.
       intros. by apply has_type_prop_drop_qualifiers.
     Qed.
+
+    (* Not provable yet because our rules are incomplete. *)
+    Lemma has_type_prop_not_vundef v ty :
+      has_type_prop v ty ->
+      drop_qualifiers ty = Tvoid <-> v = Vundef.
+    Proof.
+      intros Ht%has_type_prop_drop_qualifiers; split; intros E. {
+        by rewrite E has_type_prop_void in Ht.
+      }
+      apply dec_stable => G.
+      induction ty; move: Ht => //=.
+      rewrite has_type_prop_pointer; naive_solver.
+      rewrite has_type_prop_ref; naive_solver.
+      rewrite has_type_prop_rv_ref; naive_solver.
+      rewrite has_int_type'; naive_solver.
+      rewrite -has_type_prop_char; naive_solver.
+      admit.
+      admit.
+      { (* Needs well-founded induction on types and [genv]! *)
+        rewrite has_type_prop_enum => -[?] [?] [?]. admit. }
+      admit.
+      rewrite has_type_prop_bool; naive_solver.
+      admit.
+      admit.
+      { simpl in G. tauto. }
+      rewrite has_type_prop_nullptr; naive_solver.
+      admit.
+      all: fail.
+    Abort.
 
     Section has_type_prop.
       Lemma has_type_prop_bswap8:
