@@ -917,7 +917,7 @@ Section temps.
       iApply ("HQ" with "Qf Qg"). }
   Qed.
 
-  Lemma interp_intro_id tu Q : Q |-- interp tu FreeTemps.id Q.
+  Lemma interp_intro_id tu Q : Q |-- interp tu 1 Q.
   Proof. by rewrite -interp_intro. Qed.
 
   Lemma interp_intro_seq tu f g Q :
@@ -946,7 +946,7 @@ Section temps.
     Reduce (interp_body interp tu free Q).
   Proof. by interp_unfold. Qed.
 
-  Lemma interp_elim_id tu Q : interp tu (FreeTemps.id) Q |-- |={top}=> Q.
+  Lemma interp_elim_id tu Q : interp tu 1 Q |-- |={top}=> Q.
   Proof. apply interp_elim. Qed.
 
   Lemma interp_elim_seq tu f g Q : interp tu (f >*> g) Q |-- interp tu f (interp tu g Q).
@@ -968,30 +968,6 @@ Section temps.
   Proof. apply interp_elim. Qed.
 
   (** Structural rules *)
-
-  (**
-  TODO (FM-3745): Keeping [interp_frame_strong] and [interp_free]
-  separate to check that everything hangs together made sense. Now,
-  can we strengthen [interp_frame_strong] and simplify the business
-  between [interp_free] and [interp_proper]?
-
-  It seems the answer is "not yet"; specifically, it seems we cannot
-  directly prove a variant of [interp_free] using entailments without
-  running afoul of the symmetry conditions baked into
-  [FreeTemps.t_eq].
-
-  _However,_ an inhabitant of [FreeTemps] is just a first order record
-  of the obligations defined by [interp]. For [interp], the natural
-  relation to work with is entailment, not equivalence.
-
-  This suggests that the following business might benefit from a small
-  refactoring: Define a preorder [FreeTemps.le], making
-  [FreeTemps.t_eq f1 f2 := f1 <= f2 /\ f2 <= f1].
-
-  Aside: The template logic might bump the priority of such a
-  refactoring if we wind up needing [Proper] instances that account
-  for [FreeTemps].
-  *)
 
   Lemma interp_frame_strong tu tu' free Q Q' :
     TULE tu tu' ->
@@ -1031,30 +1007,16 @@ Section temps.
       iFrame "Qf Qg". iIntros "!> Qf Qg". by iMod ("Hfg" with "Qf Qg").
   Qed.
 
-  Lemma fupd_interp_1 tu free Q :
+  Lemma fupd_interp tu free Q :
     (|={top}=> interp tu free Q) |-- interp tu free Q.
   Proof.
     iIntros "wp". iApply interp_shift. iMod "wp".
     iApply (interp_wand with "wp"). by iIntros "!> $".
   Qed.
-  Lemma fupd_interp_2 tu free Q :
-    interp tu free Q |-- (|={top}=> interp tu free Q).
-  Proof. auto using fupd_elim. Qed.
-  Lemma fupd_interp tu free Q :
-    (|={top}=> interp tu free Q) -|- interp tu free Q.
-  Proof. split'; auto using fupd_interp_1, fupd_interp_2. Qed.
 
-  Lemma interp_fupd_1 tu free Q :
+  Lemma interp_fupd tu free Q :
     interp tu free (|={top}=> Q) |-- interp tu free Q.
   Proof. solve_shift_fupd interp_shift. Qed.
-  Lemma interp_fupd_2 tu free Q :
-    interp tu free Q |-- interp tu free (|={top}=> Q).
-  Proof.
-    iIntros "wp". iApply (interp_wand with "wp"). by iIntros "$".
-  Qed.
-  Lemma interp_fupd tu free Q :
-    interp tu free (|={top}=> Q) -|- interp tu free Q.
-  Proof. split'; auto using interp_fupd_1, interp_fupd_2. Qed.
 
   Lemma interp_free tu free free' Q :
     free ≡ free' -> interp tu free Q -|- interp tu free' Q.
@@ -1062,35 +1024,28 @@ Section temps.
     #[local] Notation WEAK_PROPER R :=
       (∀ tu free, Proper (R ==> R) (interp tu free)) (only parsing).
     have weak_mono : WEAK_PROPER bi_entails.
-    { clear. intros * Q1 Q2 HQ.
-      iIntros "wp". iApply (interp_wand with "wp").
-      by iApply HQ. }
+    { clear. intros * Q1 Q2 HQ. iIntros "wp".
+      iApply (interp_wand with "wp"). by iApply HQ. }
     have {weak_mono} weak_proper : WEAK_PROPER equiv.
     { clear -weak_mono. intros * Q1 Q2 HQ.
       split'; apply weak_mono; by rewrite HQ. }
-    (**
-    TODO: There may be a general proof technique lurking here. Given
-    some [wp : FreeTemps -> PROP -> PROP], we might apply a lemma
-    along the lines of
-    <<
-      (∀ free, Proper (equiv ==> equiv) (wp free)) ->
-      (* side-conditions for [wp] with specific [FreeTemps] -> *)
-      Proper (equiv ==> equiv ==> equiv) wp
-    >>
-    The side conditions for [wp] may be simple enough to make it worth
-    stating and using. We could then reuse it for other judgments
-    (like [wp_const]).
-    *)
+    have fupd_interp : ∀ tu free Q,
+      (|={top}=> interp tu free Q) -|- interp tu free Q.
+    { clear. split'; auto using fupd_interp, fupd_elim. }
+    have interp_fupd : ∀ tu free Q,
+      interp tu free (|={top}=> Q) -|- interp tu free Q.
+    { clear. split'; first apply interp_fupd.
+      iIntros "wp". iApply (interp_wand with "wp"). by iIntros "$". }
     intros i. move: Q. induction i=>Q.
     { done. }
     { by rewrite IHi. }
-    { by rewrite IHi1 IHi2. }
+    { by rewrite IHi IHi0. }
     { by rewrite !(interp_unfold (_ >*> _)). }
-    { rewrite (interp_unfold (_ >*> _)) (interp_unfold FreeTemps.id).
-      by rewrite interp_fupd. }
-    { rewrite (interp_unfold (_ >*> _)) (interp_unfold FreeTemps.id).
+    { rewrite (interp_unfold (_ >*> _)) (interp_unfold 1).
       by rewrite fupd_interp. }
-    { rewrite !(interp_unfold (_ >*> _)). by rewrite IHi1 IHi2. }
+    { rewrite (interp_unfold (_ >*> _)) (interp_unfold 1).
+      by rewrite interp_fupd. }
+    { rewrite !(interp_unfold (_ >*> _)). by rewrite IHi IHi0. }
     { rewrite !(interp_unfold (_ |*| _)).
       f_equiv. rewrite bi.exist_exist. f_equiv=>Qf. f_equiv=>Qg.
       by split'; iIntros "($ & $ & F) A B"; iApply ("F" with "B A"). }
@@ -1109,14 +1064,7 @@ Section temps.
         { by iIntros "!> $ $". }
         iIntros "Qx [Qy Qz]". iMod ("Hxy" with "Qx Qy") as "Qxy".
         iApply ("HQ" with "Qxy Qz"). }
-    { rewrite (interp_unfold (_ |*| _)) (interp_unfold FreeTemps.id). split'.
-      - iIntros "X". iApply interp_shift.
-        iMod "X" as "(%Qf & %Qg & wp & >Qg & HQ)".
-        iApply (interp_wand with "wp"). iIntros "!> Qf".
-        iApply ("HQ" with "Qf Qg").
-      - iIntros "wp". iExists Q, emp. iFrame "wp".
-        iIntros "!>". iSplitL; by auto. }
-    { rewrite (interp_unfold (_ |*| _)) (interp_unfold FreeTemps.id). split'.
+    { rewrite (interp_unfold (_ |*| _)) (interp_unfold 1). split'.
       - iIntros "X". iApply interp_shift.
         iMod "X" as "(%Qf & %Qg & >Qf & wp & HQ)".
         iApply (interp_wand with "wp"). iIntros "!> Qg".
@@ -1124,7 +1072,7 @@ Section temps.
       - iIntros "wp". iExists emp, Q. iFrame "wp".
         iIntros "!>". iSplitL; by auto. }
     { rewrite !(interp_unfold (_ |*| _)).
-      setoid_rewrite IHi1. by setoid_rewrite IHi2. }
+      setoid_rewrite IHi. by setoid_rewrite IHi0. }
   Qed.
 
   #[global] Instance: Params (@interp) 4 := {}.

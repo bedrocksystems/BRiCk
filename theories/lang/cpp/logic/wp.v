@@ -25,99 +25,86 @@ Definition epred `{Σ : cpp_logic thread_info} := mpred.
 Notation epredO := mpredO (only parsing).
 Bind Scope bi_scope with epred.
 
+Declare Scope free_scope.
+Delimit Scope free_scope with free.
+Reserved Infix "|*|" (at level 30).
+Reserved Infix ">*>" (at level 30).
+
 Module FreeTemps.
-Section FreeTemps.
-  Context `{Σ : cpp_logic thread_info}.
 
   (* BEGIN FreeTemps.t *)
-  Inductive t : Type :=
+  Inductive t : Set :=
   | id (* = fun x => x *)
   | delete (ty : type) (p : ptr) (* = delete_val ty p *)
   | delete_va (va : list (type * ptr)) (p : ptr)
   | seq (f g : t) (* = fun x => f $ g x *)
-  | par (f g : t)
-    (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
-     *)
+  | par (f g : t) (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x) *)
   .
   (* END FreeTemps.t *)
 
-  Inductive t_eq : t -> t -> Prop :=
-  | refl l : t_eq l l
-  | sym l r : t_eq l r -> t_eq r l
-  | trans a b c : t_eq a b -> t_eq b c -> t_eq a c
+  Module Import notations.
+    Bind Scope free_scope with t.
+    Notation "1" := id : free_scope.
+    Infix ">*>" := seq : free_scope.
+    Infix "|*|" := par : free_scope.
+  End notations.
+  #[local] Open Scope free_scope.
 
-  | seqA x y z : t_eq (seq x (seq y z)) (seq (seq x y) z)
-  | seq_id_unitR l : t_eq (seq l id) l
-  | seq_id_unitL l : t_eq (seq id l) l
-  | seq_proper_ {a b c d} : t_eq a b -> t_eq c d -> t_eq (seq a c) (seq b d)
+  Inductive t_equiv : Equiv t :=
+  | refl l : l ≡ l
+  | sym l r : l ≡ r -> r ≡ l
+  | trans a b c : a ≡ b -> b ≡ c -> a ≡ c
 
-  | parC r l : t_eq (par l r) (par r l)
-  | parA x y z : t_eq (par x (par y z)) (par (par x y) z)
-  | par_id_unitR l : t_eq (par l id) l
-  | par_id_unitL l : t_eq (par id l) l
-  | par_proper_ {a b c d} : t_eq a b -> t_eq c d -> t_eq (par a c) (par b d)
+  | seqA x y z : x >*> (y >*> z) ≡ (x >*> y) >*> z
+  | seq_id_unitL l : 1 >*> l ≡ l
+  | seq_id_unitR l : l >*> 1 ≡ l
+  | seq_proper_ : ∀ {a b}, a ≡ b -> ∀ {c d}, c ≡ d -> a >*> c ≡ b >*> d
+
+  | parC l r : l |*| r ≡ r |*| l
+  | parA x y z : x |*| (y |*| z) ≡ (x |*| y) |*| z
+  | par_id_unitL l : 1 |*| l ≡ l
+  | par_proper_ : ∀ {a b}, a ≡ b -> ∀ {c d}, c ≡ d -> a |*| c ≡ b |*| d
   .
+  Notation t_eq := (≡@{t}) (only parsing).
 
-  #[global] Instance seq_proper : Proper (t_eq ==> t_eq ==> t_eq) seq.
-  Proof. repeat intro. apply seq_proper_; auto. Qed.
+  #[global] Existing Instance t_equiv.
+  #[global] Instance t_equivalence : Equivalence t_eq :=
+    Build_Equivalence _ refl sym trans.
 
-  #[global] Instance par_proper : Proper (t_eq ==> t_eq ==> t_eq) par.
-  Proof. repeat intro. apply par_proper_; auto. Qed.
+  #[global] Instance seq_assoc : Assoc equiv seq := seqA.
+  #[global] Instance seq_left_id : LeftId equiv id seq := seq_id_unitL.
+  #[global] Instance seq_right_id : RightId equiv id seq := seq_id_unitR.
+  #[global] Instance seq_proper : Proper (t_eq ==> t_eq ==> t_eq) seq := @seq_proper_.
 
-  #[global] Instance t_Equiv : Equiv t := t_eq.
+  #[global] Instance par_comm : Comm equiv par := parC.
+  #[global] Instance par_left_id : LeftId equiv id par := par_id_unitL.
+  #[global] Instance par_right_id : RightId equiv id par.
+  Proof. intros x. by rewrite comm left_id. Qed.
+  #[global] Instance par_proper : Proper (t_eq ==> t_eq ==> t_eq) par := @par_proper_.
 
-  #[global] Instance t_Equivalence : Equivalence (@equiv t _).
-  Proof.
-    constructor.
-    - red; eapply refl.
-    - red; eapply sym.
-    - red; eapply trans.
-  Qed.
+  (**
+  [pars ls] is the [FreeTemp] representing the destruction of each
+  element in [ls] *in non-deterministic order*.
+  *)
+  Definition pars : list t -> t := foldr par 1.
 
-  #[global] Instance : Assoc equiv seq.
-  Proof. red; apply seqA. Qed.
-  #[global] Instance : LeftId equiv id seq.
-  Proof. red; apply seq_id_unitL. Qed.
-  #[global] Instance : RightId equiv id seq.
-  Proof. red; apply seq_id_unitR. Qed.
+  (**
+  [seqs ls] is the [FreeTemp] representing the destruction of each
+  element in [ls] sequentially from left-to-right, i.e. the first
+  element in the list is run first.
+  *)
+  Definition seqs : list t -> t := foldr seq 1.
 
-  #[global] Instance : Comm equiv par.
-  Proof. red; intros; apply parC. Qed.
-  #[global] Instance : Assoc equiv par.
-  Proof. red; apply parA. Qed.
-  #[global] Instance : LeftId equiv id par.
-  Proof. red; apply par_id_unitL. Qed.
-  #[global] Instance : RightId equiv id par.
-  Proof. red; apply par_id_unitR. Qed.
-
-  (** [pars ls] is the [FreeTemp] representing the destruction
-      of each element in [ls] *in non-deterministic order*.
-   *)
-  Definition pars : list t -> t := fold_right FreeTemps.par FreeTemps.id.
-
-  (** [seqs ls] is the [FreeTemp] representing the destruction
-      of each element in [ls] sequentially from left-to-right, i.e.
-      the first element in the list is run first.
-   *)
-  Definition seqs : list t -> t := fold_right FreeTemps.seq FreeTemps.id.
-
-  (** [seqs_rev ls] is the [FreeTemp] representing the destruction
-      of each element in [ls] sequentially from right-to-left, i.e.
-      the first element in the list is destructed last.
-   *)
-  Definition seqs_rev : list t -> t := foldl (fun a b => FreeTemps.seq b a) FreeTemps.id.
-
+  (**
+  [seqs_rev ls] is the [FreeTemp] representing the destruction of each
+  element in [ls] sequentially from right-to-left, i.e. the first
+  element in the list is destructed last.
+  *)
+  Definition seqs_rev : list t -> t := foldl (fun a b => seq b a) 1.
 End FreeTemps.
-End FreeTemps.
+Export FreeTemps.notations.
 Notation FreeTemps := FreeTemps.t.
 Notation FreeTemp := FreeTemps.t (only parsing).
-
-(* Notations *)
-Declare Scope free_scope.
-Delimit Scope free_scope with free.
-Infix "|*|" := FreeTemps.par (at level 30) : free_scope.
-Infix ">*>" := FreeTemps.seq (at level 30) : free_scope.
-Bind Scope free_scope with FreeTemps.t.
 
 (* continuations
  * C++ statements can terminate in 4 ways.
