@@ -112,14 +112,12 @@ Informally you can think of it as capturing the pre-condition to the inputs (one
 <p>In the course of evaluating C++ programs, the language can construct objects that are later destroyed, this occurs for <a class="reference external" href="https://eel.is/c++draft/basic.stc.auto#1">automatic storage duration</a> variables (i.e. stack allocated variables and temporaries).
 C++ semantics guarantees that the lifetime of temporaries is well-bracketed, meaning that objects will be destroyed in the reverse order that they were constructed.
 In BRiCk we capture the stack of objects to be destroyed using the type <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#FreeTemps.t">t</a>.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inductive t : Type :=
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inductive t : Set :=
 | id (* = fun x =&gt; x *)
 | delete (ty : type) (p : ptr) (* = delete_val ty p *)
 | delete_va (va : list (type * ptr)) (p : ptr)
 | seq (f g : t) (* = fun x =&gt; f $ g x *)
-| par (f g : t)
-  (* = fun x =&gt; Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
-   *)
+| par (f g : t) (* = fun x =&gt; Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x) *)
 .
 </pre></div>
 </div>
