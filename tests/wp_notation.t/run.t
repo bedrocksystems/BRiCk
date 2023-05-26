@@ -154,10 +154,8 @@
        : mpred
   NOTATION_interp_wrap =
   ::interp
-    { (((((((((FreeTemps.id |*| FreeTemps.id) |*| FreeTemps.id)
-             |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
-          |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
-       |*| FreeTemps.id)%free |*| FreeTemps.id }
+    { (((((((((1 |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1)
+      |*| 1 }
        : mpred
   NOTATION_wp_lval_nowrap =
   λ Q : ptr → FreeTemps → epred,
@@ -561,10 +559,8 @@
        : mpred
   NOTATION_interp_wrap =
   ::interp
-    { (((((((((FreeTemps.id |*| FreeTemps.id) |*| FreeTemps.id)
-             |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
-          |*| FreeTemps.id) |*| FreeTemps.id) |*| FreeTemps.id)
-       |*| FreeTemps.id)%free |*| FreeTemps.id }
+    { (((((((((1 |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1) |*| 1)
+      |*| 1 }
     (WpTestDefns.E)
        : mpred
   NOTATION_wp_lval_nowrap =

@@ -1288,7 +1288,7 @@ Module Type Expr.
                See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
                frontent desugars all of these to initialize exactly one element.
              *)
-            [| length es = 1 |] **
+            [| length es = 1%nat |] **
             let fs := map mem_to_li $ firstn 1 u.(u_fields) in
             init_fields cls base fs es
                (base |-> union_paddingR (cQp.mut 1) cls (Some 0) -*
