@@ -13,6 +13,7 @@ Require Import iris.proofmode.tactics.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
+     const
      operator
      destroy
      initializers
@@ -431,10 +432,49 @@ Module Type Expr.
            (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
         |-- wp_operand (Ecast Cl2r e Prvalue ty) Q.
 
-    (** [Cnoop] casts are no-op casts. *)
+    (** No-op casts [Cnoop] are casts that only affect the type and not the value.
+        Clang states that these casts are only used for adding and removing [const].
+     *)
+
+    (* Casts that occur in initialization expressions.
+       Since object has not truely been initialized yet, the [const]ness can change.
+     *)
+    Variant noop_cast_type : Set :=
+    | AddConst    (_ : type)
+    | RemoveConst (_ : type)
+    | Nothing. (* a real no-op *)
+
+    Definition classify_cast (from to : type) : option noop_cast_type :=
+      let '(from_cv, from_ty) := decompose_type from in
+      let '(to_cv, to_ty) := decompose_type to in
+      let from_ty := erase_qualifiers from_ty in
+      let to_ty := erase_qualifiers to_ty in
+      if bool_decide (from_ty = to_ty) then
+        if bool_decide (from_cv = to_cv) then
+          Some Nothing
+        else if bool_decide (from_cv = merge_tq QC to_cv) then
+               Some (RemoveConst from_ty)
+             else if bool_decide (to_cv = merge_tq QC from_cv) then
+                    Some (AddConst to_ty)
+                  else None
+      else None. (* conservatively fail *)
+
+    Record unsupported_init_noop_cast (e : Expr) (from to : type) : Set := {}.
+
+    (* When [const]ness changes in an initialization expression, it changes the
+       [const]ness of the object that is being initialized. *)
     Axiom wp_init_cast_noop : forall ty ty' e p Q,
-        wp_init ty p e Q
-        |-- wp_init ty p (Ecast Cnoop e Prvalue ty') Q.
+        match classify_cast ty ty' with
+        | Some cst =>
+            wp_init ty p e (fun fr =>
+              match cst with
+              | AddConst ty => wp_make_const tu p ty (Q fr)
+              | RemoveConst ty => wp_make_mutable tu p ty (Q fr)
+              | Nothing => Q fr
+              end)
+        | None => UNSUPPORTED (unsupported_init_noop_cast e ty ty')
+        end
+      |-- wp_init ty p (Ecast Cnoop e Prvalue ty') Q.
     Axiom wp_operand_cast_noop : forall ty e Q,
         wp_operand e Q
         |-- wp_operand (Ecast Cnoop e Prvalue ty) Q.
