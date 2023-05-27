@@ -90,7 +90,7 @@ Section defs.
     Proof. move=>P Q /type_of_spec_ne. exact: length_type_of_spec. Qed.
   End ofe.
 
-  #[global] Program Instance function_spec_cofe : Cofe function_specO := {|
+  #[global,program] Instance function_spec_cofe : Cofe function_specO := {|
     compl c := {|
       fs_cc := (c 0).(fs_cc);
       fs_arity := (c 0).(fs_arity);
