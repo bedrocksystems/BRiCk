@@ -33,7 +33,6 @@ Module WpTestDefns.
 
     Definition NOTATION_wp_decl_nowrap (decl : VarDecl) Q :=
       wp_decl tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))
-                  (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))
                   decl Q.
   End Statements.
 

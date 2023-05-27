@@ -48,21 +48,21 @@ Module Type Stmt.
 
     (* This definition performs allocation of local variables.
      *)
-    Definition wp_decl_var (ρ_init : region) (x : ident) (ty : type) (init : option Expr) (ρ : region)
+    Definition wp_decl_var (ρ : region) (x : ident) (ty : type) (init : option Expr)
                (k : region -> FreeTemp -> epred)
       : mpred :=
-      Forall (p : ptr),
-        let destroy frees :=
-            interp frees (k (Rbind x p ρ) (FreeTemps.delete ty p))
+      Forall (addr : ptr),
+        let finish frees :=
+            interp frees (k (Rbind x addr ρ) (FreeTemps.delete ty addr))
         in
         match init with
-        | Some init => wp_initialize ρ_init ty p init destroy
-        | None => default_initialize ty p destroy
+        | Some init => wp_initialize ρ ty addr init finish
+        | None => default_initialize ty addr finish
         end.
 
-    Lemma wp_decl_var_frame : forall x ρ ρ_init init ty (k k' : region -> FreeTemps -> epred),
+    Lemma wp_decl_var_frame : forall x ρ init ty (k k' : region -> FreeTemps -> epred),
         Forall a (b : _), k a b -* k' a b
-        |-- wp_decl_var ρ_init x ty init ρ k -* wp_decl_var ρ_init x ty init ρ k'.
+        |-- wp_decl_var ρ x ty init k -* wp_decl_var ρ x ty init k'.
     Proof.
       rewrite /wp_decl_var; intros.
       iIntros "X Y" (addr); iSpecialize ("Y" $! addr); iRevert "Y".
@@ -98,22 +98,22 @@ Module Type Stmt.
     (* An error used to say that thread safe initializers are not supported *)
     Record thread_safe_initializer (d : VarDecl) : Prop := {}.
 
-    Definition wp_decl (ρ_init : region) (d : VarDecl) (ρ : region) (k : region -> FreeTemps -> epred) : mpred :=
+    Definition wp_decl (ρ : region) (d : VarDecl) (k : region -> FreeTemps -> epred) : mpred :=
       match d with
-      | Dvar x ty init => wp_decl_var ρ_init x ty init ρ k
+      | Dvar x ty init => wp_decl_var ρ x ty init k
       | Ddecompose init x ds =>
         let common_type := type_of init in
         Forall common_p : ptr,
-        wp_initialize ρ_init common_type common_p init (fun free =>
+        wp_initialize ρ common_type common_p init (fun free =>
            (* NOTE: [free] is used to deallocate temporaries generated in the execution of [init].
               It should not matter if it is destroyed immediately or after the destructuring occurs.
             *)
-           wp_destructure (Rbind x common_p ρ_init) ds ρ (fun ρ f => interp free $ k ρ f) (FreeTemps.delete common_type common_p))
+           wp_destructure (Rbind x common_p ρ) ds ρ (fun ρ f => interp free $ k ρ f) (FreeTemps.delete common_type common_p))
       | Dinit ts nm ty init =>
         let do_init :=
             match init with
             | None => default_initialize ty (_global nm) (k ρ)
-            | Some init => wp_initialize ρ_init ty (_global nm) init (k ρ)
+            | Some init => wp_initialize ρ ty (_global nm) init (k ρ)
             end
         in
         if ts then
@@ -122,9 +122,9 @@ Module Type Stmt.
           _global nm |-> tblockR ty (cQp.mut 1) ** do_init
       end.
 
-    Lemma wp_decl_frame : forall ds ρ ρ_init m m',
+    Lemma wp_decl_frame : forall ds ρ m m',
         Forall a b, m a b -* m' a b
-        |-- wp_decl ρ_init ds ρ m -* wp_decl ρ_init ds ρ m'.
+        |-- wp_decl ρ ds m -* wp_decl ρ ds m'.
     Proof.
       destruct ds; simpl; intros.
       { iIntros "X". iApply wp_decl_var_frame. iIntros (?); eauto. }
@@ -141,16 +141,16 @@ Module Type Stmt.
     (* [wp_decls ρ_init ds ρ K] evalutes the declarations in [ds]
     using the environment [ρ_init] and binds the declarations
     in [ρ] (which it passes to [K]) *)
-    Fixpoint wp_decls (ρ_init : region) (ds : list VarDecl)
-      (ρ : region) (k : region -> FreeTemps -> epred) : mpred :=
+    Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
+      (k : region -> FreeTemps -> epred) : mpred :=
       match ds with
       | nil => k ρ FreeTemps.id
-      | d :: ds => |> wp_decl ρ_init d ρ (fun ρ free => wp_decls ρ_init ds ρ (fun ρ' free' => k ρ' (FreeTemps.seq free' free)))
+      | d :: ds => |> wp_decl ρ d (fun ρ free => wp_decls ρ ds (fun ρ free' => k ρ (free' >*> free)%free))
       end.
 
-    Lemma wp_decls_frame : forall ds ρ ρ_init (Q Q' : region -> FreeTemps -> epred),
+    Lemma wp_decls_frame : forall ds ρ (Q Q' : region -> FreeTemps -> epred),
         Forall a (b : _), Q a b -* Q' a b
-        |-- wp_decls ρ_init ds ρ Q -* wp_decls ρ_init ds ρ Q'.
+        |-- wp_decls ρ ds Q -* wp_decls ρ ds Q'.
     Proof.
       induction ds; simpl; intros.
       - iIntros "a"; iApply "a".
@@ -165,7 +165,7 @@ Module Type Stmt.
       match ss with
       | nil => |> Q Normal
       | Sdecl ds :: ss =>
-        wp_decls ρ ds ρ (fun ρ free => |> wp_block ρ ss (Kfree free Q))
+        wp_decls ρ ds (fun ρ free => |> wp_block ρ ss (Kfree free Q))
       | s :: ss =>
         |> wp ρ s (Kseq (wp_block ρ ss) Q)
       end.
@@ -179,8 +179,8 @@ Module Type Stmt.
       - iIntros "a b"; iNext; iApply "a"; eauto.
       - assert
           (Forall rt, Q rt -* Q' rt |--
-                        (Forall ds, wp_decls ρ ds ρ (fun ρ' free => |> wp_block ρ' body (Kfree free Q)) -*
-                                    wp_decls ρ ds ρ (fun ρ' free => |> wp_block ρ' body (Kfree free Q'))) //\\
+                        (Forall ds, wp_decls ρ ds (fun ρ' free => |> wp_block ρ' body (Kfree free Q)) -*
+                                    wp_decls ρ ds (fun ρ' free => |> wp_block ρ' body (Kfree free Q'))) //\\
                         (|> wp ρ a (Kseq (wp_block ρ body) Q) -*
                             |> wp ρ a (Kseq (wp_block ρ body) Q'))).
         { iIntros "X"; iSplit.
