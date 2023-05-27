@@ -290,10 +290,9 @@ Module Type Stmt.
         Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
     Axiom wp_return : forall ρ e (Q : Kpred),
-          (let rty := erase_qualifiers (get_return_type ρ) in
+          (let rty := get_return_type ρ in
            Forall p, wp_initialize ρ rty p e (fun frees =>
                                          interp frees (Q (ReturnVal p))))
-           (* ^ NOTE discard [free] because we are extruding the scope of the value *)
        |-- wp ρ (Sreturn (Some e)) Q.
 
     Axiom wp_return_frame : forall ρ rv (Q Q' : Kpred),
