@@ -832,6 +832,29 @@ Section val_array.
     |-- Cbn (Reduce (V tu QM ty this Q)).
   Proof. by destroy_val_unfold. Qed.
 
+  Lemma wp_destroy_val_value_type_elim tu cv ty this Q :
+    is_value_type ty ->
+    wp_destroy_val tu cv ty this Q |--
+      qual_norm' (fun cv ty =>
+        wp_destroy_prim tu (erase_qualifiers ty) this (if q_const cv then cQp.const 1 else cQp.mut 1) Q
+      ) cv ty.
+  Proof.
+    rewrite {1}wp_destroy_val_qual_norm'.
+    elim: (qual_norm'_ok _ cv ty); [|done]. move=>? rty *.
+    rewrite qual_norm'_unqual. wp_destroy_val_unfold.
+    destruct rty; first [done | by case: unqualified_qual].
+  Qed.
+  Lemma destroy_val_value_type_elim tu ty this Q :
+    is_value_type ty ->
+    destroy_val tu ty this Q |--
+      qual_norm (fun cv ty =>
+        wp_destroy_prim tu (erase_qualifiers ty) this (if q_const cv then cQp.const 1 else cQp.mut 1) Q
+      ) ty.
+  Proof.
+    intros.
+    by rewrite destroy_val_wp_destroy_val  wp_destroy_val_value_type_elim.
+  Qed.
+
   Lemma wp_destroy_array_elim tu ety n p Q :
     wp_destroy_array tu ety n p Q
     |-- Reduce (A tu ety n p Q).
