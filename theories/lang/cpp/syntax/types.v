@@ -511,6 +511,16 @@ Section qual_norm.
       else f q t.
   Proof. by destruct t. Qed.
 
+  (**
+  We use this relation to state induction principles for things
+  defined in terms of [qual_norm'] and [qual_norm].
+
+  Example: [elim: (qual_norm_ok _ ty)] in a goal involving [qual_norm
+  f ty] tends to be easier to use than [pattern (qual_norm f ty);
+  induction using qual_norm_ind] because one need not repeat the
+  function [f] in the proof script.
+  *)
+
   Inductive qual_norm_spec f : type_qualifiers -> type -> A -> Prop :=
   | qual_norm_spec_unqual q t : Unqualified t -> qual_norm_spec f q t (f q t)
   | qual_norm_spec_qual q q' t' ret :
@@ -536,6 +546,19 @@ Section qual_norm.
     ∀ q t, P q t (qual_norm' f q t).
   Proof. intros ?? q t. induction (qual_norm'_ok f q t); auto. Qed.
 
+  Lemma qual_norm'_unqual f q t : Unqualified t -> qual_norm' f q t = f q t.
+  Proof.
+    intros Hu. rewrite qual_norm'_unfold.
+    destruct t; first [done | case: unqualified_qual].
+  Qed.
+
+  Lemma qual_norm'_idemp f q t : qual_norm' (qual_norm' f) q t = qual_norm' f q t.
+  Proof.
+    induction (qual_norm'_ok f q t).
+    { by rewrite !qual_norm'_unqual. }
+    { done. }
+  Qed.
+
   (** [qual_norm] *)
 
   Lemma qual_norm_unfold f t :
@@ -556,7 +579,24 @@ Section qual_norm.
     (∀ q t (Hunqual : Unqualified t), P q t (f q t)) ->
     ∀ t, P QM t (qual_norm f t).
   Proof. intros ?? t. induction (qual_norm_ok f t); auto. Qed.
+
+  Lemma qual_norm_unqual f t : Unqualified t -> qual_norm f t = f QM t.
+  Proof. apply qual_norm'_unqual. Qed.
+
+  Lemma qual_norm_idemp f t : qual_norm (qual_norm' f) t = qual_norm f t.
+  Proof. apply qual_norm'_idemp. Qed.
 End qual_norm.
+
+Lemma qual_norm'_bind {A B} (f : type_qualifiers -> type -> A) (g : A -> B) q t :
+  g (qual_norm' f q t) = qual_norm' (fun q => g ∘ f q) q t.
+Proof.
+  induction (qual_norm'_ok f q t).
+  { by rewrite qual_norm'_unqual. }
+  { done. }
+Qed.
+Lemma qual_norm_bind {A B} (f : type_qualifiers -> type -> A) (g : A -> B) t :
+  g (qual_norm f t) = qual_norm (fun q => g ∘ f q) t.
+Proof. apply qual_norm'_bind. Qed.
 
 (** [decompose_type] *)
 
@@ -594,12 +634,12 @@ Lemma decompose_type_ind (P : type -> type_qualifiers * type -> Prop) :
   ∀ t, P t (decompose_type t).
 Proof. intros ?? t. induction (decompose_type_ok t); auto. Qed.
 
-Lemma decompose_type_unqual t :
-  Unqualified t -> decompose_type t = (QM, t).
-Proof.
-  intros Hu. rewrite decompose_type_unfold.
-  destruct t; first [done | case: Hu; naive_solver].
-Qed.
+#[global] Hint Opaque decompose_type : typeclass_instances.
+#[global] Instance decompose_type_unqualified t : Unqualified (decompose_type t).2.
+Proof. by induction (decompose_type_ok t). Qed.
+
+Lemma decompose_type_unqual t : Unqualified t -> decompose_type t = (QM, t).
+Proof. apply qual_norm_unqual. Qed.
 
 Lemma decompose_type_qual q t :
   decompose_type (Tqualified q t) =
@@ -757,6 +797,15 @@ Lemma tqualified'_elim (P : type_qualifiers -> type -> type -> Prop) :
   ∀ q t, P q t (tqualified' q t).
 Proof. intros ??? q t. destruct (tqualified'_ok q t); auto. Qed.
 
+Lemma tqualified'_ref q t : IsRef t -> tqualified' q t = t.
+Proof. move=>/ref_nonref Hr. destruct t; first [done | case: Hr]. Qed.
+
+Lemma tqualified'_QM t : tqualified' QM t = t.
+Proof. by destruct t. Qed.
+
+Lemma tqualified'_non_ref q t : NonRef t -> q ≠ QM -> tqualified' q t = Tqualified q t.
+Proof. move=>/ref_nonref Hr. destruct t, q; first [done | case: Hr]. Qed.
+
 Lemma tqualified_ok q t : qual_norm_spec tqualified' q t (tqualified q t).
 Proof. apply qual_norm'_ok. Qed.
 
@@ -775,6 +824,20 @@ Lemma tqualified_decompose_type q t :
     tqualified' (merge_tq q p.1) p.2.
 Proof.
   by rewrite tqualified_qual_norm' qual_norm'_decompose_type.
+Qed.
+
+Lemma tqualified_unqual q t : Unqualified t -> tqualified q t = tqualified' q t.
+Proof. intros. by rewrite /tqualified qual_norm'_unqual. Qed.
+
+Lemma tqualified_idemp q1 q2 t :
+  tqualified q1 (tqualified q2 t) = tqualified (merge_tq q1 q2) t.
+Proof.
+  elim: (tqualified_ok q2 t) q1; last first.
+  { intros ????? IH ?. rewrite {}IH /=. by rewrite !assoc_L. }
+  intros q2' t' ? q1. destruct (tqualified'_ok q2' t').
+  - rewrite !tqualified_unqual. by rewrite !tqualified'_ref.
+  - rewrite !tqualified_unqual. by rewrite right_id_L.
+  - done.
 Qed.
 
 (** [tref] *)
