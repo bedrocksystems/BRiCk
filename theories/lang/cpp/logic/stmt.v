@@ -73,7 +73,8 @@ Module Type Stmt.
       rewrite /wp_decl_var; intros.
       iIntros "X Y" (addr); iSpecialize ("Y" $! addr); iRevert "Y".
       case_match;
-        [ iApply wp_initialize_frame | iApply default_initialize_frame ];
+        [ iApply wp_initialize_frame; [done|]
+        | iApply default_initialize_frame; [done|] ];
         iIntros (?); iApply interp_frame; iApply "X".
     Qed.
 

@@ -104,7 +104,7 @@ Section with_resolve.
         rewrite -IHes. rewrite right_id.
         iIntros (??) "X Y". iIntros (p).
         iSpecialize ("Y" $! p); iRevert "Y".
-        iApply wp_initialize_frame.
+        iApply wp_initialize_frame; [done|].
         iIntros (?); iApply "X". } }
     { destruct es; try congruence.
       specialize (IHts ar es).
@@ -120,7 +120,7 @@ Section with_resolve.
       { iSplitL.
         { iIntros (??) "X Y". iIntros (f).
           iSpecialize ("Y" $! f); iRevert "Y".
-          iApply wp_initialize_frame.
+          iApply wp_initialize_frame; [done|].
           iIntros (?); iApply "X". }
         destruct H0. eauto. } }
   Qed.

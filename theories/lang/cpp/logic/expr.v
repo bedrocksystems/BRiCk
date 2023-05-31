@@ -1127,7 +1127,7 @@ Module Type Expr.
     Proof.
       induction es; simpl; intros; iIntros "X".
       { iIntros "A B"; iApply "X"; iApply "A"; done. }
-      { iApply wp_initialize_frame; iIntros (?).
+      { iApply wp_initialize_frame; [done|]. iIntros (?).
         iApply interp_frame. by iApply IHes. }
     Qed.
 
@@ -1251,7 +1251,7 @@ Module Type Expr.
         Q -* Q' |-- init_fields cls base fs es Q -* init_fields cls base fs es Q'.
     Proof.
       induction fs; simpl; intros; repeat case_match; eauto.
-      iIntros "X"; iApply wp_initialize_frame.
+      iIntros "X"; iApply wp_initialize_frame; [done|].
       iIntros (?); iApply interp_frame.
       by iApply IHfs.
     Qed.
