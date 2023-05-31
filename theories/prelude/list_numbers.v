@@ -488,16 +488,33 @@ Section listN.
     takeN (i + 1) (x :: xs) = x :: takeN i xs.
   Proof. by rewrite -/([x] ++ xs) takeN_app lengthN_one takeN_singleton/= N.add_sub. Qed.
 
+  (** Analog to [take_S_r] using [N.succ n]. *)
+  Lemma takeN_S_r' x xs n :
+    xs !! n = Some x ->
+    takeN (N.succ n) xs = takeN n xs ++ [x].
+  Proof. intros; rewrite /takeN N2Nat.inj_succ. exact: take_S_r. Qed.
+
+  (** Analog to [take_S_r] using [n + 1]. *)
+  Lemma takeN_S_r x xs n :
+    xs !! n = Some x ->
+    takeN (n + 1) xs = takeN n xs ++ [x].
+  Proof. rewrite N.add_1_r. apply takeN_S_r'. Qed.
+
   Lemma takeN_takeN n m xs :
     takeN n (takeN m xs) = takeN (n `min` m) xs.
   Proof.
     rewrite /takeN N2Nat.inj_min. by apply: take_take.
   Qed.
 
-  Lemma takeN_dropN n m xs :
+  (** Analog to [take_drop]. *)
+  Lemma takeN_dropN i xs : takeN i xs ++ dropN i xs = xs.
+  Proof. apply take_drop. Qed.
+
+  (** Analog to [take_drop_commute]. *)
+  Lemma takeN_dropN_commute n m xs :
     takeN n (dropN m xs) = dropN m (takeN (m + n) xs).
   Proof.
-    rewrite /dropN/takeN N2Nat.inj_add. by apply: firstn_skipn_comm.
+    rewrite /dropN/takeN N2Nat.inj_add. by apply: take_drop_commute.
   Qed.
 
   Lemma takeN_resizeN_eq l n x :
