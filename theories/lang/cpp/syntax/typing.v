@@ -84,7 +84,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tarch sz nm => Tarch sz nm
   end.
 
-(** [drop_qualifiers t] drops all the *leading* quallifiers of the type [t].
+(** [drop_qualifiers t] drops all the *leading* qualifiers of the type [t].
     e.g. [drop_qualifiers (Qconst (Qmut t)) = t]
  *)
 Fixpoint drop_qualifiers (t : type) : type :=
@@ -107,6 +107,14 @@ Lemma unqual_drop_qualifiers ty tq ty' : drop_qualifiers ty <> Tqualified tq ty'
 Proof. by induction ty. Qed.
 Lemma unqual_erase_qualifiers ty tq ty' : erase_qualifiers ty <> Tqualified tq ty'.
 Proof. by induction ty. Qed.
+
+Lemma erase_qualifiers_tqualified q t :
+  erase_qualifiers (tqualified q t) = erase_qualifiers t.
+Proof.
+  induction (tqualified_ok q t).
+  { by destruct (tqualified'_ok q t). }
+  { done. }
+Qed.
 
 Lemma erase_drop_idemp ty :
   erase_qualifiers ty = ty -> drop_qualifiers ty = ty.
