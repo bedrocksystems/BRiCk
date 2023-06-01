@@ -429,20 +429,20 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     Lemma has_type_prop_char_255 (n : N) ct : (0 <= n < 256)%N -> has_type_prop (Vchar n) (Tchar_ ct).
     Proof. intros. rewrite -has_type_prop_char'. destruct ct; simpl; lia. Qed.
 
-    Lemma has_type_prop_char_0 ct :  has_type_prop (Vchar 0) (Tchar_ ct).
+    Lemma has_type_prop_char_0 ct : has_type_prop (Vchar 0) (Tchar_ ct).
     Proof. intros. apply has_type_prop_char_255. lia. Qed.
 
-    Lemma has_type_prop_drop_qualifiers
-      : forall v ty, has_type_prop v ty <-> has_type_prop v (drop_qualifiers ty).
+    Lemma has_type_prop_drop_qualifiers :
+      forall v ty, has_type_prop v ty <-> has_type_prop v (drop_qualifiers ty).
     Proof.
       induction ty; simpl; eauto.
       by rewrite -has_type_prop_qual_iff -IHty.
     Qed.
 
     (* TODO fix naming convention *)
-    Lemma has_type_prop_qual  t q x :
-        has_type_prop x (drop_qualifiers t) ->
-        has_type_prop x (Tqualified q t).
+    Lemma has_type_prop_qual t q x :
+      has_type_prop x (drop_qualifiers t) ->
+      has_type_prop x (Tqualified q t).
     Proof.
       intros. by apply has_type_prop_drop_qualifiers.
     Qed.
