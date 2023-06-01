@@ -634,6 +634,15 @@ Section val_array.
     by rewrite destroy_val_qual_norm qual_norm_decompose_type.
   Qed.
 
+  Lemma wp_destroy_val_ref tu cv ty :
+    wp_destroy_val tu cv (Tref ty) =
+    wp_destroy_val tu cv (Trv_ref ty).
+  Proof. by rewrite !wp_destroy_val_unfold. Qed.
+  Lemma destroy_val_ref tu ty :
+    destroy_val tu (Tref ty) =
+    destroy_val tu (Trv_ref ty).
+  Proof. by rewrite !destroy_val_unfold. Qed.
+
   (** Structural properties *)
 
   #[local] Hint Resolve
@@ -1063,6 +1072,7 @@ Section temps.
     { done. }
     { by rewrite IHi. }
     { by rewrite IHi IHi0. }
+    { by rewrite !interp_unfold destroy_val_ref. }
     { by rewrite !(interp_unfold (_ >*> _)). }
     { rewrite (interp_unfold (_ >*> _)) (interp_unfold 1).
       by rewrite fupd_interp. }
