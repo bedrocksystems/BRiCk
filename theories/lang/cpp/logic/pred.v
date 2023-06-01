@@ -14,7 +14,7 @@
 From elpi.apps Require Import locker.
 Require Export bedrock.prelude.addr.
 
-From bedrock.lang.bi Require Export prelude observe.
+From bedrock.lang.bi Require Export prelude observe spec.knowledge.
 From bedrock.lang.cpp.logic Require Export mpred rep.
 (** ^^ Delicate; export types and canonical structures (CS) for [monPred], [mpred] and [Rep].
 Export order can affect CS inference. *)
@@ -34,6 +34,7 @@ Export ChargeNotation.
 From bedrock.lang.cpp.syntax Require Import
      names
      types
+     typing
      translation_unit.
 From bedrock.lang.cpp.semantics Require Import values subtyping.
 
@@ -46,6 +47,13 @@ Implicit Types (n : N) (z : Z).
 
 (* Namespace for the invariants of the C++ abstraction's ghost state. *)
 Definition pred_ns : namespace := nroot .@@ "bedrock" .@@ "lang" .@@ "cpp_logic".
+
+(* Used by [has_type_prop_has_type_noptr]. No theory. *)
+Definition nonptr_prim_type ty : bool :=
+  match drop_qualifiers ty with
+  | Tchar_ _ | Tvoid | Tbool | Tenum _ | Tnum _ _ => true
+  | Tnullptr | Tpointer _ | Tref _ | Trv_ref _ | _ => false
+  end.
 
 Module Type CPP_LOGIC
   (Import P : PTRS_INTF)
@@ -110,6 +118,41 @@ Module Type CPP_LOGIC
     Axiom not_strictly_valid_ptr_nullptr : strict_valid_ptr nullptr |-- False.
     Axiom strict_valid_valid : forall p,
       strict_valid_ptr p |-- valid_ptr p.
+
+    (**
+    [has_type v ty] is an approximation in [mpred] of "[v] is an initialized value
+    of type [t]." This is intended to be preserved by the C++ type system.
+    TODO: include in [primR].
+    TODO: refine for which types https://bedrocksystems.atlassian.net/browse/FM-3760
+    *)
+    Parameter has_type : ∀ {σ : genv}, val -> type -> mpred.
+    Section with_genv.
+      Context {σ : genv}.
+
+      #[global] Declare Instance has_type_knowledge : Knowledge2 has_type.
+
+      Axiom has_type_has_type_prop : ∀ v ty, has_type v ty |-- [| has_type_prop v ty |].
+
+      Axiom has_type_prop_has_type_noptr : ∀ v ty,
+        nonptr_prim_type ty ->
+        [| has_type_prop v ty |] |-- has_type v ty.
+
+      Axiom has_type_qual_iff : ∀ ty tq v,
+        has_type v ty -|- has_type v (Tqualified tq ty).
+
+      (* Internal statements: *)
+      Axiom has_type_nullptr' : ∀ p,
+        has_type (Vptr p) Tnullptr -|- [| p = nullptr |].
+      Axiom has_type_ptr' : ∀ p ty,
+        has_type (Vptr p) (Tpointer ty) -|-
+        valid_ptr p ** [| aligned_ptr_ty ty p |].
+      Axiom has_type_ref' : ∀ p ty,
+        has_type (Vref p) (Tref ty) -|-
+        strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+      Axiom has_type_rv_ref' : ∀ p ty,
+        has_type (Vref p) (Trv_ref ty) -|-
+        strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+    End with_genv.
 
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)

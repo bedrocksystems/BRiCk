@@ -330,35 +330,39 @@ Qed.
 
 (** * alignof() *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.
-Axiom align_of_named : ∀ {σ : genv} (nm : globname),
-  align_of (Tnamed nm) =
-  glob_def σ nm ≫= GlobDecl_align_of.
+Section with_genv.
+  Context {σ : genv}.
 
-(** If [size_of] is defined, [align_of] must divide [size_of]. *)
-Axiom align_of_size_of' : forall {σ : genv} (t : type) sz,
-    size_of σ t = Some sz ->
-    (exists al, align_of t = Some al /\ al <> 0 /\ (al | sz))%N.
+  Axiom align_of_named : forall (nm : globname),
+    align_of (Tnamed nm) =
+    glob_def σ nm ≫= GlobDecl_align_of.
 
-Lemma align_of_size_of {σ : genv} (t : type) sz :
-    size_of σ t = Some sz ->
-    exists al, align_of t = Some al /\
-          (* size is a multiple of alignment *)
-          (sz mod al = 0)%N.
-Proof.
-  move=>/align_of_size_of' [al [? [? /N.Lcm0.mod_divide ?]]].
-  eauto.
-Qed.
+  (** If [size_of] is defined, [align_of] must divide [size_of]. *)
+  Axiom align_of_size_of' : forall (t : type) sz,
+      size_of σ t = Some sz ->
+      (exists al, align_of t = Some al /\ al <> 0 /\ (al | sz))%N.
 
-Axiom align_of_array : forall {σ : genv} (ty : type) n,
-    align_of (Tarray ty n) = align_of ty.
-Axiom align_of_qualified : ∀ σ t q,
-    align_of (resolve:=σ) (Tqualified q t) = align_of (resolve:=σ) t.
+  Lemma align_of_size_of (t : type) sz :
+      size_of σ t = Some sz ->
+      exists al, align_of t = Some al /\
+            (* size is a multiple of alignment *)
+            (sz mod al = 0)%N.
+  Proof.
+    move=>/align_of_size_of' [al [? [? /N.Lcm0.mod_divide ?]]].
+    eauto.
+  Qed.
 
-Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
-#[global] Existing Instance Proper_align_of.
+  Axiom align_of_array : forall (ty : type) n,
+      align_of (Tarray ty n) = align_of ty.
+  Axiom align_of_qualified : ∀ t q,
+      align_of (resolve:=σ) (Tqualified q t) = align_of (resolve:=σ) t.
 
-Lemma align_of_genv_compat tu σ gn st
-      (Hσ : tu ⊧ σ)
-      (Hl : tu !! gn = Some (Gstruct st)) :
-  align_of (Tnamed gn) = GlobDecl_align_of (Gstruct st).
-Proof. by rewrite /= align_of_named (glob_def_genv_compat_struct st Hl). Qed.
+  Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
+  #[global] Existing Instance Proper_align_of.
+
+  Lemma align_of_genv_compat tu gn st
+        (Hσ : tu ⊧ σ)
+        (Hl : tu !! gn = Some (Gstruct st)) :
+    align_of (Tnamed gn) = GlobDecl_align_of (Gstruct st).
+  Proof. by rewrite /= align_of_named (glob_def_genv_compat_struct st Hl). Qed.
+End with_genv.
