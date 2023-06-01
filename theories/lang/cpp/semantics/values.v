@@ -376,9 +376,6 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     Axiom has_type_prop_void : forall v,
         has_type_prop v Tvoid -> v = Vundef.
 
-    Axiom has_nullptr_type : forall ty,
-        has_type_prop (Vptr nullptr) (Tpointer ty).
-
     Axiom has_type_prop_bool : forall v,
         has_type_prop v Tbool <-> exists b, v = Vbool b.
 
@@ -408,6 +405,10 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     (Import HT : HAS_TYPE P R V).
   Section with_env.
     Context {σ : genv}.
+
+    Lemma has_nullptr_type ty :
+      has_type_prop (Vptr nullptr) (Tpointer ty).
+    Proof. by rewrite has_type_prop_pointer; eexists. Qed.
 
     Lemma has_bool_type : forall z,
       0 <= z < 2 <-> has_type_prop (Vint z) Tbool.
