@@ -374,7 +374,7 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
         (exists n, v = Vchar n /\ 0 <= n < 2^(char_type.bitsN ct))%N <-> has_type_prop v (Tchar_ ct).
 
     Axiom has_type_prop_void : forall v,
-        has_type_prop v Tvoid -> v = Vundef.
+        has_type_prop v Tvoid <-> v = Vundef.
 
     Axiom has_type_prop_bool : forall v,
         has_type_prop v Tbool <-> exists b, v = Vbool b.
