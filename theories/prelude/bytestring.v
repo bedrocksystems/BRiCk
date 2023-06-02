@@ -24,6 +24,11 @@ Defined.
 #[global] Instance bytestring_countable : Countable bs.
 Proof. apply (inj_countable' BS.print BS.parse), BS.print_parse_inv. Defined.
 
+#[global] Instance bytestring_parse_print_cancel : Cancel eq BS.parse BS.print :=
+  BS.print_parse_inv.
+#[global] Instance bytestring_print_inj : Inj eq eq BS.print :=
+  cancel_inj.
+
 
 (** bytestrings *)
 (** Many functions on byte strings are meant to be always used

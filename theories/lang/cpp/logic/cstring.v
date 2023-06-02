@@ -85,22 +85,24 @@ Module cstring.
   Definition to_zstring (cstr : cstring.t) : zstring.t := to_zstring' cstr ["000"].
   #[global] Arguments to_zstring cstr : simpl never.
 
+  (* TODO: upstream these instances somewhere? *)
+  #[global] Instance N_of_ascii_inj: Inj eq eq N_of_ascii.
+  Proof. intros ??. apply N_of_ascii_inj. Qed.
+  #[global] Instance byte_of_ascii_of_byte :
+    Cancel eq byte_of_ascii ascii_of_byte.
+  Proof. intros ?. apply byte_of_ascii_of_byte. Qed.
+  #[global] Instance ascii_of_byte_of_ascii :
+    Cancel eq ascii_of_byte byte_of_ascii.
+  Proof. intros ?. apply ascii_of_byte_of_ascii. Qed.
+  #[global] Instance ascii_of_byte_inj : Inj eq eq ascii_of_byte :=
+    cancel_inj.
+  #[global] Instance byte_of_ascii_inj : Inj eq eq byte_of_ascii :=
+    cancel_inj.
+
   #[global] Instance to_zstring_inj : Inj eq eq cstring.to_zstring.
   Proof.
-    move=>x y.
-    rewrite /cstring.to_zstring/cstring._to_zstring'
-    !map_app=>/(Inj_instance_1) /map_inj H.
-
-    have: BS.print x = BS.print y.
-    { apply: H=>x' y'. rewrite /compose.
-      rewrite !ascii_of_byte_via_N !N_ascii_embedding ?byte_to_N_inj //.
-      move: (Byte.to_N_bounded y'). lia.
-      move: (Byte.to_N_bounded x'). lia. }
-
-    move: y {H}; induction x; first by move=>[].
-    move: x IHx=>y; induction y; first by move=>?[] //= ?[] //= [<-].
-    move=>IHx [] // b' bs [->] H; f_equal.
-    by apply: IHx; rewrite -H.
+    rewrite /to_zstring/_to_zstring' =>x y /(inj (map _)) => /(inj (.++ _)).
+    exact: inj.
   Qed.
 
   (* Use [rewrite to_zstring_unfold/=] to reduce away a [to_zstring] application to a
