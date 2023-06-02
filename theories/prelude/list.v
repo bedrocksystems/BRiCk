@@ -428,7 +428,7 @@ Proof.
   by rewrite !(list_remove_delete i, list_difference_delete i).
 Qed.
 
-#[global] Instance map_Inj A B (f : A -> B) : Inj eq eq f -> Inj eq eq (map f).
+#[global] Instance map_inj A B (f : A -> B) : Inj eq eq f -> Inj eq eq (map f).
 Proof.
   move=>Hinj x.
   induction x; induction y; first done.

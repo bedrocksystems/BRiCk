@@ -76,7 +76,7 @@ Module cstring.
      than lists of [Z]s.
    *)
   Definition _to_zstring' (cstr : cstring.t) (l : list Byte.byte) : zstring.t :=
-    map (N_of_ascii ∘ ascii_of_byte) ((BS.print cstr) ++ l).
+    map (N_of_ascii ∘ ascii_of_byte) (BS.print cstr ++ l).
   #[global] Arguments BS.print !b%bs /.
 
   #[global] Arguments _to_zstring' !cstr !l /.
@@ -85,11 +85,11 @@ Module cstring.
   Definition to_zstring (cstr : cstring.t) : zstring.t := to_zstring' cstr ["000"].
   #[global] Arguments to_zstring cstr : simpl never.
 
-  #[global] Instance to_zstring_Inj : Inj eq eq cstring.to_zstring.
+  #[global] Instance to_zstring_inj : Inj eq eq cstring.to_zstring.
   Proof.
     move=>x y.
     rewrite /cstring.to_zstring/cstring._to_zstring'
-    !map_app=>/(Inj_instance_1) /map_Inj H.
+    !map_app=>/(Inj_instance_1) /map_inj H.
 
     have: BS.print x = BS.print y.
     { apply: H=>x' y'. rewrite /compose.
@@ -1014,7 +1014,7 @@ Module cstring.
           iDestruct (arrayR_agree_prefix _ (fun q c => primR Tchar q (Vchar c)) with "L K") as %Heq;
             first done;
             iIntros "!>"; iPureIntro.
-          by apply: to_zstring_Inj; apply: zstring.WF_eq_prefix_eq.
+          by apply: to_zstring_inj; apply: zstring.WF_eq_prefix_eq.
         Qed.
 
         #[global] Instance observe_2 q1 q2 a1 a2 :
