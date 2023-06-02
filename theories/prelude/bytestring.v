@@ -24,10 +24,26 @@ Defined.
 #[global] Instance bytestring_countable : Countable bs.
 Proof. apply (inj_countable' BS.print BS.parse), BS.print_parse_inv. Defined.
 
+#[global] Instance byte_to_N_inj : Inj eq eq Byte.to_N.
+Proof. intros ?? E; apply (inj Some). by rewrite <-!Byte.of_to_N, E. Qed.
+#[global] Instance byte_of_N_surj : Surj eq Byte.of_N.
+Proof.
+  intros [b|]. by rewrite <-!Byte.of_to_N; eauto.
+  exists 256%N. by rewrite Byte.of_N_None_iff.
+Qed.
+
 #[global] Instance bytestring_parse_print_cancel : Cancel eq BS.parse BS.print :=
   BS.print_parse_inv.
+#[global] Instance bytestring_print_parse_cancel : Cancel eq BS.print BS.parse :=
+  BS.parse_print_inv.
 #[global] Instance bytestring_print_inj : Inj eq eq BS.print :=
   cancel_inj.
+#[global] Instance bytestring_parse_inj : Inj eq eq BS.parse :=
+  cancel_inj.
+#[global] Instance bytestring_print_surj : Surj eq BS.print :=
+  cancel_surj.
+#[global] Instance bytestring_parse_surj : Surj eq BS.parse :=
+  cancel_surj.
 
 
 (** bytestrings *)
