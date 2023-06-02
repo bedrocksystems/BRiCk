@@ -450,9 +450,55 @@ Section ap.
     rewrite !list_ap_cons_l IH; csimpl; f_equiv.
     by rewrite assoc (comm app (fmap f xs)) !assoc.
   Qed.
+
+  (** Theory supporting [NoDup_fmap_ap] and (conjectured) n-ary variants. *)
+
+  (** [pairwise_disj_funs fs] is our key "induction hypothesis" when [n] varies.
+  It asserts that all functions in [fs] have disjoint images, combining
+  injectivity and [NoDup xs].
+  TODO: combine with [PairwiseDisjoint]? Unclear this is close enough to
+  [set_pairwise_disjoint]. *)
+  Definition pairwise_disj_funs fs :=
+    (∀ (f1 f2 : A -> B) x1 x2,
+      f1 x1 = f2 x2 -> f1 ∈ fs -> f2 ∈ fs -> f1 = f2 ∧ x1 = x2).
+  Lemma pairwise_disj_funs_inj fs f :
+    pairwise_disj_funs fs -> f ∈ fs -> Inj eq eq f.
+  Proof. intros HF Hin a1 a2 He. by apply (HF f f). Qed.
+
+  Lemma pairwise_disj_funs_cons fs f :
+    pairwise_disj_funs (f :: fs) -> pairwise_disj_funs fs.
+  Proof.
+    intros HFFS ?? **. apply (HFFS f1 f2) => //; by rewrite elem_of_cons; right.
+  Qed.
+  Lemma NoDup_fmap_fun fs x :
+    NoDup fs ->
+    pairwise_disj_funs fs ->
+    NoDup ((λ f, f x) <$> fs).
+  Proof.
+    elim: fs => [//|f fs IH]. rewrite fmap_cons !NoDup_cons => -[Hni Hfs] HFFS.
+    split. { red in HFFS. set_solver. }
+    exact /IH /pairwise_disj_funs_cons.
+  Qed.
+
+  Lemma NoDup_ap fs xs :
+    pairwise_disj_funs fs ->
+    NoDup fs -> NoDup xs ->
+    NoDup (fs <*> xs).
+  Proof.
+    move=> HF. elim: fs HF xs => [//|f fs IH] HFFS [|x xs].
+    by rewrite list_ap_nil_r.
+    move=> /NoDup_cons [Hf Hfs] /NoDup_cons [Hx Hxs].
+    have ? : Inj eq eq f. { eapply pairwise_disj_funs_inj. done. exact: elem_of_list_here. }
+    have HFS : pairwise_disj_funs fs by exact: pairwise_disj_funs_cons.
+    specialize (IH HFS); red in HFFS.
+    rewrite !(list_ap_cons_l, list_ap_cons_r_p) fmap_cons
+      !(NoDup_app, NoDup_cons, NoDup_fmap); split_and!; eauto using NoDup_fmap_fun.
+    all: clear HFS IH Hfs Hxs.
+    Time all: set_solver.
+  Qed.
 End ap.
 
-Section ap.
+Section fmap_ap.
   Context {A B C : Type}.
   Implicit Types (f : A -> B -> C) (xs : list A) (ys : list B).
 
@@ -468,17 +514,18 @@ Section ap.
     SetUnfoldElemOf z (f <$> xs <*> ys) (∃ x y, z = f x y ∧ P x ∧ Q y) | 1.
   Proof. constructor. rewrite elem_of_list_fmap_ap. set_solver. Qed.
 
-  Lemma NoDup_fmap_ap `{!Inj2 eq eq eq f} (xs : list A) (ys : list B) :
-    NoDup xs -> NoDup ys -> NoDup (f <$> xs <*> ys).
+  Lemma pairwise_disj_funs_fmap f xs :
+    Inj2 eq eq eq f ->
+    NoDup xs ->
+    pairwise_disj_funs (f <$> xs).
+  Proof. rewrite /pairwise_disj_funs; set_solver. Qed.
+
+  Lemma NoDup_fmap_ap `{!Inj2 eq eq eq f} xs ys
+    (Hxs : NoDup xs) (Hys : NoDup ys) : NoDup (f <$> xs <*> ys).
   Proof.
-    elim: xs ys => [//|x xs IH] [|y ys] /NoDup_cons [Hx Hxs]; csimpl.
-    by rewrite list_ap_nil_r.
-    move=> /NoDup_cons [Hy Hys].
-    rewrite list_ap_cons_l list_ap_cons_r_p fmap_cons NoDup_app NoDup_cons; split_and!.
-    { set_solver. }
-    { exact: NoDup_fmap_2. }
-    { set_solver. }
-    apply /NoDup_app; split_and!; [|set_solver | exact: IH].
-    rewrite -list_fmap_compose. exact: NoDup_fmap_2.
+    destruct ys as [|y ys]; first by rewrite list_ap_nil_r.
+    have IhnB : Inhabited B by constructor.
+    apply /NoDup_ap => //. exact: pairwise_disj_funs_fmap.
+    exact: NoDup_fmap_2.
   Qed.
-End ap.
+End fmap_ap.
