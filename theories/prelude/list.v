@@ -432,3 +432,53 @@ Lemma map_fmap : @map = @fmap _ _.
 Proof. done. Qed.
 #[global] Instance map_inj A B (f : A -> B) : Inj eq eq f -> Inj eq eq (map f).
 Proof. rewrite map_fmap. apply fmap_inj. Qed.
+
+(** ** Basic theory about the [ap]/[<*>] combinator for lists. *)
+Section ap.
+  Context {A B : Type}.
+  Implicit Types (fs : list (A -> B)) (xs : list A).
+
+  Lemma list_ap_nil_l xs : (nil (A := A -> B)) <*> xs = [].
+  Proof. done. Qed.
+  Lemma list_ap_nil_r fs : fs <*> [] = [].
+  Proof. by elim: fs. Qed.
+  Lemma list_ap_cons_l f fs xs : (f :: fs) <*> xs = (f <$> xs) ++ (fs <*> xs).
+  Proof. done. Qed.
+  Lemma list_ap_cons_r_p fs x xs : fs <*> (x :: xs) ≡ₚ ((.$ x) <$> fs) ++ (fs <*> xs).
+  Proof.
+    elim: fs => [//|f fs IH].
+    rewrite !list_ap_cons_l IH; csimpl; f_equiv.
+    by rewrite assoc (comm app (fmap f xs)) !assoc.
+  Qed.
+End ap.
+
+Section ap.
+  Context {A B C : Type}.
+  Implicit Types (f : A -> B -> C) (xs : list A) (ys : list B).
+
+  Lemma elem_of_list_fmap_ap f z xs ys :
+    z ∈ f <$> xs <*> ys ↔ (∃ x y, z = f x y ∧ x ∈ xs ∧ y ∈ ys).
+  Proof. set_solver. Qed.
+
+  (* Potentially redundant, strictly speaking, but produces smaller and simpler goals. *)
+  (* We use cost [1] to be preferred to [set_unfold_list_fmap] and allow extensions. *)
+  #[global] Instance set_unfold_list_fmap_ap z f xs ys P Q :
+    (∀ x, SetUnfoldElemOf x xs (P x)) →
+    (∀ y, SetUnfoldElemOf y ys (Q y)) →
+    SetUnfoldElemOf z (f <$> xs <*> ys) (∃ x y, z = f x y ∧ P x ∧ Q y) | 1.
+  Proof. constructor. rewrite elem_of_list_fmap_ap. set_solver. Qed.
+
+  Lemma NoDup_fmap_ap `{!Inj2 eq eq eq f} (xs : list A) (ys : list B) :
+    NoDup xs -> NoDup ys -> NoDup (f <$> xs <*> ys).
+  Proof.
+    elim: xs ys => [//|x xs IH] [|y ys] /NoDup_cons [Hx Hxs]; csimpl.
+    by rewrite list_ap_nil_r.
+    move=> /NoDup_cons [Hy Hys].
+    rewrite list_ap_cons_l list_ap_cons_r_p fmap_cons NoDup_app NoDup_cons; split_and!.
+    { set_solver. }
+    { exact: NoDup_fmap_2. }
+    { set_solver. }
+    apply /NoDup_app; split_and!; [|set_solver | exact: IH].
+    rewrite -list_fmap_compose. exact: NoDup_fmap_2.
+  Qed.
+End ap.
