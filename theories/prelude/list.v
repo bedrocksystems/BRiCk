@@ -428,11 +428,7 @@ Proof.
   by rewrite !(list_remove_delete i, list_difference_delete i).
 Qed.
 
+Lemma map_fmap : @map = @fmap _ _.
+Proof. done. Qed.
 #[global] Instance map_inj A B (f : A -> B) : Inj eq eq f -> Inj eq eq (map f).
-Proof.
-  move=>Hinj x.
-  induction x; induction y; first done.
-  - by move=>H; case:( nil_cons H).
-  - by rewrite eq_comm; move=>H; case:( nil_cons H).
-  - by move=>[/Hinj<-/IHx->].
-Qed.
+Proof. rewrite map_fmap. apply fmap_inj. Qed.
