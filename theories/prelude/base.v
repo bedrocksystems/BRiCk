@@ -214,3 +214,15 @@ Definition ap {M A B} `{!MRet M, !MBind M} (mf : M (A → B)) : M A → M B :=
 (* We use level 61 for <*> following <$>; ext-lib also has matching levels, but
 different ones. *)
 Infix "<*>" := ap (at level 61, left associativity).
+
+(** Analogue of [inj_iff]. *)
+Lemma inj2_iff {A B C} {R1 : relation A} {R2 : relation B} (S : relation C) (f : A → B → C)
+  `{Hinj : !Inj2 R1 R2 S f} `{!Proper (R1 ==> R2 ==> S) f} x1 x2 y1 y2 :
+  S (f x1 y1) (f x2 y2) ↔ R1 x1 x2 ∧ R2 y1 y2.
+Proof. split. apply Hinj. firstorder. Qed.
+
+#[global] Instance inj2_inj `{H : Inj2 A B C eq eq eq f} `{Inhabited B} : Inj eq eq f.
+Proof.
+  intros x y E. apply (inj2 f (Inj2 := H) x inhabitant y inhabitant).
+  by rewrite E.
+Qed.
