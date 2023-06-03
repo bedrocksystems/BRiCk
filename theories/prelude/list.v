@@ -493,8 +493,7 @@ Section ap.
     specialize (IH HFS); red in HFFS.
     rewrite !(list_ap_cons_l, list_ap_cons_r_p) fmap_cons
       !(NoDup_app, NoDup_cons, NoDup_fmap); split_and!; eauto using NoDup_fmap_fun.
-    all: clear HFS IH Hfs Hxs.
-    Time all: set_solver.
+    all: set_solver -HFS IH Hfs Hxs.
   Qed.
 End ap.
 
