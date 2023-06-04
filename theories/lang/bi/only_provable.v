@@ -41,18 +41,20 @@ Section bi.
   #[local] Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
   #[local] Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
 
+  Lemma only_provable_unfold P : [| P |] ⊣⊢ <affine> ⌜ P ⌝.
+  Proof. done. Qed.
   (** [ [| P |] ] indeed holds no resources. This is also an unfolding lemma, since [only_provable] is [Opaque]. *)
   Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
-  Proof. done. Qed.
+  Proof. apply only_provable_unfold. Qed.
 
   Lemma pure_absorb_only_provable (φ : Prop) : ⌜ φ ⌝ ⊣⊢@{PROP} <absorb> [| φ |].
-  Proof. by rewrite /only_provable bi.persistent_absorbingly_affinely. Qed.
+  Proof. by rewrite only_provable_unfold bi.persistent_absorbingly_affinely. Qed.
 
   Lemma pure_True_only_provable (φ : Prop) : ⌜ φ ⌝ ⊣⊢@{PROP} True ∗ [| φ |].
   Proof. apply pure_absorb_only_provable. Qed.
 
   Lemma only_provable_pure φ : [| φ |] ⊢@{PROP} ⌜φ⌝.
-  Proof. rewrite /only_provable. by rewrite bi.affinely_elim. Qed.
+  Proof. rewrite only_provable_unfold. by rewrite bi.affinely_elim. Qed.
 
   #[global] Instance only_provable_ne n :
     Proper (iff ==> dist n) (@only_provable PROP).
@@ -96,12 +98,12 @@ Section bi.
   Lemma only_provable_elim_r P q r : (P → q ⊢ r) → q ∧ [| P |] ⊢ r.
   Proof. rewrite comm. apply only_provable_elim_l. Qed.
   Lemma only_provable_emp : [| True |] ⊣⊢ emp.
-  Proof. by rewrite/only_provable bi.affinely_True_emp. Qed.
+  Proof. by rewrite only_provable_unfold bi.affinely_True_emp. Qed.
   Lemma only_provable_True P : P → [| P |] ⊣⊢ emp.
-  Proof. intros. by rewrite -only_provable_emp /only_provable bi.pure_True. Qed.
+  Proof. intros. by rewrite -only_provable_emp only_provable_unfold bi.pure_True. Qed.
   Lemma only_provable_False P : ¬P → [| P |] ⊣⊢ False.
   Proof.
-    intros. by rewrite /only_provable bi.pure_False// bi.affinely_False.
+    intros. by rewrite only_provable_unfold bi.pure_False// bi.affinely_False.
   Qed.
   Lemma only_provable_True' : [| True |] ⊣⊢@{PROP} emp.
   Proof. by rewrite only_provable_True. Qed.
@@ -128,7 +130,7 @@ Section bi.
   Lemma only_provable_forall_2_inhabited `{Inhabited A} (φ : A → Prop) :
     (∀ x, [|φ x|]) ⊢ [|∀ x, φ x|].
   Proof using PF.
-    rewrite/only_provable/bi_affinely. iIntros "Hφ". iSplit; first done.
+    setoid_rewrite only_provable_unfold. rewrite /bi_affinely. iIntros "Hφ". iSplit; first done.
     rewrite bi.pure_forall. iIntros (x). iDestruct ("Hφ" $! x) as "[_ $]".
   Qed.
   Lemma only_provable_forall_2 {A} (φ : A → Prop)
@@ -145,12 +147,12 @@ Section bi.
   Proof. iIntros (??) "$". Qed.
 
   Lemma only_provable_exist {A} (φ : A → Prop) : [|∃ x, φ x|] ⊣⊢ ∃ x, [|φ x|].
-  Proof. rewrite/only_provable. by rewrite bi.pure_exist bi.affinely_exist. Qed.
+  Proof. rewrite only_provable_unfold. by rewrite bi.pure_exist bi.affinely_exist. Qed.
   Lemma only_provable_impl_forall P q : ([| P |] → q) ⊢ (∀ _ : P, emp → q).
   Proof. apply bi.forall_intro=>?. by rewrite only_provable_True. Qed.
   Lemma only_provable_alt P : [| P |] ⊣⊢ ∃ _ : P, emp.
   Proof.
-    rewrite /only_provable bi.pure_alt bi.affinely_exist.
+    rewrite only_provable_unfold bi.pure_alt bi.affinely_exist.
     do 2!f_equiv. exact: only_provable_emp.
   Qed.
   Lemma only_provable_wand_forall_1 P q : ([| P |] -∗ q) ⊢ (∀ _ : P, q).
@@ -168,11 +170,11 @@ Section bi.
   Qed.
 
   Lemma persistently_only_provable P : <pers> [| P |] ⊣⊢@{PROP} ⌜ P ⌝.
-  Proof. by rewrite /only_provable bi.persistently_affinely_elim bi.persistently_pure. Qed.
+  Proof. by rewrite only_provable_unfold bi.persistently_affinely_elim bi.persistently_pure. Qed.
   Lemma affinely_only_provable P : <affine> [| P |] ⊣⊢@{PROP} [| P |].
-  Proof. by rewrite /only_provable bi.affinely_idemp. Qed.
+  Proof. by rewrite only_provable_unfold bi.affinely_idemp. Qed.
   Lemma absorbingly_only_provable P : <absorb> [| P |] ⊣⊢@{PROP} ⌜ P ⌝.
-  Proof. by rewrite /only_provable bi.persistent_absorbingly_affinely. Qed.
+  Proof. by rewrite only_provable_unfold bi.persistent_absorbingly_affinely. Qed.
 
   Lemma intuitionistically_only_provable P : □ [| P |] ⊣⊢@{PROP} [| P |].
   Proof. by rewrite /bi_intuitionistically persistently_only_provable. Qed.
@@ -193,11 +195,16 @@ Section bi.
 End bi.
 #[global] Hint Resolve only_provable_intro : core.
 
+(* TODO deduplicate *)
+#[local] Instance Objective_proper {I PROP} :
+  Proper ((≡) ==> (↔)) (@Objective I PROP).
+Proof. intros ?? E; repeat (apply forall_proper; intro); by rewrite E. Qed.
+
 Section monpred.
   Context {I : biIndex} {PROP : bi}.
 
   #[global] Instance only_provable_objective P : @Objective I PROP [| P |].
-  Proof. rewrite/only_provable. apply _. Qed.
+  Proof. rewrite only_provable_unfold. apply _. Qed.
 
   Lemma monPred_at_only_provable (i : I) P :
     monPred_at [| P |] i ⊣⊢@{PROP} [| P |].
@@ -235,7 +242,7 @@ Section proofmode.
   #[global] Instance into_pure_only_provable P : @IntoPure PROP [| P |] P.
   Proof. apply only_provable_pure. Qed.
   #[global] Instance from_pure_only_provable P : @FromPure PROP true [| P |] P.
-  Proof. by rewrite/FromPure/only_provable. Qed.
+  Proof. by rewrite/FromPure only_provable_unfold. Qed.
   #[global] Instance into_wand_only_provable p q (P : Prop) Q :
     @IntoWand PROP p q (∀ _ : P, Q) [| P |] Q.
   Proof.

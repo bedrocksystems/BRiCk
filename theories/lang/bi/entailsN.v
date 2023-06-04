@@ -363,7 +363,7 @@ Section theory.
   Lemma only_provable_introN (P : Prop) Q `{!Affine Q} n : P → Q ⊢{n} [| P |].
   Proof. intros HP. apply: affinely_introN. exact: pure_introN. Qed.
   Lemma only_provable_elimN' (P : Prop) Q n : (P → True ⊢{n} Q) → [| P |] ⊢{n} Q.
-  Proof. rewrite/only_provable affinely_elimN. exact: pure_elimN'. Qed.
+  Proof. rewrite only_provable_unfold affinely_elimN. exact: pure_elimN'. Qed.
   Lemma only_provable_monoN (P Q : Prop) n : (P → Q) → [| P |] ⊢@{PROP,n} [| Q |].
   Proof. intros. by apply affinely_monoN, pure_monoN. Qed.
   #[global] Instance only_provable_monoN' n : Proper (impl ==> (⊢{n})) only_provable.

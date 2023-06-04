@@ -26,13 +26,7 @@ End nary.
 
 #[global] Instance: Params (@Objective) 2 := {}.
 
-#[global] Instance Objective_proper {I PROP} :
-  Proper ((≡) ==> (↔)) (@Objective I PROP).
-Proof.
-  intros P1 P2 HP. split=>? i j.
-  - by rewrite -HP.
-  - rewrite HP. exact: objective_at.
-Qed.
+#[global] Existing Instance Objective_proper.
 
 Section proofmode_monpred.
   Context {I : biIndex} {PROP : bi}.
