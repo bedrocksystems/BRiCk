@@ -71,6 +71,12 @@ Section bi.
   Proof. apply _. Qed.
   #[global] Instance only_provable_affine P : Affine (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
+  #[global] Instance only_provable_timeless `{Timeless PROP emp} P :
+    Timeless (PROP:=PROP) [| P |].
+  Proof. apply _. Qed.
+  #[global] Instance only_provable_plain `{BiPlainly PROP} P :
+    Plain (PROP:=PROP) [| P |].
+  Proof. apply _. Qed.
 
   (* This is provable, but only usable under `BiAffine`, hence misleading. *)
   Lemma only_provable_absorbing `{BiAffine PROP} P :
@@ -184,13 +190,6 @@ Section bi.
   #[global] Instance only_provable_True_right_id :
     RightId (≡@{PROP}) [| True |] bi_sep.
   Proof. intros P. by rewrite only_provable_emp right_id. Qed.
-
-  #[global] Instance only_provable_timeless `{Timeless PROP emp} P :
-    Timeless (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
-  #[global] Instance only_provable_plain `{BiPlainly PROP} P :
-    Plain (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
 End bi.
 #[global] Hint Resolve only_provable_intro : core.
 
