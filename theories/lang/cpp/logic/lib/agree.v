@@ -122,24 +122,24 @@ Module agree : AGREE.
     Lemma alloc_strong_dep : ∀ (f : gname A -> A) (P : gname A -> Prop),
       pred_infinite P ->
       |-- |==> Exists g, [| P g |] ** own g (f g).
-    Proof. intros. by apply : own_alloc_strong_dep. Qed.
+    Proof. intros. by apply: own_alloc_strong_dep. Qed.
 
     Lemma alloc_cofinite_dep : ∀ (f : gname A -> A) (G : gset (gname A)),
       |-- |==> Exists g, [| g ∉ G |] ** own g (f g).
-    Proof. intros. by apply : own_alloc_cofinite_dep. Qed.
+    Proof. intros. by apply: own_alloc_cofinite_dep. Qed.
 
     Lemma alloc_dep : ∀ (f : gname A -> A),
       |-- |==> Exists g, own g (f g).
-    Proof. intros. by apply : own_alloc_dep. Qed.
+    Proof. intros. by apply: own_alloc_dep. Qed.
 
     Lemma alloc_strong : ∀ (P : gname A -> Prop) x,
       pred_infinite P ->
       |-- |==> Exists g, [| P g |] ** own g x.
-    Proof. intros. by apply : own_alloc_strong. Qed.
+    Proof. intros. by apply: own_alloc_strong. Qed.
 
     Lemma alloc_cofinite : ∀ (G : gset (gname A)) x,
       |-- |==> Exists g, [| g ∉ G |] ** own g x.
-    Proof. intros. by apply : own_alloc_cofinite. Qed.
+    Proof. intros. by apply: own_alloc_cofinite. Qed.
 
     Lemma alloc x : |-- |==> Exists g, own g x.
     Proof. by apply own_alloc. Qed.

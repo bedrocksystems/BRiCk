@@ -212,7 +212,7 @@ Section update.
     (∀ γ, ✓ (f γ)) → ⊢ |==> ∃ γ, own γ (f γ).
   Proof.
     intros Ha. rewrite /bi_emp_valid (own_alloc_cofinite_dep f ∅) //; [].
-    apply bupd_mono, exist_mono=>?. apply : sep_elim_r.
+    apply bupd_mono, exist_mono=>?. apply: sep_elim_r.
   Qed.
 
   Lemma own_alloc_strong a (P : gname → Prop) :
