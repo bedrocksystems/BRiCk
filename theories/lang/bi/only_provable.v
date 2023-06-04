@@ -30,7 +30,7 @@ Notation "[ | P | ]" := (only_provable P) (format "[ |  P  | ]").
 (* This class carries the assumptions of [only_provable_forall_2], but is very ad-hoc. *)
 Class BiEmpForallOnlyProvable (PROP : bi) :=
   emp_forall_only_provable A φ : (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]).
-Global Hint Mode BiEmpForallOnlyProvable + : typeclass_instances.
+#[global] Hint Mode BiEmpForallOnlyProvable + : typeclass_instances.
 
 (** * Properties of [only_provable]. *)
 Section bi.
@@ -38,8 +38,8 @@ Section bi.
 
   Implicit Types P Q : Prop.
   Implicit Types p q r : PROP.
-  Local Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
-  Local Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
+  #[local] Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
+  #[local] Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
 
   (** [ [| P |] ] indeed holds no resources. This is also an unfolding lemma, since [only_provable] is [Opaque]. *)
   Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
@@ -54,22 +54,28 @@ Section bi.
   Lemma only_provable_pure φ : [| φ |] ⊢@{PROP} ⌜φ⌝.
   Proof. rewrite /only_provable. by rewrite bi.affinely_elim. Qed.
 
-  Global Instance only_provable_ne n :
+  #[global] Instance only_provable_ne n :
     Proper (iff ==> dist n) (@only_provable PROP).
   Proof. solve_proper. Qed.
-  Global Instance only_provable_proper :
+  #[global] Instance only_provable_proper :
     Proper (iff ==> (⊣⊢)) (@only_provable PROP).
   Proof. solve_proper. Qed.
-  Global Instance only_provable_mono' :
+  #[global] Instance only_provable_mono' :
     Proper (impl ==> (⊢)) (@only_provable PROP).
   Proof. solve_proper. Qed.
-  Global Instance only_provable_flip_mono :
+  #[global] Instance only_provable_flip_mono :
     Proper (flip impl ==> flip (⊢)) (@only_provable PROP).
   Proof. solve_proper. Qed.
 
-  Global Instance only_provable_persistent P : Persistent (PROP:=PROP) [| P |].
+  #[global] Instance only_provable_persistent P : Persistent (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
-  Global Instance only_provable_affine P : Affine (PROP:=PROP) [| P |].
+  #[global] Instance only_provable_affine P : Affine (PROP:=PROP) [| P |].
+  Proof. apply _. Qed.
+  #[global] Instance only_provable_timeless `{Timeless PROP emp} P :
+    Timeless (PROP:=PROP) [| P |].
+  Proof. apply _. Qed.
+  #[global] Instance only_provable_plain `{BiPlainly PROP} P :
+    Plain (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
 
   (* This is provable, but only usable under `BiAffine`, hence misleading. *)
@@ -178,33 +184,26 @@ Section bi.
     by rewrite -bi.impl_wand_intuitionistically persistently_only_provable.
   Qed.
 
-  Global Instance only_provable_True_left_id :
+  #[global] Instance only_provable_True_left_id :
     LeftId (≡@{PROP}) [| True |] bi_sep.
   Proof. intros P. by rewrite only_provable_emp left_id. Qed.
   #[global] Instance only_provable_True_right_id :
     RightId (≡@{PROP}) [| True |] bi_sep.
   Proof. intros P. by rewrite only_provable_emp right_id. Qed.
-
-  Global Instance only_provable_timeless `{Timeless PROP emp} P :
-    Timeless (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
-  Global Instance only_provable_plain `{BiPlainly PROP} P :
-    Plain (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
 End bi.
 #[global] Hint Resolve only_provable_intro : core.
 
 Section monpred.
   Context {I : biIndex} {PROP : bi}.
 
-  Global Instance only_provable_objective P : @Objective I PROP [| P |].
+  #[global] Instance only_provable_objective P : @Objective I PROP [| P |].
   Proof. rewrite/only_provable. apply _. Qed.
 
   Lemma monPred_at_only_provable (i : I) P :
     monPred_at [| P |] i ⊣⊢@{PROP} [| P |].
   Proof. by rewrite monPred_at_affinely monPred_at_pure. Qed.
 
-  Global Instance monpred_bi_emp_forall_only_provable :
+  #[global] Instance monpred_bi_emp_forall_only_provable :
     BiEmpForallOnlyProvable PROP ->
     BiEmpForallOnlyProvable (monPredI I PROP).
   Proof.
@@ -233,45 +232,45 @@ Section proofmode.
    * goals like [[| P |] ** Q] into subgoals involving [bi_pure]
    * rather than [only_provable].
    *)
-  Global Instance into_pure_only_provable P : @IntoPure PROP [| P |] P.
+  #[global] Instance into_pure_only_provable P : @IntoPure PROP [| P |] P.
   Proof. apply only_provable_pure. Qed.
-  Global Instance from_pure_only_provable P : @FromPure PROP true [| P |] P.
+  #[global] Instance from_pure_only_provable P : @FromPure PROP true [| P |] P.
   Proof. by rewrite/FromPure/only_provable. Qed.
-  Global Instance into_wand_only_provable p q (P : Prop) Q :
+  #[global] Instance into_wand_only_provable p q (P : Prop) Q :
     @IntoWand PROP p q (∀ _ : P, Q) [| P |] Q.
   Proof.
     rewrite /IntoWand.
     by rewrite !bi.intuitionistically_if_elim -only_provable_wand_forall_2.
   Qed.
-  Global Instance from_and_only_provable P Q :
+  #[global] Instance from_and_only_provable P Q :
     @FromAnd PROP [| P ∧ Q |] [| P |] [| Q |].
   Proof. by rewrite/FromAnd only_provable_and. Qed.
-  Global Instance into_and_only_provable p P Q :
+  #[global] Instance into_and_only_provable p P Q :
     @IntoAnd PROP p [| P ∧ Q |] [| P |] [| Q |].
   Proof. by rewrite/IntoAnd only_provable_and. Qed.
-  Global Instance from_sep_only_provable P Q :
+  #[global] Instance from_sep_only_provable P Q :
     @FromSep PROP [| P ∧ Q |] [| P |] [| Q |].
   Proof. by rewrite/FromSep only_provable_sep. Qed.
-  Global Instance into_sep_only_provable P Q :
+  #[global] Instance into_sep_only_provable P Q :
     @IntoSep PROP [| P ∧ Q |] [| P |] [| Q |].
   Proof. by rewrite/IntoSep only_provable_sep. Qed.
-  Global Instance from_or_only_provable P Q :
+  #[global] Instance from_or_only_provable P Q :
     @FromOr PROP [| P ∨ Q |] [| P |] [| Q |].
   Proof. by rewrite/FromOr only_provable_or. Qed.
-  Global Instance into_or_only_provable P Q :
+  #[global] Instance into_or_only_provable P Q :
     @IntoOr PROP [| P ∨ Q |] [| P |] [| Q |].
   Proof. by rewrite/IntoOr only_provable_or. Qed.
-  Global Instance from_exist_only_provable {A} (P : A → Prop) :
+  #[global] Instance from_exist_only_provable {A} (P : A → Prop) :
     @FromExist PROP A [| ∃ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/FromExist only_provable_exist. Qed.
-  Global Instance into_exist_only_provable {A} (P : A → Prop) name :
+  #[global] Instance into_exist_only_provable {A} (P : A → Prop) name :
     AsIdentName P name ->
     @IntoExist PROP A [| ∃ x, P x |] (λ a, [| P a |]) name.
   Proof. by rewrite/IntoExist only_provable_exist. Qed.
 
   (* TODO: avoid backtracking between these two instances by adding a TCOrT;
   TCOr does not work because it only takes Props but Inhabited is in Type. *)
-  Global Instance from_forall_only_provable
+  #[global] Instance from_forall_only_provable
       `{HTC : TCOrT (BiEmpForallOnlyProvable PROP) (Inhabited A)} (P : A → Prop) name :
     AsIdentName P name ->
     @FromForall PROP A [| ∀ x, P x |] (λ a, [| P a |]) name.
@@ -279,9 +278,9 @@ Section proofmode.
     by rewrite/FromForall only_provable_forall_2.
   Qed.
 
-  Global Instance into_forall_only_provable {A} (P : A → Prop) :
+  #[global] Instance into_forall_only_provable {A} (P : A → Prop) :
     @IntoForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/IntoForall only_provable_forall_1. Qed.
 End proofmode.
 #[global] Typeclasses Opaque only_provable.
-Global Opaque only_provable.	(** Less important *)
+#[global] Opaque only_provable.	(** Less important *)
