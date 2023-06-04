@@ -317,21 +317,19 @@ Section update_only_provable.
   Context `{!BiBUpd PROP} `{!HasOwn PROP A} `{!HasOwnUpd PROP A}.
   Implicit Type (a : A).
 
-  #[local] Transparent only_provable.
-
   Lemma own_alloc_strong_dep' (f : gname → A) (P : gname → Prop) :
     pred_infinite P → (∀ γ, P γ → ✓ (f γ)) → ⊢ |==> ∃ γ, [| P γ |] ∗ own γ (f γ).
-  Proof. rewrite /only_provable. apply own_alloc_strong_dep. Qed.
+  Proof. rewrite only_provable.unlock. apply own_alloc_strong_dep. Qed.
 
   Lemma own_alloc_cofinite_dep' (f : gname → A) (G : gset gname) :
     (∀ γ, γ ∉ G → ✓ (f γ)) → ⊢ |==> ∃ γ, [| γ ∉ G |] ∗ own γ (f γ).
-  Proof. rewrite /only_provable. apply own_alloc_cofinite_dep. Qed.
+  Proof. rewrite only_provable.unlock. apply own_alloc_cofinite_dep. Qed.
 
   Lemma own_alloc_strong' a (P : gname → Prop) :
     pred_infinite P →
     ✓ a → ⊢ |==> ∃ γ, [| P γ |] ∗ own γ a.
-  Proof. rewrite /only_provable. apply own_alloc_strong. Qed.
+  Proof. rewrite only_provable.unlock. apply own_alloc_strong. Qed.
   Lemma own_alloc_cofinite' a (G : gset gname) :
     ✓ a → ⊢ |==> ∃ γ, [| γ ∉ G |] ∗ own γ a.
-  Proof. rewrite /only_provable. apply own_alloc_cofinite. Qed.
+  Proof. rewrite only_provable.unlock. apply own_alloc_cofinite. Qed.
 End update_only_provable.

@@ -58,7 +58,7 @@ Section derived_laws.
   Context {PROP : bi}.
 
   Lemma affinely_pure φ  : <affine> ⌜φ⌝ ⊣⊢@{PROP} [| φ |].
-  Proof. done. Qed.
+  Proof. by rewrite only_provable_unfold. Qed.
 
   Lemma intuitionistically_pure φ  : □ ⌜φ⌝ ⊣⊢@{PROP} [| φ |].
   Proof.

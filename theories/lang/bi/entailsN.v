@@ -359,13 +359,12 @@ Section theory.
   Proof. apply entails_entailsN, bi.affinely_elim_emp. Qed.
 
   (** [only_provable] *)
-  #[local] Transparent only_provable.
   Lemma only_provable_introN (P : Prop) Q `{!Affine Q} n : P → Q ⊢{n} [| P |].
-  Proof. intros HP. apply: affinely_introN. exact: pure_introN. Qed.
+  Proof. rewrite only_provable_unfold => HP. apply: affinely_introN. exact: pure_introN. Qed.
   Lemma only_provable_elimN' (P : Prop) Q n : (P → True ⊢{n} Q) → [| P |] ⊢{n} Q.
   Proof. rewrite only_provable_unfold affinely_elimN. exact: pure_elimN'. Qed.
   Lemma only_provable_monoN (P Q : Prop) n : (P → Q) → [| P |] ⊢@{PROP,n} [| Q |].
-  Proof. intros. by apply affinely_monoN, pure_monoN. Qed.
+  Proof. rewrite !only_provable_unfold; intros. by apply affinely_monoN, pure_monoN. Qed.
   #[global] Instance only_provable_monoN' n : Proper (impl ==> (⊢{n})) only_provable.
   Proof. repeat intro. by apply only_provable_monoN. Qed.
   #[global] Instance only_provable_flip_monoN n :

@@ -3,6 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+
+From elpi Require Import locker.
 Require Import bedrock.prelude.base.
 From iris.bi Require Import bi monpred embedding fractional.
 From iris.proofmode Require Import proofmode.
@@ -21,8 +23,9 @@ of "absorbing" propositions, see
 "MoSeL: A general, extensible modal framework for interactive proofs in separation logic"
 (http://doi.acm.org/10.1145/3236772).
 *)
-Definition only_provable {PROP : bi} (P : Prop) : PROP := (<affine> ⌜P⌝)%I.
-Arguments only_provable {_} _%type_scope : simpl never, rename.
+mlock Definition only_provable {PROP : bi} (P : Prop) : PROP :=
+  (<affine> ⌜P⌝)%I.
+#[global] Arguments only_provable {_} _%type_scope : simpl never, rename.
 #[global] Instance: Params (@only_provable) 1 := {}.
 
 Notation "[ | P | ]" := (only_provable P) (format "[ |  P  | ]").
@@ -42,7 +45,7 @@ Section bi.
   #[local] Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
 
   Lemma only_provable_unfold P : [| P |] ⊣⊢ <affine> ⌜ P ⌝.
-  Proof. done. Qed.
+  Proof. by rewrite only_provable.unlock. Qed.
   (** [ [| P |] ] indeed holds no resources. This is also an unfolding lemma, since [only_provable] is [Opaque]. *)
   Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
   Proof. apply only_provable_unfold. Qed.
@@ -58,27 +61,27 @@ Section bi.
 
   #[global] Instance only_provable_ne n :
     Proper (iff ==> dist n) (@only_provable PROP).
-  Proof. solve_proper. Qed.
+  Proof. rewrite only_provable.unlock. solve_proper. Qed.
   #[global] Instance only_provable_proper :
     Proper (iff ==> (⊣⊢)) (@only_provable PROP).
-  Proof. solve_proper. Qed.
+  Proof. rewrite only_provable.unlock. solve_proper. Qed.
   #[global] Instance only_provable_mono' :
     Proper (impl ==> (⊢)) (@only_provable PROP).
-  Proof. solve_proper. Qed.
+  Proof. rewrite only_provable.unlock. solve_proper. Qed.
   #[global] Instance only_provable_flip_mono :
     Proper (flip impl ==> flip (⊢)) (@only_provable PROP).
   Proof. solve_proper. Qed.
 
   #[global] Instance only_provable_persistent P : Persistent (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
+  Proof. rewrite only_provable_unfold. apply _. Qed.
   #[global] Instance only_provable_affine P : Affine (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
+  Proof. rewrite only_provable_unfold. apply _. Qed.
   #[global] Instance only_provable_timeless `{Timeless PROP emp} P :
     Timeless (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
+  Proof. rewrite only_provable_unfold. apply _. Qed.
   #[global] Instance only_provable_plain `{BiPlainly PROP} P :
     Plain (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
+  Proof. rewrite only_provable_unfold. apply _. Qed.
 
   (* This is provable, but only usable under `BiAffine`, hence misleading. *)
   Lemma only_provable_absorbing `{BiAffine PROP} P :
@@ -90,7 +93,7 @@ Section bi.
   Lemma only_provable_iff P Q : (P ↔ Q) → [| P |] ⊣⊢ [| Q |].
   Proof. apply only_provable_proper. Qed.
   Lemma only_provable_intro P p `{!Affine p} : P → p ⊢ [| P |].
-  Proof. intros ?. apply: bi.affinely_intro. exact: bi.pure_intro. Qed.
+  Proof. rewrite only_provable_unfold. intros ?. apply: bi.affinely_intro. exact: bi.pure_intro. Qed.
   Lemma only_provable_elim' P p : (P → True ⊢ p) → [| P |] ⊢ p.
   Proof. rewrite only_provable_pure. apply bi.pure_elim'. Qed.
   Lemma only_provable_elim_l P q r : (P → q ⊢ r) → [| P |] ∧ q ⊢ r.
@@ -100,7 +103,7 @@ Section bi.
   Lemma only_provable_emp : [| True |] ⊣⊢ emp.
   Proof. by rewrite only_provable_unfold bi.affinely_True_emp. Qed.
   Lemma only_provable_True P : P → [| P |] ⊣⊢ emp.
-  Proof. intros. by rewrite -only_provable_emp only_provable_unfold bi.pure_True. Qed.
+  Proof. intros. by rewrite -only_provable_emp !only_provable_unfold bi.pure_True. Qed.
   Lemma only_provable_False P : ¬P → [| P |] ⊣⊢ False.
   Proof.
     intros. by rewrite only_provable_unfold bi.pure_False// bi.affinely_False.
@@ -110,22 +113,25 @@ Section bi.
   Lemma only_provable_False' : [| False |] ⊣⊢@{PROP} False.
   Proof. rewrite only_provable_False; naive_solver. Qed.
   Lemma only_provable_sep P Q : [|P ∧ Q|] ⊣⊢ [| P |] ∗ [| Q |].
-  Proof. apply (anti_symm _); auto. Qed.
+  Proof. rewrite !only_provable_unfold. apply (anti_symm _); auto. Qed.
   Lemma only_provable_and P Q : [|P ∧ Q|] ⊣⊢ [| P |] ∧ [| Q |].
-  Proof. by rewrite -bi.affinely_and -bi.pure_and. Qed.
+  Proof. by rewrite !only_provable_unfold -bi.affinely_and -bi.pure_and. Qed.
   Lemma only_provable_or P Q : [|P ∨ Q|] ⊣⊢ [| P |] ∨ [| Q |].
-  Proof. by rewrite -bi.affinely_or -bi.pure_or. Qed.
+  Proof. by rewrite !only_provable_unfold -bi.affinely_or -bi.pure_or. Qed.
   Lemma only_provable_impl P Q : [|P → Q|] ⊢ ([| P |] → [| Q |]).
-  Proof. auto. Qed.
+  Proof. rewrite !only_provable_unfold. auto. Qed.
   Lemma only_provable_forall_1 {A} (φ : A → Prop) : [|∀ x, φ x|] ⊢ ∀ x, [|φ x|].
-  Proof. auto. Qed.
+  Proof. setoid_rewrite only_provable_unfold. auto. Qed.
 
   (** Not very useful, but the best we can do in general:
   it's unclear how to commute [emp ∧ ∀ x : A, P] into [∀ x : A, emp ∧ P]. *)
   Lemma only_provable_forall_2_gen {A} (φ : A → Prop)
     `{Hswap : BiEmpForallOnlyProvable PROP} :
     (∀ x, [|φ x|]) ⊢@{PROP} [|∀ x, φ x|].
-  Proof using PF. rewrite emp_forall_only_provable. { iIntros "!% /=". done. } Qed.
+  Proof using PF.
+    rewrite emp_forall_only_provable. setoid_rewrite only_provable_unfold.
+    iIntros "!% /=". done.
+  Qed.
 
   Lemma only_provable_forall_2_inhabited `{Inhabited A} (φ : A → Prop) :
     (∀ x, [|φ x|]) ⊢ [|∀ x, φ x|].
@@ -147,13 +153,13 @@ Section bi.
   Proof. iIntros (??) "$". Qed.
 
   Lemma only_provable_exist {A} (φ : A → Prop) : [|∃ x, φ x|] ⊣⊢ ∃ x, [|φ x|].
-  Proof. rewrite only_provable_unfold. by rewrite bi.pure_exist bi.affinely_exist. Qed.
+  Proof. setoid_rewrite only_provable_unfold. by rewrite bi.pure_exist bi.affinely_exist. Qed.
   Lemma only_provable_impl_forall P q : ([| P |] → q) ⊢ (∀ _ : P, emp → q).
   Proof. apply bi.forall_intro=>?. by rewrite only_provable_True. Qed.
   Lemma only_provable_alt P : [| P |] ⊣⊢ ∃ _ : P, emp.
   Proof.
-    rewrite only_provable_unfold bi.pure_alt bi.affinely_exist.
-    do 2!f_equiv. exact: only_provable_emp.
+    rewrite !only_provable_unfold bi.pure_alt bi.affinely_exist.
+    do 2!f_equiv. exact: bi.affinely_True_emp.
   Qed.
   Lemma only_provable_wand_forall_1 P q : ([| P |] -∗ q) ⊢ (∀ _ : P, q).
   Proof.
@@ -161,7 +167,7 @@ Section bi.
   Qed.
   Lemma only_provable_wand_forall_2 P q :
     (∀ _ : P, q) ⊢ ([| P |] -∗ q).
-  Proof. iIntros "W %HP". iApply ("W" $! HP). Qed.
+  Proof. rewrite !only_provable_unfold. iIntros "W %HP". iApply ("W" $! HP). Qed.
   Lemma only_provable_wand_forall P q :
     ([| P |] -∗ q) ⊣⊢ (∀ _ : P, q).
   Proof.
@@ -177,7 +183,7 @@ Section bi.
   Proof. by rewrite only_provable_unfold bi.persistent_absorbingly_affinely. Qed.
 
   Lemma intuitionistically_only_provable P : □ [| P |] ⊣⊢@{PROP} [| P |].
-  Proof. by rewrite /bi_intuitionistically persistently_only_provable. Qed.
+  Proof. by rewrite /bi_intuitionistically !persistently_only_provable only_provable_unfold. Qed.
 
   Lemma pure_impl_only_provable_wand (φ : Prop) (Q : PROP) :
     (⌜ φ ⌝ → Q) ⊣⊢ ([| φ |] -∗ Q).
@@ -208,7 +214,7 @@ Section monpred.
 
   Lemma monPred_at_only_provable (i : I) P :
     monPred_at [| P |] i ⊣⊢@{PROP} [| P |].
-  Proof. by rewrite monPred_at_affinely monPred_at_pure. Qed.
+  Proof. by rewrite !only_provable_unfold monPred_at_affinely monPred_at_pure. Qed.
 
   #[global] Instance monpred_bi_emp_forall_only_provable :
     BiEmpForallOnlyProvable PROP ->
@@ -223,7 +229,7 @@ End monpred.
 
 Lemma embed_only_provable `{BiEmbedEmp PROP1 PROP2} (P : Prop) :
   embed [| P |] ⊣⊢@{PROP2} [| P |].
-Proof. by rewrite embed_affinely embed_pure. Qed.
+Proof. by rewrite !only_provable_unfold embed_affinely embed_pure. Qed.
 
 Section proofmode.
   Context {PROP : bi} {PF: BiPureForall PROP}.
@@ -289,5 +295,3 @@ Section proofmode.
     @IntoForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/IntoForall only_provable_forall_1. Qed.
 End proofmode.
-#[global] Typeclasses Opaque only_provable.
-#[global] Opaque only_provable.	(** Less important *)
