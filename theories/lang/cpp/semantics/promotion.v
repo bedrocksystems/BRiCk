@@ -21,7 +21,7 @@ From bedrock.lang.cpp Require Import ast semantics.values.
 (** [underlying_type tu nm] is the type that underlies [Tenum nm].
  *)
 Definition underlying_type (tu : translation_unit) (nm : globname) : option type :=
-  match tu.(globals) !! nm with
+  match tu.(types) !! nm with
   | Some (Genum ty _) => Some $ drop_qualifiers ty
   | _ => None
   end.
@@ -53,7 +53,7 @@ Definition underlying_unqual_type (tu : translation_unit) (ty : type) : type :=
   let '(cv, ty') := decompose_type ty in
   match ty' with
   | Tenum nm as ty =>
-      match tu.(globals) !! nm with
+      match tu.(types) !! nm with
       | Some (Genum ty _) => ty
       | _ => ty'
       end

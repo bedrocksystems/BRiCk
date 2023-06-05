@@ -41,8 +41,8 @@ Module Type Init.
     #[local] Notation wp_xval := (wp_xval tu ρ).
     #[local] Notation wp_init := (wp_init tu ρ).
     #[local] Notation interp := (interp tu).
-    #[local] Notation fspec := (@fspec _ Σ tu.(globals)).
-    #[local] Notation mspec := (@mspec _ Σ tu.(globals)).
+    #[local] Notation wp_fptr := (@wp_fptr _ Σ tu.(types)).
+    #[local] Notation mspec := (@mspec _ Σ tu.(types)).
 
     (** [default_initialize_array default_init ty len p Q] initializes an array of type [ty[len]]
         at pointer [p].

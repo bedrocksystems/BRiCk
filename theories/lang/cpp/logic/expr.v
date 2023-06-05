@@ -56,8 +56,8 @@ Module Type Expr.
     #[local] Notation wp_args := (wp_args tu ρ).
     #[local] Notation interp := (interp tu).
     (* TODO Fix these *)
-    #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
-    #[local] Notation mspec := (mspec resolve.(genv_tu).(globals)).
+    #[local] Notation wp_fptr := (wp_fptr resolve.(genv_tu).(types)).
+    #[local] Notation mspec := (mspec resolve.(genv_tu).(types)).
 
     #[local] Notation glob_def := (glob_def resolve) (only parsing).
     #[local] Notation size_of := (@size_of resolve) (only parsing).
@@ -77,7 +77,7 @@ Module Type Expr.
 
     (* constants are rvalues *)
     Axiom wp_operand_constant : forall ty cnst e Q,
-      tu.(globals) !! cnst = Some (Gconstant ty (Some e)) ->
+      tu.(types) !! cnst = Some (Gconstant ty (Some e)) ->
           (* evaluation of the expression does not get access to
              local variables, so it gets [Remp] rather than [ρ].
              In addition, the evaluation is done at compile-time, so we clean
@@ -803,7 +803,7 @@ Module Type Expr.
         Exists fp, [| f = Vptr fp |] **
         match arg_types fty with
         | Some targs =>
-          wp_args targs es $ fun vs free => |> fspec fty fp vs (fun v => Q v free)
+          wp_args targs es $ fun vs free => |> wp_fptr fty fp vs (fun v => Q v free)
         | _ => False
         end
       | None => False
@@ -819,7 +819,7 @@ Module Type Expr.
       iRevert "X"; iApply wp_args_frame.
       iIntros (??).
       iIntros "X"; iNext; iRevert "X".
-      iApply fspec_frame.
+      iApply wp_fptr_frame.
       iIntros (?); iApply "K".
     Qed.
 
@@ -879,7 +879,7 @@ Module Type Expr.
       iRevert "X"; iApply wp_args_frame.
       iIntros (??).
       iIntros "X"; iNext; iRevert "X".
-      iApply fspec_frame.
+      iApply wp_fptr_frame.
       iIntros (?); iApply "K".
     Qed.
 
@@ -1065,7 +1065,7 @@ Module Type Expr.
       - eapply has_type_prop_enum.
         clear H1. revert H.
         rewrite /underlying_type/=.
-        destruct (globals tu !! g) eqn:Hglobal => /= //.
+        destruct (tu.(types) !! g) eqn:Hglobal => /= //.
         destruct g0 => /=//.
         intros. do 3 eexists; split; eauto. split; eauto.
         case_match; try congruence; inversion H; subst; simpl; split; try tauto.
@@ -1280,7 +1280,7 @@ Module Type Expr.
               map base_to_li s.(s_bases) ++ map mem_to_li s.(s_fields) in
             init_fields cls base fs es
                (base |-> struct_paddingR (cQp.mut 1) cls **
-                (if has_vtable s then base |-> identityR cls [cls] (cQp.mut 1) else emp) -*
+                (if has_vtable s then base |-> derivationR cls [cls] (cQp.mut 1) else emp) -*
                 Q (Tnamed cls) FreeTemps.id)
 
         | Some (Gunion u) =>

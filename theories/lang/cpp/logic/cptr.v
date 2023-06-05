@@ -152,7 +152,7 @@ Section defs.
     Note that [function_spec] and co ([fs_impl] and [fs_entails])
     do not package the usually expected properties for
     weakest-precondition.
-    [cptrR] gets those properties from axioms for [fspec].
+    [cptrR] gets those properties from axioms for [wp_fptr].
    *)
   Definition fs_impl (Q P : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] ∗
@@ -234,7 +234,7 @@ Section defs.
          strict_valid_ptr p **
          □ (Forall vs Q,
          fs.(fs_spec) vs Q -*
-         fspec resolve.(genv_tu).(globals) (type_of_spec fs) p vs Q)).
+         wp_fptr resolve.(genv_tu).(types) (type_of_spec fs) p vs Q)).
   Definition cptrR_aux : seal (@cptrR_def). Proof. by eexists. Qed.
   Definition cptrR := cptrR_aux.(unseal).
   Definition cptrR_eq : @cptrR = _ := cptrR_aux.(seal_eq).
@@ -293,7 +293,7 @@ Section with_cpp.
     constructor => p; rewrite Rep_wand_force; iIntros "#(%ty & fs_impl)" => /=.
     iIntros "(val & #rest)"; iFrame.
     rewrite ty. iModIntro. iIntros (vs Q) "fs_g".
-    iApply fspec_fupd. iApply fupd_spec.
+    iApply wp_fptr_fupd. iApply fupd_spec.
     iApply "rest".
     by iApply "fs_impl".
   Qed.

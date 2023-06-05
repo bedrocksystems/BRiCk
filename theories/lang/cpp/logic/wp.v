@@ -1021,13 +1021,13 @@ Section with_cpp.
    * [addr] represents the address of the entry point of the code.
    * note: the [list ptr] will be related to the register set.
    *)
-  Parameter fspec
+  Parameter wp_fptr
     : forall (tt : type_table) (fun_type : type)
         (addr : ptr) (ls : list ptr) (Q : ptr -> epred), mpred.
 
-  Axiom fspec_complete_type : forall te ft a ls Q,
-      fspec te ft a ls Q
-      |-- fspec te ft a ls Q **
+  Axiom wp_fptr_complete_type : forall te ft a ls Q,
+      wp_fptr te ft a ls Q
+      |-- wp_fptr te ft a ls Q **
           [| exists cc ar tret targs, ft = Tfunction (cc:=cc) (ar:=ar) tret targs |].
 
   (* A type is callable against a type table if all of its arguments and return
@@ -1042,7 +1042,7 @@ Section with_cpp.
     | _ => False
     end.
 
-  (* this axiom states that the type environment for an [fspec] can be
+  (* this axiom states that the type environment for an [wp_fptr] can be
      narrowed as long as the new type environment [small]/[tt2] is smaller than
      the old type environment ([big]/[tt1]), and [ft]
      is still a *complete type* in the new type environment [small]/[tt2].
@@ -1051,74 +1051,74 @@ Section with_cpp.
      of ODR) the implementation of the function is encapsulated and only
      the public interface (the type) is needed to know how to call the function.
    *)
-  Axiom fspec_strengthen : forall tt1 tt2 ft a ls Q,
-      callable_type tt2.(globals) ft ->
+  Axiom wp_fptr_strengthen : forall tt1 tt2 ft a ls Q,
+      callable_type tt2.(types) ft ->
       sub_module tt2 tt1 ->
-      fspec tt1.(globals) ft a ls Q |-- fspec tt2.(globals) ft a ls Q.
+      wp_fptr tt1.(types) ft a ls Q |-- wp_fptr tt2.(types) ft a ls Q.
 
   (* this axiom is the standard rule of consequence for weakest
      pre-condition.
    *)
-  Axiom fspec_frame_fupd : forall tt1 tt2 ft a ls Q1 Q2,
+  Axiom wp_fptr_frame_fupd : forall tt1 tt2 ft a ls Q1 Q2,
       type_table_le tt1 tt2 ->
           (Forall v, Q1 v -* |={top}=> Q2 v)
-      |-- @fspec tt1 ft a ls Q1 -* @fspec tt2 ft a ls Q2.
+      |-- @wp_fptr tt1 ft a ls Q1 -* @wp_fptr tt2 ft a ls Q2.
 
-  Lemma fspec_frame : forall tt ft a ls Q1 Q2,
+  Lemma wp_fptr_frame : forall tt ft a ls Q1 Q2,
     (Forall v, Q1 v -* Q2 v)
-    |-- fspec tt ft a ls Q1 -* fspec tt ft a ls Q2.
+    |-- wp_fptr tt ft a ls Q1 -* wp_fptr tt ft a ls Q2.
   Proof.
-    intros. iIntros "H". iApply fspec_frame_fupd; first reflexivity.
+    intros. iIntros "H". iApply wp_fptr_frame_fupd; first reflexivity.
     iIntros (v) "? !>". by iApply "H".
   Qed.
 
   (* the following two axioms say that we can perform fupd's
      around the weakeast pre-condition. *)
-  Axiom fspec_fupd : forall te ft a ls Q,
-      fspec te ft a ls (λ v, |={top}=> Q v) |-- fspec te ft a ls Q.
+  Axiom wp_fptr_fupd : forall te ft a ls Q,
+      wp_fptr te ft a ls (λ v, |={top}=> Q v) |-- wp_fptr te ft a ls Q.
   Axiom fupd_spec : forall te ft a ls Q,
-      (|={top}=> fspec te ft a ls Q) |-- fspec te ft a ls Q.
+      (|={top}=> wp_fptr te ft a ls Q) |-- wp_fptr te ft a ls Q.
 
-  Lemma fspec_shift te ft a ls Q :
-    (|={top}=> fspec te ft a ls (λ v, |={top}=> Q v)) |-- fspec te ft a ls Q.
+  Lemma wp_fptr_shift te ft a ls Q :
+    (|={top}=> wp_fptr te ft a ls (λ v, |={top}=> Q v)) |-- wp_fptr te ft a ls Q.
   Proof.
-    by rewrite fupd_spec fspec_fupd.
+    by rewrite fupd_spec wp_fptr_fupd.
   Qed.
 
-  #[global] Instance Proper_fspec : forall tt ft a ls,
-      Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft a ls).
+  #[global] Instance Proper_wp_fptr : forall tt ft a ls,
+      Proper (pointwise_relation _ lentails ==> lentails) (@wp_fptr tt ft a ls).
   Proof.
     repeat red; intros.
-    iApply fspec_frame.
+    iApply wp_fptr_frame.
     iIntros (v); iApply H.
   Qed.
 
-  Section fspec.
+  Section wp_fptr.
     Context {tt : type_table} {tf : type} (addr : ptr) (ls : list ptr).
-    Local Notation WP := (fspec tt tf addr ls) (only parsing).
+    Local Notation WP := (wp_fptr tt tf addr ls) (only parsing).
     Implicit Types Q : ptr → epred.
 
-    Lemma fspec_wand_fupd Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* |={top}=> Q2 v) -* WP Q2.
+    Lemma wp_fptr_wand_fupd Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* |={top}=> Q2 v) -* WP Q2.
     Proof.
       iIntros "Hwp HK".
-      iApply (fspec_frame_fupd with "HK Hwp").
+      iApply (wp_fptr_frame_fupd with "HK Hwp").
       reflexivity.
     Qed.
 
-    Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
+    Lemma wp_fptr_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
     Proof. iIntros "Hwp HK".
-           iApply (fspec_frame with "HK Hwp").
+           iApply (wp_fptr_frame with "HK Hwp").
     Qed.
-  End fspec.
+  End wp_fptr.
 
-  (** [mspec tt this_ty fty ..] is the analogue of [fspec] for member functions.
+  (** [mspec tt this_ty fty ..] is the analogue of [wp_fptr] for member functions.
 
       NOTE this includes constructors and destructors.
 
-      NOTE the current implementation desugars this to [fspec] but this is not
+      NOTE the current implementation desugars this to [wp_fptr] but this is not
            accurate according to the standard because a member function can not
            be cast to a regular function that takes an extra parameter.
-           We could fix this by splitting [fspec] more, but we are deferring that
+           We could fix this by splitting [wp_fptr] more, but we are deferring that
            for now.
 
            In practice we assume that the AST is well-typed, so the only way to
@@ -1127,27 +1127,27 @@ Section with_cpp.
    *)
   Definition mspec (tt : type_table) (this_type : type) (fun_type : type)
     : ptr -> list ptr -> (ptr -> epred) -> mpred :=
-    fspec tt (Tmember_func this_type fun_type).
+    wp_fptr tt (Tmember_func this_type fun_type).
 
   Lemma mspec_frame_fupd_strong tt1 tt2 t t0 v l Q1 Q2 :
     type_table_le tt1 tt2 ->
     (Forall v, Q1 v -* |={top}=> Q2 v)
     |-- mspec tt1 t t0 v l Q1 -* mspec tt2 t t0 v l Q2.
-  Proof. apply fspec_frame_fupd. Qed.
+  Proof. apply wp_fptr_frame_fupd. Qed.
 
   Lemma mspec_shift tt t t0 v l Q :
     (|={top}=> mspec tt t t0 v l (λ v, |={top}=> Q v)) |-- mspec tt t t0 v l Q.
-  Proof. apply fspec_shift. Qed.
+  Proof. apply wp_fptr_shift. Qed.
 
   Lemma mspec_frame:
     ∀ (t : type) (l : list ptr) (v : ptr) (t0 : type) (t1 : type_table) (Q Q' : ptr -> _),
       Forall v, Q v -* Q' v |-- mspec t1 t t0 v l Q -* mspec t1 t t0 v l Q'.
-  Proof. intros; apply fspec_frame. Qed.
+  Proof. intros; apply wp_fptr_frame. Qed.
 
   Lemma mspec_frame_fupd :
     ∀ (t : type) (l : list ptr) (v : ptr) (t0 : type) (t1 : type_table) (Q Q' : ptr -> _),
       (Forall v, Q v -* |={top}=> Q' v) |-- mspec t1 t t0 v l Q -* mspec t1 t t0 v l Q'.
-  Proof. intros; apply fspec_frame_fupd; reflexivity. Qed.
+  Proof. intros; apply wp_fptr_frame_fupd; reflexivity. Qed.
 End with_cpp.
 End WPE.
 

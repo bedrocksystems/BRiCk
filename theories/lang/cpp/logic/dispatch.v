@@ -97,7 +97,7 @@ Section with_cpp.
              (Q : forall (faddr : ptr) (cls_type : globname) (this_addr : ptr), mpred)
     : mpred :=
     Exists (path : list globname), (* denoteModule (resolve:=σ) tu ** *)
-      ((Exists q, this |-> identityR cls path q ** [| path <> nil |] ** True) //\\
+      ((Exists q, this |-> derivationR cls path q ** [| path <> nil |] ** True) //\\
       match get_impl cls path f with
       | Some (fa, cls, off) => Q fa cls (_offset_ptr this off)
       | None => (* the function was not found or the implementation was pure virtual *)

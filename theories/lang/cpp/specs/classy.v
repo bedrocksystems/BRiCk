@@ -79,7 +79,7 @@ Strategy expand
    [ let_pre_spec exact_spec ].
 
 Declare Scope pre_spec_scope.
-Delimit Scope pre_spec_scope with fspec.
+Delimit Scope pre_spec_scope with wp_fptr.
 Delimit Scope pre_spec_scope with pre_spec.
 
 Notation "'\with' x .. y X" :=

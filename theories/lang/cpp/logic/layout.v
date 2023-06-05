@@ -102,7 +102,7 @@ Section with_Σ.
       let f := {| f_name := fld.(mem_name) ; f_type := cls |} in
       let qt := mut_type fld q in
       _field f |-> R qt.2 qt.1) **
-    (if has_vtable st then identityR cls nil q else emp) **
+    (if has_vtable st then derivationR cls nil q else emp) **
     struct_paddingR q cls.
 
   (** implicit destruction of an aggregate *)
