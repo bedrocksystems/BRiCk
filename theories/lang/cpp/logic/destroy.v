@@ -208,7 +208,7 @@ invoking the destructor [dtor] for type [ty] on [this].
   destructors to have C calling convention. Arguments [this :: nil] is
   correct for member functions taking no arguments.
   *)
-  letI* p := mspec tu.(globals) ty (Tfunction Tvoid nil) dtor (this :: nil) in
+  letI* p := mspec tu.(types) ty (Tfunction Tvoid nil) dtor (this :: nil) in
   (**
   We inline [operand_receive] (which could be hoisted and shared).
   *)
@@ -304,7 +304,7 @@ End dtor.
 
 #[local] Definition wp_destroy_named_body `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (cls : globname) (this : ptr) (Q : epred) : mpred :=
-  match globals tu !! cls with
+  match tu.(types) !! cls with
   | Some (Gstruct s) =>
     (*
     In the current implementation, we generate destructors even when
@@ -375,7 +375,7 @@ Section named.
 
   Let wp_destroy_named_intro_body (tu : translation_unit)
       (cls : globname) (this : ptr) (Q : epred) : mpred :=
-    match globals tu !! cls with
+    match tu.(types) !! cls with
     | Some (Gstruct s) => wp_destructor tu (Tnamed cls) (_global s.(s_dtor)) this Q
     | Some (Gunion u) => wp_destructor tu (Tnamed cls) (_global u.(u_dtor)) this Q
     | _ => False
@@ -387,13 +387,13 @@ Section named.
   Proof. wp_destroy_named_unfold. destruct (_ !! _) as [[] |]; auto. Qed.
 
   Lemma wp_destroy_named_intro_struct tu cls s this Q :
-    globals tu !! cls = Some (Gstruct s) ->
+    tu.(types) !! cls = Some (Gstruct s) ->
     wp_destructor tu (Tnamed cls) (_global s.(s_dtor)) this Q
     |-- wp_destroy_named tu cls this Q.
   Proof. by rewrite -wp_destroy_named_intro=>->. Qed.
 
   Lemma wp_destroy_named_intro_union tu cls u this Q :
-    globals tu !! cls = Some (Gunion u) ->
+    tu.(types) !! cls = Some (Gunion u) ->
     wp_destructor tu (Tnamed cls) (_global u.(u_dtor)) this Q
     |-- wp_destroy_named tu cls this Q.
   Proof. by rewrite -wp_destroy_named_intro=>->. Qed.
@@ -404,13 +404,13 @@ Section named.
   Proof. by wp_destroy_named_unfold. Qed.
 
   Lemma wp_destroy_named_elim_struct tu cls s this Q :
-    globals tu !! cls = Some (Gstruct s) ->
+    tu.(types) !! cls = Some (Gstruct s) ->
     wp_destroy_named tu cls this Q
     |-- wp_destructor tu (Tnamed cls) (_global s.(s_dtor)) this Q.
   Proof. by rewrite wp_destroy_named_elim=>->. Qed.
 
   Lemma wp_destroy_named_elim_union tu cls u this Q :
-    globals tu !! cls = Some (Gunion u) ->
+    tu.(types) !! cls = Some (Gunion u) ->
     wp_destroy_named tu cls this Q
     |-- wp_destructor tu (Tnamed cls) (_global u.(u_dtor)) this Q.
   Proof. by rewrite wp_destroy_named_elim=>->. Qed.

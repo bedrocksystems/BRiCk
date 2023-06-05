@@ -528,7 +528,7 @@ apply: map_Forall_dec.
 (*
 TODOs for FM-216:
 1. prove [complete_type_table_dec] above with an efficient checker.
-2. add [bool_decide (complete_type_table globals = true]) to translation_unit;
+2. add [bool_decide (complete_type_table types = true]) to translation_unit;
    that's automatically proof-irrelevant, and proofs are just cheap [eq_refl].
 3. add any helper lemmas, say for proving equality of [translation_unit] from
    equality of the relevant componets.
@@ -582,7 +582,7 @@ Notation GlobalInitializer := (GlobalInitializer' type Expr).
     that will be run when the compilation unit is loaded.
 
     Note that C++ guarantees the order of some initialization, but
-    the order of template initialized globals is not specified by the
+    the order of template initialized global types is not specified by the
     standard.
 
     This means that, to be completely precise, this type needs to be
@@ -601,19 +601,19 @@ TODO: does linking induce a (non-commutative) monoid on object files? Is then
 a translation unit a "singleton" value in this monoid? *)
 Record translation_unit : Type :=
 { symbols    : symbol_table
-; globals    : type_table
+; types    : type_table
 ; initializer : InitializerBlock
 ; byte_order : endian
 }.
 
 (** These [Lookup] instances come with no theory; use instead the unfolding lemmas below and the `fin_maps` theory. *)
 #[global] Instance global_lookup : Lookup globname GlobDecl translation_unit :=
-  fun k m => m.(globals) !! k.
+  fun k m => m.(types) !! k.
 #[global] Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
   fun k m => m.(symbols) !! k.
 
 Lemma tu_lookup_globals (t : translation_unit) (n : globname) :
-  t !! n = t.(globals) !! n.
+  t !! n = t.(types) !! n.
 Proof. done. Qed.
 
 Lemma tu_lookup_symbols (t : translation_unit) (n : obj_name) :

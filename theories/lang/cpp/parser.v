@@ -191,7 +191,7 @@ Definition Dtype (name : globname) : translation_unitK :=
 
 (* Definition translation_unit_canon (c : translation_unit) : translation_unit := *)
 (*   {| symbols := avl.map_canon c.(symbols) *)
-(*    ; globals := avl.map_canon c.(globals) |}. *)
+(*    ; types := avl.map_canon c.(types) |}. *)
 
 Fixpoint decls' (ls : list translation_unitK) : translation_unitK :=
   match ls with
@@ -202,7 +202,7 @@ Fixpoint decls' (ls : list translation_unitK) : translation_unitK :=
 Definition decls ls (e : endian) : translation_unit :=
   decls' ls ∅ ∅ $ fun a b =>
   {| symbols := avl.map_canon a
-  ; globals := avl.map_canon b
+  ; types := avl.map_canon b
   ; initializer := nil (* FIXME *)
   ; byte_order := e |}.
 

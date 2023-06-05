@@ -139,7 +139,7 @@ Module Type Expr__newdelete.
             wp_args (targs, Ar_Definite) new_args (fun vs free =>
                 Exists sz al, [| size_of aty = Some sz |] ** [| has_type_prop sz Tsize_t |] ** [| align_of aty = Some al |] **
                 Reduce (alloc_size_t sz (fun p FR =>
-                |> fspec tu.(globals) nfty (_global new_fn.1) (p :: vs) (fun res => FR $
+                |> wp_fptr tu.(types) nfty (_global new_fn.1) (p :: vs) (fun res => FR $
                       Exists storage_ptr : ptr, res |-> primR (Tptr Tvoid) (cQp.mut 1) (Vptr storage_ptr) **
                         if bool_decide (storage_ptr = nullptr) then
                           [| new_args <> nil |] ** Q (Vptr storage_ptr) free
@@ -202,7 +202,7 @@ Module Type Expr__newdelete.
                      *)
                     Forall sz',
                       Reduce (alloc_size_t (sz' + sz) (fun psz FR =>
-                      |> fspec tu.(globals) nfty (_global new_fn.1) (psz :: vs) (fun res => FR $
+                      |> wp_fptr tu.(types) nfty (_global new_fn.1) (psz :: vs) (fun res => FR $
                         Exists storage_ptr : ptr, res |-> primR (Tptr Tvoid) (cQp.mut 1) (Vptr storage_ptr) **
                           if bool_decide (storage_ptr = nullptr) then
                             [| new_args <> nil |] ** Q (Vptr storage_ptr) free
@@ -258,7 +258,7 @@ Module Type Expr__newdelete.
         Definition delete_val tu (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
           let del_type := Tfunction Tvoid (Tptr Tvoid :: nil) in
           let del '(fn, ty) :=
-              alloc_pointer p (fun p' free => fspec tu.(globals) ty (_global fn) (p' :: nil) (fun p =>
+              alloc_pointer p (fun p' free => wp_fptr tu.(types) ty (_global fn) (p' :: nil) (fun p =>
                 operand_receive Tvoid p (fun _ => interp tu free Q)))
           in
           match erase_qualifiers ty with
@@ -278,7 +278,7 @@ Module Type Expr__newdelete.
         Proof.
           rewrite /delete_val; intros.
           iIntros "X"; repeat case_match; eauto; iApply alloc_pointer_frame; iIntros (??);
-          iApply fspec_frame; iIntros (?); iApply operand_receive_frame; iIntros (?); iApply interp_frame; done.
+          iApply wp_fptr_frame; iIntros (?); iApply operand_receive_frame; iIntros (?); iApply interp_frame; done.
         Qed.
 
         (** [resolve_dtor ty this Q] resolves the destructor for the object [this] (of type [ty]).
@@ -316,7 +316,7 @@ Module Type Expr__newdelete.
             Forall p t, Q p t -* Q' p t |-- resolve_dtor ty p Q -* resolve_dtor ty p Q'.
         Proof.
           rewrite /resolve_dtor; intros.
-          iIntros "X"; repeat case_match; eauto; try solve [ iApply fspec_frame; iIntros (?); eauto ].
+          iIntros "X"; repeat case_match; eauto; try solve [ iApply wp_fptr_frame; iIntros (?); eauto ].
           iApply resolve_virtual_frame. iIntros (???); iApply "X".
         Qed.
 
@@ -418,7 +418,7 @@ Module Type Expr__newdelete.
                           Note: we rely on the AST to have correctly resolved this since the dispatch is statically known.
                         *)
                        Reduce (alloc_pointer storage_ptr (fun p FR =>
-                         fspec tu.(globals) delete_fn.2 (_global delete_fn.1)
+                         wp_fptr tu.(types) delete_fn.2 (_global delete_fn.1)
                              (p :: nil) (fun p => operand_receive Tvoid p (fun _ => interp tu FR $ Q Vvoid free))))))))
         |-- wp_operand (Edelete true delete_fn e destroyed_type) Q.
 

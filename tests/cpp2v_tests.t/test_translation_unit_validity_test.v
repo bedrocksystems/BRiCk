@@ -21,7 +21,7 @@ Require Import test.test_translation_unit_validity_cpp.
 | H : In _ _ |- _ => simpl in *; intuition simplify_eq
 end : core.
 
-Goal complete_translation_unit (globals module) (symbols module).
+Goal complete_translation_unit module.(types) module.(symbols).
 Proof.
   rewrite /complete_translation_unit /complete_type_table /complete_symbol_table.
   (* split; (unshelve eapply map_Forall_to_list; refine _; [shelve..|]). *)
@@ -48,6 +48,6 @@ Module view_awl.
   Arguments avl.IM.Raw.Node {_} _ _ _ _ {_}. (* Hide AVL depth *)
 
   (* Only for debugging, disabled in CI. *)
-  (* Eval cbv in globals module. *)
-  (* Eval cbv in map snd $ map_to_list (globals module). *)
+  (* Eval cbv in module.(types). *)
+  (* Eval cbv in map snd $ map_to_list module.(types). *)
 End view_awl.

@@ -450,7 +450,7 @@ Proof. intros. by eapply complete_respects_sub_table_mut. Qed.
 (** ** Inclusion on [translation_unit] *)
 
 Record sub_module (a b : translation_unit) : Prop :=
-{ types_compat : type_table_le a.(globals) b.(globals)
+{ types_compat : type_table_le a.(types) b.(types)
 ; syms_compat : sym_table_le a.(symbols) b.(symbols)
 ; byte_order_compat : a.(byte_order) = b.(byte_order) }.
 
@@ -472,7 +472,7 @@ End sub_module.
 Definition module_le (a b : translation_unit) : bool :=
   Eval cbv beta iota zeta delta [ andb ] in
   bool_decide (a.(byte_order) = b.(byte_order)) &&
-  bool_decide (type_table_le a.(globals) b.(globals)) &&
+  bool_decide (type_table_le a.(types) b.(types)) &&
   bool_decide (sym_table_le a.(symbols) b.(symbols)).
 
 Theorem module_le_sound : forall a b, if module_le a b then
@@ -513,8 +513,8 @@ Proof. move=>/types_compat + Heq => /(_ _ _ Heq). rewrite -tu_lookup_globals. ea
 Lemma sub_modules_agree_globdecl tu1 tu2 tu3 nm gd1 gd2 :
   sub_module tu1 tu3 ->
   sub_module tu2 tu3 ->
-  tu1.(globals) !! nm = Some gd1 ->
-  tu2.(globals) !! nm = Some gd2 ->
+  tu1.(types) !! nm = Some gd1 ->
+  tu2.(types) !! nm = Some gd2 ->
   GlobDecl_ler gd1 gd2 \/ GlobDecl_ler gd2 gd1.
 Proof.
   move=> Hs1 Hs2
@@ -578,7 +578,7 @@ Proof. by destruct 1. Qed.
 
 Lemma complete_type_respects_sub_module tt1 tt2 t :
   sub_module tt2 tt1 ->
-  complete_type tt2.(globals) t -> complete_type tt1.(globals) t.
+  complete_type tt2.(types) t -> complete_type tt1.(types) t.
 Proof. move=> /types_compat Hsub Hct. exact: complete_type_respects_sub_table. Qed.
 
 

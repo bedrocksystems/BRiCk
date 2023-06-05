@@ -23,7 +23,7 @@ Section defs.
    *)
   Parameter wp_const : forall (tu : translation_unit) {σ : genv} (from to : cQp.t) (addr : ptr) (ty : type) (Q : mpred), mpred.
   Axiom wp_const_frame : forall tu tu' f t a ty (Q Q' : mpred),
-      type_table_le tu.(globals) tu'.(globals) ->
+      type_table_le tu.(types) tu'.(types) ->
       Q -* Q' |-- wp_const tu f t a ty Q -* wp_const tu' f t a ty Q'.
 
   Axiom wp_const_shift : forall tu f t a ty Q,
@@ -67,7 +67,7 @@ Section defs.
                     (seqN 0 sz) Q
 
       | Tnamed cls =>
-          match tu.(globals) !! cls with
+          match tu.(types) !! cls with
           | Some gd =>
               match gd with
               | Gunion u =>
@@ -86,7 +86,7 @@ Section defs.
               | Gstruct st =>
                   let do_identity Q :=
                     if has_vtable st then
-                      Exists path, addr |-> identityR cls path from ** (addr |-> identityR cls path to -* Q)
+                      Exists path, addr |-> derivationR cls path from ** (addr |-> derivationR cls path to -* Q)
                     else Q
                   in
                   (* TODO this is missing a change to [identity] *)

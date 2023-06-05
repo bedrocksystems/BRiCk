@@ -25,7 +25,7 @@ Section defs.
   Context `{Σ : cpp_logic}.
 
   (** object identity *)
-  Definition identityR {σ : genv} (cls : globname) (mdc : list globname)
+  Definition derivationR {σ : genv} (cls : globname) (mdc : list globname)
              (q : cQp.t) : Rep :=
     as_Rep (identity cls mdc q).
 
@@ -513,19 +513,19 @@ Section with_cpp.
     rewrite/tblockR=>-> ?. case_match; solve_cfrac_valid.
   Qed.
 
-  #[global] Instance identityR_timeless cls mdc q : Timeless (identityR cls mdc q) := _.
-  #[global] Instance identityR_cfractional cls mdc : CFractional (identityR cls mdc) := _.
-  #[global] Instance identityR_as_frac cls mdc :
-    AsCFractional0 (identityR cls mdc).
+  #[global] Instance derivationR_timeless cls mdc q : Timeless (derivationR cls mdc q) := _.
+  #[global] Instance derivationR_cfractional cls mdc : CFractional (derivationR cls mdc) := _.
+  #[global] Instance derivationR_as_frac cls mdc :
+    AsCFractional0 (derivationR cls mdc).
   Proof. solve_as_cfrac. Qed.
 
-  #[global] Instance identityR_strict_valid cls mdc q : Observe svalidR (identityR cls mdc q).
+  #[global] Instance derivationR_strict_valid cls mdc q : Observe svalidR (derivationR cls mdc q).
   Proof.
     red. eapply Rep_entails_at. intros.
     rewrite _at_as_Rep _at_pers svalidR_eq _at_as_Rep.
     apply identity_strict_valid.
   Qed.
-  #[global] Instance identity_not_null p cls path q : Observe [| p <> nullptr |] (p |-> identityR cls path q).
+  #[global] Instance identity_not_null p cls path q : Observe [| p <> nullptr |] (p |-> derivationR cls path q).
   Proof.
     red.
     iIntros "X".
@@ -648,7 +648,7 @@ Section with_cpp.
   Qed.
 End with_cpp.
 
-#[global] Typeclasses Opaque identityR.
+#[global] Typeclasses Opaque derivationR.
 #[global] Typeclasses Opaque type_ptrR validR svalidR.
 
 #[deprecated(note="since 2022-04-07; use `nonnullR` instead")]

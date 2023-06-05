@@ -46,7 +46,7 @@ Definition genv_byte_order (g : genv) : endian :=
   g.(genv_tu).(byte_order).
 Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).
 Definition genv_type_table (g : genv) : type_table :=
-  g.(genv_tu).(globals).
+  g.(genv_tu).(types).
 
 Module integral_type.
   Record t : Set := mk { size : int_type.t ; signedness : signed }.
@@ -170,8 +170,8 @@ Qed.
 Lemma ODR : forall {σ tu1 tu2},
     tu1 ⊧ σ ->
     tu2 ⊧ σ -> forall nm gd1 gd2,
-        tu1.(globals) !! nm = Some gd1 ->
-        tu2.(globals) !! nm = Some gd2 ->
+        tu1.(types) !! nm = Some gd1 ->
+        tu2.(types) !! nm = Some gd2 ->
         GlobDecl_compat gd1 gd2.
 Proof.
   intros.

@@ -43,21 +43,21 @@ Section with_cpp.
      TODO replace this with a version that is built by well-founded recursion.
    *)
   #[local]
-  Fixpoint identitiesR' (f : nat) (include_base : bool) (cls : globname) (path : list globname) (q : cQp.t) : Rep :=
+  Fixpoint derivationsR' (f : nat) (include_base : bool) (cls : globname) (path : list globname) (q : cQp.t) : Rep :=
     match f with
     | 0 => False
     | S f =>
       match tu !! cls with
       | Some (Gstruct st) =>
-        (if include_base && has_vtable st then identityR cls path q else emp) **
+        (if include_base && has_vtable st then derivationR cls path q else emp) **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
-           _base cls base |-> identitiesR' f true base (path ++ [base]) q
+           _base cls base |-> derivationsR' f true base (path ++ [base]) q
       | _ => False
       end
     end.
 
-  (** [this |-> identitiesR include_base cls path q] is all of the object
+  (** [this |-> derivationsR include_base cls path q] is all of the object
       identities of the [this] object (of type [cls]) where the most derived
       class is reached from [cls] using [path]. For example, consider the
       following
@@ -66,32 +66,32 @@ Section with_cpp.
       class B : public A {};
       class C : public B {};
       ```
-      here, [identitiesR true "::B" ["::C"] q] produces:
+      here, [derivationsR true "::B" ["::C"] q] produces:
       [[
-      identityR "::B" ["::C","::B"] q **
-      _base "::B" "::A" |-> identityR "::A" ["::C","::B","::A"] q
+      derivationR "::B" ["::C","::B"] q **
+      _base "::B" "::A" |-> derivationR "::A" ["::C","::B","::A"] q
       ]]
 
-      while [identitiesR true "::C" [] q] produces all the identities for A, B and C:
+      while [derivationsR true "::C" [] q] produces all the identities for A, B and C:
       [[
-      identityR "::C" ["::C"] q **
-      _base "::C" "::B" |-> identityR true "::B" ["::C"] q
+      derivationR "::C" ["::C"] q **
+      _base "::C" "::B" |-> derivationR true "::B" ["::C"] q
       ]]
    *)
-  Definition identitiesR : bool -> globname -> list globname -> cQp.t -> Rep :=
-    let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
+  Definition derivationsR : bool -> globname -> list globname -> cQp.t -> Rep :=
+    let size := avl.IM.cardinal resolve.(genv_tu).(types) in
     (* ^ the number of global entries is an upper bound on the height of the
        derivation tree.
      *)
-    identitiesR' size.
+    derivationsR' size.
 
   (** [wp_init_identity cls Q] updates the identities of "this" by updating the
       [identity] of all base classes (transitively) and producing the new identity
       for "this".
    *)
   Definition wp_init_identity (cls : globname) (Q : mpred) : Rep :=
-    identitiesR false cls [] (cQp.mut 1) **
-    (identitiesR true cls [cls] (cQp.mut 1) -* pureR Q).
+    derivationsR false cls [] (cQp.mut 1) **
+    (derivationsR true cls [cls] (cQp.mut 1) -* pureR Q).
 
   Theorem wp_init_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- wp_init_identity cls Q' -* wp_init_identity cls Q.
@@ -106,8 +106,8 @@ Section with_cpp.
       classes to remove [cls] as the most derived class.
    *)
   Definition wp_revert_identity (cls : globname) (Q : mpred) : Rep :=
-    identitiesR true cls [cls] (cQp.mut 1) **
-    (identitiesR false cls [] (cQp.mut 1) -* pureR Q).
+    derivationsR true cls [cls] (cQp.mut 1) **
+    (derivationsR false cls [] (cQp.mut 1) -* pureR Q).
 
   Theorem wp_revert_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- wp_revert_identity cls Q' -* wp_revert_identity cls Q.
@@ -119,7 +119,7 @@ Section with_cpp.
 
   (** sanity chect that initialization and revert are inverses *)
   Corollary wp_init_revert cls Q p :
-    let REQ := identitiesR false cls [] (cQp.mut 1) in
+    let REQ := derivationsR false cls [] (cQp.mut 1) in
         p |-> REQ ** Q
     |-- p |-> wp_init_identity cls (p |-> wp_revert_identity cls (p |-> REQ ** Q)).
   Proof.
@@ -633,5 +633,5 @@ Section with_cpp.
 
 End with_cpp.
 (* conveniences for the common pattern *)
-Notation init_identityR cls path q := (identityR cls%bs (path%bs ++ [cls%bs]) q).
-Notation init_identitiesR cls path q := (identitiesR cls%bs (path%bs ++ [cls%bs]) q).
+Notation init_derivationR cls path q := (derivationR cls%bs (path%bs ++ [cls%bs]) q).
+Notation init_derivationsR cls path q := (derivationsR cls%bs (path%bs ++ [cls%bs]) q).
