@@ -25,7 +25,6 @@ Lemma cancel_unwrapN {Phant} (x : WrapN Phant) : MkWrapN (unwrapN x) = x.
 Proof. done. Qed.
 
 
-(** This instance is useful in combination with [Refine1_Cancel]. *)
 #[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
   Cancel eq (@MkWrapN Phant) unwrapN.
 Proof. exact cancel_unwrapN. Qed.
