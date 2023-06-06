@@ -46,9 +46,9 @@
 </div>
 
 <div class="doc">
-<a id="lab196"></a><h1 class="section">Semantics of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
+<a id="lab198"></a><h1 class="section">Semantics of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
 
-<a id="lab197"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
+<a id="lab199"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
 
  
 </div>
@@ -71,19 +71,19 @@
 </div>
 
 <div class="doc">
-<a id="lab198"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
+<a id="lab200"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
 
    *
-<a id="lab199"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
+<a id="lab201"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
 
-<a id="lab200"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
+<a id="lab202"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
 
-<a id="lab201"></a><h1 class="section">the behavior of various constructs.</h1>
+<a id="lab203"></a><h1 class="section">the behavior of various constructs.</h1>
 
    *
-<a id="lab202"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
+<a id="lab204"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
 
-<a id="lab203"></a><h1 class="section">an issue.</h1>
+<a id="lab205"></a><h1 class="section">an issue.</h1>
 
    
 <div class="paragraph"> </div>
@@ -129,8 +129,8 @@
 
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Expr__newdelete.wp_init" class="idref" href="#Expr__newdelete.wp_init"><span class="id" title="abbreviation">wp_init</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_init"><span class="id" title="axiom">wp_init</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.tu"><span class="id" title="variable">tu</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#70cf4ae13e57eff91798dfc327124f70"><span class="id" title="variable">ρ</span></a>).<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Expr__newdelete.wp_initialize" class="idref" href="#Expr__newdelete.wp_initialize"><span class="id" title="abbreviation">wp_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wp_initialize"><span class="id" title="definition">wp_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.tu"><span class="id" title="variable">tu</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#70cf4ae13e57eff91798dfc327124f70"><span class="id" title="variable">ρ</span></a>).<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Expr__newdelete.default_initialize" class="idref" href="#Expr__newdelete.default_initialize"><span class="id" title="abbreviation">default_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.default_initialize"><span class="id" title="definition">default_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.tu"><span class="id" title="variable">tu</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Expr__newdelete.wp_initialize" class="idref" href="#Expr__newdelete.wp_initialize"><span class="id" title="abbreviation">wp_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize"><span class="id" title="definition">wp_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.tu"><span class="id" title="variable">tu</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#70cf4ae13e57eff91798dfc327124f70"><span class="id" title="variable">ρ</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Expr__newdelete.default_initialize" class="idref" href="#Expr__newdelete.default_initialize"><span class="id" title="abbreviation">default_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#default_initialize"><span class="id" title="definition">default_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.tu"><span class="id" title="variable">tu</span></a>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Expr__newdelete.wp_operand" class="idref" href="#Expr__newdelete.wp_operand"><span class="id" title="abbreviation">wp_operand</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_operand"><span class="id" title="axiom">wp_operand</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.tu"><span class="id" title="variable">tu</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#70cf4ae13e57eff91798dfc327124f70"><span class="id" title="variable">ρ</span></a>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Expr__newdelete.wp_args" class="idref" href="#Expr__newdelete.wp_args"><span class="id" title="abbreviation">wp_args</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.call.html#wp_args"><span class="id" title="definition">wp_args</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.tu"><span class="id" title="variable">tu</span></a> <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#70cf4ae13e57eff91798dfc327124f70"><span class="id" title="variable">ρ</span></a>).<br/>
 

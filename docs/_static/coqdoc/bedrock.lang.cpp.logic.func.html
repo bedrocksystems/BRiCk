@@ -66,6 +66,7 @@ Early to get the right <span class="inlinecode"><a class="idref" href="bedrock.l
 <br/>
 <span class="id" title="keyword">Arguments</span> <a class="idref" href="bedrock.lang.bi.errors.html#Errors.ERROR"><span class="id" title="axiom">ERROR</span></a> {<span class="id" title="var">_</span> <span class="id" title="var">_</span>} <span class="id" title="var">_</span>%<span class="id" title="var">bs</span>.<br/>
 <span class="id" title="keyword">Arguments</span> <a class="idref" href="bedrock.lang.bi.errors.html#Errors.UNSUPPORTED"><span class="id" title="axiom">UNSUPPORTED</span></a> {<span class="id" title="var">_</span> <span class="id" title="var">_</span>} <span class="id" title="var">_</span>%<span class="id" title="var">bs</span>.<br/>
+#[<span class="id" title="var">local</span>] <span class="id" title="var">Arguments</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wpi"><span class="id" title="definition">wpi</span></a> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
 
 <br/>
 <span class="id" title="keyword">Section</span> <a id="with_cpp" class="idref" href="#with_cpp"><span class="id" title="section">with_cpp</span></a>.<br/>
@@ -74,7 +75,7 @@ Early to get the right <span class="inlinecode"><a class="idref" href="bedrock.l
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="wp" class="idref" href="#wp"><span class="id" title="abbreviation">wp</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp"><span class="id" title="axiom">wp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="wpi" class="idref" href="#wpi"><span class="id" title="abbreviation">wpi</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wpi"><span class="id" title="definition">wpi</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="wpi" class="idref" href="#wpi"><span class="id" title="abbreviation">wpi</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wpi"><span class="id" title="definition">wpi</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="wp_init" class="idref" href="#wp_init"><span class="id" title="abbreviation">wp_init</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_init"><span class="id" title="axiom">wp_init</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
 &nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="interp" class="idref" href="#interp"><span class="id" title="abbreviation">interp</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp"><span class="id" title="abbreviation">interp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a>).<br/>
 
@@ -96,7 +97,7 @@ Early to get the right <span class="inlinecode"><a class="idref" href="bedrock.l
 </div>
 
 <div class="doc">
-<a id="lab211"></a><h1 class="section">Aggregate identity</h1>
+<a id="lab213"></a><h1 class="section">Aggregate identity</h1>
 
 </div>
 <div class="code">
@@ -223,7 +224,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab212"></a><h1 class="section">Binding parameters</h1>
+<a id="lab214"></a><h1 class="section">Binding parameters</h1>
 
 </div>
 <div class="code">
@@ -320,11 +321,11 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab213"></a><h1 class="section">Weakest preconditions of the flavors of C++ "functions"</h1>
+<a id="lab215"></a><h1 class="section">Weakest preconditions of the flavors of C++ "functions"</h1>
 
 <div class="paragraph"> </div>
 
-<a id="lab214"></a><h2 class="section">the weakest precondition of a function</h2>
+<a id="lab216"></a><h2 class="section">the weakest precondition of a function</h2>
 
 </div>
 <div class="code">
@@ -354,7 +355,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab215"></a><h2 class="section">The weakest precondition of a method</h2>
+<a id="lab217"></a><h2 class="section">The weakest precondition of a method</h2>
 
 
 <div class="paragraph"> </div>
@@ -391,7 +392,7 @@ sanity chect that initialization and revert are inverses
 </div>
 
 <div class="doc">
-<a id="lab216"></a><h2 class="section">Weakest precondition of a constructor</h2>
+<a id="lab218"></a><h2 class="section">Weakest precondition of a constructor</h2>
 
 </div>
 <div class="code">
@@ -415,7 +416,7 @@ sanity chect that initialization and revert are inverses
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;there&nbsp;is&nbsp;no&nbsp;initializer&nbsp;for&nbsp;this&nbsp;member,&nbsp;so&nbsp;we&nbsp;"default&nbsp;initialize"&nbsp;it<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(see&nbsp;https://eel.is/c++draft/dcl.initgeneral-7 )
          *)</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.default_initialize"><span class="id" title="definition">default_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a> <span class="id" title="var">m</span>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#mem_type"><span class="id" title="projection">mem_type</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#default_initialize"><span class="id" title="definition">default_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#with_cpp.tu"><span class="id" title="variable">tu</span></a> <span class="id" title="var">m</span>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#mem_type"><span class="id" title="projection">mem_type</span></a>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="bedrock.lang.cpp.logic.func.html#this:94"><span class="id" title="variable">this</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#b9e497c99ddaa35509f86113be739391"><span class="id" title="notation">,,</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM._field"><span class="id" title="abbreviation">_field</span></a> {| <a class="idref" href="bedrock.lang.cpp.syntax.names.html#f_type"><span class="id" title="projection">f_type</span></a> := <a class="idref" href="bedrock.lang.cpp.logic.func.html#cls:93"><span class="id" title="variable">cls</span></a> ; <a class="idref" href="bedrock.lang.cpp.syntax.names.html#f_name"><span class="id" title="projection">f_name</span></a> := <span class="id" title="var">m</span>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#mem_name"><span class="id" title="projection">mem_name</span></a>) |})<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">fun</span> <a id="frees:101" class="idref" href="#frees:101"><span class="id" title="binder">frees</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.func.html#interp"><span class="id" title="abbreviation">interp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#frees:101"><span class="id" title="variable">frees</span></a> (<a class="idref" href="bedrock.lang.cpp.logic.func.html#wpi_members:98"><span class="id" title="definition">wpi_members</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#ca896faf1369b43d8d2aac1a77a2c82b"><span class="id" title="variable">ρ</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#cls:93"><span class="id" title="variable">cls</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#this:94"><span class="id" title="variable">this</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#members:95"><span class="id" title="variable">members</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#inits:96"><span class="id" title="variable">inits</span></a> <a class="idref" href="bedrock.lang.cpp.logic.func.html#Q:97"><span class="id" title="variable">Q</span></a>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">i</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#::list_scope:x_'::'_x"><span class="id" title="notation">::</span></a> <span class="id" title="var">is'</span> =&gt;<br/>
@@ -471,7 +472,7 @@ sanity chect that initialization and revert are inverses
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">case_match</span>; <span class="id" title="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">case_match</span>; <span class="id" title="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iIntros</span> "a".<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wpi_frame"><span class="id" title="lemma">wpi_frame</span></a> =&gt; //.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wpi_frame"><span class="id" title="lemma">wpi_frame</span></a> =&gt; //.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">iApply</span> <span class="id" title="var">IHbases</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
@@ -483,12 +484,13 @@ sanity chect that initialization and revert are inverses
 &nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">induction</span> <span class="id" title="var">flds</span> =&gt; /=; <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">intros</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">case_match</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "a"; <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.default_initialize_frame"><span class="id" title="lemma">default_initialize_frame</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "a"; <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#default_initialize_frame"><span class="id" title="lemma">default_initialize_frame</span></a>; [<span class="id" title="var">done</span>|].<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iIntros</span> (?); <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp_frame"><span class="id" title="lemma">interp_frame</span></a>. <span class="id" title="tactic">by</span> <span class="id" title="var">iApply</span> <span class="id" title="var">IHflds</span>. }<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">case_match</span>; <span class="id" title="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">case_match</span>; <span class="id" title="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iIntros</span> "a".<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wp_initialize_frame"><span class="id" title="lemma">wp_initialize_frame</span></a> =&gt; //; <span class="id" title="var">iIntros</span> (?); <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp_frame"><span class="id" title="lemma">interp_frame</span></a>; <span class="id" title="tactic">by</span> <span class="id" title="var">iApply</span> <span class="id" title="var">IHflds</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wpi_frame"><span class="id" title="lemma">wpi_frame</span></a> =&gt; //.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">iApply</span> <span class="id" title="var">IHflds</span>. }<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>
@@ -570,8 +572,8 @@ initialize the bases, then the identity, then the members
 &nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "K"; <span class="id" title="var">iApply</span> "K". }<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "K".<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="var">case_match</span>; <span class="id" title="tactic">eauto</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wp_initialize_frame"><span class="id" title="lemma">wp_initialize_frame</span></a>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iIntros</span> (?). <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp_frame"><span class="id" title="lemma">interp_frame</span></a>. <span class="id" title="var">iApply</span> "K". }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wpi_frame"><span class="id" title="lemma">wpi_frame</span></a>; [<span class="id" title="var">done</span>|].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> "K". }<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>
@@ -696,7 +698,7 @@ A special version of return to match the C++ rule that
 </div>
 
 <div class="doc">
-<a id="lab217"></a><h2 class="section">Weakest precondition of a destructor</h2>
+<a id="lab219"></a><h2 class="section">Weakest precondition of a destructor</h2>
 
 </div>
 <div class="code">

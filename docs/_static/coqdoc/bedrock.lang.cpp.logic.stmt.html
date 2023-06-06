@@ -71,8 +71,8 @@ weakest pre-condition for statements
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Stmt.wp" class="idref" href="#Stmt.wp"><span class="id" title="abbreviation">wp</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp"><span class="id" title="axiom">wp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.with_resolver.tu"><span class="id" title="variable">tu</span></a>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Stmt.interp" class="idref" href="#Stmt.interp"><span class="id" title="abbreviation">interp</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp"><span class="id" title="abbreviation">interp</span></a> <a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.with_resolver.tu"><span class="id" title="variable">tu</span></a>).<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Stmt.wp_initialize" class="idref" href="#Stmt.wp_initialize"><span class="id" title="abbreviation">wp_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wp_initialize"><span class="id" title="definition">wp_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.with_resolver.tu"><span class="id" title="variable">tu</span></a>).<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Stmt.default_initialize" class="idref" href="#Stmt.default_initialize"><span class="id" title="abbreviation">default_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.default_initialize"><span class="id" title="definition">default_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.with_resolver.tu"><span class="id" title="variable">tu</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Stmt.wp_initialize" class="idref" href="#Stmt.wp_initialize"><span class="id" title="abbreviation">wp_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize"><span class="id" title="definition">wp_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.with_resolver.tu"><span class="id" title="variable">tu</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Notation</span> <a id="Stmt.default_initialize" class="idref" href="#Stmt.default_initialize"><span class="id" title="abbreviation">default_initialize</span></a> := (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#default_initialize"><span class="id" title="definition">default_initialize</span></a> <a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.with_resolver.tu"><span class="id" title="variable">tu</span></a>).<br/>
 
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> <span class="id" title="var">Q</span> : <a class="idref" href="bedrock.lang.cpp.logic.wp.html#Kpred"><span class="id" title="abbreviation">Kpred</span></a>.<br/>
@@ -93,7 +93,7 @@ weakest pre-condition for statements
 </div>
 
 <div class="doc">
-<a id="lab204"></a><h1 class="section">Expression Evaluation</h1>
+<a id="lab206"></a><h1 class="section">Expression Evaluation</h1>
 
 </div>
 <div class="code">
@@ -107,7 +107,7 @@ weakest pre-condition for statements
 </div>
 
 <div class="doc">
-<a id="lab205"></a><h1 class="section">Declarations</h1>
+<a id="lab207"></a><h1 class="section">Declarations</h1>
 
 </div>
 <div class="code">
@@ -141,7 +141,8 @@ weakest pre-condition for statements
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.wp_decl_var"><span class="id" title="definition">wp_decl_var</span></a>; <span class="id" title="tactic">intros</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iIntros</span> "X Y" (<span class="id" title="var">addr</span>); <span class="id" title="var">iSpecialize</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#bc9fd2481486dc1ddc28ccbc3ddae226"><span class="id" title="notation">(</span></a>"Y" <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#bc9fd2481486dc1ddc28ccbc3ddae226"><span class="id" title="notation">$!</span></a> <span class="id" title="var">addr</span><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#bc9fd2481486dc1ddc28ccbc3ddae226"><span class="id" title="notation">)</span></a>; <span class="id" title="var">iRevert</span> "Y".<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">case_match</span>;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wp_initialize_frame"><span class="id" title="lemma">wp_initialize_frame</span></a> | <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.default_initialize_frame"><span class="id" title="lemma">default_initialize_frame</span></a> ];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize_frame"><span class="id" title="lemma">wp_initialize_frame</span></a>; [<span class="id" title="var">done</span>|]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#default_initialize_frame"><span class="id" title="lemma">default_initialize_frame</span></a>; [<span class="id" title="var">done</span>|] ];<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iIntros</span> (?); <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.destroy.html#interp_frame"><span class="id" title="lemma">interp_frame</span></a>; <span class="id" title="var">iApply</span> "X".<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
@@ -188,8 +189,8 @@ weakest pre-condition for statements
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iIntros</span> (??) "Z". <span class="id" title="var">iRevert</span> "Z". <span class="id" title="var">iApply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">(</span></a><span class="id" title="var">IHl</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">with</span></a> "x"<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">)</span></a>; <span class="id" title="tactic">eauto</span>. } }<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">case_match</span>; <span class="id" title="tactic">eauto</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">case_match</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "? [$ X]"; <span class="id" title="var">iRevert</span> "X"; <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.wp_initialize_frame"><span class="id" title="lemma">wp_initialize_frame</span></a> =&gt; //; <span class="id" title="var">iIntros</span> (?); <span class="id" title="var">done</span>. }<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "? [$ X]"; <span class="id" title="var">iRevert</span> "X"; <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#IN.default_initialize_frame"><span class="id" title="lemma">default_initialize_frame</span></a> =&gt; //. } }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "? [$ X]"; <span class="id" title="var">iRevert</span> "X"; <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize_frame"><span class="id" title="lemma">wp_initialize_frame</span></a> =&gt; //; <span class="id" title="var">iIntros</span> (?); <span class="id" title="var">done</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">iIntros</span> "? [$ X]"; <span class="id" title="var">iRevert</span> "X"; <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#default_initialize_frame"><span class="id" title="lemma">default_initialize_frame</span></a> =&gt; //. } }<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>
@@ -216,7 +217,7 @@ weakest pre-condition for statements
 </div>
 
 <div class="doc">
-<a id="lab206"></a><h1 class="section">Blocks</h1>
+<a id="lab208"></a><h1 class="section">Blocks</h1>
 
 </div>
 <div class="code">
@@ -288,7 +289,7 @@ weakest pre-condition for statements
 </div>
 
 <div class="doc">
-<a id="lab207"></a><h1 class="section">Loops</h1>
+<a id="lab209"></a><h1 class="section">Loops</h1>
 
 </div>
 <div class="code">
@@ -359,7 +360,7 @@ weakest pre-condition for statements
 </div>
 
 <div class="doc">
-<a id="lab208"></a><h2 class="section">`do` loops</h2>
+<a id="lab210"></a><h2 class="section">`do` loops</h2>
 
 </div>
 <div class="code">
@@ -383,7 +384,7 @@ weakest pre-condition for statements
 </div>
 
 <div class="doc">
-<a id="lab209"></a><h1 class="section">Return</h1>
+<a id="lab211"></a><h1 class="section">Return</h1>
 
 </div>
 <div class="code">
@@ -417,7 +418,7 @@ weakest pre-condition for statements
 </div>
 
 <div class="doc">
-<a id="lab210"></a><h1 class="section">Control flow: `break`, `continue`</h1>
+<a id="lab212"></a><h1 class="section">Control flow: `break`, `continue`</h1>
 
 </div>
 <div class="code">
