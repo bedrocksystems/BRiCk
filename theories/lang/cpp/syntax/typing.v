@@ -93,15 +93,73 @@ Fixpoint drop_qualifiers (t : type) : type :=
   | _ => t
   end.
 
-Lemma decompose_type_drop t : (decompose_type t).2 = drop_qualifiers t.
-Proof. induction t => //. by rewrite decompose_type_qual. Qed.
+#[global] Hint Opaque erase_qualifiers : typeclass_instances.
+#[global] Instance erase_qualifiers_unqualified ty : Unqualified (erase_qualifiers ty).
+Proof. induction ty; cbn; auto with typeclass_instances. Qed.
 
-Lemma decompose_erase' t :
+#[global] Hint Opaque drop_qualifiers : typeclass_instances.
+#[global] Instance drop_qualifiers_unqualified ty : Unqualified (drop_qualifiers ty).
+Proof. induction ty; cbn; auto with typeclass_instances. Qed.
+
+Lemma erase_qualifiers_qual_norm' q t :
+  erase_qualifiers t = qual_norm' (fun _ t => erase_qualifiers t) q t.
+Proof. by elim: (qual_norm'_ok _ q t). Qed.
+Lemma erase_qualifiers_qual_norm t :
+  erase_qualifiers t = qual_norm (fun _ t => erase_qualifiers t) t.
+Proof. apply erase_qualifiers_qual_norm'. Qed.
+Lemma erase_qualifiers_decompose_type t :
   erase_qualifiers t = erase_qualifiers (decompose_type t).2.
-Proof. induction t => //. by rewrite decompose_type_qual. Qed.
-Lemma decompose_erase p t :
+Proof. by rewrite erase_qualifiers_qual_norm qual_norm_decompose_type. Qed.
+
+Lemma drop_qualifiers_qual_norm' q t :
+  drop_qualifiers t = qual_norm' (fun _ t => drop_qualifiers t) q t.
+Proof. by elim: (qual_norm'_ok _ q t). Qed.
+Lemma drop_qualifiers_qual_norm t :
+  drop_qualifiers t = qual_norm (fun _ t => drop_qualifiers t) t.
+Proof. apply drop_qualifiers_qual_norm'. Qed.
+Lemma drop_qualifiers_decompose_type t :
+  drop_qualifiers t = drop_qualifiers (decompose_type t).2.
+Proof. by rewrite drop_qualifiers_qual_norm qual_norm_decompose_type. Qed.
+
+Lemma drop_qualifiers_unqual t : Unqualified t -> drop_qualifiers t = t.
+Proof. destruct t; cbn; auto. by move/unqualified_qual. Qed.
+
+Lemma erase_qualifiers_idemp t : erase_qualifiers (erase_qualifiers t) = erase_qualifiers t.
+Proof.
+  move: t. fix IHt 1=>t.
+  destruct t as [| | | | | | | | |cc ar ret args| | | | | |]; cbn; auto with f_equal.
+  { (* functions *) rewrite IHt. f_equal. induction args; cbn; auto with f_equal. }
+Qed.
+Lemma drop_qualifiers_idemp t : drop_qualifiers (drop_qualifiers t) = drop_qualifiers t.
+Proof. by rewrite drop_qualifiers_unqual. Qed.
+
+Lemma drop_erase_qualifiers t : drop_qualifiers (erase_qualifiers t) = erase_qualifiers t.
+Proof. by rewrite drop_qualifiers_unqual. Qed.
+Lemma erase_drop_qualifiers t : erase_qualifiers (drop_qualifiers t) = erase_qualifiers t.
+Proof. induction t; cbn; auto. Qed.
+
+#[deprecated(since="20230531", note="Use [drop_erase_qualifiers]")]
+Notation drop_erase := drop_erase_qualifiers.
+#[deprecated(since="20230531", note="Use [erase_drop_qualifiers]")]
+Notation erase_drop := drop_erase_qualifiers.
+
+Lemma erase_drop_idemp_deprecated ty :
+  erase_qualifiers ty = ty -> drop_qualifiers ty = ty.
+Proof. move=><-. by rewrite drop_erase_qualifiers. Qed.
+#[deprecated(since="20230531", note="Use [drop_erase_qualifiers] or [drop_qualifiers_unqual]")]
+Notation erase_drop_idemp := erase_drop_idemp_deprecated.
+
+Lemma decompose_type_drop t : (decompose_type t).2 = drop_qualifiers t.
+Proof.
+  induction (decompose_type_ok t).
+  by rewrite drop_qualifiers_unqual. done.
+Qed.
+
+Lemma decompose_erase_deprecated p t :
   decompose_type t = p -> erase_qualifiers t = erase_qualifiers p.2.
-Proof. intros <-. apply decompose_erase'. Qed.
+Proof. intros <-. by rewrite erase_qualifiers_decompose_type. Qed.
+#[deprecated(since="20230531", note="Use [erase_qualifiers_decompose_type]")]
+Notation decompose_erase := decompose_erase_deprecated.
 
 Lemma unqual_drop_qualifiers ty tq ty' : drop_qualifiers ty <> Tqualified tq ty'.
 Proof. by induction ty. Qed.
@@ -115,10 +173,13 @@ Proof.
   { by destruct (tqualified'_ok q t). }
   { done. }
 Qed.
-
-Lemma erase_drop_idemp ty :
-  erase_qualifiers ty = ty -> drop_qualifiers ty = ty.
-Proof. by destruct ty => // /unqual_erase_qualifiers. Qed.
+Lemma drop_qualifiers_tqualified q t :
+  drop_qualifiers (tqualified q t) = drop_qualifiers t.
+Proof.
+  induction (tqualified_ok q t).
+  { by destruct (tqualified'_ok q t). }
+  { done. }
+Qed.
 
 (* Lemmas for all [type] constructors; in constructor order for easy review. *)
 Lemma drop_qualifiers_Tptr : forall [ty ty'],
@@ -166,13 +227,6 @@ Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
 Lemma drop_qualifiers_Tnullptr : forall [ty],
     drop_qualifiers ty = Tnullptr -> erase_qualifiers ty = Tnullptr.
 Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
-
-
-Lemma drop_erase : forall t, drop_qualifiers (erase_qualifiers t) = erase_qualifiers t.
-Proof. induction t; simpl; eauto. Qed.
-
-Lemma erase_drop : forall t, erase_qualifiers (drop_qualifiers t) = erase_qualifiers t.
-Proof. induction t; simpl; eauto. Qed.
 
 (** simplify instances where you have [drop_qualifiers ty = Txxx ..] for some [Txxx]. *)
 (* Same order as above, for easier review. *)
@@ -282,6 +336,23 @@ Definition is_value_type (t : type) : bool :=
   | Tvoid => true
   | _ => false
   end.
+
+Lemma is_value_type_erase_qualifiers ty :
+  is_value_type (erase_qualifiers ty) = is_value_type ty.
+Proof. induction ty; cbn; auto. Qed.
+Lemma is_value_type_drop_qualifiers ty :
+  is_value_type (drop_qualifiers ty) = is_value_type ty.
+Proof. induction ty; cbn; auto. Qed.
+
+Lemma is_value_type_qual_norm' q t :
+  is_value_type t = qual_norm' (fun _ t' => is_value_type t') q t.
+Proof. by elim: (qual_norm'_ok _ q t). Qed.
+Lemma is_value_type_qual_norm t :
+  is_value_type t = qual_norm (fun _ t' => is_value_type t') t.
+Proof. apply is_value_type_qual_norm'. Qed.
+Lemma is_value_type_decompose_type t :
+  is_value_type t = is_value_type (decompose_type t).2.
+Proof. by rewrite is_value_type_qual_norm qual_norm_decompose_type. Qed.
 
 (**
 Setting aside uninstantiated template arguments, there's a total

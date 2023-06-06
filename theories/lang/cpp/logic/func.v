@@ -18,6 +18,7 @@ From bedrock.lang.cpp.logic Require Import
 
 Arguments ERROR {_ _} _%bs.
 Arguments UNSUPPORTED {_ _} _%bs.
+#[local] Arguments wpi : simpl never.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
@@ -342,12 +343,13 @@ Section with_cpp.
   Proof.
     induction flds => /=; eauto; intros.
     case_match.
-    { iIntros "a"; iApply default_initialize_frame.
+    { iIntros "a"; iApply default_initialize_frame; [done|].
       iIntros (?); iApply interp_frame. by iApply IHflds. }
     { case_match; eauto.
       case_match; eauto.
       iIntros "a".
-      iApply wp_initialize_frame => //; iIntros (?); iApply interp_frame; by iApply IHflds. }
+      iApply wpi_frame => //.
+      by iApply IHflds. }
   Qed.
 
   Definition wp_struct_initializer_list (s : Struct) (ρ : region) (cls : globname) (this : ptr)
@@ -420,8 +422,8 @@ Section with_cpp.
     { iIntros "K"; iApply "K". }
     { iIntros "K".
       repeat case_match; eauto.
-      iApply wp_initialize_frame.
-      iIntros (?). iApply interp_frame. iApply "K". }
+      iApply wpi_frame; [done|].
+      iApply "K". }
   Qed.
 
   (* [type_validity ty p] is the pointer validity of a class that is learned

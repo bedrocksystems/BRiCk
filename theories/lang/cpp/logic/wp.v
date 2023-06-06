@@ -55,6 +55,8 @@ Module FreeTemps.
   | sym l r : l ≡ r -> r ≡ l
   | trans a b c : a ≡ b -> b ≡ c -> a ≡ c
 
+  | delete_ref ty p : delete (Tref ty) p ≡ delete (Trv_ref ty) p
+
   | seqA x y z : x >*> (y >*> z) ≡ (x >*> y) >*> z
   | seq_id_unitL l : 1 >*> l ≡ l
   | seq_id_unitR l : l >*> 1 ≡ l
