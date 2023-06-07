@@ -32,7 +32,7 @@
 ################################################
 
 variables:
-  LLVM_CUR_MAJ_VER: "14"
+  LLVM_CUR_MAJ_VER: "16"
   docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
   fm_docs_img: ${docker_img_prefix}:fm-docs
   # Note: when testing llvm bumps, use
@@ -50,10 +50,10 @@ variables:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-.llvm16:
+.llvm14:
   extends: .base
   variables:
-    LLVM_MAJ_VER: 16
+    LLVM_MAJ_VER: 14
 
 .llvm15:
   extends: .base
@@ -91,15 +91,6 @@ stages:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-.clang_env: &clang_env
-  # NOTE: keep these settings in sync with the cpp2v-core repository: see
-  # https://bedrocksystems.atlassian.net/browse/FM-1874.
-  # We use `/usr/lib/llvm/bin/llvm-config` instead of
-  # `llvm-config-${LLVM_MAJ_VER}` to avoid depending on the LLVM version.
-  - export CC=`/usr/lib/llvm/bin/llvm-config --bindir`/clang
-  - export CXX=`/usr/lib/llvm/bin/llvm-config --bindir`/clang++
-  - export PATH="/usr/lib/llvm/bin/:$PATH"
-
 #This is a template job that's extended below by the real jobs
 # build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
@@ -108,7 +99,6 @@ stages:
   script:
     - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
-    - *clang_env
     - cd build; cmake ../; cd ..
     - make -j ${NJOBS} cpp2v
     - make -j ${NJOBS} coq
@@ -141,7 +131,6 @@ stages:
     - coqc -v
     - opam list
     - ./build/cpp2v --cpp2v-version 0 --
-    - *clang_env
     - PATH=$PWD/build:$PATH make test -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
   tags:
     - fm.shared
@@ -156,10 +145,10 @@ build_llvm15:
     - .build_aux
     - .llvm15
 
-build_llvm16:
+build_llvm14:
   extends:
     - .build_aux
-    - .llvm16
+    - .llvm14
 
 build_public:
   extends:
@@ -170,7 +159,6 @@ build_public:
 # that those match the versions in our "public" Docker image.
 build_public_opam:
   script:
-    - *clang_env
     - opam install --assume-depexts -y .
   extends:
     - .build_aux
@@ -192,12 +180,12 @@ test_llvm15:
   needs:
     - build_llvm15
 
-test_llvm16:
+test_llvm14:
   extends:
     - .test
-    - .llvm16
+    - .llvm14
   needs:
-    - build_llvm16
+    - build_llvm14
 
 test_public:
   extends:
