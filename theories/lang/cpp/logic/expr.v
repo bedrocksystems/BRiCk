@@ -436,9 +436,10 @@ Module Type Expr.
         Clang states that these casts are only used for adding and removing [const].
      *)
 
-    (* Casts that occur in initialization expressions.
-       Since object has not truely been initialized yet, the [const]ness can change.
-     *)
+    (*
+    Casts that occur in initialization expressions.
+    Since object has not truly been initialized yet, the [const]ness can change.
+    *)
     Variant noop_cast_type : Set :=
     | AddConst    (_ : type)
     | RemoveConst (_ : type)
@@ -447,9 +448,7 @@ Module Type Expr.
     Definition classify_cast (from to : type) : option noop_cast_type :=
       let '(from_cv, from_ty) := decompose_type from in
       let '(to_cv, to_ty) := decompose_type to in
-      let from_ty := erase_qualifiers from_ty in
-      let to_ty := erase_qualifiers to_ty in
-      if bool_decide (from_ty = to_ty) then
+      if bool_decide (erase_qualifiers from_ty = erase_qualifiers to_ty) then
         if bool_decide (from_cv = to_cv) then
           Some Nothing
         else if bool_decide (from_cv = merge_tq QC to_cv) then
@@ -463,18 +462,19 @@ Module Type Expr.
 
     (* When [const]ness changes in an initialization expression, it changes the
        [const]ness of the object that is being initialized. *)
-    Axiom wp_init_cast_noop : forall ty ty' e p Q,
-        match classify_cast ty ty' with
+    Axiom wp_init_cast_noop : forall ty e p Q,
+        (let from := type_of e in
+        match classify_cast from ty with
         | Some cst =>
-            wp_init ty p e (fun fr =>
+            wp_init from p e (fun fr =>
               match cst with
               | AddConst ty => wp_make_const tu p ty (Q fr)
               | RemoveConst ty => wp_make_mutable tu p ty (Q fr)
               | Nothing => Q fr
               end)
-        | None => UNSUPPORTED (unsupported_init_noop_cast e ty ty')
-        end
-      |-- wp_init ty p (Ecast Cnoop e Prvalue ty') Q.
+        | None => UNSUPPORTED (unsupported_init_noop_cast e from ty)
+        end)
+      |-- wp_init ty p (Ecast Cnoop e Prvalue ty) Q.
     Axiom wp_operand_cast_noop : forall ty e Q,
         wp_operand e Q
         |-- wp_operand (Ecast Cnoop e Prvalue ty) Q.
@@ -870,11 +870,10 @@ Module Type Expr.
            Reduce (operand_receive ty res $ fun v => Q v (free_args >*> free_f)))
        |-- wp_operand (Ecall f es ty) Q.
 
-    Axiom wp_init_call : forall f es Q (addr : ptr) ty ty',
-          (* ^ give the memory back to the C++ abstract machine *)
+    Axiom wp_init_call : forall f es Q (addr : ptr) ty,
           wp_operand f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
              Reduce (init_receive ty addr res $ fun free => Q (free_args >*> free_f)))
-      |-- wp_init ty addr (Ecall f es ty') Q.
+      |-- wp_init ty addr (Ecall f es ty) Q.
 
     (** * Member calls *)
     Definition member_arg_types (fty : type) : option (list type) :=
@@ -1059,7 +1058,7 @@ Module Type Expr.
         wp_lval e (fun v free => v |-> anyR ty (cQp.mut 1) ** (v |-> tblockR ty (cQp.mut 1) -* Q Vvoid free))
         |-- wp_operand (Epseudo_destructor ty e) Q.
 
-    (* `Eimplicit_init` nodes reflect implicit /value initializations/ which are inserted
+    (* [Eimplicit_init] nodes reflect implicit /value initializations/ which are inserted
        into the AST by Clang [1]. The C++ standard states that value initializations [2]
        are equivalent to zero initializations for non-class and non-array types [3];
        zero initializations are documented here [4].
@@ -1119,20 +1118,32 @@ Module Type Expr.
           Q v FreeTemps.id
       |-- wp_operand (Eimplicit_init ty) Q.
 
-    Axiom wp_init_constructor : forall cls (addr : ptr) cnd es Q,
-        (* NOTE because the AST does not include the types of the arguments of
-           the constructor, we have to look up the type in the environment.
-         *)
-           match tu !! cnd with
-           | Some cv =>
-             addr |-> tblockR (Tnamed cls) (cQp.mut 1) -*
-             (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
-             wp_mcall (Vptr $ _global cnd) addr (Tnamed cls) (type_of_value cv) es (fun p free =>
-               (* in the semantics, constructors return [void] *)
-               p |-> primR Tvoid (cQp.mut 1) Vvoid ** Q free)
-           | _ => False
-           end
-      |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
+    Axiom wp_init_constructor : forall ty cv cls (this : ptr) cnd es Q,
+        decompose_type ty = (cv, Tnamed cls) ->
+          (*
+          NOTE because the AST does not include the types of the
+          arguments of the constructor, we have to look up the type in
+          the environment.
+          *)
+          match tu.(symbols) !! cnd with
+          | Some ov =>
+            (*
+            The semantics currently has constructors take ownership of
+            a [tblockR].
+            *)
+            this |-> tblockR (Tnamed cls) (cQp.mut 1) -*
+            letI* p_ret, free := wp_mcall (Vptr $ _global cnd) this (Tnamed cls) (type_of_value ov) es in
+            (* in the semantics, constructors return [void] *)
+            p_ret |-> primR Tvoid (cQp.mut 1) Vvoid **
+            let do_const Q :=
+              if q_const cv
+              then wp_make_const tu this (Tnamed cls) Q
+              else Q
+            in
+            do_const (Q free)
+          | _ => False
+          end
+      |-- wp_init ty this (Econstructor cnd es ty) Q.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
@@ -1201,7 +1212,7 @@ Module Type Expr.
 
     (** [is_array_of aty ety] checks that [aty] is a type representing an
         array of [ety].
-        NOTE that cpp2v currently prints the type `int[]` as [int* const]
+        NOTE that cpp2v currently prints the type `int[]` as [int*]
              so we also permit that type.
      *)
     Definition is_array_of (aty ety : type) : Prop :=
@@ -1218,7 +1229,7 @@ Module Type Expr.
         is the static type. For santity, we require that the general shape of the
         two types match, but we pull the size of the array from the dynamic type.
      *)
-    Axiom wp_init_initlist_array :forall ls fill ty ety (sz : N) (base : ptr) Q, (* sz' <= sz *)
+    Axiom wp_init_initlist_array : forall ls fill ty ety (sz : N) (base : ptr) Q, (* sz' <= sz *)
           is_array_of ty ety ->
           wp_array_init_fill ety base ls fill sz Q
       |-- wp_init (Tarray ety sz) base (Einitlist ls fill ty) Q.
@@ -1301,20 +1312,25 @@ Module Type Expr.
        of anonymous unions, but cpp2v represents anonymous unions as regular
        named unions and the front-end desugars initializer lists accordingly.
      *)
-    Axiom wp_init_initlist_agg : forall cls (base : ptr) es t Q,
-        let mem_to_li m := (m.(mem_type), o_field _ {| f_type := cls ; f_name := m.(mem_name) |}) in
-        let base_to_li '(base,_) := (Tnamed base, o_base _ cls base) in
-        match tu !! cls with
+    Axiom wp_init_initlist_agg : forall cls (base : ptr) cv es ty Q,
+        decompose_type ty = (cv, Tnamed cls) ->
+        (let mem_to_li m := (m.(mem_type), o_field _ {| f_type := cls ; f_name := m.(mem_name) |}) in
+         let do_const Q :=
+           if q_const cv
+           then wp_make_const tu base (Tnamed cls) Q
+           else Q
+         in
+         let base_to_li '(base,_) := (Tnamed base, o_base _ cls base) in
+         match tu.(types) !! cls with
         | Some (Gstruct s) =>
             (* these constraints are enforced by clang, see note above *)
             [| length s.(s_bases) + length s.(s_fields) = length es |] **
             let fs :=
               map base_to_li s.(s_bases) ++ map mem_to_li s.(s_fields) in
             init_fields cls base fs es
-               (base |-> struct_paddingR (cQp.mut 1) cls **
+               (base |-> struct_paddingR (cQp.mut 1) cls -*
                 (if has_vtable s then base |-> derivationR cls [cls] (cQp.mut 1) else emp) -*
-                Q FreeTemps.id)
-
+                do_const (Q FreeTemps.id))
         | Some (Gunion u) =>
             (* The standard allows initializing unions in a variety of ways.
                See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
@@ -1324,10 +1340,10 @@ Module Type Expr.
             let fs := map mem_to_li $ firstn 1 u.(u_fields) in
             init_fields cls base fs es
                (base |-> union_paddingR (cQp.mut 1) cls (Some 0) -*
-                Q FreeTemps.id)
+                do_const (Q FreeTemps.id))
         | _ => False
-        end
-      |-- wp_init (Tnamed cls) base (Einitlist es None t) Q.
+        end)
+      |-- wp_init ty base (Einitlist es None ty) Q.
 
   End with_resolve.
 
