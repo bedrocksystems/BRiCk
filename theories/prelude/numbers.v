@@ -65,6 +65,11 @@ https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
 #[global] Instance Nat_shiftr_left_absorb : LeftAbsorb (=) 0 Nat.shiftr := Nat.shiftr_0_l.
 #[global] Instance Nat_shiftr_right_id : RightId (=) 0 Nat.shiftr := Nat.shiftr_0_r.
 
+#[global] Instance Nat2N_id_cancel : Cancel eq N.to_nat N.of_nat := Nat2N.id.
+#[global] Instance N2Nat_id_cancel : Cancel eq N.of_nat N.to_nat := N2Nat.id.
+#[global] Instance Nat2Z_id_cancel : Cancel eq Z.to_nat Z.of_nat := Nat2Z.id.
+#[global] Instance Zabs2Nat_id_cancel : Cancel eq Z.abs_nat Z.of_nat := Zabs2Nat.id.
+
 (** * Natural numbers [N] *)
 
 Arguments N.ones _ : simpl never, assert.
@@ -112,6 +117,9 @@ Infix "≪" := N.shiftl : N_scope.
 
 #[global] Instance N_shiftr_left_absorb : LeftAbsorb (=) 0%N N.shiftr := N.shiftr_0_l.
 #[global] Instance N_shiftr_right_id : RightId (=) 0%N N.shiftr := N.shiftr_0_r.
+
+#[global] Instance N2Z_id_cancel : Cancel eq Z.to_N Z.of_N := N2Z.id.
+#[global] Instance Zabs2N_id_cancel : Cancel eq Z.abs_N Z.of_N := Zabs2N.id.
 
 #[global] Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.

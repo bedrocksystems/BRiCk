@@ -24,8 +24,13 @@ Notation Build_WrapN := @MkWrapN (only parsing).
 Lemma cancel_unwrapN {Phant} (x : WrapN Phant) : MkWrapN (unwrapN x) = x.
 Proof. done. Qed.
 
+Lemma cancel_MkwrapN {Phant} n : unwrapN (Phant := Phant) (MkWrapN n) = n.
+Proof. done. Qed.
 
-(** This instance is useful in combination with [Refine1_Cancel]. *)
+#[global] Instance cancel_unwrapN_Build_WrapN {Phant} :
+  Cancel eq unwrapN (@MkWrapN Phant).
+Proof. exact cancel_MkwrapN. Qed.
+
 #[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
   Cancel eq (@MkWrapN Phant) unwrapN.
 Proof. exact cancel_unwrapN. Qed.
