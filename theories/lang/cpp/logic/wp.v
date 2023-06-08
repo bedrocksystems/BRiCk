@@ -553,14 +553,21 @@ Section with_cpp.
   (* BEGIN wp_init *)
   (* evaluate a prvalue that "initializes an object".
 
-     The continuation is passed a [type] and a [FreeTemp.t]. The first is the
-     type of the constructed value, which can be converted to a [FreeTemp.t]
-     using [FreeTemps.delete ty p] (where [p] is the passed in pointer). The
-     [FreeTemp.t] is used to delete temporaries created while creating the
-     value. To delete both correctly, you must destroy the value *before*
-     destroying the temporaries. Only destroying temporaries (and discarding the
-     first argument) is legal when mandated by the semantics, for example, in a
-     variable declaration. `int x = (C{}, 2);`
+     [wp_init tu ρ ty p e Q] evaluates [e] to initialize a value of type [ty]
+     at location [p] in the region [ρ]. The continuation [Q] is passed the
+     [FreeTemps.t] needed to destroy temporaries created while evaluating [e],
+     but does *not* include the destruction of [p].
+     The type [ty] and the type of the expression, i.e. [type_of e], are related
+     but not always the same. We call [ty] the *dynamic type* and [type_of e]
+     the *static type*. The two types should always be compatible, but the dynamic
+     type might have more information. For example, in the expression:
+     [[
+     int n = 7;
+     auto p = new C[n]{};
+     ]]
+     When running the initializer to initialize the memory returned by [new],
+     the dynamic type will be [Tarray "C" 7], while the static type will be
+     [Tarray "C" 0] (the [0] is an artifact of clang).
 
      The memory that is being initialized is already owned by the C++ abstract
      machine. Therefore, schematically, a [wp_init ty addr e Q] looks like the
@@ -580,7 +587,8 @@ Section with_cpp.
      the various evoluations of initialization between different standards, e.g.
      C++14, C++17, etc.
 
-     NOTE: this doesn't really fit the pattern for [M]... *)
+     NOTE: this is morally [M unit], but we inline the definition of [M] and
+     ellide the [unit] value. *)
   Parameter wp_init
     : forall {resolve:genv}, translation_unit -> region ->
                         type -> ptr -> Expr ->
