@@ -119,6 +119,15 @@ Section set_map.
   Context `{FinSet A C, Set_ B D}.
   #[local] Notation set_map := (set_map (C := C) (D := D)).
 
+  #[global] Instance set_map_inj (f : A -> B) `{!Inj eq eq f} :
+    Inj (≡) (≡) (set_map f) | 50.
+  Proof. rewrite /Inj. set_solver. Qed.
+
+  #[global] Instance set_map_inj_L (f : A -> B) `{!Inj eq eq f}
+    `{!LeibnizEquiv C, !LeibnizEquiv D} :
+    Inj eq eq (set_map f).
+  Proof. rewrite /Inj. set_solver. Qed.
+
   Lemma set_map_disjoint (f : A → B) (X Y : C) :
     (∀ x y, f x = f y → x ∈ X → y ∈ Y → False) →
     set_map f X ## set_map f Y.
