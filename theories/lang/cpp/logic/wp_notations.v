@@ -83,10 +83,10 @@ Module Export Compact.
          ( at level 0
          , format "'[hv  ' ::wpS  '/' '[hv' ρ  '/' s ']' ']'"
          , only printing).
-  Notation "'::wpD' old_ρ decl new_ρ"
-      := (wp_decl _ old_ρ new_ρ decl _)
+  Notation "'::wpD' ρ decl"
+      := (wp_decl _ ρ decl _)
          ( at level 0
-         , format "'[hv  ' ::wpD  '/' '[hv' old_ρ  '/' decl  '/' new_ρ ']' ']'"
+         , format "'[hv  ' ::wpD  '/' '[hv' ρ  '/' decl ']' ']'"
          , only printing).
 
   (* Special WPs*)
@@ -239,10 +239,10 @@ Module Verbose.
          ( at level 0
          , format "'[hv  ' ::wpS  '/' '[hv' ρ  '/' s ']'  '/' K ']'"
          , only printing).
-  Notation "'::wpD' old_ρ decl new_ρ Q"
-      := (wp_decl _ old_ρ new_ρ decl Q)
+  Notation "'::wpD' ρ decl Q"
+      := (wp_decl _ ρ decl Q)
          ( at level 0
-         , format "'[hv  ' ::wpD  '/' '[hv' old_ρ  '/' decl  '/' new_ρ ']'  '/' Q ']'"
+         , format "'[hv  ' ::wpD  '/' '[hv' ρ  '/' decl ']'  '/' Q ']'"
          , only printing).
 
   (* Special WPs*)
