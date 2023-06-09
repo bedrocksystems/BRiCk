@@ -117,42 +117,53 @@ End set_seq.
 Section set_map.
   #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C, Set_ B D}.
+  #[local] Notation set_map := (set_map (C := C) (D := D)).
+
+  #[global] Instance set_map_inj (f : A -> B) `{!Inj eq eq f} :
+    Inj (≡) (≡) (set_map f) | 50.
+  Proof. rewrite /Inj. set_solver. Qed.
+
+  #[global] Instance set_map_inj_L (f : A -> B) `{!Inj eq eq f}
+    `{!LeibnizEquiv C, !LeibnizEquiv D} :
+    Inj eq eq (set_map f).
+  Proof. rewrite /Inj. set_solver. Qed.
 
   Lemma set_map_disjoint (f : A → B) (X Y : C) :
     (∀ x y, f x = f y → x ∈ X → y ∈ Y → False) →
-    set_map (D:=D) f X ## set_map (D:=D) f Y.
+    set_map f X ## set_map f Y.
   Proof. set_solver. Qed.
   Lemma set_map_disjoint_singleton_l (f : A → B) (x : A) (Y : C) :
-    (∀ y, f x = f y → y ∉ Y) → {[f x]} ## set_map (D:=D) f Y.
+    (∀ y, f x = f y → y ∉ Y) → {[f x]} ## set_map f Y.
   Proof. set_solver. Qed.
   Lemma set_map_disjoint_singleton_r (f : A → B) (x : A) (Y : C) :
-    (∀ y, f x = f y → y ∉ Y) → set_map (D:=D) f Y ## {[f x]}.
+    (∀ y, f x = f y → y ∉ Y) → set_map f Y ## {[f x]}.
   Proof. set_solver. Qed.
 
   Lemma set_map_singleton (f : A → B) (x : A) :
-    set_map (D:=D) f (singleton (B:=C) x) ≡ {[f x]}.
+    set_map f (singleton x) ≡ {[f x]}.
   Proof. set_solver. Qed.
   Lemma set_map_singleton_L `{!LeibnizEquiv D} (f : A → B) (x : A) :
-    set_map (D:=D) f (singleton (B:=C) x) = {[f x]}.
+    set_map f (singleton x) = {[f x]}.
   Proof. unfold_leibniz. apply set_map_singleton. Qed.
 
   Lemma set_map_union (f : A → B) (X Y : C) :
-    set_map (D:=D) f (X ∪ Y) ≡ set_map (D:=D) f X ∪ set_map (D:=D) f Y.
+    set_map f (X ∪ Y) ≡ set_map f X ∪ set_map f Y.
   Proof. set_solver. Qed.
   Lemma set_map_union_L `{!LeibnizEquiv D} (f : A → B) (X Y : C) :
-    set_map (D:=D) f (X ∪ Y) = set_map (D:=D) f X ∪ set_map (D:=D) f Y.
+    set_map f (X ∪ Y) = set_map f X ∪ set_map f Y.
   Proof. unfold_leibniz. apply set_map_union. Qed.
 
-  Lemma set_map_empty `{Set_ B D} (f : A -> B) : set_map (C:=C) (D:=D) f ∅ = ∅.
+  Lemma set_map_empty (f : A -> B) : set_map f ∅ = ∅.
   Proof. rewrite /set_map. by rewrite elements_empty. Qed.
 End set_map.
 
 Section set_map.
   #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C, FinSet B D}.
+  #[local] Notation set_map := (set_map (C := C) (D := D)).
 
   Lemma set_map_empty_iff (f : A -> B) X :
-    set_map (C:=C) (D:=D) f X ≡ ∅ <-> X ≡ ∅.
+    set_map f X ≡ ∅ <-> X ≡ ∅.
   Proof.
     split; first last.
     - move=>->. by rewrite set_map_empty.
@@ -163,7 +174,7 @@ Section set_map.
       rewrite set_map_union set_map_singleton.
       rewrite (comm union) size_union_alt.
       intros Hsz.
-      assert (size (set_map (D := D) f X) = 0) as Hsz0 by lia.
+      assert (size (set_map f X) = 0) as Hsz0 by lia.
       exfalso. move: Hsz. rewrite Hsz0 /=.
       have {Hsz0} IH := IH Hsz0; rewrite (size_empty_inv _ IH).
       by rewrite set_map_empty difference_empty size_singleton.
@@ -171,11 +182,11 @@ Section set_map.
 
   Lemma set_map_empty_iff_L `{!LeibnizEquiv C, !LeibnizEquiv D}
       (f : A -> B) X :
-    set_map (C:=C) (D:=D) f X = ∅ <-> X = ∅.
+    set_map f X = ∅ <-> X = ∅.
   Proof. unfold_leibniz. exact: set_map_empty_iff. Qed.
 
   Lemma size_map_inj (f : A -> B) `{!Inj (=) (=) f} (X : C) :
-    size (C:=D) (set_map f X) = size X.
+    size (set_map f X) = size X.
   Proof.
     pattern X. apply set_ind; clear X.
     { by intros X1 X2 ->. }
