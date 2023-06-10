@@ -299,9 +299,22 @@ prepare_cpp2v_env:
            export DOWNSTREAM_BRANCH="master"; fi
     - if [[ $CI_MERGE_REQUEST_LABELS =~ .*FM-CI-timing.* ]]; then FULL_TIMING=1; else FULL_TIMING=0; fi
     - export CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
+    # Use whatever master commit was merged into our branch as a point of reference.
+    # If this is not a merged pipeline use `git merge-base` instead.
+    - >
+      if [[ $CI_MERGE_REQUEST_LABELS =~ .*FM-CI-Compare.* ]]; then
+        if [[ -z "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" ]]; then
+          # XXX is this possible?
+          git fetch origin master;
+          export CPP2V_CORE_COMMIT_REF_HASH=$(git merge-base origin/master HEAD);
+        else
+          export CPP2V_CORE_COMMIT_REF_HASH=$CI_MERGE_REQUEST_TARGET_BRANCH_SHA;
+        fi
+      fi
     - echo "DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_CPP2V_BRANCH" >> build.env
     - echo "DOWNSTREAM_BRANCH=$DOWNSTREAM_BRANCH" >> build.env
     - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
+    - echo "CPP2V_CORE_COMMIT_REF_HASH=$CPP2V_CORE_COMMIT_REF_HASH" >> build.env
     - echo "FULL_TIMING=$FULL_TIMING" >> build.env
     # TODO remove eventually; only for legacy builds
     - echo "ARTIFACT_JOB_ID=$ARTIFACT_JOB_ID" >> build.env
