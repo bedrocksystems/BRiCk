@@ -853,8 +853,8 @@ Section val_array.
   Proof.
     rewrite {1}wp_destroy_val_qual_norm'.
     elim: (qual_norm'_ok _ cv ty); [|done]. move=>? rty *.
-    rewrite qual_norm'_unqual. wp_destroy_val_unfold.
-    destruct rty; first [done | by case: unqualified_qual].
+    rewrite qual_norm'_unqual//. wp_destroy_val_unfold.
+    by destruct rty.
   Qed.
   Lemma destroy_val_value_type_elim tu ty this Q :
     is_value_type ty ->

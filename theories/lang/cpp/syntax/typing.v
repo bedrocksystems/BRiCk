@@ -93,13 +93,13 @@ Fixpoint drop_qualifiers (t : type) : type :=
   | _ => t
   end.
 
-#[global] Hint Opaque erase_qualifiers : typeclass_instances.
-#[global] Instance erase_qualifiers_unqualified ty : Unqualified (erase_qualifiers ty).
-Proof. induction ty; cbn; auto with typeclass_instances. Qed.
+Lemma is_qualified_erase_qualifiers ty : ~~ is_qualified (erase_qualifiers ty).
+Proof. by induction ty. Qed.
+#[global] Hint Resolve is_qualified_erase_qualifiers | 0 : core.
 
-#[global] Hint Opaque drop_qualifiers : typeclass_instances.
-#[global] Instance drop_qualifiers_unqualified ty : Unqualified (drop_qualifiers ty).
-Proof. induction ty; cbn; auto with typeclass_instances. Qed.
+Lemma is_qualified_drop_qualifiers ty : ~~ is_qualified (drop_qualifiers ty).
+Proof. by induction ty. Qed.
+#[global] Hint Resolve is_qualified_drop_qualifiers | 0 : core.
 
 Lemma erase_qualifiers_qual_norm' q t :
   erase_qualifiers t = qual_norm' (fun _ t => erase_qualifiers t) q t.
@@ -121,8 +121,8 @@ Lemma drop_qualifiers_decompose_type t :
   drop_qualifiers t = drop_qualifiers (decompose_type t).2.
 Proof. by rewrite drop_qualifiers_qual_norm qual_norm_decompose_type. Qed.
 
-Lemma drop_qualifiers_unqual t : Unqualified t -> drop_qualifiers t = t.
-Proof. destruct t; cbn; auto. by move/unqualified_qual. Qed.
+Lemma drop_qualifiers_unqual t : ~~ is_qualified t -> drop_qualifiers t = t.
+Proof. by destruct t; cbn; auto. Qed.
 
 Lemma erase_qualifiers_idemp t : erase_qualifiers (erase_qualifiers t) = erase_qualifiers t.
 Proof.
