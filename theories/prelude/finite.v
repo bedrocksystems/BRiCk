@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2021 BedRock Systems, Inc.
+ * Copyright (c) 2021-2023 BedRock Systems, Inc.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -685,7 +685,7 @@ End simple_finite_bitmask_type_mixin.
 Module Type simple_finite_bitmask_type_intf := finite_type <+ simple_finite_bitmask_type_mixin.
 
 (* A type for _sets_ of flags, as opposed to the type of flags described above. *)
-Module finite_bits (BT : finite_bitmask_type_intf).
+Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
   Definition t := gset BT.t.
   #[global] Instance top_t : Top t := fin_to_set BT.t (C := t).
 
@@ -960,10 +960,10 @@ Module finite_bits (BT : finite_bitmask_type_intf).
       (X : (Z.of_N (to_bits rs) `land` BT.to_bitmask r)%Z = 0%Z) :
     r ∉ rs.
   Proof. rewrite N2Z_land in X; apply to_bits_inv_singleton_ne; lia. Qed.
-End finite_bits.
+End finite_bits_aux.
 
-Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
-  Include finite_bits BT.
+Module Type simple_finite_bits_aux (BT : simple_finite_bitmask_type_intf).
+  Include finite_bits_aux BT.
 
   Lemma of_bits_max : of_bits BT.all_bits = ⊤.
   Proof. by rewrite /of_bits BT.to_list_max. Qed.
@@ -1008,4 +1008,12 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     }
     by intros (x & Hdec%finite_decode_N_lt).
   Qed.
+End simple_finite_bits_aux.
+
+(* Lift [finite_bits_aux] and [simple_finite_bits_aux] to a module, usable for application. *)
+Module finite_bits (BT : finite_bitmask_type_intf).
+  Include finite_bits_aux BT.
+End finite_bits.
+Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
+  Include simple_finite_bits_aux BT.
 End simple_finite_bits.
