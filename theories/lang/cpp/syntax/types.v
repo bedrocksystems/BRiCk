@@ -392,6 +392,59 @@ Section type_countable.
   Defined.
 End type_countable.
 
+(**
+An equivalence relation on types that quotients by "identical to C++".
+The equations here are dictated by the fact that [type] is too big for
+C++.
+*)
+
+Inductive type_equiv : Equiv type :=
+
+(**
+Qualifier normalization
+*)
+| Tqualified_id t : Tqualified QM t ≡ t
+| Tqualified_merge q q' t : Tqualified q (Tqualified q' t) ≡ Tqualified (merge_tq q q') t
+| Tqualified_ref q t : Tqualified q (Tref t) ≡ Tref t
+| Tqualified_rv_ref q t : Tqualified q (Trv_ref t) ≡ Trv_ref t
+
+(**
+Reference collapsing
+
+<https://en.cppreference.com/w/cpp/language/reference#Reference_collapsing>
+*)
+| Tref_ref t : Tref (Tref t) ≡ Tref t
+| Tref_rv_ref t : Tref (Trv_ref t) ≡ Tref t
+| Trv_ref_ref t : Trv_ref (Tref t) ≡ Tref t
+| Trv_ref_rv_ref t : Trv_ref (Trv_ref t) ≡ Trv_ref t
+
+(** Equivalence *)
+| type_equiv_refl t : t ≡ t
+| type_equiv_sym t u : t ≡ u -> u ≡ t
+| type_equiv_trans t u v : t ≡ u -> u ≡ v -> t ≡ v
+
+(** Compatibility *)
+| Tptr_proper : Proper (equiv ==> equiv) Tptr
+| Tref_proper : Proper (equiv ==> equiv) Tref
+| Trv_ref_proper : Proper (equiv ==> equiv) Trv_ref
+| Tarray_proper : Proper (equiv ==> eq ==> equiv) Tarray
+| Tfunction_proper cc ar : Proper (equiv ==> equiv ==> equiv) (@Tfunction cc ar)
+| Tmember_pointer_proper gn : Proper (equiv ==> equiv) (Tmember_pointer gn)
+| Tqualified_proper q : Proper (equiv ==> equiv) (Tqualified q)
+.
+#[global] Existing Instances
+  type_equiv
+  Tptr_proper
+  Tref_proper
+  Trv_ref_proper
+  Tarray_proper
+  Tfunction_proper
+  Tmember_pointer_proper
+  Tqualified_proper
+.
+#[global] Instance type_equivalence : Equivalence (≡@{type}) :=
+  Build_Equivalence _ type_equiv_refl type_equiv_sym type_equiv_trans.
+
 Notation Tpointer := Tptr (only parsing).
 Notation Treference := Tref (only parsing).
 Notation Trv_reference := Trv_ref (only parsing).
@@ -405,6 +458,22 @@ Definition Qmut_volatile : type -> type :=
   Tqualified QV.
 Definition Qmut : type -> type :=
   Tqualified QM.
+
+#[global] Hint Opaque
+  Qconst_volatile Qconst Qmut_volatile Qmut
+: typeclass_instances.
+
+#[global] Instance Qconst_volatile_proper : Proper (equiv ==> equiv) Qconst_volatile.
+Proof. solve_proper. Qed.
+#[global] Instance Qconst_proper : Proper (equiv ==> equiv) Qconst.
+Proof. solve_proper. Qed.
+#[global] Instance Qmut_volatile_proper : Proper (equiv ==> equiv) Qmut_volatile.
+Proof. solve_proper. Qed.
+#[global] Instance Qmut_proper : Proper (equiv ==> equiv) Qmut.
+Proof. solve_proper. Qed.
+
+Lemma Qmut_equiv t : Qmut t ≡ t.
+Proof. by rewrite /Qmut Tqualified_id. Qed.
 
 (**
 [decompose_type t] strips any top-level qualifiers from [t] and
@@ -423,14 +492,18 @@ Section qual_norm.
     | Tqualified q' t => qual_norm' (merge_tq q q') t
     | _ => f q t
     end.
+  #[global] Hint Opaque qual_norm' : typeclass_instances.
 
   Definition qual_norm : type -> A :=
     qual_norm' QM.
+  #[global] Hint Opaque qual_norm : typeclass_instances.
 End qual_norm.
 
 Definition decompose_type : type -> type_qualifiers * type :=
   qual_norm (fun q t => (q, t)).
+#[global] Hint Opaque decompose_type : typeclass_instances.
 #[global] Arguments decompose_type !_ / : simpl nomatch, assert.
+
 (**
 It would be nice to make this the default.
 *)
@@ -438,6 +511,9 @@ It would be nice to make this the default.
 
 (**
 [is_qualified t] decides if [t] has top-level qualifiers.
+
+Note: [is_qualified] is incompatible with the equivalence on types.
+Counterexample: [Tqualified QM (Tref t) ≡ Tref t].
 *)
 Definition is_qualified (t : type) : bool :=
   if t is Tqualified _ _ then true else false.
@@ -530,6 +606,15 @@ Lemma qual_norm_bind {A B} (f : type_qualifiers -> type -> A) (g : A -> B) t :
   g (qual_norm f t) = qual_norm (fun q => g ∘ f q) t.
 Proof. apply qual_norm'_bind. Qed.
 
+Lemma qual_norm'_equiv q t : qual_norm' Tqualified q t ≡ Tqualified q t.
+Proof.
+  induction (qual_norm'_ok Tqualified q t).
+  { done. }
+  { by rewrite Tqualified_merge. }
+Qed.
+Lemma qual_norm_equiv t : qual_norm Tqualified t ≡ t.
+Proof. by rewrite /qual_norm qual_norm'_equiv Tqualified_id. Qed.
+
 (** [decompose_type] *)
 
 Lemma decompose_type_unfold t :
@@ -572,6 +657,13 @@ Lemma decompose_type_qual q t :
     (merge_tq q p.1, p.2).
 Proof. by rewrite decompose_type_unfold. Qed.
 
+Lemma decompose_type_equiv t : let p := decompose_type t in Tqualified p.1 p.2 ≡ t.
+Proof.
+  elim: (decompose_type_ok t); cbn.
+  { intros. by rewrite Tqualified_id. }
+  { intros ???? <-. by rewrite Tqualified_merge. }
+Qed.
+
 (** [qual_norm], [qual_norm'] in terms of [decompose_type] *)
 
 Lemma qual_norm'_decompose_type {A} (f : type_qualifiers -> type -> A) q t :
@@ -604,10 +696,12 @@ Definition tqualified' (q : type_qualifiers) (t : type) : type :=
   | Tref _ | Trv_ref _ => t
   | _ => match q with QM => t | _ => Tqualified q t end
   end.
+#[global] Hint Opaque tqualified' : typeclass_instances.
 #[global] Arguments tqualified' _ !_ / : simpl nomatch, assert.
 
 Definition tqualified : type_qualifiers -> type -> type :=
   qual_norm' tqualified'.
+#[global] Hint Opaque tqualified : typeclass_instances.
 #[global] Arguments tqualified _ !_ / : simpl nomatch, assert.
 
 (**
@@ -623,6 +717,7 @@ Fixpoint tref (acc : type_qualifiers) (t : type) : type :=
   | Tqualified q t => tref (merge_tq acc q) t
   | _ => Tref (tqualified acc t)
   end.
+#[global] Hint Opaque tref : typeclass_instances.
 #[global] Arguments tref _ !_ / : simpl nomatch, assert.
 
 Fixpoint trv_ref (acc : type_qualifiers) (t : type) : type :=
@@ -632,10 +727,14 @@ Fixpoint trv_ref (acc : type_qualifiers) (t : type) : type :=
   | Tqualified q t => trv_ref (merge_tq acc q) t
   | _ => Trv_ref (tqualified acc t)
   end.
+#[global] Hint Opaque trv_ref : typeclass_instances.
 #[global] Arguments trv_ref _ !_ / : simpl nomatch, assert.
 
 (**
 [is_ref t] decides if [t] a reference type
+
+Note: [is_ref] is incompatible with the equivalence on types.
+Counterexample: [Tqualified QM (Tref t) ≡ Tref t].
 *)
 Definition is_ref (t : type) : bool :=
   if t is (Tref _ | Trv_ref _) then true else false.
@@ -679,6 +778,19 @@ Proof.
   all: destruct (QM_cases q); by destruct q; auto.
 Qed.
 
+Lemma tqualified'_equiv q t : tqualified' q t ≡ Tqualified q t.
+Proof.
+  case: (tqualified'_ok q t).
+  { intros ?? (?&[-> | ->])%is_ref_spec.
+    by rewrite Tqualified_ref. by rewrite Tqualified_rv_ref. }
+  { intros. by rewrite Tqualified_id. }
+  { done. }
+Qed.
+
+#[global] Instance: Params (@tqualified') 1 := {}.
+#[global] Instance tqualified'_proper q : Proper (equiv ==> equiv) (tqualified' q).
+Proof. intros t1 t2 Ht. by rewrite !tqualified'_equiv Ht. Qed.
+
 Lemma tqualified'_ref q t : is_ref t -> tqualified' q t = t.
 Proof. by destruct t. Qed.
 
@@ -690,6 +802,20 @@ Proof. by destruct t, q. Qed.
 
 Lemma tqualified_ok q t : qual_norm_spec tqualified' q t (tqualified q t).
 Proof. apply qual_norm'_ok. Qed.
+
+Lemma tqualified_equiv q t : tqualified q t ≡ Tqualified q t.
+Proof.
+  induction (tqualified_ok q t).
+  { by rewrite tqualified'_equiv. }
+  { by rewrite Tqualified_merge. }
+Qed.
+
+#[global] Instance: Params (@tqualified) 1 := {}.
+#[global] Instance tqualified_proper q : Proper (equiv ==> equiv) (tqualified q).
+Proof. intros t1 t2 Ht. by rewrite !tqualified_equiv Ht. Qed.
+
+Lemma tqualified_tqualified' q t : tqualified q t ≡ tqualified' q t.
+Proof. by rewrite tqualified_equiv tqualified'_equiv. Qed.
 
 Lemma tqualified_qual_norm' q t : tqualified q t = qual_norm' tqualified' q t.
 Proof. done. Qed.
@@ -729,6 +855,21 @@ Inductive tref_spec : type_qualifiers -> type -> type -> Prop :=
 Lemma tref_ok q t : tref_spec q t (tref q t).
 Proof. move: q. induction t=>q; auto. Qed.
 
+Lemma tref_equiv' q t : tref q t ≡ Tref (Tqualified q t).
+Proof.
+  elim: (tref_ok q t).
+  { intros. by rewrite tqualified_equiv. }
+  { intros ???? ->. by rewrite Tqualified_id Tqualified_ref Tref_ref. }
+  { intros ???? ->. by rewrite Tqualified_id Tqualified_rv_ref Tref_rv_ref. }
+  { intros. by rewrite Tqualified_merge. }
+Qed.
+Lemma tref_equiv t : tref QM t ≡ Tref t.
+Proof. by rewrite tref_equiv' Tqualified_id. Qed.
+
+#[global] Instance: Params (@tref) 1 := {}.
+#[global] Instance tref_proper q : Proper (equiv ==> equiv) (tref q).
+Proof. intros t1 t2 Ht. by rewrite !tref_equiv' Ht. Qed.
+
 Lemma tref_unfold q t :
   tref q t =
     qual_norm' (fun q' t' =>
@@ -751,6 +892,21 @@ Inductive trv_ref_spec : type_qualifiers -> type -> type -> Prop :=
 
 Lemma trv_ref_ok q t : trv_ref_spec q t (trv_ref q t).
 Proof. move: q; induction t=>q; auto. Qed.
+
+Lemma trv_ref_equiv' q t : trv_ref q t ≡ Trv_ref (Tqualified q t).
+Proof.
+  elim: (trv_ref_ok q t).
+  { intros. by rewrite tqualified_equiv. }
+  { intros. by rewrite tref_equiv' Tqualified_id Tqualified_ref Trv_ref_ref. }
+  { intros ???? ->. by rewrite Tqualified_id Tqualified_rv_ref Trv_ref_rv_ref. }
+  { intros. by rewrite Tqualified_merge. }
+Qed.
+Lemma trv_ref_equiv t : trv_ref QM t ≡ Trv_ref t.
+Proof. by rewrite trv_ref_equiv' Tqualified_id. Qed.
+
+#[global] Instance: Params (@trv_ref) 1 := {}.
+#[global] Instance trv_ref_proper q : Proper (equiv ==> equiv) (trv_ref q).
+Proof. intros t1 t2 Ht. by rewrite !trv_ref_equiv' Ht. Qed.
 
 Lemma trv_ref_unfold q t :
   trv_ref q t =

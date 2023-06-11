@@ -608,22 +608,30 @@ Section with_cpp.
       sub_module tu1 tu2 ->
       Forall fs, k1 fs -* k2 fs |-- @wp_init σ tu1 ρ ty p e k1 -* @wp_init σ tu2 ρ ty p e k2.
 
+  (**
+  Separate from [wp_init_frame] because it'll likely have to be proved
+  separately (by induction on the type equivalence).
+  *)
+  Axiom wp_init_type_equiv : forall (σ : genv) tu ρ ty1 ty2 p e Q,
+    ty1 ≡ ty2 -> wp_init tu ρ ty1 p e Q -|- wp_init tu ρ ty2 p e Q.
+
   Section wp_init_proper.
     Context {σ : genv}.
 
     #[global] Instance: Params (@wp_init) 3 := {}.
     #[local] Notation PROPER T R := (
       Proper (
-        T ==> eq ==> eq ==> eq ==> eq ==>
+        T ==> eq ==> equiv ==> eq ==> eq ==>
         pointwise_relation _ R ==> R
       ) wp_init
     ) (only parsing).
 
     #[global] Instance wp_init_mono : PROPER sub_module bi_entails.
     Proof.
-      intros tu1 tu2 ? ρ?<- t?<- p?<- e?<- Q1 Q2 HQ.
-      iApply wp_init_frame; [done|].
-      iIntros (?). iApply HQ.
+      intros tu1 tu2 ? ρ?<- t1 t2 Ht p?<- e?<- Q1 Q2 HQ. iIntros "wp".
+      iApply wp_init_type_equiv; [done|].
+      iApply (wp_init_frame with "[] wp"); [done|]. iIntros (?).
+      iApply HQ.
     Qed.
 
     #[global] Instance wp_init_flip_mono : PROPER (flip sub_module) (flip bi_entails).
@@ -631,7 +639,7 @@ Section with_cpp.
 
     #[global] Instance wp_init_proper : PROPER eq equiv.
     Proof.
-      intros tu?<- ρ?<- t?<- p?<- e?<- Q1 Q2 HQ.
+      intros tu?<- ρ?<- t1 t2 Ht p?<- e?<- Q1 Q2 HQ.
       split'; apply wp_init_mono; try done.
       all: by intros f; rewrite HQ.
     Qed.
