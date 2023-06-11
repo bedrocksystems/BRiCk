@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2021
+ * Copyright (C) BedRock Systems Inc. 2021-2023
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -23,6 +23,28 @@ From bedrock.prelude Require Import base numbers.
 Export bedrock.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
+
+(** ** Quantifiers and equivalence *)
+
+Lemma Forall2_symmetric_strong {A} (R : relation A) l k :
+  Forall (fun x => ∀ y, R x y -> R y x) l -> Forall2 R l k -> Forall2 R k l.
+Proof.
+  intros Hl HR. apply Forall2_same_length_lookup_2.
+  { by apply Forall2_length in HR. }
+  move=>i x y Hx Hy.
+  apply (Forall_lookup_1 _ _ _ _ Hl Hy).
+  apply (Forall2_lookup_lr _ _ _ _ _ _ HR Hy Hx).
+Qed.
+
+Lemma list_equiv_reflexive_strong {A} `{!Equiv A} (l k : list A) :
+  Forall (fun x => x ≡ x) l -> l ≡ l.
+Proof. rewrite equiv_Forall2. apply Forall_Forall2_diag. Qed.
+
+Lemma list_equiv_symmetric_strong {A} `{!Equiv A} (l k : list A) :
+  Forall (fun x => ∀ y, x ≡ y -> y ≡ x) l -> l ≡ k -> k ≡ l.
+Proof.
+  rewrite !equiv_Forall2. apply Forall2_symmetric_strong.
+Qed.
 
 (** ** Type-level list quantifier *)
 
