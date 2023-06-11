@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2021-2022 BedRock Systems, Inc.
+ * Copyright (c) 2021-2023 BedRock Systems, Inc.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -19,8 +19,10 @@
  *
  * Original Iris License:
  * https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/LICENSE-CODE
-
  *)
+
+(** Boolean negation (compatible with SSR) *)
+Reserved Notation "~~ b" (at level 35, right associativity).
 
 (** These conflict with AC/AU.
 Reserved Infix "<<" (at level 35).	(** cf [≪] *)
