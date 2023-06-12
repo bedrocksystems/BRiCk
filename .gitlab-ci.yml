@@ -376,7 +376,8 @@ prepare_cpp2v_env:
     - .dune-base
   script:
     # Create the directory for the artifact, and write the Git sha.
-    - mkdir build
+    # -p because it might exist because of artifacts we depend on.
+    - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
     # Set up the environment and run the build (in the prepared workspace).
     - cd /tmp/build-dir/fmdeps/cpp2v-core
