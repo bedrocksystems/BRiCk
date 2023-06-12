@@ -66,13 +66,18 @@ mlock Definition offsetR_aux `{Σ : cpp_logic} (o : offset) (R : Rep) : Rep :=
 #[projections(primitive=yes)]
 Structure AT `{Σ : cpp_logic} : Type :=
   { #[canonical=yes] AT_LHS :> Type
+  (** ^^ We make [AT_LHS] a coercion *)
   ; #[canonical=yes] AT_Result : Type
+  (* We hardcode [Rep] as second argument to improve error messages *)
   ; #[canonical=no] AT_at : AT_LHS -> Rep -> AT_Result }.
 #[global] Arguments AT_at {AT} _ _ : rename, simpl never.
 
 mlock Definition __at := @AT_at.
 #[global] Arguments __at {ti Σ AT} _ _ : rename.
 
+(** Since this will appear in inferred types, we choose meaningful names. This
+naming choice makes [ptrA] seem an alternative spelling of [ptr] (like [mpred]
+and [mpredI], and similarly for [offsetA]. *)
 Canonical Structure ptrA `{Σ : cpp_logic} : AT :=
   {| AT_LHS := ptr; AT_Result := mpred; AT_at := at_aux |}.
 Canonical Structure offsetA `{Σ : cpp_logic} : AT :=
@@ -84,8 +89,13 @@ Canonical Structure offsetA `{Σ : cpp_logic} : AT :=
   *)
 #[global] Notation _at := (__at (AT := ptrA)).
 #[global] Notation _offsetR := (__at (AT := offsetA)).
+(**
+The above notations are used for printing [_at] / [_offset] in the few cases
+where they are partially applied.
 
-(* Added later to have higher priority. *)
+[_ |-> _] is preferred because declared later.
+ *)
+
 #[global] Notation "p |-> r" := (__at p r)
   (at level 15, r at level 20, right associativity) : stdpp_scope.
 
