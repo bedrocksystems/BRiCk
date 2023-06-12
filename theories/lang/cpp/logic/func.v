@@ -271,6 +271,29 @@ Section with_cpp.
 
   (** ** Weakest precondition of a constructor *)
 
+  (* mark members as strictly valid. *)
+  Fixpoint wpi_members_svalid
+           (cls : globname) (this : ptr)
+           (members : list Member)
+           (Q : mpred) : mpred :=
+    match members with
+    | nil => Q
+    | m :: members =>
+        this ,, _field {| f_type := cls ; f_name := m.(mem_name) |} |->
+          (svalidR ** aligned_ofR (erase_qualifiers m.(mem_type)))
+          (* Alignment should be deducible otherwise. *)
+        -* wpi_members_svalid cls this members Q
+    end.
+
+  Lemma wpi_members_svalid_frame p cls (Q Q' : mpredI) flds :
+      Q -* Q'
+      |-- wpi_members_svalid cls p flds Q -* wpi_members_svalid cls p flds Q'.
+  Proof.
+    induction flds => /=; first done.
+    iIntros "Q W S".
+    iApply (IHflds with "Q (W S)").
+  Qed.
+
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
            (ρ : region) (cls : globname) (this : ptr)
@@ -381,11 +404,13 @@ Section with_cpp.
         ERROR "delegating constructor has other initializers"
       end
     | None =>
+      let members_valid := wpi_members_svalid cls this s.(s_fields) in
       let bases := wpi_bases ρ cls this (List.map fst s.(s_bases)) inits in
       let members := wpi_members ρ cls this s.(s_fields) inits in
       let ident Q := this |-> wp_init_identity cls Q in
-      (** initialize the bases, then the identity, then the members *)
-      bases (ident (members (this |-> struct_paddingR (cQp.mut 1) cls -*  Q)))
+      (** validity, initialize the bases, then the identity, then the members *)
+      this |-> svalidR -*
+      members_valid (bases (ident (members (this |-> struct_paddingR (cQp.mut 1) cls -* Q))))
       (* NOTE we get the [struct_paddingR] at the end since
          [struct_paddingR (cQp.mut 1) cls |-- type_ptrR (Tnamed cls)].
        *)
@@ -402,7 +427,11 @@ Section with_cpp.
       iApply wp_init_frame => //.
       iIntros (?); by iApply interp_frame. }
     { iIntros "Q".
-      iApply wpi_bases_frame. iApply wp_init_identity_frame'. iApply wpi_members_frame.
+      iApply wand_frame.
+      iApply wpi_members_svalid_frame.
+      iApply wpi_bases_frame.
+      iApply wp_init_identity_frame'.
+      iApply wpi_members_frame.
       by iApply wand_frame. }
   Qed.
 
