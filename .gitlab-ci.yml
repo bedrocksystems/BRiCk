@@ -162,6 +162,7 @@ build_public:
 build_public_opam:
   script:
     - opam install --assume-depexts -y .
+  needs: [dune-build]
   extends:
     - .build_aux
     - .public
