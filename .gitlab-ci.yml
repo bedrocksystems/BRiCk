@@ -374,7 +374,6 @@ prepare_cpp2v_env:
 .dune-build-base:
   extends:
     - .dune-base
-  needs: []
   script:
     # Create the directory for the artifact, and write the Git sha.
     - mkdir build
@@ -410,16 +409,21 @@ prepare_cpp2v_env:
       - dune_build_codeq.log
 
 .dune-build:
+  stage: dune-build
+  needs: []
   extends:
     - .dune-build-base
     - .proof-trigger-mr-releases
 
 .dune-build-aux:
+  stage: build
+  needs: [dune-build]
   extends:
     - .dune-build-base
     - .proof-trigger
 
 .dune-test-base:
+  stage: test
   extends:
     - .dune-base
   script:
@@ -472,21 +476,29 @@ dune-test:
   extends:
     - .dune-test
     - .latest
+  needs:
+    - dune-build
 
 dune-test-llvm15:
   extends:
     - .dune-test-aux
     - .llvm15
+  needs:
+    - dune-build-llvm15
 
 dune-test-llvm14:
   extends:
     - .dune-test-aux
     - .llvm14
+  needs:
+    - dune-build-llvm14
 
 dune-test-public:
   extends:
     - .dune-test-aux
     - .public
+  needs:
+    - dune-build-public
 
 build-cpp2v-trigger:
   rules:
