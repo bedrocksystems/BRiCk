@@ -383,8 +383,6 @@ prepare_cpp2v_env:
     - cd /tmp/build-dir/fmdeps/cpp2v-core
     - time dune build -j ${NJOBS} . coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | tee -a ${CODEQ_LOG}
     - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin 2>&1 | tee -a ${CODEQ_LOG}
-    - >
-      (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | tee -a ${CODEQ_LOG}
     - cd $CI_PROJECT_DIR/
     # Adding built files to the artifact.
     - cp /tmp/build-dir/_build/default/fmdeps/cpp2v-core/build/cpp2v build/cpp2v
@@ -421,11 +419,43 @@ prepare_cpp2v_env:
     - .dune-build-base
     - .proof-trigger
 
+.dune-test-base:
+  extends:
+    - .dune-base
+  script:
+    # Set up the environment and run the build (in the prepared workspace).
+    - cd /tmp/build-dir/fmdeps/cpp2v-core
+    - >
+      (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | tee -a ${CODEQ_LOG}
+    - cd $CI_PROJECT_DIR/
+    - time ./fm-ci-tools/code_quality.py cpp2v-core
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
+    paths:
+      - gl-code-quality-report.json
+      - dune_build_codeq.log
+
+.dune-test:
+  extends:
+    - .dune-test-base
+    - .proof-trigger-mr-releases
+
+.dune-test-aux:
+  extends:
+    - .dune-test-base
+    - .proof-trigger
+
 # Actual build/test matrix
 
 dune-build:
   extends:
     - .dune-build
+    - .latest
+
+dune-test:
+  extends:
+    - .dune-test
     - .latest
 
 build-cpp2v-trigger:
