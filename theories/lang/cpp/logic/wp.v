@@ -608,15 +608,34 @@ Section with_cpp.
       sub_module tu1 tu2 ->
       Forall fs, k1 fs -* k2 fs |-- @wp_init σ tu1 ρ ty p e k1 -* @wp_init σ tu2 ρ ty p e k2.
 
-  #[global] Instance Proper_wp_init σ :
-    Proper (sub_module ==> eq ==> eq ==> eq ==> eq ==>
-            pointwise_relation _ (⊢) ==> (⊢))
-           (@wp_init σ).
-  Proof.
-    repeat red; intros; subst.
-    iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
-    iIntros (?); iApply H4.
-  Qed.
+  Section wp_init_proper.
+    Context {σ : genv}.
+
+    #[global] Instance: Params (@wp_init) 3 := {}.
+    #[local] Notation PROPER T R := (
+      Proper (
+        T ==> eq ==> eq ==> eq ==> eq ==>
+        pointwise_relation _ R ==> R
+      ) wp_init
+    ) (only parsing).
+
+    #[global] Instance wp_init_mono : PROPER sub_module bi_entails.
+    Proof.
+      intros tu1 tu2 ? ρ?<- t?<- p?<- e?<- Q1 Q2 HQ.
+      iApply wp_init_frame; [done|].
+      iIntros (?). iApply HQ.
+    Qed.
+
+    #[global] Instance wp_init_flip_mono : PROPER (flip sub_module) (flip bi_entails).
+    Proof. repeat intro. exact: wp_init_mono. Qed.
+
+    #[global] Instance wp_init_proper : PROPER eq equiv.
+    Proof.
+      intros tu?<- ρ?<- t?<- p?<- e?<- Q1 Q2 HQ.
+      split'; apply wp_init_mono; try done.
+      all: by intros f; rewrite HQ.
+    Qed.
+  End wp_init_proper.
 
   Section wp_init.
     Context {σ : genv} (tu : translation_unit) (ρ : region) (ty : type) (p : ptr) (e : Expr).
