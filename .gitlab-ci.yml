@@ -453,10 +453,40 @@ dune-build:
     - .dune-build
     - .latest
 
+dune-build-llvm15:
+  extends:
+    - .dune-build-aux
+    - .llvm15
+
+dune-build-llvm14:
+  extends:
+    - .dune-build-aux
+    - .llvm14
+
+dune-build-public:
+  extends:
+    - .dune-build-aux
+    - .public
+
 dune-test:
   extends:
     - .dune-test
     - .latest
+
+dune-test-llvm15:
+  extends:
+    - .dune-test-aux
+    - .llvm15
+
+dune-test-llvm14:
+  extends:
+    - .dune-test-aux
+    - .llvm14
+
+dune-test-public:
+  extends:
+    - .dune-test-aux
+    - .public
 
 build-cpp2v-trigger:
   rules:
