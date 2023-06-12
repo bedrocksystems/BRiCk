@@ -377,9 +377,7 @@ dune-build:
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
     # Set up the environment and run the build (in the prepared workspace).
     - cd /tmp/build-dir/fmdeps/cpp2v-core
-    - export PATH="/usr/lib/llvm/bin/:$PATH"
-    - time dune build -j ${NJOBS} 2>&1 | tee -a ${CODEQ_LOG}
-    - time dune build -j ${NJOBS} coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | tee -a ${CODEQ_LOG}
+    - time dune build -j ${NJOBS} . coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | tee -a ${CODEQ_LOG}
     - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin 2>&1 | tee -a ${CODEQ_LOG}
     - >
       (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | tee -a ${CODEQ_LOG}
