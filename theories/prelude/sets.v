@@ -77,3 +77,26 @@ Section semi_set.
   Qed.
 End semi_set.
 #[global] Hint Resolve pairwise_disjoint_union_2 : core.
+
+Section top_set.
+  Context `{TopSet A C}.
+  Implicit Types x y : A.
+  Implicit Types X Y : C.
+
+  #[local] Set Default Proof Using "Type*".
+
+  (* Named after [union_empty_l] (+ missing [top_set_] prefix) *)
+  #[global] Instance top_set_intersection_top_l : LeftId (≡@{C}) ⊤ (∩).
+  Proof. intros ?. set_solver. Qed.
+  #[global] Instance top_set_intersection_top_r : RightId (≡@{C}) ⊤ (∩).
+  Proof. intros ?. set_solver. Qed.
+
+  Section leibniz.
+    Context `{!LeibnizEquiv C}.
+
+    #[global] Instance top_set_intersection_top_l_L : LeftId (=@{C}) ⊤ (∩).
+    Proof. intros ?. unfold_leibniz. apply (left_id _ _). Qed.
+    #[global] Instance top_set_intersection_top_r_L : RightId (=@{C}) ⊤ (∩).
+    Proof. intros ?. unfold_leibniz. apply (right_id _ _). Qed.
+  End leibniz.
+End top_set.
