@@ -14,6 +14,12 @@ From bedrock.lang.cpp.logic Require Import
   pred path_pred heap_pred wp builtins cptr const
   layout initializers destroy.
 
+(* UPSTREAM. *)
+Lemma wand_frame {PROP : bi} (R Q Q' : PROP) :
+  Q -* Q' |--
+  (R -* Q) -* (R -* Q').
+Proof. iIntros "Q W R". iApply ("Q" with "(W R)"). Qed.
+
 #[local] Set Printing Coercions.
 
 Arguments ERROR {_ _} _%bs.
@@ -101,6 +107,11 @@ Section with_cpp.
     rewrite pureR_wand.
     by iApply "X"; iApply "Y".
   Qed.
+
+  (* variant of [wp_init_identity_frame] for [mpred]. *)
+  Theorem wp_init_identity_frame' cls Q Q' p :
+    Q' -* Q |-- (p |-> wp_init_identity cls Q') -* (p |-> wp_init_identity cls Q).
+  Proof. by rewrite -_at_wand -wp_init_identity_frame _at_pureR. Qed.
 
   (** [wp_revert_identity cls Q] updates the identities of "this" by taking the
       [identity] of this class and transitively updating the [identity] of all base
@@ -390,14 +401,9 @@ Section with_cpp.
       iIntros "x".
       iApply wp_init_frame => //.
       iIntros (?); by iApply interp_frame. }
-    { iIntros "a"; iApply wpi_bases_frame.
-      rewrite /wp_init_identity.
-      rewrite !_at_sep !_at_wand !_at_pureR.
-      iIntros "[$ x] b".
-      iDestruct ("x" with "b") as "x"; iRevert "x".
-      iApply wpi_members_frame.
-      iIntros "b c".
-      by iApply "a"; iApply "b". }
+    { iIntros "Q".
+      iApply wpi_bases_frame. iApply wp_init_identity_frame'. iApply wpi_members_frame.
+      by iApply wand_frame. }
   Qed.
 
   Definition wp_union_initializer_list (u : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
