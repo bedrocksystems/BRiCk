@@ -485,16 +485,6 @@ Section qual_norm.
     all: rewrite qual_norm'_unfold; auto.
   Qed.
 
-  (**
-  TODO: Do these elimination rules buy us anything compared to, say,
-  [induction (qual_norm_ok f t)]? If not, delete them.
-  *)
-  Lemma qual_norm'_ind (P : type_qualifiers -> type -> A -> Prop) f :
-    (∀ q q' t' ret (IHt : P (merge_tq q q') t' ret), P q (Tqualified q' t') ret) ->
-    (∀ q t (Hunqual : ~~ is_qualified t), P q t (f q t)) ->
-    ∀ q t, P q t (qual_norm' f q t).
-  Proof. intros ?? q t. induction (qual_norm'_ok f q t); auto. Qed.
-
   Lemma qual_norm'_unqual f q t : ~~ is_qualified t -> qual_norm' f q t = f q t.
   Proof.
     intros. rewrite qual_norm'_unfold. by destruct t.
@@ -521,12 +511,6 @@ Section qual_norm.
 
   Lemma qual_norm_ok f t : qual_norm_spec f QM t (qual_norm f t).
   Proof. apply qual_norm'_ok. Qed.
-
-  Lemma qual_norm_ind (P : type_qualifiers -> type -> A -> Prop) f :
-    (∀ q q' t' ret (IHt : P (merge_tq q q') t' ret), P q (Tqualified q' t') ret) ->
-    (∀ q t (Hunqual : ~~ is_qualified t), P q t (f q t)) ->
-    ∀ t, P QM t (qual_norm f t).
-  Proof. intros ?? t. induction (qual_norm_ok f t); auto. Qed.
 
   Lemma qual_norm_unqual f t : ~~ is_qualified t -> qual_norm f t = f QM t.
   Proof. apply qual_norm'_unqual. Qed.
@@ -574,12 +558,6 @@ Proof.
   induction t.
   all: rewrite decompose_type_unfold; cbn; auto.
 Qed.
-
-Lemma decompose_type_ind (P : type -> type_qualifiers * type -> Prop) :
-  (∀ q t p (IHt : P t p), P (Tqualified q t) (merge_tq q p.1, p.2)) ->
-  (∀ t (Hunqual : ~~ is_qualified t), P t (QM, t)) ->
-  ∀ t, P t (decompose_type t).
-Proof. intros ?? t. induction (decompose_type_ok t); auto. Qed.
 
 Lemma is_qualified_decompose_type t : ~~ is_qualified (decompose_type t).2.
 Proof. by induction (decompose_type_ok t). Qed.
@@ -701,13 +679,6 @@ Proof.
   all: destruct (QM_cases q); by destruct q; auto.
 Qed.
 
-Lemma tqualified'_elim (P : type_qualifiers -> type -> type -> Prop) :
-  (∀ q t (Href : is_ref t), P q t t) ->
-  (∀ t (Hnonref : ~~ is_ref t), P QM t t) ->
-  (∀ q t (Hnonref : ~~ is_ref t) (Hq : ~~ is_QM q), P q t (Tqualified q t)) ->
-  ∀ q t, P q t (tqualified' q t).
-Proof. intros ??? q t. destruct (tqualified'_ok q t); auto. Qed.
-
 Lemma tqualified'_ref q t : is_ref t -> tqualified' q t = t.
 Proof. by destruct t. Qed.
 
@@ -719,12 +690,6 @@ Proof. by destruct t, q. Qed.
 
 Lemma tqualified_ok q t : qual_norm_spec tqualified' q t (tqualified q t).
 Proof. apply qual_norm'_ok. Qed.
-
-Lemma tqualified_ind (P : type_qualifiers -> type -> type -> Prop) :
-  (∀ q q' t' ret (IHt : P (merge_tq q q') t' ret), P q (Tqualified q' t') ret) ->
-  (∀ q t (Hunqual : ~~ is_qualified t), P q t (tqualified' q t)) ->
-  ∀ q t, P q t (tqualified q t).
-Proof. apply qual_norm'_ind. Qed.
 
 Lemma tqualified_qual_norm' q t : tqualified q t = qual_norm' tqualified' q t.
 Proof. done. Qed.
@@ -764,14 +729,6 @@ Inductive tref_spec : type_qualifiers -> type -> type -> Prop :=
 Lemma tref_ok q t : tref_spec q t (tref q t).
 Proof. move: q. induction t=>q; auto. Qed.
 
-Lemma tref_ind (P : type_qualifiers -> type -> type -> Prop) :
-  (∀ q t (Hnonref : ~~ is_ref t) (Hunqual : ~~ is_qualified t), P q t (Tref $ tqualified q t)) ->
-  (∀ q t ret (IHt : P QM t ret), P q (Tref t) ret) ->
-  (∀ q t ret (IHt : P QM t ret), P q (Trv_ref t ) ret) ->
-  (∀ q q' t ret (IHt : P (merge_tq q q') t ret), P q (Tqualified q' t) ret) ->
-  ∀ q t, P q t (tref q t).
-Proof. intros ???? q t. induction (tref_ok q t); auto. Qed.
-
 Lemma tref_unfold q t :
   tref q t =
     qual_norm' (fun q' t' =>
@@ -794,14 +751,6 @@ Inductive trv_ref_spec : type_qualifiers -> type -> type -> Prop :=
 
 Lemma trv_ref_ok q t : trv_ref_spec q t (trv_ref q t).
 Proof. move: q; induction t=>q; auto. Qed.
-
-Lemma trv_ref_ind (P : type_qualifiers -> type -> type -> Prop) :
-  (∀ q t (Hnonref : ~~ is_ref t) (Hunqual : ~~ is_qualified t), P q t (Trv_ref $ tqualified q t)) ->
-  (∀ q t, P q (Tref t) (tref QM t)) ->
-  (∀ q t ret (IHt : P QM t ret), P q (Trv_ref t ) ret) ->
-  (∀ q q' t ret (IHt : P (merge_tq q q') t ret), P q (Tqualified q' t) ret) ->
-  ∀ q t, P q t (trv_ref q t).
-Proof. intros ???? q t. induction (trv_ref_ok q t); auto. Qed.
 
 Lemma trv_ref_unfold q t :
   trv_ref q t =
