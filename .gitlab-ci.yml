@@ -142,21 +142,6 @@ build_latest:
     - .build
     - .latest
 
-build_llvm15:
-  extends:
-    - .build_aux
-    - .llvm15
-
-build_llvm14:
-  extends:
-    - .build_aux
-    - .llvm14
-
-build_public:
-  extends:
-    - .build_aux
-    - .public
-
 # Ensure that the code builds against dependencies declared in opam files, and
 # that those match the versions in our "public" Docker image.
 build_public_opam:
@@ -169,33 +154,13 @@ build_public_opam:
   # No artifacts are needed here.
   artifacts:
 
+# TODO remove when we're done moving tests to dune.
 test_latest:
   extends:
     - .test
     - .latest
   needs:
     - build_latest
-
-test_llvm15:
-  extends:
-    - .test
-    - .llvm15
-  needs:
-    - build_llvm15
-
-test_llvm14:
-  extends:
-    - .test
-    - .llvm14
-  needs:
-    - build_llvm14
-
-test_public:
-  extends:
-    - .test
-    - .public
-  needs:
-    - build_public
 
 prepare_pages:
   extends:
