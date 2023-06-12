@@ -145,11 +145,7 @@ Section test_suite.
 
   Example _9 := o ., g ., f .[ Tint ! 1 ] .[ Tint ! 0 ] ., f |-> R.
 
-  Example _10 := o ., g ., f .[ Tint ! 1 ] .[ Tint ! 0 ] ., f |-> R.
-
   Example _11 := o .[ Tint ! 1 ] |-> R.
-
-  Example _12 := o .[ Tint ! 1 ] |-> R.
 
   (*Example _13 := _eqv v .[ Tint ! 1 ] |-> R.
 
