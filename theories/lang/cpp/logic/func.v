@@ -625,7 +625,7 @@ Section with_cpp.
         let ρ := Remp (Some thisp) None Tvoid in
           |> (* the function prolog consumes a step. *)
              match body return Kpred -> mpred with
-             | Defaulted => fun k => k Normal
+             | Defaulted => fun k => |={top}=> k Normal
              | UserDefined body => wp ρ body
              end (Kreturn_void (epilog thisp))
       | _ , _ => False
