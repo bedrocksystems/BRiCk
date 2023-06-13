@@ -99,7 +99,7 @@ objects, so <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syn
 
 <div class="paragraph"> </div>
 
-<a id="lab180"></a><h2 class="section">Default initilalization</h2>
+<a id="lab181"></a><h2 class="section">Default initilalization</h2>
 
 <div class="paragraph"> </div>
 
@@ -270,7 +270,7 @@ described above.
 </div>
 
 <div class="doc">
-<a id="lab181"></a><h2 class="section">Expression initialization</h2>
+<a id="lab182"></a><h2 class="section">Expression initialization</h2>
 
 </div>
 <div class="code">
@@ -506,7 +506,7 @@ right&nbsp;now.&nbsp;So,&nbsp;for&nbsp;the&nbsp;time&nbsp;being,&nbsp;we&nbsp;pr
 &nbsp;&nbsp;<span class="id" title="keyword">Proof</span> <span class="id" title="keyword">using</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span>. <span class="id" title="tactic">rewrite</span> /<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize"><span class="id" title="definition">wp_initialize</span></a>/<a class="idref" href="bedrock.lang.cpp.syntax.types.html#qual_norm"><span class="id" title="definition">qual_norm</span></a>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">induction</span> (<a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize_ok"><span class="id" title="lemma">wp_initialize_ok</span></a> <span class="id" title="var">tu</span> ρ <span class="id" title="var">ty</span>); <span class="id" title="var">last</span> <span class="id" title="var">done</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !<a class="idref" href="bedrock.lang.cpp.syntax.types.html#qual_norm'_unqual"><span class="id" title="lemma">qual_norm'_unqual</span></a>. <span class="id" title="tactic">exact</span>: <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize_unqualified_frame"><span class="id" title="lemma">wp_initialize_unqualified_frame</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !<a class="idref" href="bedrock.lang.cpp.syntax.types.html#qual_norm'_unqual"><span class="id" title="lemma">qual_norm'_unqual</span></a>//. <span class="id" title="tactic">exact</span>: <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#wp_initialize_unqualified_frame"><span class="id" title="lemma">wp_initialize_unqualified_frame</span></a>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>

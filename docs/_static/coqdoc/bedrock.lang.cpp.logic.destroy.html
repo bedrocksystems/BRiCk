@@ -202,7 +202,7 @@ and is compatible with fancy updates (see rule <span class="inlinecode"><a class
 </div>
 
 <div class="doc">
-<a id="lab175"></a><h2 class="section">Destroying primitives</h2>
+<a id="lab176"></a><h2 class="section">Destroying primitives</h2>
 
 </div>
 <div class="code">
@@ -322,7 +322,7 @@ Unfold for one type, failing if there's nothing to do.
 </div>
 
 <div class="doc">
-<a id="lab176"></a><h2 class="section">Invoking destructors</h2>
+<a id="lab177"></a><h2 class="section">Invoking destructors</h2>
 
 </div>
 <div class="code">
@@ -459,7 +459,7 @@ Unfold for one type, failing if there's nothing to do.
 </div>
 
 <div class="doc">
-<a id="lab177"></a><h2 class="section">Destroying structures and unions</h2>
+<a id="lab178"></a><h2 class="section">Destroying structures and unions</h2>
 
 </div>
 <div class="code">
@@ -653,7 +653,7 @@ Unfold for one class, failing if there's nothing to do.
 </div>
 
 <div class="doc">
-<a id="lab178"></a><h2 class="section">Arrays and values</h2>
+<a id="lab179"></a><h2 class="section">Arrays and values</h2>
 
 <div class="paragraph"> </div>
 
@@ -1122,8 +1122,8 @@ Introduction rules
 &nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> {1}<a class="idref" href="bedrock.lang.cpp.logic.destroy.html#wp_destroy_val_qual_norm'"><span class="id" title="lemma">wp_destroy_val_qual_norm'</span></a>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: (<a class="idref" href="bedrock.lang.cpp.syntax.types.html#qual_norm'_ok"><span class="id" title="lemma">qual_norm'_ok</span></a> <span class="id" title="var">_</span> <span class="id" title="var">cv</span> <span class="id" title="var">ty</span>); [|<span class="id" title="var">done</span>]. <span class="id" title="tactic">move</span>=&gt;? <span class="id" title="var">rty</span> *.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#qual_norm'_unqual"><span class="id" title="lemma">qual_norm'_unqual</span></a>. <span class="id" title="var">wp_destroy_val_unfold</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">rty</span>; <span class="id" title="tactic">first</span> [<span class="id" title="var">done</span> | <span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <a class="idref" href="bedrock.lang.cpp.syntax.types.html#unqualified_qual"><span class="id" title="lemma">unqualified_qual</span></a>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#qual_norm'_unqual"><span class="id" title="lemma">qual_norm'_unqual</span></a>//. <span class="id" title="var">wp_destroy_val_unfold</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">rty</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="destroy_val_value_type_elim" class="idref" href="#destroy_val_value_type_elim"><span class="id" title="lemma">destroy_val_value_type_elim</span></a> <a id="tu:472" class="idref" href="#tu:472"><span class="id" title="binder">tu</span></a> <a id="ty:473" class="idref" href="#ty:473"><span class="id" title="binder">ty</span></a> <a id="this:474" class="idref" href="#this:474"><span class="id" title="binder">this</span></a> <a id="Q:475" class="idref" href="#Q:475"><span class="id" title="binder">Q</span></a> :<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_value_type"><span class="id" title="definition">is_value_type</span></a> <a class="idref" href="bedrock.lang.cpp.logic.destroy.html#ty:473"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
@@ -1147,7 +1147,7 @@ Introduction rules
 </div>
 
 <div class="doc">
-<a id="lab179"></a><h2 class="section">Destroying temporaries</h2>
+<a id="lab180"></a><h2 class="section">Destroying temporaries</h2>
 
 <div class="paragraph"> </div>
 
