@@ -142,59 +142,17 @@ build_latest:
     - .build
     - .latest
 
-build_llvm15:
-  extends:
-    - .build_aux
-    - .llvm15
-
-build_llvm14:
-  extends:
-    - .build_aux
-    - .llvm14
-
-build_public:
-  extends:
-    - .build_aux
-    - .public
-
 # Ensure that the code builds against dependencies declared in opam files, and
 # that those match the versions in our "public" Docker image.
 build_public_opam:
   script:
     - opam install --assume-depexts -y .
+  needs: [dune-build]
   extends:
     - .build_aux
     - .public
   # No artifacts are needed here.
   artifacts:
-
-test_latest:
-  extends:
-    - .test
-    - .latest
-  needs:
-    - build_latest
-
-test_llvm15:
-  extends:
-    - .test
-    - .llvm15
-  needs:
-    - build_llvm15
-
-test_llvm14:
-  extends:
-    - .test
-    - .llvm14
-  needs:
-    - build_llvm14
-
-test_public:
-  extends:
-    - .test
-    - .public
-  needs:
-    - build_public
 
 prepare_pages:
   extends:
@@ -361,37 +319,29 @@ prepare_cpp2v_env:
     - time ./fm-ci-tools/fm_dune/rsync_dune push default
     - ssh ${DUNE_USER}@${FM_CACHE_SERVER} bash -c "'echo `date  +%Y%m%d%H%M%S` - $CI_PROJECT_NAME - $CI_JOB_NAME - $CI_JOB_ID >> ${RSYNC_CACHE_PATH}/test_rsync_fm1.txt'"
 
-dune-build:
+.dune-base:
   extends:
     - .setup-dunecache
     - .postupdate-dunecache
-    - .proof-trigger-mr-releases
-    - .latest
-  needs: []
   stage: dune-build
   variables:
     CODEQ_LOG: ${CI_PROJECT_DIR}/dune_build_codeq.log
+  tags:
+    - ${DUNE_TAG}
+
+.dune-build-base:
+  extends:
+    - .dune-base
   script:
     # Create the directory for the artifact, and write the Git sha.
-    - mkdir build
+    # -p because it might exist because of artifacts we depend on.
+    - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
     # Set up the environment and run the build (in the prepared workspace).
     - cd /tmp/build-dir/fmdeps/cpp2v-core
-    - export PATH="/usr/lib/llvm/bin/:$PATH"
-    - time dune build -j ${NJOBS} 2>&1 | tee -a ${CODEQ_LOG}
-    - time dune build -j ${NJOBS} coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | tee -a ${CODEQ_LOG}
+    - time dune build -j ${NJOBS} . coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | tee -a ${CODEQ_LOG}
     - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin 2>&1 | tee -a ${CODEQ_LOG}
-    - >
-      (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | tee -a ${CODEQ_LOG}
     - cd $CI_PROJECT_DIR/
-    # Adding built files to the artifact.
-    - cp /tmp/build-dir/_build/default/fmdeps/cpp2v-core/build/cpp2v build/cpp2v
-    - cp -r /tmp/build-dir/_build/default/fmdeps/cpp2v-core/theories build/bedrock
-    # Remove some undesired files from the artifact.
-    - find build/bedrock -type f -name "*.v.d" -exec rm -rf {} \;
-    - find build/bedrock -type f -name "dune*" -exec rm -rf {} \;
-    # Tweak permissions on files (dune makes files read-only).
-    - find build/bedrock -type f -exec chmod u+w {} \;
     # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
     # this build. The value of CI_JOB_ID is only available in this
     # build_latest job, so it has to be stored here.
@@ -404,12 +354,100 @@ dune-build:
     name: cpp2v-${LLVM_MAJ_VER}
     paths:
       - build/gitshas.txt
-      - build/cpp2v
-      - build/bedrock
       - gl-code-quality-report.json
       - dune_build_codeq.log
-  tags:
-    - ${DUNE_TAG}
+
+.dune-build:
+  stage: dune-build
+  needs: []
+  extends:
+    - .dune-build-base
+    - .proof-trigger-mr-releases
+
+.dune-build-aux:
+  stage: build
+  needs: [dune-build]
+  extends:
+    - .dune-build-base
+    - .proof-trigger
+
+.dune-test-base:
+  stage: test
+  extends:
+    - .dune-base
+  script:
+    # Set up the environment and run the build (in the prepared workspace).
+    - cd /tmp/build-dir/fmdeps/cpp2v-core
+    - >
+      (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | tee -a ${CODEQ_LOG}
+    - cd $CI_PROJECT_DIR/
+    - time ./fm-ci-tools/code_quality.py cpp2v-core
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
+    paths:
+      - gl-code-quality-report.json
+      - dune_build_codeq.log
+
+.dune-test:
+  extends:
+    - .dune-test-base
+    - .proof-trigger-mr-releases
+
+.dune-test-aux:
+  extends:
+    - .dune-test-base
+    - .proof-trigger
+
+# Actual build/test matrix
+
+dune-build:
+  extends:
+    - .dune-build
+    - .latest
+
+dune-build-llvm15:
+  extends:
+    - .dune-build-aux
+    - .llvm15
+
+dune-build-llvm14:
+  extends:
+    - .dune-build-aux
+    - .llvm14
+
+dune-build-public:
+  extends:
+    - .dune-build-aux
+    - .public
+
+dune-test:
+  extends:
+    - .dune-test
+    - .latest
+  needs:
+    - dune-build
+
+dune-test-llvm15:
+  extends:
+    - .dune-test-aux
+    - .llvm15
+  needs:
+    - dune-build-llvm15
+
+dune-test-llvm14:
+  extends:
+    - .dune-test-aux
+    - .llvm14
+  needs:
+    - dune-build-llvm14
+
+dune-test-public:
+  extends:
+    - .dune-test-aux
+    - .public
+  needs:
+    - dune-build-public
 
 build-cpp2v-trigger:
   rules:
