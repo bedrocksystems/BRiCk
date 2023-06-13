@@ -10,43 +10,31 @@ Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp initializers.
 
-Section with_resolve.
-  Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
-  Variables (ρ : region).
-  Implicit Types (p : ptr).
+Section zipTypes.
+  Context `{Σ : cpp_logic}.
+  Context {T : Type}.
+  Variable wp_expr : type -> Expr -> wp.WPE.M T.
 
-  Definition arg_types (ty : type) : option (list type * function_arity) :=
-    match ty with
-    | @Tfunction _ ar _ args => Some (args, ar)
-    | _ => None
-    end.
+  (** [zipTypes ts ar es = Some (ms, var_arg)]
 
-  (**
-     [wp_args' ts es Q] evaluates the arguments [es] to a function taking types [ts]
-     and invokes [Q] with the values and the temporary destruction expression.
-
-     > When a function is called, each parameter ([dcl.fct]) is initialized
-     > ([dcl.init], [class.copy.ctor]) with its corresponding argument.
-
-     This is encapsulated because the order of evaluation of function arguments is not
-     specified in C++.
-     NOTE this definition is *not* sound in the presence of exceptions.
-  *)
-  #[local] Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (wp.WPE.M ptr) * option (nat * list type)) :=
+      Sets up the evaluation for a function that accepts [ts] arguments and is
+      variadic arguments as described by [ar].
+   *)
+  #[local] Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr)
+    : option (list (wp.WPE.M T) * option (nat * list type)) :=
     let wp_arg_init ty init K :=
       (* top-level qualifiers on arguments are ignored, they are taken from the definition,
          not the declaration. Dropping qualifiers here makes it possible to support code
          like the following:
-         ```
+         <<
          // f.hpp
          void f(int);
          void g() { f(1); } // calls using [void f(int)] rather than [void f(const int)]
          // f.cpp
          void f(const int) {}
-         ```
+         >>
        *)
-      let ty := drop_qualifiers ty in
-      Forall p, wp_initialize tu ρ ty p init (fun frees => K p (FreeTemps.delete ty p >*> frees)%free)
+      wp_expr (drop_qualifiers ty) init K
     in
     match ts with
     | [] =>
@@ -62,7 +50,7 @@ Section with_resolve.
         match es with
         | [] => None
         | e :: es =>
-            let update (x : list (wp.WPE.M ptr) * option (nat * list type)) :=
+            let update (x : list (wp.WPE.M T) * option (nat * list type)) :=
               (wp_arg_init t e :: x.1, (fun x => (1 + x.1, x.2)) <$> x.2)
             in
             update <$> zipTypes ts ar es
@@ -85,6 +73,8 @@ Section with_resolve.
     by apply fmap_None in CONTRA.
   Qed.
 
+  Hypothesis wp_expr_frame : forall ty e , |-- wp.WPE.Mframe (wp_expr ty e) (wp_expr ty e).
+
   #[local] Lemma zipTypes_ok : forall ts ar es ms r,
       zipTypes ts ar es = Some (ms, r) ->
       length ms = length es /\
@@ -92,7 +82,7 @@ Section with_resolve.
       | None => ar = Ar_Definite
       | Some (n, va_ts) => ar = Ar_Variadic /\ length ms = n + length va_ts /\ n = length ts
       end /\ |-- [∗list] m ∈ ms, wp.WPE.Mframe m m.
-  Proof.
+  Proof using wp_expr_frame.
     induction ts; simpl; intros.
     { destruct ar; first by destruct es; inversion H.
       inversion H; clear H; subst.
@@ -102,10 +92,7 @@ Section with_resolve.
       { split; eauto. }
       { induction es =>/=; eauto.
         rewrite -IHes. rewrite right_id.
-        iIntros (??) "X Y". iIntros (p).
-        iSpecialize ("Y" $! p); iRevert "Y".
-        iApply wp_initialize_frame; [done|].
-        iIntros (?); iApply "X". } }
+        iIntros (??) "X Y". iApply (wp_expr_frame with "X Y"). } }
     { destruct es; try congruence.
       specialize (IHts ar es).
       destruct (zipTypes ts ar es); simpl in *; try congruence.
@@ -118,11 +105,34 @@ Section with_resolve.
         { destruct p; simpl. forward_reason. split; eauto. }
         { destruct H0; eauto. } }
       { iSplitL.
-        { iIntros (??) "X Y". iIntros (f).
-          iSpecialize ("Y" $! f); iRevert "Y".
-          iApply wp_initialize_frame; [done|].
-          iIntros (?); iApply "X". }
-        destruct H0. eauto. } }
+        { iIntros (??) "X Y". iApply (wp_expr_frame with "X Y"). }
+        { destruct H0. iApply H1. } } }
+  Qed.
+
+End zipTypes.
+
+Section with_resolve.
+  Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
+  Variables (ρ : region).
+  Implicit Types (p : ptr).
+
+  Definition arg_types (ty : type) : option (list type * function_arity) :=
+    match ty with
+    | @Tfunction _ ar _ args => Some (args, ar)
+    | _ => None
+    end.
+
+  Definition wp_arg ty e K :=
+    Forall p, wp_initialize tu ρ ty p e (fun free => K p (FreeTemps.delete ty p >*> free)%free).
+
+  Lemma wp_arg_frame : forall ty e, |-- wp.WPE.Mframe (wp_arg ty e) (wp_arg ty e).
+  Proof.
+    rewrite /wp.WPE.Mframe; intros.
+    iIntros (??) "X Y %p".
+    iSpecialize ("Y" $! p).
+    iRevert "Y".
+    iApply wp_initialize_frame. done.
+    iIntros (?); iApply "X".
   Qed.
 
   (**
@@ -139,7 +149,7 @@ Section with_resolve.
   Definition wp_args (eo : evaluation_order.t) (pre : list (wp.WPE.M ptr))
     (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> list ptr -> FreeTemps -> mpred)
     : mpred :=
-    match zipTypes ts_ar.1 ts_ar.2 es with
+    match zipTypes wp_arg ts_ar.1 ts_ar.2 es with
     | Some (args, va_info) =>
         letI* ps, fs := eval eo (pre ++ args) in
         let pre := firstn (length pre) ps in
@@ -170,8 +180,8 @@ Section with_resolve.
     intros.
     iIntros "PRS X".
     rewrite /wp_args. destruct ts_ar; simpl.
-    generalize (zipTypes_ok l f es).
-    destruct (zipTypes l f es); eauto.
+    generalize (zipTypes_ok wp_arg wp_arg_frame l f es).
+    destruct (zipTypes wp_arg l f es); eauto.
     destruct p; eauto.
     intros X. destruct (X _ _ eq_refl); clear X.
     forward_reason.
@@ -204,7 +214,7 @@ Section with_resolve.
 
   (*
      The following definitions describe the "return"-convention. Specifically,
-     they describe how the returned pointer is recieved into the value category that
+     they describe how the returned pointer is received into the value category that
      it is called with.
      We consolidate these definitions here because they are shared between all
      function calls.
