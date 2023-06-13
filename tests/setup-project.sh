@@ -1,5 +1,3 @@
-#!/bin/bash
-
 cat > dune <<EOF
 (env
  (_
