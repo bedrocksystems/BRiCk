@@ -342,14 +342,6 @@ prepare_cpp2v_env:
     - time dune build -j ${NJOBS} . coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | tee -a ${CODEQ_LOG}
     - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin 2>&1 | tee -a ${CODEQ_LOG}
     - cd $CI_PROJECT_DIR/
-    # Adding built files to the artifact.
-    - cp /tmp/build-dir/_build/default/fmdeps/cpp2v-core/build/cpp2v build/cpp2v
-    - cp -r /tmp/build-dir/_build/default/fmdeps/cpp2v-core/theories build/bedrock
-    # Remove some undesired files from the artifact.
-    - find build/bedrock -type f -name "*.v.d" -exec rm -rf {} \;
-    - find build/bedrock -type f -name "dune*" -exec rm -rf {} \;
-    # Tweak permissions on files (dune makes files read-only).
-    - find build/bedrock -type f -exec chmod u+w {} \;
     # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
     # this build. The value of CI_JOB_ID is only available in this
     # build_latest job, so it has to be stored here.
@@ -362,8 +354,6 @@ prepare_cpp2v_env:
     name: cpp2v-${LLVM_MAJ_VER}
     paths:
       - build/gitshas.txt
-      - build/cpp2v
-      - build/bedrock
       - gl-code-quality-report.json
       - dune_build_codeq.log
 
