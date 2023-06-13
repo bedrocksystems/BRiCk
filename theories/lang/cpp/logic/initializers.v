@@ -374,7 +374,7 @@ Section frames.
   Proof using.
     intros. rewrite /wp_initialize/qual_norm.
     induction (wp_initialize_ok tu ρ ty); last done.
-    rewrite !qual_norm'_unqual. exact: wp_initialize_unqualified_frame.
+    rewrite !qual_norm'_unqual//. exact: wp_initialize_unqualified_frame.
   Qed.
 
   #[global] Instance: Params (@wp_initialize) 8 := {}.

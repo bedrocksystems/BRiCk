@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-21 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -23,6 +23,8 @@ explosion. *)
 #[global] Set Ltac Backtrace.
 
 (** * Small extensions to [stdpp.base] *)
+
+Notation "~~ b" := (negb b) : bool_scope.
 
 (** Solve decidable goal [P] via [vm_compute] on [bool_decide P]. *)
 Ltac vm_decide := apply: bool_decide_eq_true_1; vm_compute; reflexivity.
