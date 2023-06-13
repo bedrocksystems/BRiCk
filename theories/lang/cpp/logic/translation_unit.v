@@ -18,7 +18,6 @@ Import ChargeNotation.
 Section with_cpp.
   Context `{Σ : cpp_logic} {resolve:genv}.
 
-  Set Default Proof Using "Σ resolve".
 
   Definition denoteSymbol (tu : translation_unit) (n : obj_name) (o : ObjValue) : mpred :=
     _global n |->
@@ -128,7 +127,7 @@ Section with_cpp.
   Qed.
 
   #[global] Instance denoteModule_affine {module} : Affine (denoteModule module).
-  Proof using . refine _. Qed.
+  Proof. refine _. Qed.
 
   Lemma denoteModule_denoteSymbol n m o :
     m.(symbols) !! n = Some o ->
