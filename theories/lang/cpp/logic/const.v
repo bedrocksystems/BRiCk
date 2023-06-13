@@ -8,9 +8,9 @@ From iris.proofmode Require Import proofmode monpred.
 
 Require Import bedrock.prelude.base.
 
-From bedrock.lang.cpp Require Import semantics ast heap_notations.
+From bedrock.lang.cpp Require Import semantics ast.
 From bedrock.lang.cpp.logic Require Import
-  pred path_pred rep rep_defs
+  pred path_pred
   heap_pred layout wp.
 
 Section defs.

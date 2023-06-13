@@ -266,12 +266,12 @@ Section with_cpp.
   #[global] Instance validR_affine : Affine validR.
   Proof. rewrite validR_eq; refine _. Qed.
 
-  Import heap_notations.INTERNAL.
+  Import rep_defs.INTERNAL.
 
   Lemma monPred_at_validR p : validR p -|- valid_ptr p.
   Proof. by rewrite validR_eq. Qed.
   Lemma _at_validR (p : ptr) : _at p validR -|- valid_ptr p.
-  Proof. by rewrite validR_eq _at_eq /_at_def. Qed.
+  Proof. by rewrite validR_eq _at_eq. Qed.
 
   #[global] Instance svalidR_persistent : Persistent svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.

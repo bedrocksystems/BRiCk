@@ -17,7 +17,7 @@ From bedrock.lang.bi Require Export monpred.
 Export order can affect CS inference. *)
 
 From bedrock.lang.cpp Require Import semantics.values logic.mpred bi.cfractional.
-From bedrock.lang.cpp Require Export logic.rep_defs heap_notations.
+From bedrock.lang.cpp Require Export logic.rep_defs.
 (** ^^ Delicate; export canonical structure (CS) for [Rep].
 Export order can affect CS inference. *)
 
@@ -185,7 +185,7 @@ Section with_cpp.
     (P ∗-∗ Q) p ⊣⊢ (P p ∗-∗ Q p).
   Proof. by rewrite /bi_wand_iff monPred_at_and !Rep_wand_force. Qed.
 
-  Import heap_notations.INTERNAL.
+  Import rep_defs.INTERNAL.
 
   #[global] Instance _offsetR_ne o n : Proper (dist n ==> dist n) (_offsetR o).
   Proof. unfold_at. solve_proper. Qed.
@@ -207,60 +207,60 @@ Section with_cpp.
 
   Lemma _offsetR_offsetR (o1 o2 : offset) R : o1 |-> (o2 |-> R) -|- o1 ,, o2 |-> R.
   Proof.
-    rewrite !_offsetR_eq/_offsetR_def/=.
+    rewrite !_offsetR_eq/=.
     f_equiv. by intro; rewrite offset_ptr_dot.
   Qed.
 
   Lemma _offsetR_emp o : o |-> emp ⊣⊢ emp.
   Proof.
-    rewrite _offsetR_eq /_offsetR_def.
+    rewrite _offsetR_eq.
     constructor=> p /=. by rewrite !monPred_at_emp.
   Qed.
   Lemma _offsetR_sep o r1 r2 :
     o |-> (r1 ** r2) -|- o |-> r1 ** o |-> r2.
   Proof.
-    rewrite !_offsetR_eq /_offsetR_def -as_Rep_sep.
+    rewrite !_offsetR_eq -as_Rep_sep.
     constructor=> p /=. by rewrite monPred_at_sep.
   Qed.
   Lemma _offsetR_pure (o : offset) (P : Prop) :
     o |-> (bi_pure P) -|- bi_pure P.
   Proof.
-    rewrite _offsetR_eq/_offsetR_def /=.
+    rewrite _offsetR_eq/=.
     by constructor=> p/=; rewrite !monPred_at_pure.
   Qed.
 
   Lemma _offsetR_only_provable (o : offset) (P : Prop) :
     o |-> [| P |] -|- [| P |].
   Proof.
-    rewrite _offsetR_eq/_offsetR_def /=.
+    rewrite _offsetR_eq/=.
     by constructor=> p/=; rewrite !monPred_at_only_provable.
   Qed.
 
   Lemma _offsetR_and (o : offset) P Q :
     o |-> (P //\\ Q) -|- o |-> P //\\ o |-> Q.
   Proof.
-    rewrite !_offsetR_eq/_offsetR_def /=.
+    rewrite !_offsetR_eq/=.
     by constructor=> p/=; rewrite !monPred_at_and.
   Qed.
 
   Lemma _offsetR_or (o : offset) P Q :
     o |-> (P \\// Q) -|- o |-> P \\// o |-> Q.
   Proof.
-    rewrite !_offsetR_eq/_offsetR_def /=.
+    rewrite !_offsetR_eq/=.
     by constructor=> p/=; rewrite !monPred_at_or.
   Qed.
 
   Lemma _offsetR_wand o (P Q : Rep) :
       o |-> (P -* Q) -|- o |-> P -* o |-> Q.
   Proof.
-    rewrite /= !_offsetR_eq /_offsetR_def /=.
+    rewrite /= !_offsetR_eq /=.
     constructor=> p/=. by rewrite !Rep_wand_force.
   Qed.
 
   Lemma _offsetR_exists o {T} (P : T -> Rep) :
       o |-> (Exists v : T, P v) -|- Exists v, o |-> (P v).
   Proof.
-    rewrite _offsetR_eq /_offsetR_def /as_Rep/=.
+    rewrite _offsetR_eq /as_Rep/=.
     constructor =>p; rewrite /= !monPred_at_exist.
     f_equiv=>x. by rewrite _offsetR_eq.
   Qed.
@@ -363,7 +363,7 @@ Section with_cpp.
   Lemma _offsetR_id (R : Rep) :
     _offsetR o_id R -|- R.
   Proof.
-    rewrite _offsetR_eq /_offsetR_def.
+    rewrite _offsetR_eq.
     constructor=>/= p.
     by rewrite offset_ptr_id.
   Qed.
@@ -448,21 +448,21 @@ Section with_cpp.
   Proof. by rewrite !_at_loc monPred_at_fupd. Qed.
 
   Lemma _at_intuitionistically p (R : Rep) : p |-> □ R ⊣⊢ □ (p |-> R).
-  Proof. by rewrite !_at_eq/_at_def; rewrite monPred_at_intuitionistically. Qed.
+  Proof. by rewrite !_at_eq; rewrite monPred_at_intuitionistically. Qed.
   Lemma _at_intuitionistically_if (p : ptr) b R : p |-> (□?b R) -|- □?b (p |-> R).
   Proof. destruct b => //=. by rewrite _at_intuitionistically. Qed.
 
   Lemma _at_except_0 (p : ptr) R : p |-> bi_except_0 R -|- bi_except_0 (p |-> R).
-  Proof. by rewrite !_at_eq/_at_def monPred_at_except_0. Qed.
+  Proof. by rewrite !_at_eq monPred_at_except_0. Qed.
 
   Lemma _at_affinely (p : ptr) R : p |-> <affine> R -|- <affine> p |-> R.
-  Proof. by rewrite !_at_eq/_at_def monPred_at_affinely. Qed.
+  Proof. by rewrite !_at_eq monPred_at_affinely. Qed.
 
   Lemma _at_affinely_if b (p : ptr) R : p |-> <affine>?b R -|- <affine>?b p |-> R.
-  Proof. by destruct b => //; rewrite !_at_eq/_at_def monPred_at_affinely. Qed.
+  Proof. by destruct b => //; rewrite !_at_eq monPred_at_affinely. Qed.
 
   Lemma _at_later p R : p |-> |> R -|- |> p |-> R.
-  Proof. by rewrite !_at_eq/_at_def; rewrite monPred_at_later. Qed.
+  Proof. by rewrite !_at_eq; rewrite monPred_at_later. Qed.
 
   Lemma _at_internal_eq p {A : ofe} x y : p |-> (x ≡@{A} y) -|- x ≡ y.
   Proof. by rewrite _at_loc monPred_at_internal_eq. Qed.
@@ -486,21 +486,21 @@ Section with_cpp.
   Lemma _at_big_sepS `{Countable A} p (X : gset A) (Φ : A -> Rep) :
     p |-> ([∗ set] x ∈ X, Φ x) -|- [∗ set] x ∈ X, p |-> Φ x.
   Proof.
-    rewrite _at_eq/_at_def monPred_at_big_sepS.
+    rewrite _at_eq monPred_at_big_sepS.
     by apply big_opS_proper => x _; rewrite _at_eq. (*TODO: AUTO(gs) missing proper instance*)
   Qed.
 
   Lemma _at_big_sepM `{Countable K} {A} p (m : gmap K A) (Φ : K → A → Rep) :
     p |-> ([∗ map] k↦x ∈ m, Φ k x) -|- [∗ map] k↦x ∈ m, p |-> Φ k x.
   Proof.
-    rewrite _at_eq/_at_def monPred_at_big_sepM.
+    rewrite _at_eq monPred_at_big_sepM.
     by apply big_opM_proper => k x _; rewrite _at_eq.
   Qed.
 
   Lemma _at_big_sepMS `{Countable A} p (X : gmultiset A) (Φ : A → Rep) :
     p |-> ([∗ mset] x ∈ X, Φ x) -|- [∗ mset] x ∈ X, p |-> Φ x.
   Proof.
-    rewrite _at_eq/_at_def monPred_at_big_sepMS.
+    rewrite _at_eq monPred_at_big_sepMS.
     by apply big_opMS_proper => x _; rewrite _at_eq.
   Qed.
 
