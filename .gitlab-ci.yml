@@ -308,8 +308,7 @@ prepare_cpp2v_env:
         echo "LABEL MATCH"
         if [[ -z "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" ]]; then
           echo "TARGET BRANCH"
-          # XXX is this possible?
-          git fetch origin master;
+          # Only possible on manually triggered pipelines
           export CPP2V_CORE_COMMIT_REF_HASH=$(git merge-base origin/master HEAD);
         else
           echo "NO TARGET BRANCH"
@@ -317,8 +316,6 @@ prepare_cpp2v_env:
         fi
       fi
     - echo $CPP2V_CORE_COMMIT_REF_HASH
-    # Paranoia
-    - echo $CI_MERGE_REQUEST_LABELS
     - echo "DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_CPP2V_BRANCH" >> build.env
     - echo "DOWNSTREAM_BRANCH=$DOWNSTREAM_BRANCH" >> build.env
     - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
