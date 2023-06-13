@@ -154,14 +154,6 @@ build_public_opam:
   # No artifacts are needed here.
   artifacts:
 
-# TODO remove when we're done moving tests to dune.
-test_latest:
-  extends:
-    - .test
-    - .latest
-  needs:
-    - build_latest
-
 prepare_pages:
   extends:
     - .proof-trigger-mr-releases
