@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-2022
+ * Copyright (C) BedRock Systems Inc. 2020-2023
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -10,6 +10,12 @@ Require Export bedrock.prelude.base.
 
 Infix "<=" := Bool.le : bool_scope.
 Notation "(<=)" := Bool.le (only parsing) : bool_scope.
+
+(**
+We can't readily use SSR's view lemmas due to [Is_true] vs [is_true].
+*)
+Lemma boolP (b : bool) : b \/ ~~ b.
+Proof. destruct b; auto. Qed.
 
 (**
 More flexible version of [reflect]: using [H : reflectPQ (m < n) (n ≤ m) b]
