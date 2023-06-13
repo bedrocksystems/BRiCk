@@ -931,53 +931,137 @@
 <li><a href="bedrock.lang.cpp.logic.new_delete.html#lab205">an issue.</a>
 
 </li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab206">the form <span class="inlinecode"><span class="id" title="var">new</span></span> <span class="inlinecode">(<span class="id" title="var">p</span>)</span> <span class="inlinecode"><span class="id" title="var">C</span>(...);</span> - where <span class="inlinecode"><span class="id" title="var">p</span></span> is a pointer to some memory with</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab207">the appropriate size and alignment constraints.</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab208">Notes:</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab209">1) this rule /only/ covers uses of the library function placement new</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab210"><span class="inlinecode"><span class="id" title="var">operator</span></span> <span class="inlinecode"><span class="id" title="var">new</span>[](<span class="id" title="var">std</span>​::​<span class="id" title="var">size_t</span>,</span> <span class="inlinecode"><span class="id" title="var">void</span>*</span> <span class="inlinecode">)</span> - although other user-defined variants</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab211">are possible to construct (cf. &lt;https://eel.is/c++draft/expr.new20>)</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab212">2) cf. &lt;https://eel.is/c++draft/expr.new21></a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab213">| ...</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab214">|</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab215">| If the allocation function is a non-allocating form</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab216">| (<span class="inlinecode"><span class="id" title="var">new.delete.placement</span></span>) that returns null, the behavior</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab217">| is undefined. ...</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab218">invocations of the form <span class="inlinecode"><span class="id" title="var">new</span></span> <span class="inlinecode">(<span class="id" title="var">p</span>)</span> <span class="inlinecode"><span class="id" title="var">C</span>[...];</span> - where <span class="inlinecode"><span class="id" title="var">p</span></span> is a pointer to</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab219">some memory with the appropriate size and alignment constraints.</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab220">Notes:</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab221">1) this rule /only/ covers uses of the library function placement new</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab222"><span class="inlinecode"><span class="id" title="var">operator</span></span> <span class="inlinecode"><span class="id" title="var">new</span>[](<span class="id" title="var">std</span>​::​<span class="id" title="var">size_t</span>,</span> <span class="inlinecode"><span class="id" title="var">void</span>*</span> <span class="inlinecode">)</span> - although other user-defined variants</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab223">are possible to construct (cf. &lt;https://eel.is/c++draft/expr.new20>)</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab224">2) cf. &lt;https://eel.is/c++draft/expr.new21></a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab225">| ...</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab226">|</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab227">| If the allocation function is a non-allocating form</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab228">| (<span class="inlinecode"><span class="id" title="var">new.delete.placement</span></span>) that returns null, the behavior</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab229">| is undefined. ...</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab230">the form <span class="inlinecode"><span class="id" title="var">delete</span></span> <span class="inlinecode"><span class="id" title="var">p</span>;</span> - where <span class="inlinecode"><span class="id" title="var">p</span></span> is a non-null pointer to an object whose</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab231">most-derived destructor is defined in the current translation unit.</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab232">of the form <span class="inlinecode"><span class="id" title="var">delete</span>[]</span> <span class="inlinecode"><span class="id" title="var">p</span>;</span> - where <span class="inlinecode"><span class="id" title="var">p</span></span> is a non-null pointer to an array of objects</a>
+
+</li>
+<li><a href="bedrock.lang.cpp.logic.new_delete.html#lab233">whose most-derived destructor is defined in the current translation unit.</a>
+
+</li>
 </ul>
 <h2><a href="bedrock.lang.cpp.logic.stmt.html">bedrock.lang.cpp.logic.stmt</a></h2>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.stmt.html#lab206">Expression Evaluation</a>
+<li><a href="bedrock.lang.cpp.logic.stmt.html#lab234">Expression Evaluation</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.stmt.html#lab207">Declarations</a>
+<li><a href="bedrock.lang.cpp.logic.stmt.html#lab235">Declarations</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.stmt.html#lab208">Blocks</a>
+<li><a href="bedrock.lang.cpp.logic.stmt.html#lab236">Blocks</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.stmt.html#lab209">Loops</a>
+<li><a href="bedrock.lang.cpp.logic.stmt.html#lab237">Loops</a>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.stmt.html#lab210">`do` loops</a>
+<li><a href="bedrock.lang.cpp.logic.stmt.html#lab238">`do` loops</a>
 
 </li>
 </ul>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.stmt.html#lab211">Return</a>
+<li><a href="bedrock.lang.cpp.logic.stmt.html#lab239">Return</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.stmt.html#lab212">Control flow: `break`, `continue`</a>
+<li><a href="bedrock.lang.cpp.logic.stmt.html#lab240">Control flow: `break`, `continue`</a>
 
 </li>
 </ul>
 <h2><a href="bedrock.lang.cpp.logic.func.html">bedrock.lang.cpp.logic.func</a></h2>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.func.html#lab213">Aggregate identity</a>
+<li><a href="bedrock.lang.cpp.logic.func.html#lab241">Aggregate identity</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.func.html#lab214">Binding parameters</a>
+<li><a href="bedrock.lang.cpp.logic.func.html#lab242">Binding parameters</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.func.html#lab215">Weakest preconditions of the flavors of C++ "functions"</a>
+<li><a href="bedrock.lang.cpp.logic.func.html#lab243">Weakest preconditions of the flavors of C++ "functions"</a>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.func.html#lab216">the weakest precondition of a function</a>
+<li><a href="bedrock.lang.cpp.logic.func.html#lab244">the weakest precondition of a function</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.func.html#lab217">The weakest precondition of a method</a>
+<li><a href="bedrock.lang.cpp.logic.func.html#lab245">The weakest precondition of a method</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.func.html#lab218">Weakest precondition of a constructor</a>
+<li><a href="bedrock.lang.cpp.logic.func.html#lab246">Weakest precondition of a constructor</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.func.html#lab219">Weakest precondition of a destructor</a>
+<li><a href="bedrock.lang.cpp.logic.func.html#lab247">Weakest precondition of a destructor</a>
 
 </li>
 </ul>
@@ -996,33 +1080,33 @@
 <h2><a href="bedrock.lang.cpp.logic.core_string.html">bedrock.lang.cpp.logic.core_string</a></h2>
 <h2><a href="bedrock.lang.cpp.logic.cstring.html">bedrock.lang.cpp.logic.cstring</a></h2>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.cstring.html#lab220"><span class="inlinecode"><span class="id" title="var">cstring</span></span>s</a>
+<li><a href="bedrock.lang.cpp.logic.cstring.html#lab248"><span class="inlinecode"><span class="id" title="var">cstring</span></span>s</a>
 
 </li>
 </ul>
 <h2><a href="bedrock.lang.cpp.logic.zstring.html">bedrock.lang.cpp.logic.zstring</a></h2>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.zstring.html#lab221"><span class="inlinecode"><span class="id" title="var">zstring</span></span>s</a>
+<li><a href="bedrock.lang.cpp.logic.zstring.html#lab249"><span class="inlinecode"><span class="id" title="var">zstring</span></span>s</a>
 
 </li>
 </ul>
 <h2><a href="bedrock.lang.cpp.logic.string.html">bedrock.lang.cpp.logic.string</a></h2>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.string.html#lab222"><span class="inlinecode"><span class="id" title="var">cstring</span></span>s and <span class="inlinecode"><span class="id" title="var">zstring</span></span>s</a>
+<li><a href="bedrock.lang.cpp.logic.string.html#lab250"><span class="inlinecode"><span class="id" title="var">cstring</span></span>s and <span class="inlinecode"><span class="id" title="var">zstring</span></span>s</a>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.logic.string.html#lab223">Notes</a>
+<li><a href="bedrock.lang.cpp.logic.string.html#lab251">Notes</a>
 
 </li>
 </ul>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.string.html#lab224"><span class="inlinecode"><span class="id" title="var">cstring.t</span></span> and <span class="inlinecode"><span class="id" title="var">cstring.WF</span></span> - Well Formed <span class="inlinecode"><span class="id" title="var">BS.t</span></span>s (bytestrings) as a Carrier Type for C++ Strings</a>
+<li><a href="bedrock.lang.cpp.logic.string.html#lab252"><span class="inlinecode"><span class="id" title="var">cstring.t</span></span> and <span class="inlinecode"><span class="id" title="var">cstring.WF</span></span> - Well Formed <span class="inlinecode"><span class="id" title="var">BS.t</span></span>s (bytestrings) as a Carrier Type for C++ Strings</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.string.html#lab225"><span class="inlinecode"><span class="id" title="var">cstring.R</span></span> - Fixed Sized Strings</a>
+<li><a href="bedrock.lang.cpp.logic.string.html#lab253"><span class="inlinecode"><span class="id" title="var">cstring.R</span></span> - Fixed Sized Strings</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.logic.string.html#lab226"><span class="inlinecode"><span class="id" title="var">cstring.bufR</span></span> - Dynamic Sized Strings Backed by Fixed Sized Character Arrays</a>
+<li><a href="bedrock.lang.cpp.logic.string.html#lab254"><span class="inlinecode"><span class="id" title="var">cstring.bufR</span></span> - Dynamic Sized Strings Backed by Fixed Sized Character Arrays</a>
 
 </li>
 </ul>
@@ -1034,10 +1118,10 @@
 <h2><a href="bedrock.lang.cpp.specs.wp_spec_compat.html">bedrock.lang.cpp.specs.wp_spec_compat</a></h2>
 <h2><a href="bedrock.lang.cpp.specs.functions.html">bedrock.lang.cpp.specs.functions</a></h2>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.specs.functions.html#lab227">Wrappers to build <span class="inlinecode"><span class="id" title="var">function_spec</span></span> from a <span class="inlinecode"><span class="id" title="var">WithPrePost</span></span></a>
+<li><a href="bedrock.lang.cpp.specs.functions.html#lab255">Wrappers to build <span class="inlinecode"><span class="id" title="var">function_spec</span></span> from a <span class="inlinecode"><span class="id" title="var">WithPrePost</span></span></a>
 
 </li>
-<li><a href="bedrock.lang.cpp.specs.functions.html#lab228"><span class="inlinecode"><span class="id" title="var">this</span></span> pointer needs to be adjusted before a call.</a>
+<li><a href="bedrock.lang.cpp.specs.functions.html#lab256"><span class="inlinecode"><span class="id" title="var">this</span></span> pointer needs to be adjusted before a call.</a>
 
 </li>
 </ul>
@@ -1048,24 +1132,24 @@
 <h2><a href="bedrock.lang.cpp.specs.elaborate.html">bedrock.lang.cpp.specs.elaborate</a></h2>
 <h2><a href="bedrock.lang.cpp.parser.html">bedrock.lang.cpp.parser</a></h2>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.parser.html#lab229">Derived forms used by cpp2v</a>
+<li><a href="bedrock.lang.cpp.parser.html#lab257">Derived forms used by cpp2v</a>
 <ul class="doclist">
-<li><a href="bedrock.lang.cpp.parser.html#lab230">Notations</a>
+<li><a href="bedrock.lang.cpp.parser.html#lab258">Notations</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.parser.html#lab231">Names</a>
+<li><a href="bedrock.lang.cpp.parser.html#lab259">Names</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.parser.html#lab232">Types</a>
+<li><a href="bedrock.lang.cpp.parser.html#lab260">Types</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.parser.html#lab233">Expressions</a>
+<li><a href="bedrock.lang.cpp.parser.html#lab261">Expressions</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.parser.html#lab234">Statements</a>
+<li><a href="bedrock.lang.cpp.parser.html#lab262">Statements</a>
 
 </li>
-<li><a href="bedrock.lang.cpp.parser.html#lab235">Translation units</a>
+<li><a href="bedrock.lang.cpp.parser.html#lab263">Translation units</a>
 
 </li>
 </ul>
