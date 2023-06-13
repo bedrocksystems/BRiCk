@@ -101,11 +101,12 @@ build-minimal-vos: theories/lang/cpp/parser.vos
 	$(MAKE) minimal-install
 .PHONY: build-minimal
 
-test-cpp2v: build-minimal cpp2v
-	$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v
-test-cpp2v-vos: build-minimal-vos cpp2v
-	$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v vos
-.PHONY: test-cpp2v
+# TODO (Rodolphe) port this to CRAM
+#test-cpp2v: build-minimal cpp2v
+#	$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v
+#test-cpp2v-vos: build-minimal-vos cpp2v
+#	$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v vos
+#.PHONY: test-cpp2v
 
 
 # Build Coq docs
@@ -178,7 +179,7 @@ doc-clean:
 clean: doc-clean
 	rm -rf build
 	rm -rf public
-	+@$(MAKE) -C cpp2v-tests clean
+# TODO (Rodolphe) clean CRAM tests with this command
 	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
 	rm -f Makefile.coq Makefile.coq.conf
 	find . ! -path '*/.git/*' -name '.lia.cache' -type f -print0 | xargs -0 rm -f
@@ -216,8 +217,6 @@ touch_deps:
 	touch `find . -iname '*.vos'` || true
 	touch `find . -iname '*.glob'` || true
 	touch `find . -iname '.*.aux'` || true
-# Unneeded and fails in CI
-#	touch `find cpp2v-tests -iname '*.v'` || true
 	touch `find build` || true
 .PHONY: touch_deps
 
