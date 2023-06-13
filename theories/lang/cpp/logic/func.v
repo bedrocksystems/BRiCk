@@ -12,7 +12,7 @@ Require Import bedrock.lang.cpp.semantics.
 
 From bedrock.lang.cpp.logic Require Import
   pred path_pred heap_pred wp builtins cptr const
-  layout initializers destroy.
+  layout initializers translation_unit destroy.
 
 (* UPSTREAM. *)
 Lemma wand_frame {PROP : bi} (R Q Q' : PROP) :
@@ -271,28 +271,24 @@ Section with_cpp.
 
   (** ** Weakest precondition of a constructor *)
 
-  (* mark members as strictly valid. *)
-  Fixpoint wpi_members_svalid
-           (cls : globname) (this : ptr)
+  (** Initial construction step:
+  Makes [this] and immediate [members] of [cls] strictly valid, enabling their dereference via
+  [wp_lval_deref].
+  This implements http://eel.is/c++draft/class.cdtor#3.
+  *)
+  Definition svalid_members
+           (cls : globname)
            (members : list Member)
-           (Q : mpred) : mpred :=
-    match members with
-    | nil => Q
-    | m :: members =>
-        this ,, _field {| f_type := cls ; f_name := m.(mem_name) |} |->
+           : Rep :=
+    svalidR ** aligned_ofR (Tnamed cls) **
+    [∗list] m ∈ members,
+      if negb (zero_sized_array m.(mem_type)) then
+        _field {| f_type := cls ; f_name := m.(mem_name) |} |->
           (svalidR ** aligned_ofR (erase_qualifiers m.(mem_type)))
-          (* Alignment should be deducible otherwise. *)
-        -* wpi_members_svalid cls this members Q
-    end.
-
-  Lemma wpi_members_svalid_frame p cls (Q Q' : mpredI) flds :
-      Q -* Q'
-      |-- wpi_members_svalid cls p flds Q -* wpi_members_svalid cls p flds Q'.
-  Proof.
-    induction flds => /=; first done.
-    iIntros "Q W S".
-    iApply (IHflds with "Q (W S)").
-  Qed.
+          (* Alignment should be deducible from alignment of [this], but it is
+          necessary for [wp_lval_deref] and inconvenient to deduce. *)
+       else emp.
+  #[global] Arguments svalid_members _ !_ /.
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
@@ -404,13 +400,14 @@ Section with_cpp.
         ERROR "delegating constructor has other initializers"
       end
     | None =>
-      let members_valid := wpi_members_svalid cls this s.(s_fields) in
       let bases := wpi_bases ρ cls this (List.map fst s.(s_bases)) inits in
       let members := wpi_members ρ cls this s.(s_fields) inits in
       let ident Q := this |-> wp_init_identity cls Q in
-      (** validity, initialize the bases, then the identity, then the members *)
-      this |-> svalidR -*
-      members_valid (bases (ident (members (this |-> struct_paddingR (cQp.mut 1) cls -* Q))))
+      (** Provide strict validity for [this] and immediate members,
+      initialize the bases, then the identity, then initialize the members, following
+      http://eel.is/c++draft/class.base.init#13 (except virtual base classes, which are unsupported) *)
+      this |-> svalid_members cls s.(s_fields) -*
+      bases (ident (members (this |-> struct_paddingR (cQp.mut 1) cls -* Q)))
       (* NOTE we get the [struct_paddingR] at the end since
          [struct_paddingR (cQp.mut 1) cls |-- type_ptrR (Tnamed cls)].
        *)
@@ -428,7 +425,6 @@ Section with_cpp.
       iIntros (?); by iApply interp_frame. }
     { iIntros "Q".
       iApply wand_frame.
-      iApply wpi_members_svalid_frame.
       iApply wpi_bases_frame.
       iApply wp_init_identity_frame'.
       iApply wpi_members_frame.
