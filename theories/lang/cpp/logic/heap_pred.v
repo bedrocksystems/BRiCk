@@ -19,6 +19,20 @@ Export bedrock.lang.cpp.algebra.cfrac.
 
 #[local] Set Printing Coercions.
 
+(* TODO: upstream *)
+Lemma val_related_Vint' {σ : genv} ty v1 v2 :
+  val_related _ ty v1 v2 ->
+  forall z1 z2, v1 = Vint z1 -> v2 = Vint z2 ->
+           z1 = z2.
+Proof.
+  induction 1; simpl; intros; subst; eauto; try congruence.
+Qed.
+Lemma val_related_Vint {σ : genv} ty z1 z2 :
+  val_related _ ty (Vint z1) (Vint z2) ->
+  z1 = z2.
+Proof. intros. eapply val_related_Vint'; eauto. Qed.
+(* End upstream *)
+
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
 Section defs.
@@ -56,6 +70,85 @@ mlock Definition aligned_ofR `{Σ : cpp_logic} {σ} (ty : type) : Rep :=
   ∃ align : N, [| align_of ty = Some align |] ** alignedR align.
 #[global] Arguments aligned_ofR {_ Σ σ} _.
 
+(** [tptstoR ty q v] is [q] ownership of a memory location of type [ty] storing the value [v]
+ *)
+mlock Definition tptstoR `{Σ : cpp_logic} {σ : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
+  as_Rep (fun p => tptsto ty q p v).
+#[global] Arguments tptstoR {_ Σ σ} _ _ _.
+
+Section tptstoR.
+  Context `{Σ : cpp_logic} {σ : genv}.
+
+  #[global] Instance tptstoR_proper :
+    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@tptstoR _ _).
+  Proof.
+    intros σ1 σ2 Hσ ??-> ??-> ??->.
+    rewrite tptstoR.unlock. by setoid_rewrite Hσ.
+  Qed.
+  #[global] Instance tptstoR_mono :
+    Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> (⊢)) (@tptstoR _ _).
+  Proof.
+    intros σ1 σ2 Hσ ??-> ??-> ??->.
+    rewrite tptstoR.unlock. by setoid_rewrite Hσ.
+  Qed.
+
+  #[global] Instance tptstoR_timeless ty q v
+    : Timeless (tptstoR ty q v).
+  Proof. rewrite tptstoR.unlock. apply _. Qed.
+
+  #[global] Instance tptstoR_cfractional ty :
+    CFractional1 (tptstoR ty).
+  Proof. rewrite tptstoR.unlock. apply _. Qed.
+  #[global] Instance tptstoR_as_cfractional ty :
+    AsCFractional1 (tptstoR ty).
+  Proof. solve_as_cfrac. Qed.
+
+  #[global] Instance tptstoR_observe_cfrac_valid ty :
+    CFracValid1 (tptstoR ty).
+  Proof. rewrite tptstoR.unlock. solve_cfrac_valid. Qed.
+
+  #[global] Instance tptstoR_observe_agree ty q1 q2 v1 v2 :
+    Observe2 [| val_related _ ty v1 v2 |] (tptstoR ty q1 v1) (tptstoR ty q2 v2).
+  Proof.
+    rewrite tptstoR.unlock; apply: as_Rep_only_provable_observe_2=> p.
+  Qed.
+
+  #[global] Instance tptstoR_observe_agree_Vint ty q1 q2 v1 v2 :
+    Observe2 [| v1 = v2 |] (tptstoR ty q1 (Vint v1)) (tptstoR ty q2 (Vint v2)).
+  Proof.
+    iIntros "X Y". iDestruct (observe_2 [| val_related _ _ _ _ |] with "X Y") as "%".
+    eapply val_related_Vint in H; eauto.
+  Qed.
+
+  #[global] Instance tptstoR_observe_agree_Vchar ty q1 q2 v1 v2 :
+    Observe2 [| v1 = v2 |] (tptstoR ty q1 (Vchar v1)) (tptstoR ty q2 (Vchar v2)).
+  Proof.
+    iIntros "X Y". iDestruct (observe_2 [| val_related _ _ _ _ |] with "X Y") as "%".
+    eapply val_related_Vchar in H; eauto.
+  Qed.
+
+  #[global] Instance tptstoR_observe_agree_Vptr ty q1 q2 v1 v2 :
+    Observe2 [| Vptr v1 = v2 |] (tptstoR ty q1 (Vptr v1)) (tptstoR ty q2 v2).
+  Proof.
+    iIntros "X Y". iDestruct (observe_2 [| val_related _ _ _ _ |] with "X Y") as "%".
+    eapply val_related_Vptr in H; eauto.
+  Qed.
+
+  #[global] Instance tptstoR_welltyped p ty q v :
+    Observe (has_type_or_undef v ty) (p |-> tptstoR ty q v).
+  Proof.
+    rewrite tptstoR.unlock. rewrite _at_as_Rep. refine _.
+  Qed.
+
+  #[global] Instance tptstoR_type_ptrR ty q v :
+    Observe (type_ptrR ty) (tptstoR ty q v).
+  Proof.
+    rewrite tptstoR.unlock type_ptrR_eq/type_ptrR_def.
+    apply as_Rep_observe. intros; apply tptsto_type_ptr.
+  Qed.
+
+End tptstoR.
+
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
@@ -63,6 +156,7 @@ Section with_cpp.
       The [type] is the type of the argument and the [ptr] is the location
       of the argument. *)
   Parameter varargsR : list (type * ptr) -> Rep.
+
 
   (** [primR ty q v]: the argument pointer points to an initialized value [v] of C++ type [ty].
    *
@@ -646,6 +740,48 @@ Section with_cpp.
     apply monPred_observe=>p /=.
     rewrite monPred_at_type_ptrR nonnullR_eq /=. refine _.
   Qed.
+
+  Section tptstoR_primR.
+    Lemma primR_tptstoR ty q v :
+      primR ty q v |-- tptstoR ty q v.
+    Proof.
+      rewrite tptstoR.unlock primR_eq/primR_def.
+      apply as_Rep_mono; red; intro. iIntros "($ & % & %)".
+    Qed.
+
+    Lemma tptstoR_Vxxx_primR ty q v :
+      match v with
+      | Vundef | Vraw _ => False
+      | _ => True
+      end ->
+      tptstoR ty q v -|- primR ty q v.
+    Proof.
+      split'; try apply primR_tptstoR.
+      rewrite tptstoR.unlock primR_eq/primR_def.
+      apply as_Rep_mono; red; intro.
+      iIntros "X".
+      iDestruct (observe (has_type_or_undef _ _) with "X") as "#HT".
+      iDestruct "X" as "$".
+      rewrite has_type_or_undef_unfold.
+      destruct v; try tauto;
+      iDestruct "HT" as "[H | %]"; try congruence;
+      iDestruct (has_type_has_type_prop with "H") as "%";
+      iPureIntro; (split;
+        [ destruct 1; congruence
+        | by rewrite -has_type_prop_drop_qualifiers ]).
+    Qed.
+
+    Lemma tptstoR_Vint_primR ty q z :
+      tptstoR ty q (Vint z) -|- primR ty q (Vint z).
+    Proof. by eapply tptstoR_Vxxx_primR. Qed.
+    Lemma tptstoR_Vchar_primR ty q n :
+      tptstoR ty q (Vchar n) -|- primR ty q (Vchar n).
+    Proof. by eapply tptstoR_Vxxx_primR. Qed.
+    Lemma tptstoR_Vptr_primR ty q p :
+      tptstoR ty q (Vptr p) -|- primR ty q (Vptr p).
+    Proof. by eapply tptstoR_Vxxx_primR. Qed.
+  End tptstoR_primR.
+
 End with_cpp.
 
 #[global] Typeclasses Opaque derivationR.

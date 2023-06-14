@@ -1232,6 +1232,13 @@ Module SimpleCPP.
         end
       | _ => [| nonptr_prim_type ty |]
       end.
+
+    Definition has_type_or_undef {σ} (v : val) ty : mpred :=
+      has_type v ty \\// [| v = Vundef |].
+    Lemma has_type_or_undef_unfold :
+      @has_type_or_undef = funI σ v ty => has_type v ty \\// [| v = Vundef |].
+    Proof. done. Qed.
+
     Section with_genv.
       Context {σ : genv}.
 
@@ -1299,6 +1306,20 @@ Module SimpleCPP.
         by rewrite /has_type/= has_type_prop_ref has_type_prop_rv_ref.
       Qed.
     End with_genv.
+
+    #[global] Instance has_type_mono :
+        Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
+    Proof.
+      intros ?? H ??-> ??->; rewrite /has_type. f_equiv.
+      - by rewrite H.
+      - case_match; auto.
+        case_match; auto.
+    Admitted. (* alignemnt needs to be proper *)
+
+    #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
+      Observe (has_type_or_undef v ty)
+               (@tptsto σ ty q p v).
+    Proof. Admitted.
 
   End with_cpp.
 
