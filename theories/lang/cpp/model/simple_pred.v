@@ -1238,8 +1238,12 @@ Module SimpleCPP.
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
     Proof. Admitted.
 
-    Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
+    (* TODO: the [Notation] connects to the wrong definition *)
+    #[local] Theorem tptsto_reference_to : forall {σ} p ty q (v : val),
+      Observe (has_type (Vref p) (Tref ty)) (@tptsto σ ty q p v).
+    Proof. Admitted.
 
+    Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
 
     #[global] Declare Instance struct_padding_timeless :  Timeless4 (@struct_padding).
     #[global] Declare Instance struct_padding_fractional : forall {σ : genv} p cls, CFractional (struct_padding p cls).

@@ -168,6 +168,24 @@ Module Type CPP_LOGIC
 
     End with_genv.
 
+    (**
+       [reference_to ty p] states that the location [p] stores a value of type [ty].
+
+       For now, we make this a [Notation] for [has_type] (see definition), but in the
+       future, this will change.
+
+       This should be thought of as closely related to [has_type (Vref p) (Tref ty)]
+       except that it holds on types that are not valid C++ types. For example,
+       if
+       <<
+       struct C { int& r; } x;
+       >>
+       then [reference_to (Tref Tint) (x ., ``::C::r``)] while
+       [has_type (Vref (x ., ``::C::r``)) (Tref (Tref Tint))] does not hold since
+       [Tref (Tref Tint)] is not a valid C++ type.
+     *)
+    #[local] Notation reference_to ty p := (has_type (Vref p) (Tref ty)).
+
     Parameter has_type_or_undef : forall {σ : genv}, val -> type -> mpred.
     Axiom has_type_or_undef_unfold :
         @has_type_or_undef = funI σ v ty => has_type v ty \\// [| v = Vundef |].
@@ -218,6 +236,9 @@ Module Type CPP_LOGIC
 
     #[global] Declare Instance tptsto_welltyped : forall {σ} p ty q v,
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
+
+    #[global] Declare Instance tptsto_reference_to : forall {σ} p ty q v,
+      Observe (reference_to ty p) (@tptsto σ ty q p v).
 
     (**
     NOTE: We'll eventually need the stronger [tptsto_learn : ∀ {σ} ty
@@ -796,6 +817,12 @@ End VALID_PTR_AXIOMS.
 
 Declare Module L : CPP_LOGIC PTRS_INTF_AXIOM VALUES_INTF_AXIOM LC.
 Export L.
+
+(** [reference_to ty r] states that [r] is a reference to an object of type [ty].
+
+    TODO: Introducing this as a [Notation] is temporary.
+  *)
+Notation reference_to ty r := (has_type (Vref r) (Tref ty)) (only parsing).
 
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS PTRS_INTF_AXIOM VALUES_INTF_AXIOM LC L.
 

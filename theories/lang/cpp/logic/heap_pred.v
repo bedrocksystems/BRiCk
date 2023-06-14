@@ -150,6 +150,10 @@ Section tptstoR.
     apply observe_at=>p. rewrite _at_pureR. apply _.
   Qed.
 
+  #[global] Instance _at_tptstoR_reference_to p ty q v :
+    Observe (reference_to ty p) (p |-> tptstoR ty q v) | 100.
+  Proof. rewrite _at_tptstoR. refine _. Qed.
+
   #[global] Instance tptstoR_type_ptrR ty q v :
     Observe (type_ptrR ty) (tptstoR ty q v).
   Proof.
@@ -218,6 +222,10 @@ Section tptstoR.
   #[global] Instance _at_tptsto_fuzzyR_welltyped p ty q v :
     Observe (has_type_or_undef v ty) (p |-> tptsto_fuzzyR ty q v).
   Proof. apply _at_observe_pureR, _. Qed.
+
+  #[global] Instance _at_tptsto_fuzzyR_reference_to p ty q v :
+    Observe (reference_to ty p) (p |-> tptsto_fuzzyR ty q v) | 100.
+  Proof. rewrite _at_tptsto_fuzzyR. refine _. Qed.
 
   #[global] Instance tptsto_fuzzyR_type_ptrR ty q v :
     Observe (type_ptrR ty) (tptsto_fuzzyR ty q v).
@@ -410,6 +418,10 @@ Section with_cpp.
     iDestruct (tptsto_fuzzyR_tptsto_acc with "R") as "(%v' & %Hval & R & HR)".
     iExists v'. iFrame (Hval Hraw) "R T". iFrame "HR".
   Qed.
+
+  #[global] Instance _at_primR_reference_to {σ} p ty q v :
+    Observe (reference_to ty p) (p |-> primR ty q v) | 100.
+  Proof. rewrite _at_primR. refine _. Qed.
 
   (**
      [uninitR ty q]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
