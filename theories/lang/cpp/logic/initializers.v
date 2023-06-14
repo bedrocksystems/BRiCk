@@ -242,7 +242,7 @@ Section wp_initialize.
     | Tnullptr =>
       letI* v, free := wp_operand init in
       let qf := cQp.mk (q_const cv) 1 in
-      addr |-> primR (erase_qualifiers ty) qf v -* Q free
+      addr |-> tptstoR (erase_qualifiers ty) qf v -* Q free
 
       (* non-primitives are handled via prvalue-initialization semantics *)
     | Tarray _ _
@@ -336,6 +336,7 @@ Section frames.
   Proof.
     intros. iIntros "HQ'". destruct ty; cbn; auto.
     all:
+      repeat case_match;
       lazymatch goal with
       | |- context [wp_operand] => iApply wp_operand_frame; [done|]
       | |- context [wp_lval] => iApply wp_lval_frame; [done|]
