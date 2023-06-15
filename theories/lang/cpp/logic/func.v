@@ -3,6 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+
+Require Import elpi.apps.locker.
 Require Import iris.proofmode.proofmode.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
@@ -12,13 +14,53 @@ Require Import bedrock.lang.cpp.semantics.
 
 From bedrock.lang.cpp.logic Require Import
   pred path_pred heap_pred wp builtins cptr const
-  layout initializers destroy.
+  layout initializers translation_unit destroy.
+
+(* UPSTREAM. *)
+Lemma wand_frame {PROP : bi} (R Q Q' : PROP) :
+  Q -* Q' |--
+  (R -* Q) -* (R -* Q').
+Proof. iIntros "Q W R". iApply ("Q" with "(W R)"). Qed.
 
 #[local] Set Printing Coercions.
 
 Arguments ERROR {_ _} _%bs.
 Arguments UNSUPPORTED {_ _} _%bs.
 #[local] Arguments wpi : simpl never.
+
+(** ** Weakest precondition of a constructor: Initial construction step.
+
+Makes [this] and immediate [members] of [cls] strictly valid, to implement the
+part of http://eel.is/c++draft/class.cdtor#3 about members.
+This enables their dereference via
+[wp_lval_deref].
+This
+*)
+mlock Definition svalid_members `{Σ : cpp_logic thread_info} {resolve:genv}
+          (cls : globname)
+          (members : list Member)
+          : Rep :=
+  svalidR ** aligned_ofR (Tnamed cls) **
+  [∗list] m ∈ members,
+    if negb (zero_sized_array m.(mem_type)) then
+      _field {| f_type := cls ; f_name := m.(mem_name) |} |->
+        (svalidR ** aligned_ofR (erase_qualifiers m.(mem_type)))
+        (* Alignment should be deducible from alignment of [this], but it is
+        necessary for [wp_lval_deref] and inconvenient to deduce. *)
+      else emp.
+#[global] Arguments svalid_members {_ _ _} _ _ : assert.
+
+Section svalid_members.
+  Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+  #[global] Instance svalid_members_persistent : Persistent2 svalid_members.
+  Proof.
+    intros; rewrite svalid_members.unlock.
+    repeat apply: bi.sep_persistent.
+    apply: big_sepL_persistent.
+    intros; case_match; apply _.
+  Qed.
+  #[global] Instance svalid_members_affine : Affine2 svalid_members := _.
+End svalid_members.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
@@ -101,6 +143,11 @@ Section with_cpp.
     rewrite pureR_wand.
     by iApply "X"; iApply "Y".
   Qed.
+
+  (* variant of [wp_init_identity_frame] for [mpred]. *)
+  Theorem wp_init_identity_frame' cls Q Q' p :
+    Q' -* Q |-- (p |-> wp_init_identity cls Q') -* (p |-> wp_init_identity cls Q).
+  Proof. by rewrite -_at_wand -wp_init_identity_frame _at_pureR. Qed.
 
   (** [wp_revert_identity cls Q] updates the identities of "this" by taking the
       [identity] of this class and transitively updating the [identity] of all base
@@ -373,8 +420,11 @@ Section with_cpp.
       let bases := wpi_bases ρ cls this (List.map fst s.(s_bases)) inits in
       let members := wpi_members ρ cls this s.(s_fields) inits in
       let ident Q := this |-> wp_init_identity cls Q in
-      (** initialize the bases, then the identity, then the members *)
-      bases (ident (members (this |-> struct_paddingR (cQp.mut 1) cls -*  Q)))
+      (** Provide strict validity for [this] and immediate members,
+      initialize the bases, then the identity, then initialize the members, following
+      http://eel.is/c++draft/class.base.init#13 (except virtual base classes, which are unsupported) *)
+      this |-> svalid_members cls s.(s_fields) -*
+      bases (ident (members (this |-> struct_paddingR (cQp.mut 1) cls -* Q)))
       (* NOTE we get the [struct_paddingR] at the end since
          [struct_paddingR (cQp.mut 1) cls |-- type_ptrR (Tnamed cls)].
        *)
@@ -390,14 +440,12 @@ Section with_cpp.
       iIntros "x".
       iApply wp_init_frame => //.
       iIntros (?); by iApply interp_frame. }
-    { iIntros "a"; iApply wpi_bases_frame.
-      rewrite /wp_init_identity.
-      rewrite !_at_sep !_at_wand !_at_pureR.
-      iIntros "[$ x] b".
-      iDestruct ("x" with "b") as "x"; iRevert "x".
+    { iIntros "Q".
+      iApply wand_frame.
+      iApply wpi_bases_frame.
+      iApply wp_init_identity_frame'.
       iApply wpi_members_frame.
-      iIntros "b c".
-      by iApply "a"; iApply "b". }
+      by iApply wand_frame. }
   Qed.
 
   Definition wp_union_initializer_list (u : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
@@ -425,20 +473,6 @@ Section with_cpp.
       iApply wpi_frame; [done|].
       iApply "K". }
   Qed.
-
-  (* [type_validity ty p] is the pointer validity of a class that is learned
-     at the beginning of the constructor.
-
-     Generally, it is the **strict** validity of all of the sub-objects.
-     [[
-         type_validity (Tnamed cls) this
-     |-- strict_valid_ptr this **
-         [∗list] f ∈ s_fields , type_validity f.(f_type) (this ,, _field f)
-     ]]
-
-     TODO we leave this trivial for now.
-   *)
-  Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp.
 
   (** A special version of return to match the C++ rule that
      constructors and destructors must not syntactically return a value, e.g.

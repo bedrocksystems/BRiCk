@@ -15,23 +15,31 @@ Require Import iris.proofmode.proofmode.
 
 Import ChargeNotation.
 
+(** For use in [init_validR] *)
+Definition zero_sized_array (ty : type) : bool :=
+  match drop_qualifiers ty with
+  (* TODO: maybe arrays of unknown size should also use [false]? *)
+  | Tarray _ 0 => true
+  | _ => false
+  end.
+#[global] Arguments zero_sized_array !_ /.
+
 Section with_cpp.
   Context `{Σ : cpp_logic} {resolve:genv}.
 
-  Set Default Proof Using "Σ resolve".
+  Definition init_validR (ty : type) : Rep :=
+    if zero_sized_array ty then
+      validR
+    else
+      svalidR.
+  #[global] Instance init_validR_persistent : Persistent1 init_validR.
+  Proof. intros; rewrite /init_validR; case_match; apply _. Qed.
+  #[global] Instance init_validR_affine : Affine1 init_validR := _.
 
   Definition denoteSymbol (tu : translation_unit) (n : obj_name) (o : ObjValue) : mpred :=
     _global n |->
         match o with
-        | Ovar t e =>
-          (* no need for [erase_qualifiers], we only check the head *)
-          match drop_qualifiers t with
-          | Tarray _ 0 =>
-            (* TODO: maybe arrays of unknown size should also use [validR]? *)
-            validR
-          | _ =>
-            svalidR
-          end
+        | Ovar t e => init_validR t
         | Ofunction f =>
           match f.(f_body) with
           | None => svalidR
@@ -62,37 +70,31 @@ Section with_cpp.
   (** [is_strict_valid o] states that if the declaration [o] occurs in a
       translation unit, the pointer to it is guaranteed to be strictly valid.
    *)
-  Definition is_strict_valid (o : option ObjValue) : Prop :=
+  Definition is_strict_valid (o : ObjValue) : bool :=
     match o with
-    | None => False
-    | Some (Ovar t _) =>
-        match drop_qualifiers t with
-        | Tarray _ 0 => False
-        | _ => True
-        end
-    | Some _ => True
+    | Ovar t _ => negb (zero_sized_array t)
+    | _ => true
     end.
 
   Lemma denoteSymbol_strict_valid tu n o :
-    is_strict_valid (Some o) ->
+    is_strict_valid o ->
     denoteSymbol tu n o |-- strict_valid_ptr (_global n).
   Proof.
-    rewrite /is_strict_valid/denoteSymbol; destruct o.
-    { case_match; intros; try by rewrite _at_svalidR.
-      destruct n0; try tauto. by rewrite _at_svalidR. }
-    all: case_match; by
-        intros;rewrite !(_at_as_Rep, _at_svalidR,
-      code_at_strict_valid, method_at_strict_valid, ctor_at_strict_valid, dtor_at_strict_valid).
+    rewrite /denoteSymbol/init_validR/is_strict_valid; destruct o.
+    { rewrite -_at_svalidR. by destruct zero_sized_array. }
+    all: intros _; case_match; last by rewrite _at_svalidR.
+    all: rewrite !_at_as_Rep; auto using
+      code_at_strict_valid, method_at_strict_valid, ctor_at_strict_valid, dtor_at_strict_valid.
   Qed.
 
   Lemma denoteSymbol_valid tu n o :
     denoteSymbol tu n o |-- valid_ptr (_global n).
   Proof.
-    case: o. {
-      rewrite /denoteSymbol => t o; repeat case_match => //=; intros;
-        rewrite (_at_validR, _at_svalidR); trivial using strict_valid_valid.
-    }
-    all: intros; rewrite denoteSymbol_strict_valid //; apply strict_valid_valid.
+    destruct (is_strict_valid o) eqn:Hs.
+    { by rewrite denoteSymbol_strict_valid ?Hs // strict_valid_valid. }
+    move: Hs.
+    rewrite -_at_validR /denoteSymbol /init_validR /is_strict_valid.
+    by destruct o => //= ?; case_match.
   Qed.
 
   (** TODO incomplete *)
@@ -128,7 +130,7 @@ Section with_cpp.
   Qed.
 
   #[global] Instance denoteModule_affine {module} : Affine (denoteModule module).
-  Proof using . refine _. Qed.
+  Proof. refine _. Qed.
 
   Lemma denoteModule_denoteSymbol n m o :
     m.(symbols) !! n = Some o ->
@@ -152,14 +154,11 @@ Section with_cpp.
   Qed.
 
   Lemma denoteModule_strict_valid n m :
-    is_strict_valid (m.(symbols) !! n) ->
+    is_strict_valid <$> (m.(symbols) !! n) = Some true ->
     denoteModule m |-- strict_valid_ptr (_global n).
   Proof.
-    rewrite /is_strict_valid.
-    case_match; try tauto.
-    intros; iIntros "M".
-    iDestruct (denoteModule_denoteSymbol with "M") as "M"; eauto.
-    iApply denoteSymbol_strict_valid; eauto.
+    case E: lookup => [s |//] /= [Hs].
+    by rewrite denoteModule_denoteSymbol // denoteSymbol_strict_valid // Hs.
   Qed.
 
   Lemma denoteModule_valid n m :
