@@ -3,6 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+
+Require Import elpi.apps.locker.
 Require Import iris.proofmode.proofmode.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
@@ -25,6 +27,40 @@ Proof. iIntros "Q W R". iApply ("Q" with "(W R)"). Qed.
 Arguments ERROR {_ _} _%bs.
 Arguments UNSUPPORTED {_ _} _%bs.
 #[local] Arguments wpi : simpl never.
+
+(** ** Weakest precondition of a constructor: Initial construction step.
+
+Makes [this] and immediate [members] of [cls] strictly valid, to implement the
+part of http://eel.is/c++draft/class.cdtor#3 about members.
+This enables their dereference via
+[wp_lval_deref].
+This
+*)
+mlock Definition svalid_members `{Σ : cpp_logic thread_info} {resolve:genv}
+          (cls : globname)
+          (members : list Member)
+          : Rep :=
+  svalidR ** aligned_ofR (Tnamed cls) **
+  [∗list] m ∈ members,
+    if negb (zero_sized_array m.(mem_type)) then
+      _field {| f_type := cls ; f_name := m.(mem_name) |} |->
+        (svalidR ** aligned_ofR (erase_qualifiers m.(mem_type)))
+        (* Alignment should be deducible from alignment of [this], but it is
+        necessary for [wp_lval_deref] and inconvenient to deduce. *)
+      else emp.
+#[global] Arguments svalid_members {_ _ _} _ _ : assert.
+
+Section svalid_members.
+  Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+  #[global] Instance svalid_members_persistent : Persistent2 svalid_members.
+  Proof.
+    intros; rewrite svalid_members.unlock.
+    repeat apply: bi.sep_persistent.
+    apply: big_sepL_persistent.
+    intros; case_match; apply _.
+  Qed.
+  #[global] Instance svalid_members_affine : Affine2 svalid_members := _.
+End svalid_members.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
@@ -270,25 +306,6 @@ Section with_cpp.
       spec.(fs_spec) vals Q -* wp_method m vals Q.
 
   (** ** Weakest precondition of a constructor *)
-
-  (** Initial construction step:
-  Makes [this] and immediate [members] of [cls] strictly valid, enabling their dereference via
-  [wp_lval_deref].
-  This implements http://eel.is/c++draft/class.cdtor#3.
-  *)
-  Definition svalid_members
-           (cls : globname)
-           (members : list Member)
-           : Rep :=
-    svalidR ** aligned_ofR (Tnamed cls) **
-    [∗list] m ∈ members,
-      if negb (zero_sized_array m.(mem_type)) then
-        _field {| f_type := cls ; f_name := m.(mem_name) |} |->
-          (svalidR ** aligned_ofR (erase_qualifiers m.(mem_type)))
-          (* Alignment should be deducible from alignment of [this], but it is
-          necessary for [wp_lval_deref] and inconvenient to deduce. *)
-       else emp.
-  #[global] Arguments svalid_members _ !_ /.
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
