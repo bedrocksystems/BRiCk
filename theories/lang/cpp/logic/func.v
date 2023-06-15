@@ -474,20 +474,6 @@ Section with_cpp.
       iApply "K". }
   Qed.
 
-  (* [type_validity ty p] is the pointer validity of a class that is learned
-     at the beginning of the constructor.
-
-     Generally, it is the **strict** validity of all of the sub-objects.
-     [[
-         type_validity (Tnamed cls) this
-     |-- strict_valid_ptr this **
-         [∗list] f ∈ s_fields , type_validity f.(f_type) (this ,, _field f)
-     ]]
-
-     TODO we leave this trivial for now.
-   *)
-  Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp.
-
   (** A special version of return to match the C++ rule that
      constructors and destructors must not syntactically return a value, e.g.
      `return f()` for `void f()` are not allowed.
