@@ -165,6 +165,7 @@ Section with_Σ.
     non-SC stores. The following rule only holds for SC-only locations. *)
   (* An SC store on the SC-only location p writes the latest value v of p.
     At the language level, this should be a physically atomic operation. *)
+  (* TODO switch to has_type here. Maybe even in the axioms about ints. *)
   Axiom wp_atom_store_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
