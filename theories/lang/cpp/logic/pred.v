@@ -130,10 +130,15 @@ Module Type CPP_LOGIC
     TODO: refine for which types https://bedrocksystems.atlassian.net/browse/FM-3760
     *)
     Parameter has_type : ∀ {σ : genv}, val -> type -> mpred.
+
+    #[global] Declare Instance has_type_mono :
+      Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
+
     Section with_genv.
       Context {σ : genv}.
 
       #[global] Declare Instance has_type_knowledge : Knowledge2 has_type.
+      #[global] Declare Instance has_type_timeless : Timeless2 has_type.
 
       Axiom has_type_has_type_prop : ∀ v ty, has_type v ty |-- [| has_type_prop v ty |].
 
@@ -161,10 +166,6 @@ Module Type CPP_LOGIC
         strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
 
     End with_genv.
-
-    Axiom has_type_mono :
-        Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
-    #[global] Existing Instances has_type_mono.
 
     Parameter has_type_or_undef : forall {σ : genv}, val -> type -> mpred.
     Axiom has_type_or_undef_unfold :
@@ -1252,18 +1253,33 @@ Section with_cpp.
     Proper (genv_eq ==> eq ==> eq ==> (≡)) (@has_type _ Σ).
   Proof. intros ?? H ??? ???; split'; apply has_type_mono => //; apply H. Qed.
 
+  #[global] Instance has_type_flip_mono :
+    Proper (flip genv_leq ==> eq ==> eq ==> flip bi_entails) (@has_type _ Σ).
+  Proof. by move=> ??+ ??-> ??-> => ->. Qed.
+
   #[global] Instance has_type_or_undef_proper :
     Proper (genv_eq ==> eq ==> eq ==> (≡)) (@has_type_or_undef _ Σ).
-  Proof.
-    intros ?? H ??-> ??->; rewrite !has_type_or_undef_unfold.
-    split';
-      (iIntros "[? | ?]"; [ iLeft | iRight ]; eauto); iStopProof; eapply has_type_mono => //; apply H.
-  Qed.
+  Proof. rewrite has_type_or_undef_unfold; solve_proper. Qed.
   #[global] Instance has_type_or_undef_mono :
     Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type_or_undef _ Σ).
+  Proof. rewrite has_type_or_undef_unfold; solve_proper. Qed.
+  #[global] Instance has_type_knowledge : Knowledge2 has_type_or_undef.
+  Proof. rewrite has_type_or_undef_unfold; split; apply _. Qed.
+  #[global] Instance has_type_timeless : Timeless2 has_type_or_undef.
+  Proof. rewrite has_type_or_undef_unfold; apply _. Qed.
+
+  Lemma has_type_qual_iff t q x :
+    has_type x t -|- has_type x (Tqualified q t).
   Proof.
-    intros ?? H ??-> ??->; rewrite !has_type_or_undef_unfold.
-    (iIntros "[? | ?]"; [ iLeft | iRight ]; eauto); iStopProof; eapply has_type_mono => //; apply H.
+    by rewrite (has_type_erase_qualifiers t)
+      (has_type_erase_qualifiers (Tqualified _ _)).
+  Qed.
+
+  Lemma has_type_drop_qualifiers v ty :
+    has_type v ty -|- has_type v (drop_qualifiers ty).
+  Proof.
+    rewrite (has_type_erase_qualifiers (drop_qualifiers _)) erase_drop_qualifiers.
+    by rewrite -has_type_erase_qualifiers.
   Qed.
 
 End with_cpp.

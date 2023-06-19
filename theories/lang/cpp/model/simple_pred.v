@@ -1233,6 +1233,10 @@ Module SimpleCPP.
       | _ => [| nonptr_prim_type ty |]
       end.
 
+    #[global] Instance has_type_mono :
+      Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
+    Proof. solve_proper. Qed.
+
     Definition has_type_or_undef {σ} (v : val) ty : mpred :=
       has_type v ty \\// [| v = Vundef |].
     Lemma has_type_or_undef_unfold :
@@ -1246,9 +1250,18 @@ Module SimpleCPP.
       Proof.
         intros v ty; rewrite /has_type; split; last apply _.
         apply: bi.sep_persistent.
-        destruct v; refine _.
-        case_match; apply _.
+        destruct v; try case_match; apply _.
       Qed.
+
+      #[global] Instance has_type_timeless : Timeless2 has_type.
+      Proof.
+        intros v ty; rewrite /has_type.
+        apply: bi.sep_timeless.
+        (* TODO AUTO: this gives a measureable speedup :-( *)
+        have ?: Refine (Timeless (PROP := mpred) emp) by apply _.
+        destruct v; try case_match; apply _.
+      Qed.
+
       Lemma has_type_has_type_prop v ty :
         has_type v ty |-- [| has_type_prop v ty |].
       Proof. iIntros "[$ _]". Qed.
@@ -1317,16 +1330,6 @@ Module SimpleCPP.
         by rewrite /has_type/= has_type_prop_ref has_type_prop_rv_ref.
       Qed.
     End with_genv.
-
-    #[global] Instance has_type_mono :
-        Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
-    Proof.
-      intros ?? H ??-> ??->; rewrite /has_type. f_equiv.
-      - by rewrite H.
-      - case_match; auto.
-        case_match; auto.
-        all: solve [ f_equiv; try rewrite H; eauto; f_equiv; by apply aligned_ptr_ty_mono ].
-    Qed.
 
     #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
