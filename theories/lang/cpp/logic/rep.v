@@ -135,6 +135,12 @@ Section with_cpp.
     - apply monPred_wand_force.
   Qed.
 
+  Lemma as_Rep_pure (P : Prop) : as_Rep (fun _ => bi_pure P) -|- bi_pure P.
+  Proof.
+    rewrite /as_Rep.
+    split; intro; rewrite /=. by rewrite monPred_at_pure /=.
+  Qed.
+
   Lemma as_Rep_exist {T} (P : T -> ptr -> mpred) :
     as_Rep (λ p, Exists x, P x p) -|- Exists x, as_Rep (P x).
   Proof. constructor=>p /=. by rewrite monPred_at_exist. Qed.
@@ -184,6 +190,12 @@ Section with_cpp.
   Lemma Rep_at_wand_iff (P Q : Rep) p :
     (P ∗-∗ Q) p ⊣⊢ (P p ∗-∗ Q p).
   Proof. by rewrite /bi_wand_iff monPred_at_and !Rep_wand_force. Qed.
+
+  Lemma as_Rep_only_provable (P : Prop) : as_Rep (fun _ => [| P |]) -|- [| P |].
+  Proof.
+    rewrite only_provable.unlock as_Rep_affinely /as_Rep.
+    split; intro; rewrite /=. by rewrite !monPred_at_affinely monPred_at_pure /=.
+  Qed.
 
   Import rep_defs.INTERNAL.
 
