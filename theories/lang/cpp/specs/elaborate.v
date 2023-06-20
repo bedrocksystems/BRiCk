@@ -14,30 +14,37 @@ From bedrock.lang.cpp.specs Require Import cpp_specs wp_spec_compat.
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
 
-  (** determine if an argument is already materialized in the operand style.
+  (** Determine if an argument is already materialized in the operand style.
+      If it is, return [None], otherwise, return [Some (cv, ty)] used for [primR].
 
-      NOTE arrays are treated as primitives because they are passed as pointers
+      NOTE: arrays are treated as primitives because they are passed as pointers
    *)
-  Definition mtype (t : type) : globname + type :=
-    match erase_qualifiers t with
-    | Tnamed cls => inl cls
-    | Trv_ref ty => inr (Tref ty)
-    | ty => inr ty
+  Definition mtype (t : type) : option (type_qualifiers * type) :=
+    let '(cv, t) := decompose_type t in
+    match t with
+    | Tnamed cls => None
+    | Tref ty
+    | Trv_ref ty => Some (cv, Tref $ erase_qualifiers ty)
+    | _ => Some (cv, erase_qualifiers t)
     end.
 
   (** [elaborate ret ts wpp args] builds a function specification around [wpp]
       assuming that [wpp] takes the arguments in [args] (in reverse order) and the
       remaining arguments in [ts].
+
+      Using [tptstoR] would be slightly more liberal, but is rarely needed
+      in practice.
    *)
   Fixpoint elaborate (ret : type) (ts : list type) (ar : function_arity) (args : list val) (wpp : WpSpec_cpp_val) : WpSpec mpredI ptr ptr :=
     match ts with
     | nil =>
         let finish args :=
           match mtype ret with
-          | inl cls =>
+          | None =>
               wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]))
-          | inr t =>
-              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr (_at pr (primR t (cQp.mut 1) rv))))
+          | Some (cv, t) =>
+              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr =>
+                   DONE pr (_at pr (primR t (cQp.mk (q_const cv) 1) rv))))
           end
         in
         match ar with
@@ -47,9 +54,9 @@ Section with_cpp.
         end
     | t :: ts =>
         match mtype t with
-        | inl cls =>
+        | None =>
             add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar (args ++ [Vptr pv]) wpp))
-        | inr t =>
+        | Some (_, t) => (* arguments are always passed as mutable *)
             add_with (fun pv : ptr => add_with (fun v : val => add_arg pv (
                                            add_pre (_at pv (primR t (cQp.mut 1) v)) (add_post (Exists v, _at pv (primR t (cQp.mut 1) v))
                                                                                     (elaborate ret ts ar (args ++ [v]) wpp)))))
@@ -112,7 +119,7 @@ Section with_cpp.
                ∀ (vs : list ptr) (K : ptr → mpred),
                  spec_internal (elaborate ret ts ar ps P) xs Ps Qs vs K -∗ spec_internal (elaborate ret ts ar ps Q) xs Ps Qs vs K).
     { induction ts; simpl; intros.
-      { case_match; case_match; rewrite /wp_spec_bind/=;
+      { repeat case_match; rewrite /wp_spec_bind/=;
           try solve [ iIntros "H" (??) "[$ P]";
                       iRevert "P"; iApply list_sep_into_frame;
                       iApply "H"
@@ -121,15 +128,15 @@ Section with_cpp.
                       iExists x; iFrame "%";
                       iRevert "P"; iApply list_sep_into_frame;
                       iApply "H"; eauto ]. }
-      { case_match; rewrite /wp_spec_bind/=.
-        { iIntros "H" (??) "P".
-          iDestruct "P" as (x) "P".
-          iExists x.
-          iDestruct (IHts with "H") as "H".
-          by iApply "H". }
+      { repeat case_match; rewrite /wp_spec_bind/=.
         { iIntros "H" (??) "P".
           iDestruct "P" as (x y) "P".
           iExists x, y.
+          iDestruct (IHts with "H") as "H".
+          by iApply "H". }
+        { iIntros "H" (??) "P".
+          iDestruct "P" as (x) "P".
+          iExists x.
           iDestruct (IHts with "H") as "H".
           by iApply "H". } } }
     { eauto. }
@@ -181,7 +188,7 @@ Section with_cpp.
                 spec_internal (elaborate ret ts ar ps P) xs Ps Qs vs K -∗
                 |={⊤}=> spec_internal (elaborate ret ts ar ps Q) xs Ps Qs vs (λ v, |={⊤}=> K v)).
     { induction ts; simpl; intros.
-      { case_match; case_match; rewrite /wp_spec_bind/=.
+      { repeat case_match; rewrite /wp_spec_bind/=.
         - iIntros "H" (??) "[$ P]".
           iRevert "P"; iApply list_sep_into_frame_fupd.
           iIntros "P".
@@ -212,15 +219,15 @@ Section with_cpp.
           iIntros "!>". iRevert "Q".
           iApply spec_internal_frame.
           iIntros (r) ">Q". iIntros (r') "L !>". by iApply "Q". }
-      { case_match; rewrite /wp_spec_bind/=.
-        { iIntros "H" (??) "P".
-          iDestruct "P" as (x) "P".
-          iExists x.
-          iDestruct (IHts with "H") as "H".
-          by iApply "H". }
+      { repeat case_match; rewrite /wp_spec_bind/=.
         { iIntros "H" (??) "P".
           iDestruct "P" as (x y) "P".
           iExists x, y.
+          iDestruct (IHts with "H") as "H".
+          by iApply "H". }
+        { iIntros "H" (??) "P".
+          iDestruct "P" as (x) "P".
+          iExists x.
           iDestruct (IHts with "H") as "H".
           by iApply "H". } } }
     { eauto. }
