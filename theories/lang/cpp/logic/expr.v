@@ -889,7 +889,7 @@ Module Type Expr.
 
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
         (letI* res, free := wp_call (evaluation_order.ooe OOCall) (type_of f) f es in
-             Reduce (init_receive ty addr res $ Q free))
+             Reduce (init_receive addr res $ Q free))
       |-- wp_init ty addr (Ecall f es ty) Q.
 
     (** * Member calls *)
@@ -994,8 +994,8 @@ Module Type Expr.
         |-- wp_operand (Emember_call (inl (f, ct, fty)) obj es ty) Q.
 
     Axiom wp_init_member_call : forall ct f fty es (addr : ptr) ty obj Q,
-        (letI* res, fress :=wp_mcall (dispatch ct fty f (type_of obj)) evaluation_order.l_nd obj fty es in
-           init_receive ty addr res $ Q free)
+        (letI* res, free := wp_mcall (dispatch ct fty f (type_of obj)) evaluation_order.l_nd obj fty es in
+           init_receive addr res $ Q free)
         |-- wp_init ty addr (Emember_call (inl (f, ct, fty)) obj es ty) Q.
 
     (** * Operator Calls
@@ -1037,7 +1037,7 @@ Module Type Expr.
      |-- wp_xval (Eoperator_call oo oi es ty) Q.
     Axiom wp_init_operator_call : forall addr oo oi es ty Q,
         (letI* res, free := wp_operator_call oo oi es in
-         init_receive ty addr res $ Q free)
+         init_receive addr res $ Q free)
      |-- wp_init ty addr (Eoperator_call oo oi es ty) Q.
 
     (* null *)
