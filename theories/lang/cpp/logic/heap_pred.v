@@ -19,20 +19,6 @@ Export bedrock.lang.cpp.algebra.cfrac.
 
 #[local] Set Printing Coercions.
 
-(* TODO: upstream *)
-Lemma val_related_Vint' {σ : genv} ty v1 v2 :
-  val_related _ ty v1 v2 ->
-  forall z1 z2, v1 = Vint z1 -> v2 = Vint z2 ->
-           z1 = z2.
-Proof.
-  induction 1; simpl; intros; subst; eauto; try congruence.
-Qed.
-Lemma val_related_Vint {σ : genv} ty z1 z2 :
-  val_related _ ty (Vint z1) (Vint z2) ->
-  z1 = z2.
-Proof. intros. eapply val_related_Vint'; eauto. Qed.
-(* End upstream *)
-
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
 Section defs.
@@ -80,20 +66,20 @@ Section tptstoR.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   #[global] Instance tptstoR_proper :
-    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@tptstoR _ _).
+    Proper (genv_eq ==> eq ==> eq ==> eq ==> (⊣⊢)) (@tptstoR _ _).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
     rewrite tptstoR.unlock. by setoid_rewrite Hσ.
   Qed.
   #[global] Instance tptstoR_mono :
-    Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> (⊢)) (@tptstoR _ _).
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> (⊢)) (@tptstoR _ _).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
     rewrite tptstoR.unlock. by setoid_rewrite Hσ.
   Qed.
 
-  #[global] Instance tptstoR_timeless ty q v
-    : Timeless (tptstoR ty q v).
+  #[global] Instance tptstoR_timeless ty q v :
+    Timeless (tptstoR ty q v).
   Proof. rewrite tptstoR.unlock. apply _. Qed.
 
   #[global] Instance tptstoR_cfractional ty :

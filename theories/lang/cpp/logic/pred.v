@@ -55,6 +55,10 @@ Definition nonptr_prim_type ty : bool :=
   | Tnullptr | Tpointer _ | Tref _ | Trv_ref _ | _ => false
   end.
 
+Lemma nonptr_prim_type_erase_qualifiers : forall ty,
+    nonptr_prim_type ty = nonptr_prim_type (erase_qualifiers ty).
+Proof. induction ty; simpl; eauto. Qed.
+
 Module Type CPP_LOGIC
   (Import P : PTRS_INTF)
   (Import INTF : VALUES_INTF_FUNCTOR P)
@@ -137,8 +141,11 @@ Module Type CPP_LOGIC
         nonptr_prim_type ty ->
         [| has_type_prop v ty |] |-- has_type v ty.
 
-      Axiom has_type_qual_iff : ∀ ty tq v,
-        has_type v ty -|- has_type v (Tqualified tq ty).
+      (* [has_type] is independent of qualifiers.
+         This allows casting betweeen [const] and non-[const].
+         *)
+      Axiom has_type_erase_qualifiers : ∀ ty v,
+        has_type v ty -|- has_type v (erase_qualifiers ty).
 
       (* Internal statements: *)
       Axiom has_type_nullptr' : ∀ p,
@@ -208,8 +215,7 @@ Module Type CPP_LOGIC
     #[global] Declare Instance tptsto_cfrac_valid {σ} t : CFracValid2 (tptsto t).
 
     Axiom tptsto_welltyped : forall {σ} p ty q v,
-      Observe (has_type_or_undef v ty)
-               (@tptsto σ ty q p v).
+      Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
     #[global] Existing Instances tptsto_welltyped.
 
     Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,

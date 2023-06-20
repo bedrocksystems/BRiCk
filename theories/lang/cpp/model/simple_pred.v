@@ -1262,9 +1262,20 @@ Module SimpleCPP.
         destruct v => //. by case_match.
       Qed.
 
-      Lemma has_type_qual_iff ty tq v :
-        has_type v ty -|- has_type v (Tqualified tq ty).
-      Proof. by rewrite /has_type has_type_prop_qual_iff. Qed.
+      Lemma has_type_erase_qualifiers ty v :
+        has_type v ty -|- has_type v (erase_qualifiers ty).
+      Proof.
+        rewrite /has_type has_type_prop_erase_qualifiers drop_erase_qualifiers.
+        f_equiv.
+        rewrite -nonptr_prim_type_erase_qualifiers.
+        case_match; eauto.
+        rewrite -erase_drop_qualifiers.
+        case_match; simpl; eauto.
+        all: try f_equiv.
+        all: try rewrite aligned_ptr_ty_erase_qualifiers; auto.
+        exfalso.
+        by eapply unqual_drop_qualifiers.
+      Qed.
 
       Lemma has_type_nullptr' p :
         has_type (Vptr p) Tnullptr -|- [| p = nullptr |].
@@ -1314,11 +1325,11 @@ Module SimpleCPP.
       - by rewrite H.
       - case_match; auto.
         case_match; auto.
-    Admitted. (* alignemnt needs to be proper *)
+        all: solve [ f_equiv; try rewrite H; eauto; f_equiv; by apply aligned_ptr_ty_proper ].
+    Qed.
 
     #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
-      Observe (has_type_or_undef v ty)
-               (@tptsto σ ty q p v).
+      Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
     Proof. Admitted.
 
   End with_cpp.

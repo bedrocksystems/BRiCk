@@ -354,8 +354,15 @@ Section with_genv.
 
   Axiom align_of_array : forall (ty : type) n,
       align_of (Tarray ty n) = align_of ty.
-  Axiom align_of_qualified : ∀ t q,
+  Axiom align_of_erase_qualifiers : ∀ t,
+      align_of (resolve:=σ) t = align_of (resolve:=σ) (erase_qualifiers t).
+
+  Lemma align_of_qualified : ∀ t q,
       align_of (resolve:=σ) (Tqualified q t) = align_of (resolve:=σ) t.
+  Proof.
+    intros.
+    rewrite {1}align_of_erase_qualifiers. simpl. by rewrite -align_of_erase_qualifiers.
+  Qed.
 
   Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
   #[global] Existing Instance Proper_align_of.
