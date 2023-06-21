@@ -185,45 +185,48 @@ Section with_resolve.
      We consolidate these definitions here because they are shared between all
      function calls.
    *)
-  Definition xval_receive (ty : type) (res : ptr) (Q : ptr -> mpred) : mpred :=
-    Exists p, res |-> primR (Tref ty) (cQp.mut 1) (Vref p) ** Q p.
+  Definition xval_receive (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
+    Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
 
-  Lemma xval_receive_frame ty res Q Q' :
+  Lemma xval_receive_frame ty res (Q Q' : ptr -> epred) :
       Forall v, Q v -* Q' v |-- xval_receive ty res Q -* xval_receive ty res Q'.
   Proof.
     rewrite /xval_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
   Qed.
 
-  Definition lval_receive (ty : type) (res : ptr) (Q : ptr -> mpred) : mpred :=
-    Exists p, res |-> primR (Tref ty) (cQp.mut 1) (Vref p) ** Q p.
+  Definition lval_receive (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
+    Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
 
-  Lemma lval_receive_frame ty res Q Q' :
+  Lemma lval_receive_frame ty res (Q Q' : ptr -> epred) :
       Forall v, Q v -* Q' v |-- lval_receive ty res Q -* lval_receive ty res Q'.
   Proof.
     rewrite /lval_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
   Qed.
 
-  Definition operand_receive (ty : type) (res : ptr) (Q : val -> mpred) : mpred :=
-    Exists v, res |-> primR ty (cQp.mut 1) v ** Q v.
+  Definition operand_receive (ty : type) (res : ptr) (Q : val -> epred) : mpred :=
+    Exists v,
+    let c := qual_norm (fun cv _ => q_const cv) ty in
+    res |-> primR (erase_qualifiers ty) (cQp.mk c 1) v **
+    Q v.
 
-  Lemma operand_receive_frame ty res Q Q' :
+  Lemma operand_receive_frame ty res (Q Q' : val -> epred) :
       Forall v, Q v -* Q' v |-- operand_receive ty res Q -* operand_receive ty res Q'.
   Proof.
     rewrite /operand_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
   Qed.
 
-  Definition init_receive (ty : type) (addr : ptr) (res : ptr) (Q : FreeTemp -> mpred) : mpred :=
-    ([| addr = res |] -* Q (FreeTemps.delete ty addr)).
+  Definition init_receive (addr res : ptr) (Q : epred) : mpred :=
+    [| addr = res |] -* Q.
 
-  Lemma init_receive_frame ty addr res Q Q' :
-      Forall v, Q v -* Q' v |-- init_receive ty addr res Q -* init_receive ty addr res Q'.
+  Lemma init_receive_frame addr res (Q Q' : epred) :
+      Q -* Q' |-- init_receive addr res Q -* init_receive addr res Q'.
   Proof.
     rewrite /init_receive. iIntros "X Y Z"; iApply "X"; iApply "Y"; done.
   Qed.
 
-  #[global] Arguments xval_receive _ _ _ /.
-  #[global] Arguments lval_receive _ _ _ /.
-  #[global] Arguments operand_receive _ _ _ /.
-  #[global] Arguments init_receive _ _ _ _ /.
+  #[global] Arguments xval_receive _ _ _ / : assert.
+  #[global] Arguments lval_receive _ _ _ / : assert.
+  #[global] Arguments operand_receive _ _ _ / : assert.
+  #[global] Arguments init_receive _ _ _ / : assert.
 
 End with_resolve.
