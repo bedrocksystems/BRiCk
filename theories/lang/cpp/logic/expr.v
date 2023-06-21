@@ -872,7 +872,7 @@ Module Type Expr.
 
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
           wp_operand f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
-             Reduce (init_receive ty addr res $ fun free => Q (free_args >*> free_f)))
+             Reduce (init_receive addr res $ Q (free_args >*> free_f)))
       |-- wp_init ty addr (Ecall f es ty) Q.
 
     (** * Member calls *)
@@ -931,7 +931,7 @@ Module Type Expr.
 
     Axiom wp_init_member_call : forall f fty es (addr : ptr) ty obj Q,
         wp_glval obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
-           init_receive ty addr res $ fun free => Q (free_args >*> free_this))
+           init_receive addr res $ Q (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
     (** virtual functions
@@ -970,7 +970,7 @@ Module Type Expr.
 
     Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty obj Q,
         wp_glval obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
-           init_receive ty addr res $ fun free => Q (free_args >*> free_this))
+           init_receive addr res $ Q (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
     (* null *)
