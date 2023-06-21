@@ -9,107 +9,38 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp initializers.
+Require Import bedrock.prelude.letstar.
 
-Section zipTypes.
-  Context `{Σ : cpp_logic}.
-  Context {T : Type}.
-  Variable wp_expr : type -> Expr -> wp.WPE.M T.
+Fixpoint split_at {T : Type} (n : nat) (ls : list T) : list T * list T :=
+  match n , ls with
+  | 0 , _ => (nil, ls)
+  | S n , [] => (nil, nil)
+  | S n , l :: ls => let '(a,b) := split_at n ls in (l :: a, b)
+  end.
 
-  (** [zipTypes ts ar es = Some (ms, var_arg)]
+Lemma split_at_firstn_skipn {T} (ls : list T) : forall (n : nat),
+    split_at n ls = (firstn n ls, skipn n ls).
+Proof.
+  induction ls; destruct n; simpl; eauto.
+  rewrite IHls; done.
+Qed.
 
-      Sets up the evaluation for a function that accepts [ts] arguments and is
-      variadic arguments as described by [ar].
-   *)
-  #[local] Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr)
-    : option (list (wp.WPE.M T) * option (nat * list type)) :=
-    let wp_arg_init ty init K :=
-      (* top-level qualifiers on arguments are ignored, they are taken from the definition,
-         not the declaration. Dropping qualifiers here makes it possible to support code
-         like the following:
-         <<
-         // f.hpp
-         void f(int);
-         void g() { f(1); } // calls using [void f(int)] rather than [void f(const int)]
-         // f.cpp
-         void f(const int) {}
-         >>
-       *)
-      wp_expr (drop_qualifiers ty) init K
-    in
-    match ts with
-    | [] =>
-        if ar is Ar_Variadic then
-          let rest := map (fun e => let ty := drop_qualifiers (type_of e) in
-                                 (ty, wp_arg_init ty e)) es in
-          Some (map snd rest, Some (0, map fst rest))
-        else match es with
-             | [] => Some ([], None)
-             | _ :: _ => None
-             end
-    | t :: ts =>
-        match es with
-        | [] => None
-        | e :: es =>
-            let update (x : list (wp.WPE.M T) * option (nat * list type)) :=
-              (wp_arg_init t e :: x.1, (fun x => (1 + x.1, x.2)) <$> x.2)
-            in
-            update <$> zipTypes ts ar es
-        end
-    end.
+Definition check_arity (ts : list type) (ar : function_arity) (es : list Expr) : bool :=
+  match Nat.compare (length ts) (length es) with
+  | Eq => true
+  | Lt => bool_decide (ar = Ar_Variadic)
+  | Gt => false
+  end.
 
-  Lemma zipTypes_definite_base_case :
-    zipTypes [] Ar_Definite [] = Some ([], None).
-  Proof. reflexivity. Qed.
-
-  Lemma zipTypes_definite_nonnull :
-    forall (ts : list type) (es : list Expr)
-      (Hlengths : lengthN ts = lengthN es),
-      zipTypes ts Ar_Definite es <> None.
-  Proof.
-    intros ts; induction ts as [| t ts' IHts'];
-      intros [| e es'] Hlengths; cbn; try done.
-    rewrite !lengthN_cons in Hlengths.
-    intro CONTRA; apply (IHts' es'); first by lia.
-    by apply fmap_None in CONTRA.
-  Qed.
-
-  Hypothesis wp_expr_frame : forall ty e , |-- wp.WPE.Mframe (wp_expr ty e) (wp_expr ty e).
-
-  #[local] Lemma zipTypes_ok : forall ts ar es ms r,
-      zipTypes ts ar es = Some (ms, r) ->
-      length ms = length es /\
-      match r with
-      | None => ar = Ar_Definite
-      | Some (n, va_ts) => ar = Ar_Variadic /\ length ms = n + length va_ts /\ n = length ts
-      end /\ |-- [∗list] m ∈ ms, wp.WPE.Mframe m m.
-  Proof using wp_expr_frame.
-    induction ts; simpl; intros.
-    { destruct ar; first by destruct es; inversion H.
-      inversion H; clear H; subst.
-      rewrite !map_map !map_length.
-      split; eauto.
-      split.
-      { split; eauto. }
-      { induction es =>/=; eauto.
-        rewrite -IHes. rewrite right_id.
-        iIntros (??) "X Y". iApply (wp_expr_frame with "X Y"). } }
-    { destruct es; try congruence.
-      specialize (IHts ar es).
-      destruct (zipTypes ts ar es); simpl in *; try congruence.
-      inversion H; clear H; subst.
-      destruct p; simpl in *.
-      specialize (IHts _ _ eq_refl).
-      destruct IHts; split; eauto.
-      split.
-      { destruct o; simpl in *.
-        { destruct p; simpl. forward_reason. split; eauto. }
-        { destruct H0; eauto. } }
-      { iSplitL.
-        { iIntros (??) "X Y". iApply (wp_expr_frame with "X Y"). }
-        { destruct H0. iApply H1. } } }
-  Qed.
-
-End zipTypes.
+Definition setup_args (ts : list type) (ar : function_arity) (es : list Expr)
+  : (list (type * Expr) * option nat) :=
+  let normal_params := length ts in
+  let (regular, variadic) := split_at normal_params es in
+  (combine ts regular ++ map (fun e => (type_of e, e)) variadic,
+    match ar with
+    | Ar_Definite => None
+    | Ar_Variadic => Some normal_params
+    end).
 
 Section with_resolve.
   Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
@@ -149,23 +80,38 @@ Section with_resolve.
   Definition wp_args (eo : evaluation_order.t) (pre : list (wp.WPE.M ptr))
     (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> list ptr -> FreeTemps -> mpred)
     : mpred :=
-    match zipTypes wp_arg ts_ar.1 ts_ar.2 es with
-    | Some (args, va_info) =>
-        letI* ps, fs := eval eo (pre ++ args) in
-        let pre := firstn (length pre) ps in
-        let ps := skipn (length pre) ps in
+    (let '(ts,ar) := ts_ar in
+    if check_arity ts ar es then
+      let '(tes, va_info) := setup_args ts ar es in
+      letI* ps, fs := eval eo (pre ++ map (fun '(t, e) => wp_arg t e) tes) in
+        let (pre, ps) := split_at (length pre) ps in
         match va_info with
-        | Some (non_va, types) =>
-            let real := firstn non_va ps in
-            let vargs := skipn non_va ps in
+        | Some non_va =>
+            let (real, vargs) := split_at non_va ps in
+            let types := map fst $ skipn non_va tes in
             let va_info := zip types vargs in
             Forall p, p |-> varargsR va_info -*
                         Q pre (real ++ [p]) (FreeTemps.delete_va va_info p >*> fs)%free
         | None =>
             Q pre ps fs
         end
-    | _ => False
-    end.
+    else
+      False)%I.
+
+  Lemma big_opL_map {PROP : bi} (T U : Type) (f : T -> U) (P : _ -> PROP) (ls : list T) :
+    ([∗list] x ∈ map f ls , P x)%I -|- [∗list] x ∈ ls , P (f x).
+  Proof.
+    induction ls; simpl; eauto.
+    by rewrite IHls.
+  Qed.
+
+  Lemma big_opL_all  {PROP : bi} (T : Type) (P : T -> PROP) (ls : list T) :
+    bi_intuitionistically (Forall x, P x) |-- [∗list] x ∈ ls , P x.
+  Proof.
+    induction ls; simpl; eauto.
+    iIntros "#H". iSplitL.
+    iApply "H". iApply IHls. iApply "H".
+  Qed.
 
   Lemma wp_args_frame_strong : forall eo pres ts_ar es Q Q',
       ([∗list] m ∈ pres, wp.WPE.Mframe m m)%I
@@ -180,26 +126,48 @@ Section with_resolve.
     intros.
     iIntros "PRS X".
     rewrite /wp_args. destruct ts_ar; simpl.
-    generalize (zipTypes_ok wp_arg wp_arg_frame l f es).
-    destruct (zipTypes wp_arg l f es); eauto.
-    destruct p; eauto.
-    intros X. destruct (X _ _ eq_refl); clear X.
-    forward_reason.
-    iApply (eval_frame_strong with "[PRS] [X]"); eauto.
-    { iFrame. iApply H1. }
-    rewrite app_length.
-    iIntros (???).
-    destruct o.
-    { destruct p.
-      iIntros "Y" (p) "Z"; iSpecialize ("Y" $! p with "Z"); iRevert "Y".
-      iApply "X".
-      { rewrite firstn_length. iPureIntro.
-        lia. }
-      { destruct H0 as [?[??]].
-        iPureIntro. subst.
-        rewrite !firstn_length app_length !firstn_length !skipn_length /=; lia. } }
-    { subst. iApply "X";
-      iPureIntro; rewrite !firstn_length ?skipn_length /=; lia. }
+    rewrite /check_arity/setup_args.
+    case Nat.compare_spec; intros; try iIntros "[]".
+    { rewrite split_at_firstn_skipn.
+      iApply (eval_frame_strong with "[PRS]").
+      { iSplitL; eauto.
+        rewrite big_opL_map.
+        iApply big_opL_all.
+        iModIntro.
+        iIntros (te); destruct te; iApply wp_arg_frame. }
+      { iIntros (??) "%".
+        rewrite split_at_firstn_skipn.
+        revert H0.
+        rewrite app_length map_length app_length map_length combine_length firstn_length skipn_length.
+        intros. destruct f.
+        { iApply "X"; iPureIntro.
+          rewrite firstn_length. lia.
+          rewrite skipn_length. lia. }
+        { rewrite split_at_firstn_skipn.
+          iIntros "H" (p) "V".
+          iSpecialize ("H" with "V").
+          iRevert "H". iApply "X"; iPureIntro.
+          - rewrite firstn_length. lia.
+          - rewrite app_length firstn_length skipn_length /=. lia. } } }
+    { case_bool_decide; try iIntros "[]".
+      rewrite split_at_firstn_skipn.
+      iApply (eval_frame_strong with "[PRS]").
+      { iSplitL; eauto.
+        rewrite big_opL_map.
+        iApply big_opL_all.
+        iModIntro.
+        iIntros (te); destruct te; iApply wp_arg_frame. }
+      { subst.
+        iIntros (?? HH).
+        rewrite !split_at_firstn_skipn.
+        iIntros "H" (?) "A".
+        iSpecialize ("H" with "A").
+        revert HH.
+        rewrite app_length map_length app_length map_length combine_length firstn_length skipn_length.
+        intro.
+        iRevert "H"; iApply "X"; iPureIntro.
+        - rewrite firstn_length. lia.
+        - rewrite app_length firstn_length skipn_length /=. lia. } }
   Qed.
 
   Lemma wp_args_frame : forall eo pres ts_ar es Q Q',
