@@ -21,8 +21,13 @@
  * https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/LICENSE-CODE
  *)
 
-(** Boolean negation (compatible with SSR) *)
+(** Boolean ops (compatible with SSR) *)
 Reserved Notation "~~ b" (at level 35, right associativity).
+Reserved Infix "==>" (at level 55, right associativity).
+
+Reserved Notation "[ && b1 & c ]" (at level 0).
+Reserved Notation "[ && b1 , b2 , .. , bn & c ]"
+  (at level 0, format "'[hv' [ && '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/ '  &  c ] ']'").
 
 (** These conflict with AC/AU.
 Reserved Infix "<<" (at level 35).	(** cf [≪] *)
