@@ -543,12 +543,11 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Qed.
 
   #[global] Instance aligned_ptr_ty_proper :
-    Proper (genv_leq ==> pointwise_relation _ (pointwise_relation _ Basics.impl)) (@aligned_ptr_ty).
+    Proper (genv_leq ==> eq ==> eq ==> impl) (@aligned_ptr_ty).
   Proof.
-    do 5 intro. red.
-    rewrite /aligned_ptr_ty.
-    destruct 1 as [ ? [??]]. eexists; split; eauto.
-    destruct (Proper_align_of _ _ H a a); auto; congruence.
+    rewrite /aligned_ptr_ty/impl; intros ?? H t1 t2 -> ??->.
+    destruct 1 as [? [??]]. eexists; split; eauto.
+    destruct (Proper_align_of _ _ H t2 t2); eauto; congruence.
   Qed.
 
   #[global] Instance aligned_ptr_divide_mono :
