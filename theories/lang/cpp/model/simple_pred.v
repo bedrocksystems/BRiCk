@@ -1325,7 +1325,7 @@ Module SimpleCPP.
       - by rewrite H.
       - case_match; auto.
         case_match; auto.
-        all: solve [ f_equiv; try rewrite H; eauto; f_equiv; by apply aligned_ptr_ty_proper ].
+        all: solve [ f_equiv; try rewrite H; eauto; f_equiv; by apply aligned_ptr_ty_mono ].
     Qed.
 
     #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
