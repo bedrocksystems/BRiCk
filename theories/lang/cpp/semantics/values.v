@@ -442,9 +442,6 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
           (exists z, v = Vint z /\ bound sz sgn z) \/
           (exists r, v = Vraw r /\ Tnum sz sgn = Tuchar).
 
-    Axiom has_type_prop_qual_iff : forall t q x,
-        has_type_prop x t <-> has_type_prop x (Tqualified q t).
-
   End with_genv.
 
 End HAS_TYPE.
@@ -453,6 +450,13 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     (Import HT : HAS_TYPE P R V).
   Section with_env.
     Context {σ : genv}.
+
+    Lemma has_type_prop_qual_iff t q x :
+        has_type_prop x t <-> has_type_prop x (Tqualified q t).
+    Proof.
+      by rewrite (has_type_prop_erase_qualifiers _ (Tqualified _ _))
+        (has_type_prop_erase_qualifiers _ t).
+    Qed.
 
     Lemma has_nullptr_type ty :
       has_type_prop (Vptr nullptr) (Tpointer ty).
