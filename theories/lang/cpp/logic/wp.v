@@ -710,7 +710,7 @@ Section with_cpp.
   (** C++ evaluation semantics guarantees that all expressions of type [t] that
       evaluate without UB evaluate to a well-typed value of type [t] *)
   Axiom wp_operand_well_typed : forall {σ : genv} tu ρ e Q,
-      wp_operand tu ρ e (fun v frees => [| has_type_prop v (type_of e) |] -* Q v frees)
+      wp_operand tu ρ e (fun v frees => has_type v (type_of e) -* Q v frees)
     |-- wp_operand tu ρ e Q.
 
   (* BEGIN wp_init <-> wp_operand *)
