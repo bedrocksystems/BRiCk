@@ -42,18 +42,25 @@ Proof. solve_inhabited. Qed.
 Proof. solve_decision. Defined.
 
 Record IntConfig : Set :=
-  { int_cpu : option cpu
-  ; int_trigger : option IntTrigger
-  ; int_owner : option IntOwner
+  { int_cpu : cpu
+  ; int_trigger : IntTrigger
+  ; int_owner : IntOwner
   ; int_status : IntStatus }.
 
 (* The IntConfig value before the first assign_int *)
 Definition initialIntConfig :=
-  {| int_cpu := None
-  ;  int_trigger := None
-  ;  int_owner := None
+  {| int_cpu := cpu.of_N 0
+  ;  int_trigger := TriggerEdge
+  ;  int_owner := HostInt
   ;  int_status := IntMasked
   |}.
+
+Definition INT_config_of (c : cpuT) (edge active_low is_guest masked : bool)
+    : IntConfig :=
+  {| int_cpu := c
+    ; int_trigger := if edge then TriggerEdge else TriggerLevel active_low
+    ; int_owner := if is_guest then GuestInt else HostInt
+    ; int_status := if masked then IntMasked else IntEnabled |}.
 
 #[global] Instance int_config_inhabited : Inhabited IntConfig.
 Proof. solve_inhabited. Qed.
@@ -79,22 +86,26 @@ Proof. solve_inhabited. Qed.
 #[global] Instance InterruptSignal_eq_dec : EqDecision InterruptSignal.
 Proof. solve_decision. Defined.
 
-Definition int_types_match (sig : InterruptSignal) (ty : IntConfig) : Prop :=
+Definition int_trigger_match (sig : InterruptSignal) (trg : IntTrigger) : Prop :=
   match sig with
-  | LevelSig high => ty.(int_trigger) = Some $ TriggerLevel (negb high)
+  | LevelSig high => trg = TriggerLevel (negb high)
     (* ^ [high = true] is a valid level trigger only if
          [TriggerLevel false (*= active_low*)]. *)
-  | EdgeSig => ty.(int_trigger) = Some TriggerEdge
+  | EdgeSig => trg = TriggerEdge
   end.
+#[global] Instance int_trigger_match_dec sig trg : Decision (int_trigger_match sig trg).
+Proof. case: sig => /=; by apply: _. Defined.
 
+Definition int_types_match (sig : InterruptSignal) (ty : IntConfig) : Prop :=
+  int_trigger_match sig ty.(int_trigger).
 #[global] Instance int_types_match_decision sig cfg : Decision (int_types_match sig cfg).
-Proof. case: cfg => ?; case: sig => /=; by apply: _. Defined.
+Proof. case: cfg => ?; by apply: _. Defined.
 
 (** [intcfg_valid cfg own sig] means that [cfg] matches [sig], the interrupt line was
     configured [IntEnabled], and the owner is [own] (guest or host). *)
 Definition intcfg_valid (cfg : IntConfig) (own : IntOwner) (sig : InterruptSignal) : Prop :=
     int_types_match sig cfg /\
-    cfg.(int_owner) = Some own /\
+    cfg.(int_owner) = own /\
     cfg.(int_status) = IntEnabled.
 
 (* Confirm these instances are already derivable. *)
