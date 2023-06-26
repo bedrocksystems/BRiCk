@@ -611,12 +611,14 @@ Module Type Expr.
     (* note(gmm): in the clang AST, the subexpression is the call.
      * in essence, [Ecast (Cuser ..)] is a syntax annotation.
      *)
-    Axiom wp_init_cast_user : forall ty' e p ty Z Q,
-        wp_init ty' p e Q
-        |-- wp_init ty' p (Ecast (Cuser Z) e Prvalue ty) Q.
+    Axiom wp_init_cast_user : forall e p ty Z Q,
+        type_of e = ty ->
+            wp_init ty p e Q
+        |-- wp_init ty p (Ecast (Cuser Z) e Prvalue ty) Q.
 
     Axiom wp_operand_cast_user : forall e ty Z Q,
-        wp_operand e Q
+            type_of e = ty ->
+            wp_operand e Q
         |-- wp_operand (Ecast (Cuser Z) e Prvalue ty) Q.
 
     Definition UNSUPPORTED_reinterpret_cast (ty1 ty2 : type) : mpred.
