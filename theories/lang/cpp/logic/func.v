@@ -78,9 +78,6 @@ Section with_cpp.
 
   Implicit Types p : ptr.
 
-  Definition Kfree (free : FreeTemp) : KpredI -> KpredI :=
-    Kat_exit (interp free).
-
   (** * Aggregate identity *)
   (* Part of [all_identities path cls], but indexed by fuel [f].
      TODO replace this with a version that is built by well-founded recursion.
