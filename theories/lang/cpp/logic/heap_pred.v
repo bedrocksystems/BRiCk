@@ -148,14 +148,24 @@ Section with_cpp.
    *
    * NOTE [ty] *must* be a primitive type.
    *)
-  Definition primR_def {resolve:genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
+  Definition primR_def {resolve : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
     as_Rep (fun p : ptr => tptsto ty q p v **
              [| not(exists raw, v = Vraw raw) |] **
-             [| has_type_prop v (drop_qualifiers ty) |]).
+             has_type v (drop_qualifiers ty)).
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
   Definition primR := primR_aux.(unseal).
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
   #[global] Arguments primR {resolve} ty q v : rename.
+
+  Definition primR_alt resolve ty q v :
+    primR ty q v -|-
+      as_Rep (fun p : ptr => tptsto ty q p v) **
+      [| not(exists raw, v = Vraw raw) |] **
+      pureR (has_type v (drop_qualifiers ty)).
+  Proof.
+    apply Rep_equiv_at => p.
+    by rewrite primR_eq /primR_def !_at_sep !_at_as_Rep _at_only_provable.
+  Qed.
 
   #[global] Instance primR_proper :
     Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR).
@@ -217,8 +227,8 @@ Section with_cpp.
       (primR ty q2 v2).
   Proof.
     rewrite primR_eq/primR_def; apply: as_Rep_only_provable_observe_2=> p.
-    iIntros "(Htptsto1 & %Hnotraw1 & %Hhas_type_prop1)
-             (Htptsto2 & %Hnotraw2 & %Hhas_type_prop2)".
+    iIntros "(Htptsto1 & %Hnotraw1 & _)
+             (Htptsto2 & %Hnotraw2 & _)".
     iApply (observe_2 with "Htptsto1 Htptsto2").
     iApply observe_2_derive_only_provable => Hvs.
     induction Hvs; subst; auto; exfalso;
@@ -233,13 +243,21 @@ Section with_cpp.
       (primR ty q2 (f v2)).
   Proof. apply (observe2_inj f), _. Qed.
 
+  #[global] Instance primR_observe_has_type resolve ty q v :
+    Observe (pureR (has_type v ty)) (primR ty q v).
+  Proof. apply observe_at=>p. rewrite primR_alt has_type_drop_qualifiers. apply _. Qed.
+
+  #[global] Instance _at_primR_observe_has_type resolve ty q v (p : ptr) :
+    Observe (has_type v ty) (p |-> primR ty q v).
+  Proof. apply: _at_observe_pureR. Qed.
+
   #[global] Instance primR_observe_has_type_prop resolve ty q v :
-    Observe [| has_type_prop v (drop_qualifiers ty) |] (primR ty q v).
-  Proof. rewrite primR_eq. apply _. Qed.
+    Observe [| has_type_prop v ty |] (primR ty q v).
+  Proof. apply observe_at=>p. rewrite _at_only_provable -has_type_has_type_prop. apply _. Qed.
 
   Lemma primR_has_type_prop {σ} ty q v :
     primR (resolve:=σ) ty q v |--
-    primR (resolve:=σ) ty q v ** [| has_type_prop v (drop_qualifiers ty) |].
+    primR (resolve:=σ) ty q v ** [| has_type_prop v ty |].
   Proof. apply: observe_elim. Qed.
 
   (**
@@ -303,8 +321,9 @@ Section with_cpp.
     uninitR ty q2 -*
     primR ty (q1 ⋅ q2) Vundef.
   Proof.
-    rewrite primR_eq/primR_def uninitR_eq/uninitR_def. constructor=>p /=.
-    rewrite monPred_at_wand. iIntros "[T1 [%Hnotraw %Hty]]" (? <-%ptr_rel_elim) "/= T2".
+    apply Rep_entails_at=>p/=.
+    rewrite primR_eq/primR_def uninitR_eq/uninitR_def !_at_wand !_at_as_Rep.
+    iIntros "[T1 [%Hnotraw Hty]] /= T2".
     iDestruct (observe_2 [| val_related resolve ty v Vundef |] with "T1 T2") as "%Hrelated".
     assert (v = Vundef)
       by (remember Vundef as v'; induction Hrelated;
@@ -744,17 +763,11 @@ Section with_cpp.
     Proof.
       split'; try apply primR_tptstoR.
       rewrite tptstoR.unlock primR_eq/primR_def.
-      apply as_Rep_mono; red; intro.
-      iIntros "X".
-      iDestruct (observe (has_type_or_undef _ _) with "X") as "#HT".
-      iDestruct "X" as "$".
-      rewrite has_type_or_undef_unfold.
-      destruct v; try tauto;
-      iDestruct "HT" as "[H | %]"; try congruence;
-      iDestruct (has_type_has_type_prop with "H") as "%";
-      iPureIntro; (split;
-        [ destruct 1; congruence
-        | by rewrite -has_type_prop_drop_qualifiers ]).
+      apply as_Rep_mono; iIntros (p) "X".
+      iDestruct (observe_elim (has_type_or_undef _ _) with "X") as "[$ #HT]".
+      rewrite has_type_or_undef_unfold -has_type_drop_qualifiers.
+      iDestruct "HT" as "[$ | ->]"; last done.
+      by iIntros "!%" ([? ->]).
     Qed.
 
     Lemma tptstoR_Vint_primR ty q z :
