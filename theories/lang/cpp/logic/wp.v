@@ -160,6 +160,16 @@ Section Kpred.
     destruct rt; try apply HQ; apply Hk.
   Qed.
 
+  Lemma Kseq_frame (Q1 Q2 : Kpred -> mpred) (k1 k2 : Kpred) :
+    (∀ k1 k2 : Kpred, (∀ rt, k1 rt -* k2 rt) -* Q1 k1 -* Q2 k2) |--
+    (∀ rt, k1 rt -* k2 rt) -*
+    ∀ rt, Kseq Q1 k1 rt -* Kseq Q2 k2 rt.
+  Proof.
+    iIntros "Q k %".
+    rewrite /Kseq/=.
+    destruct rt; try iApply "k". by iApply "Q".
+  Qed.
+
   (* loop with invariant `I` *)
   Definition Kloop (I : mpred) (Q : Kpred) : Kpred :=
     KP (funI rt =>
