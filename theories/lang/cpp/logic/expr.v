@@ -589,9 +589,10 @@ Module Type Expr.
     (** Known places that bitcasts occur
         - casting between [void*] and [T*] for some [T].
      *)
-    Axiom wp_operand_cast_bitcast : forall e t Q,
-        wp_operand e Q
-        |-- wp_operand (Ecast Cbitcast e Prvalue t) Q.
+    Axiom wp_operand_cast_bitcast : forall e ty Q,
+           (letI* v, free := wp_operand e in
+             has_type v ty ** Q v free)
+        |-- wp_operand (Ecast Cbitcast e Prvalue ty) Q.
 
     (** [Cintegral] casts represent casts between integral types, e.g.
         - [int] -> [short]
