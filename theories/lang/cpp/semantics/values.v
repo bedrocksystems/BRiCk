@@ -270,6 +270,43 @@ Module Type RAW_BYTES_MIXIN
       (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
       val_related σ Tu8 (Vint z) (Vraw raw).
 
+  Lemma val_related_Vint' {σ : genv} ty v1 v2 :
+    val_related _ ty v1 v2 ->
+    forall z1 z2, v1 = Vint z1 -> v2 = Vint z2 ->
+             z1 = z2.
+  Proof.
+    induction 1; simpl; intros; subst; eauto; try congruence.
+  Qed.
+  Lemma val_related_Vint {σ : genv} ty z1 z2 :
+    val_related _ ty (Vint z1) (Vint z2) ->
+    z1 = z2.
+  Proof. intros. eapply val_related_Vint'; eauto. Qed.
+
+  Lemma val_related_Vchar' {σ : genv} ty v1 v2 :
+    val_related _ ty v1 v2 ->
+    forall z1 z2, v1 = Vchar z1 -> v2 = Vchar z2 ->
+             z1 = z2.
+  Proof.
+    induction 1; simpl; intros; subst; eauto; try congruence.
+  Qed.
+  Lemma val_related_Vchar {σ : genv} ty n1 n2 :
+    val_related _ ty (Vchar n1) (Vchar n2) ->
+    n1 = n2.
+  Proof. intros. eapply val_related_Vchar'; eauto. Qed.
+
+  (* this stronger property holds because pointers do not have a
+     raw representation. *)
+  Lemma val_related_Vptr' {σ : genv} ty v1 v2 :
+    val_related _ ty v1 v2 ->
+    forall p1, v1 = Vptr p1 -> Vptr p1 = v2.
+  Proof.
+    induction 1; simpl; intros; subst; eauto; try congruence.
+  Qed.
+  Lemma val_related_Vptr {σ : genv} ty p1 v2 :
+    val_related _ ty (Vptr p1) v2 ->
+    Vptr p1 = v2.
+  Proof. intros; eapply val_related_Vptr'; eauto. Qed.
+
   Lemma val_related_qual :
     forall σ t ty v1 v2,
       val_related σ ty v1 v2 ->
@@ -360,6 +397,8 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
 
     Axiom has_type_prop_pointer : forall v ty,
         has_type_prop v (Tpointer ty) <-> exists p, v = Vptr p.
+    Axiom has_type_prop_erase_qualifiers : forall v ty,
+        has_type_prop v ty <-> has_type_prop v (erase_qualifiers ty).
     Axiom has_type_prop_nullptr : forall v,
         has_type_prop v Tnullptr <-> v = Vptr nullptr.
     Axiom has_type_prop_ref : forall v ty,
@@ -403,9 +442,6 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
           (exists z, v = Vint z /\ bound sz sgn z) \/
           (exists r, v = Vraw r /\ Tnum sz sgn = Tuchar).
 
-    Axiom has_type_prop_qual_iff : forall t q x,
-        has_type_prop x t <-> has_type_prop x (Tqualified q t).
-
   End with_genv.
 
 End HAS_TYPE.
@@ -414,6 +450,13 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     (Import HT : HAS_TYPE P R V).
   Section with_env.
     Context {σ : genv}.
+
+    Lemma has_type_prop_qual_iff t q x :
+        has_type_prop x t <-> has_type_prop x (Tqualified q t).
+    Proof.
+      by rewrite (has_type_prop_erase_qualifiers _ (Tqualified _ _))
+        (has_type_prop_erase_qualifiers _ t).
+    Qed.
 
     Lemma has_nullptr_type ty :
       has_type_prop (Vptr nullptr) (Tpointer ty).

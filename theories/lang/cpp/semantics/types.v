@@ -354,8 +354,15 @@ Section with_genv.
 
   Axiom align_of_array : forall (ty : type) n,
       align_of (Tarray ty n) = align_of ty.
-  Axiom align_of_qualified : ∀ t q,
+  Axiom align_of_erase_qualifiers : ∀ t,
+      align_of (resolve:=σ) t = align_of (resolve:=σ) (erase_qualifiers t).
+
+  Lemma align_of_qualified : ∀ t q,
       align_of (resolve:=σ) (Tqualified q t) = align_of (resolve:=σ) t.
+  Proof.
+    intros.
+    rewrite {1}align_of_erase_qualifiers. simpl. by rewrite -align_of_erase_qualifiers.
+  Qed.
 
   Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
   #[global] Existing Instance Proper_align_of.
@@ -365,4 +372,13 @@ Section with_genv.
         (Hl : tu !! gn = Some (Gstruct st)) :
     align_of (Tnamed gn) = GlobDecl_align_of (Gstruct st).
   Proof. by rewrite /= align_of_named (glob_def_genv_compat_struct st Hl). Qed.
+
+  Lemma align_of_genv_leq σ1 σ2 ty align :
+    @align_of σ1 ty = Some align ->
+    genv_leq σ1 σ2 ->
+    @align_of σ2 ty = Some align.
+  Proof.
+    move=> /[swap] /Proper_align_of /(_ ty ty eq_refl) /=.
+    by inversion 1; naive_solver.
+  Qed.
 End with_genv.

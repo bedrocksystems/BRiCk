@@ -55,6 +55,10 @@ Definition nonptr_prim_type ty : bool :=
   | Tnullptr | Tpointer _ | Tref _ | Trv_ref _ | _ => false
   end.
 
+Lemma nonptr_prim_type_erase_qualifiers : forall ty,
+    nonptr_prim_type ty = nonptr_prim_type (erase_qualifiers ty).
+Proof. induction ty; simpl; eauto. Qed.
+
 Module Type CPP_LOGIC
   (Import P : PTRS_INTF)
   (Import INTF : VALUES_INTF_FUNCTOR P)
@@ -137,8 +141,11 @@ Module Type CPP_LOGIC
         nonptr_prim_type ty ->
         [| has_type_prop v ty |] |-- has_type v ty.
 
-      Axiom has_type_qual_iff : ∀ ty tq v,
-        has_type v ty -|- has_type v (Tqualified tq ty).
+      (* [has_type] is independent of qualifiers.
+         This allows casting betweeen [const] and non-[const].
+         *)
+      Axiom has_type_erase_qualifiers : ∀ ty v,
+        has_type v ty -|- has_type v (erase_qualifiers ty).
 
       (* Internal statements: *)
       Axiom has_type_nullptr' : ∀ p,
@@ -152,7 +159,16 @@ Module Type CPP_LOGIC
       Axiom has_type_rv_ref' : ∀ p ty,
         has_type (Vref p) (Trv_ref ty) -|-
         strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+
     End with_genv.
+
+    Axiom has_type_mono :
+        Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
+    #[global] Existing Instances has_type_mono.
+
+    Parameter has_type_or_undef : forall {σ : genv}, val -> type -> mpred.
+    Axiom has_type_or_undef_unfold :
+        @has_type_or_undef = funI σ v ty => has_type v ty \\// [| v = Vundef |].
 
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)
@@ -197,6 +213,10 @@ Module Type CPP_LOGIC
     #[global] Declare Instance tptsto_cfractional {σ} ty : CFractional2 (tptsto ty).
 
     #[global] Declare Instance tptsto_cfrac_valid {σ} t : CFracValid2 (tptsto t).
+
+    Axiom tptsto_welltyped : forall {σ} p ty q v,
+      Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
+    #[global] Existing Instances tptsto_welltyped.
 
     Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
       Observe2 [| val_related σ ty v1 v2 |]
@@ -1227,4 +1247,23 @@ Section with_cpp.
   Lemma live_has_alloc_id p :
     live_ptr p ⊢ ∃ aid, [| ptr_alloc_id p = Some aid |] ∗ live_alloc_id aid.
   Proof. rewrite /live_ptr; iIntros. case: (ptr_alloc_id p) => /= [aid|]; eauto. Qed.
+
+  #[global] Instance has_type_proper :
+    Proper (genv_eq ==> eq ==> eq ==> (≡)) (@has_type _ Σ).
+  Proof. intros ?? H ??? ???; split'; apply has_type_mono => //; apply H. Qed.
+
+  #[global] Instance has_type_or_undef_proper :
+    Proper (genv_eq ==> eq ==> eq ==> (≡)) (@has_type_or_undef _ Σ).
+  Proof.
+    intros ?? H ??-> ??->; rewrite !has_type_or_undef_unfold.
+    split';
+      (iIntros "[? | ?]"; [ iLeft | iRight ]; eauto); iStopProof; eapply has_type_mono => //; apply H.
+  Qed.
+  #[global] Instance has_type_or_undef_mono :
+    Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type_or_undef _ Σ).
+  Proof.
+    intros ?? H ??-> ??->; rewrite !has_type_or_undef_unfold.
+    (iIntros "[? | ?]"; [ iLeft | iRight ]; eauto); iStopProof; eapply has_type_mono => //; apply H.
+  Qed.
+
 End with_cpp.

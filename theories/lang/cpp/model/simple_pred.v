@@ -1232,6 +1232,13 @@ Module SimpleCPP.
         end
       | _ => [| nonptr_prim_type ty |]
       end.
+
+    Definition has_type_or_undef {σ} (v : val) ty : mpred :=
+      has_type v ty \\// [| v = Vundef |].
+    Lemma has_type_or_undef_unfold :
+      @has_type_or_undef = funI σ v ty => has_type v ty \\// [| v = Vundef |].
+    Proof. done. Qed.
+
     Section with_genv.
       Context {σ : genv}.
 
@@ -1255,9 +1262,20 @@ Module SimpleCPP.
         destruct v => //. by case_match.
       Qed.
 
-      Lemma has_type_qual_iff ty tq v :
-        has_type v ty -|- has_type v (Tqualified tq ty).
-      Proof. by rewrite /has_type has_type_prop_qual_iff. Qed.
+      Lemma has_type_erase_qualifiers ty v :
+        has_type v ty -|- has_type v (erase_qualifiers ty).
+      Proof.
+        rewrite /has_type has_type_prop_erase_qualifiers drop_erase_qualifiers.
+        f_equiv.
+        rewrite -nonptr_prim_type_erase_qualifiers.
+        case_match; eauto.
+        rewrite -erase_drop_qualifiers.
+        case_match; simpl; eauto.
+        all: try f_equiv.
+        all: try rewrite aligned_ptr_ty_erase_qualifiers; auto.
+        exfalso.
+        by eapply unqual_drop_qualifiers.
+      Qed.
 
       Lemma has_type_nullptr' p :
         has_type (Vptr p) Tnullptr -|- [| p = nullptr |].
@@ -1299,6 +1317,20 @@ Module SimpleCPP.
         by rewrite /has_type/= has_type_prop_ref has_type_prop_rv_ref.
       Qed.
     End with_genv.
+
+    #[global] Instance has_type_mono :
+        Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
+    Proof.
+      intros ?? H ??-> ??->; rewrite /has_type. f_equiv.
+      - by rewrite H.
+      - case_match; auto.
+        case_match; auto.
+        all: solve [ f_equiv; try rewrite H; eauto; f_equiv; by apply aligned_ptr_ty_mono ].
+    Qed.
+
+    #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
+      Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
+    Proof. Admitted.
 
   End with_cpp.
 

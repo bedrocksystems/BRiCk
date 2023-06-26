@@ -536,6 +536,28 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Definition aligned_ptr_ty {σ} ty p :=
     exists align, align_of ty = Some align /\ aligned_ptr align p.
 
+  Lemma aligned_ptr_ty_erase_qualifiers : forall {σ} p ty,
+      aligned_ptr_ty ty p <-> aligned_ptr_ty (erase_qualifiers ty) p.
+  Proof.
+    rewrite /aligned_ptr_ty; intros. by rewrite align_of_erase_qualifiers.
+  Qed.
+
+  #[global] Instance aligned_ptr_ty_mono :
+    Proper (genv_leq ==> eq ==> eq ==> impl) (@aligned_ptr_ty).
+  Proof.
+    rewrite /aligned_ptr_ty; intros σ1 σ2 Hg ? ty -> ? p ->.
+    f_equiv => align [Hal Hp]; split; last done.
+    exact: (align_of_genv_leq σ1) Hal Hg.
+  Qed.
+
+  #[global] Instance aligned_ptr_ty_flip_mono :
+    Proper (flip genv_leq ==> eq ==> eq ==> flip impl) (@aligned_ptr_ty).
+  Proof. solve_proper. Qed.
+
+  #[global] Instance aligned_ptr_ty_proper :
+    Proper (genv_eq ==> eq ==> eq ==> iff) (@aligned_ptr_ty).
+  Proof. intros σ1 σ2 [H1 H2] ? ty -> ? p ->. split; by rewrite (H1, H2). Qed.
+
   #[global] Instance aligned_ptr_divide_mono :
     Proper (flip N.divide ==> eq ==> impl) aligned_ptr.
   Proof.

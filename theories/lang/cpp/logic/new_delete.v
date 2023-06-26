@@ -227,22 +227,9 @@ Module Type Expr__newdelete.
           iApply Mbind_frame; last by iApply "args"; by iPureIntro.
           all: subst; cbn in *; inversion Hspec; subst; clear Hspec.
           - iIntros (R S) "RS R"; iIntros (p); iSpecialize ("R" $! p).
-            (** TODO: find a better way of doing this part of the proof *)
-            set (R' := fun (v : val) (free : FreeTemps) =>
-                         p |-> primR (Tptr Tvoid) (cQp.mut 1) v -*
-                         R p (FreeTemps.delete (Tptr Tvoid) p >*> free)).
-            set (S' := fun (v : val) (free : FreeTemps) =>
-                         p |-> primR (Tptr Tvoid) (cQp.mut 1) v -*
-                         S p (FreeTemps.delete (Tptr Tvoid) p >*> free)).
-            iAssert ((Forall (p : ptr) (free : FreeTemps), R p free -* S p free) -*
-                     (Forall (v : val) (free : FreeTemps), R' v free -* S' v free))
-              as "HRS'". 1: {
-              subst R' S'; iIntros "RS"; iIntros (v free) "H void".
-              iDestruct ("H" with "void") as "R"; by iApply "RS".
-            }
-            iDestruct ("HRS'" with "RS") as "RS'".
-            iApply (wp_operand_frame with "RS'"); last by iApply "R".
-            reflexivity.
+            iRevert "R". iApply wp_operand_frame; try reflexivity.
+            iIntros (??) "X Y". iSpecialize ("X" with "Y").
+            by iApply "RS".
           - iIntros (p); iApply Mmap_frame; iIntros (R S) "RS R"; by iApply "RS".
           - iIntros (ps free) "H".
             iDestruct "H"
@@ -364,7 +351,7 @@ Module Type Expr__newdelete.
               Exists array_sizeN, [| v = Vn array_sizeN |] **
                 (* The size must be greater than zero (see the quote from [expr.new#7] above). *)
                 [| 0 < array_sizeN |]%N **
-                wp_args ([Tptr Tvoid], Ar_Definite) [storage_expr] (fun vs free' =>
+                letI* vs, free' := wp_args ([Tptr Tvoid], Ar_Definite) [storage_expr] in
                   Exists alloc_sz alloc_al storage_ptr,
                     [| vs = [storage_ptr] |] ** [| storage_ptr <> nullptr |] **
                     let array_ty := Tarray aty array_sizeN in
@@ -391,13 +378,12 @@ Module Type Expr__newdelete.
                               provides_storage
                                 (storage_ptr .[Tu8 ! overhead_sz])
                                 obj_ptr array_ty -*
-                              wp_opt_initialize oinit array_ty obj_ptr
-                                (fun free'' =>
+                              letI* free'' := wp_opt_initialize oinit array_ty obj_ptr in
                                    (* Track the type we are allocating
                                       so it can be checked at [delete]
                                     *)
                                    obj_ptr |-> new_tokenR (cQp.mut 1) array_ty -*
-                                   Q (Vptr obj_ptr) (free'' >*> free' >*> free))))))))
+                                   Q (Vptr obj_ptr) (free'' >*> free' >*> free))))))
         |-- wp_operand (Enew new_fn [storage_expr] aty (Some array_size) oinit) Q.
         Proof.
           intros **; iIntros "array_sz".
@@ -416,22 +402,9 @@ Module Type Expr__newdelete.
           iApply Mbind_frame; last by iApply "args"; by iPureIntro.
           all: subst; cbn in *; inversion Hspec; subst; clear Hspec.
           - iIntros (R S) "RS R"; iIntros (p); iSpecialize ("R" $! p).
-            (** TODO: find a better way of doing this part of the proof *)
-            set (R' := fun (v : val) (free : FreeTemps) =>
-                         p |-> primR (Tptr Tvoid) (cQp.mut 1) v -*
-                         R p (FreeTemps.delete (Tptr Tvoid) p >*> free)).
-            set (S' := fun (v : val) (free : FreeTemps) =>
-                         p |-> primR (Tptr Tvoid) (cQp.mut 1) v -*
-                         S p (FreeTemps.delete (Tptr Tvoid) p >*> free)).
-            iAssert ((Forall (p : ptr) (free : FreeTemps), R p free -* S p free) -*
-                     (Forall (v : val) (free : FreeTemps), R' v free -* S' v free))
-              as "HRS'". 1: {
-              subst R' S'; iIntros "RS"; iIntros (v free') "H void".
-              iDestruct ("H" with "void") as "R"; by iApply "RS".
-            }
-            iDestruct ("HRS'" with "RS") as "RS'".
-            iApply (wp_operand_frame with "RS'"); last by iApply "R".
-            reflexivity.
+            iRevert "R". iApply wp_operand_frame; try reflexivity.
+            iIntros (??) "X Y". iSpecialize ("X" with "Y").
+            by iApply "RS".
           - iIntros (p); iApply Mmap_frame; iIntros (R S) "RS R"; by iApply "RS".
           - iIntros (ps free') "H".
             iDestruct "H"
