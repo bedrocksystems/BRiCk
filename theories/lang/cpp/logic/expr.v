@@ -1106,16 +1106,20 @@ Module Type Expr.
         an object of templated type when the type is instantiated
         with a primitive. For example,
 
+        <<
           template<typename T> void destroy_it(T* t) { t->~T(); }
+        >>
 
         with [T = int].
 
-        To maintain similarity with the rest of the system, we
-        the C++ abstract machine "implements" these destructors as
-        (essentially) a function with the specification:
+        To maintain similarity with the rest of the system,
+        the C++ abstract machine "implements" this with what is (essentially)
+        a function with the specification:
 
+        [[
            \pre this |-> anyR ty 1
            \post this |-> tblockR ty
+        ]]
 
         Note that the memory is *not* returned to the C++ abstract
         machine because this is not reclaimation for an object going
