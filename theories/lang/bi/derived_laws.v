@@ -1,12 +1,13 @@
 (*
- * Copyright (c) 2020-2022 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-(** *)
 
+From stdpp Require Import coPset.
 From iris.bi Require Import bi lib.fractional.
 From iris.proofmode Require Import proofmode.
+From bedrock.prelude Require Import reserved_notation.
 From bedrock.lang.bi Require Import only_provable.
 
 (**
@@ -51,8 +52,69 @@ Module Export nary.
   Notation Timeless6 P := (∀ a, Timeless5 (P a)).
 End nary.
 
+(**
+An optional fancy update. Meant to be unfolded.
+*)
+Definition fupd_if {PROP} `{!FUpd PROP} (b : bool) (E1 E2 : coPset) (P : PROP) : PROP :=
+  if b then fupd E1 E2 P else P.
+#[global] Arguments fupd_if {_ _} !_ _ _ _%I / : assert.
+#[global] Hint Opaque fupd_if : typeclass_instances.
+Notation "|={ E1 , E2 }=>? b P" := (fupd_if b E1 E2 P) : bi_scope.
+Notation "|={ E }=>? b P" := (fupd_if b E E P) : bi_scope.
+
 Module bi.
 Export iris.bi.bi.bi.
+
+Section fupd_if.
+  Context {PROP : bi} `{!BiFUpd PROP}.
+  Implicit Types (P : PROP).
+
+  #[global] Instance: Params (@fupd_if) 5 := {}.
+  #[local] Notation PROPER R := (
+    ∀ b E1 E2,
+    Proper (R ==> R) (fupd_if (PROP:=PROP) b E1 E2)
+  ) (only parsing).
+  #[global] Instance fupd_if_ne n : PROPER (dist n).
+  Proof. solve_proper. Qed.
+  #[global] Instance fupd_if_proper : PROPER equiv.
+  Proof. solve_proper. Qed.
+  #[global] Instance fupd_if_mono' : PROPER bi_entails.
+  Proof. solve_proper. Qed.
+  #[global] Instance fupd_if_flip_mono : PROPER (flip bi_entails).
+  Proof. solve_proper. Qed.
+
+  #[global] Instance fupd_absorbing b E1 E2 P : Absorbing P -> Absorbing (|={E1,E2}=>?b P).
+  Proof. destruct b; cbn; apply _. Qed.
+
+  Lemma fupd_if_intro b E P : P ⊢ |={E}=>?b P.
+  Proof. destruct b; cbn; auto using fupd_intro. Qed.
+
+  Lemma fupd_if_idemp b E P : (|={E}=>?b |={E}=>?b P) ⊣⊢ |={E}=>?b P.
+  Proof. destruct b; cbn; auto using fupd_idemp. Qed.
+
+  Lemma fupd_if_mask_subseteq b E1 E2 :
+    E2 ⊆ E1 -> ⊢@{PROP} |={E1,E2}=>?b |={E2,E1}=>?b emp.
+  Proof. destruct b; cbn; auto using fupd_mask_subseteq. Qed.
+
+  Lemma fupd_if_mask_intro_subseteq b E1 E2 P :
+    E2 ⊆ E1 -> P ⊢ |={E1,E2}=>?b |={E2,E1}=>?b P.
+  Proof. destruct b; cbn; auto using fupd_mask_intro_subseteq. Qed.
+
+  Lemma fupd_if_mono b E1 E2 P Q : (P ⊢ Q) -> (|={E1,E2}=>?b P) ⊢ |={E1,E2}=>?b Q.
+  Proof. by apply fupd_if_mono'. Qed.
+
+  Lemma fupd_if_trans b E1 E2 E3 P : (|={E1,E2}=>?b |={E2,E3}=>?b P) ⊢ |={E1,E3}=>?b P.
+  Proof. destruct b; cbn; auto using fupd_trans. Qed.
+
+  Lemma fupd_if_frame_r b E1 E2 P R : (|={E1,E2}=>?b P) ∗ R ⊢ |={E1,E2}=>?b P ∗ R.
+  Proof. destruct b; cbn; auto using fupd_frame_r. Qed.
+  Lemma fupd_if_frame_l b E1 E2 P R : (R ∗ |={E1,E2}=>?b P) ⊢ |={E1,E2}=>?b R ∗ P.
+  Proof. destruct b; cbn; auto using fupd_frame_l. Qed.
+
+  Lemma fupd_if_elim b E1 E2 E3 P Q :
+    (Q ⊢ |={E2,E3}=>?b P) -> (|={E1,E2}=>?b Q) ⊢ |={E1,E3}=>?b P.
+  Proof. destruct b; cbn; auto using fupd_elim. Qed.
+End fupd_if.
 
 Section derived_laws.
   Context {PROP : bi}.

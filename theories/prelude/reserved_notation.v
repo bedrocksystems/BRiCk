@@ -48,6 +48,14 @@ Reserved Notation "x '^^{' o '}' n"
    format "'[  ' x  '/' ^^{ o }  n ']'").
 Reserved Infix "^^" (at level 30, right associativity).
 
+(** Fancy updates *)
+Reserved Notation "|={ E1 , E2 }=>? b P"
+  (at level 99, b at level 9, E1, E2 at level 50, P at level 200,
+   format "'[  ' |={ E1 , E2 }=>? b  '/' P ']'").
+Reserved Notation "|={ E }=>? b P"
+  (at level 99, b at level 9, E at level 50, P at level 200,
+   format "'[  ' |={ E }=>? b  '/' P ']'").
+
 (** ** Iris big ops *)
 (**
  * We stick with the levels and associativity used in Iris' big ops
