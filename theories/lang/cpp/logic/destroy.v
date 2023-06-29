@@ -10,7 +10,7 @@ Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-  pred wp path_pred heap_pred const dispatch.
+  pred wp path_pred heap_pred const dispatch layout arr.
 
 #[local] Set Printing Coercions.
 #[local] Infix "|--" := bi_entails.
@@ -50,13 +50,13 @@ using (say) type classes for the side-conditions arising in its theory
 
 (** [wp_gen] *)
 (**
-[wp_gen WP n Q] "runs" [WP i] for [0 <= i < n] (in order). It satisfies
+[wp_gen WP n Q] "runs" [WP i] for [0 <= i < n] (higest to lowest). It satisfies
 <<
   wp_gen WP n Q =
-    letI* := WP 0 in
-    letI* := WP 1 in
-    ..
     letI* := WP (n - 1) in
+    ..
+    letI* := WP 1 in
+    letI* := WP 0 in
     Q
 >>
 and is compatible with fancy updates (see rule [wp_gen_shift]).
@@ -70,17 +70,21 @@ Section wp_gen.
   Context {PROP : bi} `{!updates.BiFUpd PROP}.
   Implicit Types (WP : N -> PROP -> PROP).
 
+  Lemma wp_gen_0 WP Q : wp_gen WP 0 Q -|- |={top}=> Q.
+  Proof. rewrite /wp_gen. by rewrite seqN_0. Qed.
+
+  Lemma wp_gen_succ WP n Q : wp_gen WP (N.succ n) Q -|- WP n (wp_gen WP n Q).
+  Proof. rewrite /wp_gen. by rewrite seqN_S_end_app foldl_app left_id_L. Qed.
+
   #[local] Notation FRAME WP WP' :=
     (∀ i Q Q', Q -* Q' |-- WP i Q -* WP' i Q') (only parsing).
   Lemma wp_gen_frame WP WP' n Q Q' :
     FRAME WP WP' ->
     Q -* Q' |-- wp_gen WP n Q -* wp_gen WP' n Q'.
   Proof.
-    intros wp_frame. rewrite /wp_gen -!foldr_rev.
-    induction n using N.peano_ind.
-    { rewrite !seqN_0/=. iIntros "HQ >Q !>". by iApply "HQ". }
-    rewrite {}IHn seqN_S_end_app left_id_L rev_app_distr /=.
-    by apply wp_frame.
+    intros wp_frame. induction n using N.peano_ind.
+    { rewrite !wp_gen_0. iIntros "HQ >Q !>". by iApply "HQ". }
+    { rewrite !wp_gen_succ {}IHn. apply wp_frame. }
   Qed.
 
   #[local] Notation SHIFT WP :=
@@ -89,34 +93,30 @@ Section wp_gen.
     FRAME WP WP -> SHIFT WP ->
     (|={top}=> wp_gen WP n (|={top}=> Q)) |-- wp_gen WP n Q.
   Proof.
-    intros wp_frame wp_shift. rewrite /wp_gen -!foldr_rev.
-    induction n using N.peano_ind.
-    { rewrite !seqN_0 /=. auto using fupd_elim. }
-    rewrite seqN_S_end_app left_id_L rev_app_distr /=.
-    iIntros "tail".
-    iApply wp_shift. iMod "tail". iModIntro.
-    iApply (wp_frame with "[] tail").
-    iIntros "tail !>". by iApply (IHn with "[$tail]").
+    intros wp_frame wp_shift. induction n using N.peano_ind.
+    { rewrite !wp_gen_0. auto using fupd_elim. }
+    rewrite !wp_gen_succ. iIntros "wp".
+    iApply wp_shift. iMod "wp". iModIntro.
+    iApply (wp_frame with "[] wp"). iIntros "wp !>".
+    by iApply (IHn with "[$wp]").
   Qed.
 
   Lemma wp_gen_intro WP n Q :
     FRAME WP WP ->
     foldl (fun acc i => WP i acc) Q (seqN 0 n) |-- wp_gen WP n Q.
   Proof.
-    intros wp_frame. rewrite /wp_gen -!foldr_rev.
-    induction n using N.peano_ind.
-    { rewrite !seqN_0/=. by iIntros "$". }
-    rewrite seqN_S_end_app left_id_L rev_app_distr /=. iIntros "wp".
+    intros wp_frame. induction n using N.peano_ind.
+    { rewrite wp_gen_0 seqN_0 /=. by iIntros "$". }
+    rewrite wp_gen_succ seqN_S_end_app left_id_L foldl_app /=. iIntros "wp".
     iApply (wp_frame with "[] wp"). rewrite {}IHn. by iIntros "$".
   Qed.
 End wp_gen.
-
 
 (** ** Destroying primitives *)
 
 #[local] Definition wp_destroy_prim_body `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (cv : type_qualifiers) (ty : type) (this : ptr) (Q : epred) : mpred :=
-  |={top}=> this |-> anyR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) ** Q.
+  |={top}=> (Exists v, this |-> tptstoR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) v) ** Q.
 
 mlock Definition wp_destroy_prim `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (cv : type_qualifiers) (ty : type) (this : ptr) (Q : epred) : mpred :=
@@ -146,13 +146,29 @@ Section prim.
   Implicit Types (Q : epred).
 
   Lemma wp_destroy_prim_intro tu cv ty (this : ptr) Q :
-    this |-> anyR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) ** Q
+    (Exists v, this |-> tptstoR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) v) ** Q
     |-- wp_destroy_prim tu cv ty this Q.
   Proof. wp_destroy_prim_unfold. by iIntros "[$$]". Qed.
 
+  Lemma anyR_wp_destroy_prim_val tu cv ty (p : ptr) Q :
+    is_value_type ty ->
+    p |-> anyR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) ** Q
+    |-- wp_destroy_prim tu cv ty p Q.
+  Proof.
+    rewrite -is_value_type_erase_qualifiers=>?.
+    by rewrite anyR_tptstoR_val// _at_exists -wp_destroy_prim_intro.
+  Qed.
+
+  Lemma anyR_wp_destroy_prim_ref tu cv ty (p : ptr) Q :
+    p |-> anyR (Tref $ erase_qualifiers ty) (cQp.mk (q_const cv) 1) ** Q
+    |-- wp_destroy_prim tu cv (Tref ty) p Q.
+  Proof.
+    by rewrite anyR_tptstoR_ref _at_exists -wp_destroy_prim_intro.
+  Qed.
+
   Lemma wp_destroy_prim_elim tu cv ty this Q :
     wp_destroy_prim tu cv ty this Q
-    |-- |={top}=> this |-> anyR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) ** Q.
+    |-- |={top}=> (Exists v, this |-> tptstoR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) v) ** Q.
   Proof. by wp_destroy_prim_unfold. Qed.
 
   Lemma wp_destroy_prim_erase_qualifiers tu cv ty :
@@ -483,20 +499,19 @@ definition, but we could not get the theory to go through.
 Section body.
   Context `{Σ : cpp_logic, σ : genv}.
   Context (wp_destroy_val : translation_unit -> type_qualifiers -> type -> ptr -> epred -> mpred).
-  Context (destroy_val : translation_unit -> type -> ptr -> epred -> mpred).
-  Context (wp_destroy_array : translation_unit -> type -> N -> ptr -> epred -> mpred).
+  Context (wp_destroy_array : translation_unit -> type_qualifiers -> type -> N -> ptr -> epred -> mpred).
 
   #[local] Definition destroy_val_body (tu : translation_unit)
       (ty : type) (this : ptr) (Q : epred) : mpred :=
     wp_destroy_val tu QM ty this Q.
 
   #[local] Definition wp_destroy_array_body (tu : translation_unit)
-      (ety : type) (sz : N) (this : ptr) (Q : epred) : mpred :=
+      (cv : type_qualifiers) (ety : type) (sz : N) (this : ptr) (Q : epred) : mpred :=
     (**
     NOTE array elements are destroyed left-to-right with non-virtual
     dispatch.
     *)
-    Reduce (wp_gen (fun i => destroy_val tu ety (this .[ erase_qualifiers ety ! Z.of_N i ])) sz Q).
+    Reduce (wp_gen (fun i => wp_destroy_val tu cv ety (this .[ erase_qualifiers ety ! Z.of_N i ])) sz Q).
 
   #[local] Definition wp_destroy_val_body (tu : translation_unit)
       (cv : type_qualifiers) (rty : type) (this : ptr) (Q : epred) : mpred :=
@@ -510,10 +525,7 @@ Section body.
       Q
 
     | Tarray ety sz =>
-      |={top}=> |>
-      letI* := if q_const cv then wp_make_mutable tu this rty else id in
-      letI* := wp_destroy_array tu ety sz this in
-      Q
+      |={top}=> |> wp_destroy_array tu cv ety sz this Q
 
     | Tref r_ty
     | Trv_ref r_ty =>
@@ -540,26 +552,25 @@ Section body.
 End body.
 
 mlock Definition wp_destroy_val `{Σ : cpp_logic, σ : genv}
-    : translation_unit -> type_qualifiers -> type -> ptr -> epred -> mpred :=
+    : ∀ (tu : translation_unit) (cv : type_qualifiers) (ty : type) (p : ptr) (Q : epred), mpred :=
   (* Written this way because [mlock Fixpoint ⋯] fails. *)
   fix wp_destroy_val tu q ty :=
-    let destroy_val := destroy_val_body wp_destroy_val in
-    let wp_destroy_array := wp_destroy_array_body destroy_val in
+    let wp_destroy_array := wp_destroy_array_body wp_destroy_val in
     wp_destroy_val_body wp_destroy_val wp_destroy_array tu q ty.
-#[global] Arguments wp_destroy_val {_ _ _} tu cv ty p Q : assert.	(* set names *)
+#[global] Arguments wp_destroy_val {_ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
 
 mlock Definition destroy_val `{Σ : cpp_logic, σ : genv}
-    : translation_unit -> type -> ptr -> epred -> mpred :=
+    : ∀ (tu : translation_unit) (ty : type) (p : ptr) (Q : epred), mpred :=
   destroy_val_body wp_destroy_val.
-#[global] Arguments destroy_val {_ _ _} tu ty p Q : assert.	(* set names *)
+#[global] Arguments destroy_val {_ _ _} _ _ _ _ : assert.	(* mlock bug *)
 
 mlock Definition wp_destroy_array `{Σ : cpp_logic, σ : genv}
-    (tu : translation_unit) (ety : type) (sz : N) (base : ptr) (Q : epred) : mpred :=
-  wp_destroy_array_body destroy_val tu ety sz base Q.
-#[global] Arguments wp_destroy_array {_ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
+    (tu : translation_unit) (cv : type_qualifiers) (ety : type) (sz : N) (base : ptr) (Q : epred) : mpred :=
+  wp_destroy_array_body wp_destroy_val tu cv ety sz base Q.
+#[global] Arguments wp_destroy_array {_ _ _} _ _ _ _ _ _ : assert.	(* mlock bug *)
 
 #[local] Notation V := (wp_destroy_val_body wp_destroy_val wp_destroy_array) (only parsing).
-#[local] Notation A := (wp_destroy_array_body destroy_val) (only parsing).
+#[local] Notation A := (wp_destroy_array_body wp_destroy_val) (only parsing).
 
 Section unfold.
   Context `{Σ : cpp_logic, σ : genv}.
@@ -568,7 +579,7 @@ Section unfold.
   Lemma wp_destroy_val_unfold ty tu cv : wp_destroy_val tu cv ty = Reduce (V tu cv ty).
   Proof.
     trans (V tu cv ty); last done.
-    rewrite wp_destroy_array.unlock destroy_val.unlock wp_destroy_val.unlock.
+    rewrite wp_destroy_array.unlock wp_destroy_val.unlock.
     by destruct ty.
   Qed.
 
@@ -577,7 +588,7 @@ Section unfold.
     rewrite {1}destroy_val.unlock. apply wp_destroy_val_unfold.
   Qed.
 
-  Lemma wp_destroy_array_unfold ety tu : wp_destroy_array tu ety = Reduce (A tu ety).
+  Lemma wp_destroy_array_unfold ety tu cv : wp_destroy_array tu cv ety = Reduce (A tu cv ety).
   Proof. by rewrite wp_destroy_array.unlock. Qed.
 End unfold.
 
@@ -596,7 +607,7 @@ Ltac destroy_val_unfold :=
   end.
 Ltac wp_destroy_array_unfold :=
   lazymatch goal with
-  | |- context [wp_destroy_array _ ?ty] => rewrite !(wp_destroy_array_unfold ty)
+  | |- context [wp_destroy_array _ _ ?ty] => rewrite !(wp_destroy_array_unfold ty)
   | _ => fail "[wp_destroy_array] not found"
   end.
 
@@ -663,21 +674,20 @@ Section val_array.
     move: tu tu' cv this Q Q'. induction ty=>tu tu' cv this Q Q' Htu.
     all: wp_destroy_val_unfold; auto.
     all: iIntros "? >wp !> !>"; iRevert "wp"; iStopProof.
-    all: destruct (q_const cv); [rewrite -wp_const_frame|cbn]; auto.
-    all: wp_destroy_array_unfold; rewrite !destroy_val_wp_destroy_val.
-    all: apply wp_gen_frame; auto.
+    { (* array *) wp_destroy_array_unfold. apply wp_gen_frame; auto. }
+    { (* named *) destruct (q_const cv); [rewrite -wp_const_frame|cbn]; auto. }
   Qed.
   Lemma destroy_val_frame tu tu' ty this Q Q' :
     TULE tu tu' ->
     Q -* Q' |-- destroy_val tu ty this Q -* destroy_val tu' ty this Q'.
   Proof. rewrite !destroy_val_wp_destroy_val. apply wp_destroy_val_frame. Qed.
 
-  Lemma wp_destroy_array_frame tu tu' ety n p Q Q' :
+  Lemma wp_destroy_array_frame tu tu' cv ety n p Q Q' :
     TULE tu tu' ->
-    Q -* Q' |-- wp_destroy_array tu ety n p Q -* wp_destroy_array tu' ety n p Q'.
+    Q -* Q' |-- wp_destroy_array tu cv ety n p Q -* wp_destroy_array tu' cv ety n p Q'.
   Proof.
     intros. wp_destroy_array_unfold. apply wp_gen_frame. intros.
-    by apply destroy_val_frame.
+    by apply wp_destroy_val_frame.
   Qed.
 
   Lemma wp_destroy_val_shift tu cv ty this Q :
@@ -688,25 +698,27 @@ Section val_array.
     all: wp_destroy_val_unfold; auto using wp_destroy_prim_shift.
     (* Laters *)
     all: iIntros ">>wp !> !>".
-    all: destruct (q_const cv);
-      [ iApply wp_const_shift; iIntros "!>"; iApply (wp_const_frame with "[] wp"); first done; iIntros "wp !>"
-      | cbn ].
-    all: try by iApply wp_destroy_named_shift; auto.
-    all: wp_destroy_array_unfold; rewrite !destroy_val_wp_destroy_val.
-    all: iApply (wp_gen_shift with "wp"); auto; intros.
-    all: by apply wp_destroy_val_frame.
+    { (* array *)
+      wp_destroy_array_unfold.
+      iApply (wp_gen_shift with "wp"); auto. intros.
+      by apply wp_destroy_val_frame. }
+    { (* named *)
+      destruct (q_const cv);
+        [ iApply wp_const_shift; iIntros "!>"; iApply (wp_const_frame with "[] wp"); first done; iIntros "wp !>"
+        | cbn ].
+      all: by iApply wp_destroy_named_shift; auto. }
   Qed.
   Lemma destroy_val_shift tu ty this Q :
     (|={top}=> destroy_val tu ty this (|={top}=> Q))
     |-- destroy_val tu ty this Q.
   Proof. rewrite destroy_val_wp_destroy_val. apply wp_destroy_val_shift. Qed.
 
-  Lemma wp_destroy_array_shift tu ety n p Q :
-    (|={top}=> wp_destroy_array tu ety n p (|={top}=> Q))
-    |-- wp_destroy_array tu ety n p Q.
+  Lemma wp_destroy_array_shift tu cv ety n p Q :
+    (|={top}=> wp_destroy_array tu cv ety n p (|={top}=> Q))
+    |-- wp_destroy_array tu cv ety n p Q.
   Proof.
     wp_destroy_array_unfold. apply wp_gen_shift; intros.
-    by apply destroy_val_frame. by apply destroy_val_shift.
+    by apply wp_destroy_val_frame. by apply wp_destroy_val_shift.
   Qed.
 
   (** Setoids *)
@@ -739,10 +751,10 @@ Section val_array.
   #[global] Instance destroy_val_proper : VPROPER equiv.
   Proof. intros * Q1 Q2 HQ. by split'; apply destroy_val_mono; rewrite HQ. Qed.
 
-  #[global] Instance: Params (@wp_destroy_array) 7 := {}.
+  #[global] Instance: Params (@wp_destroy_array) 8 := {}.
   #[local] Notation APROPER R := (
-    ∀ tu ety n p,
-    Proper (R ==> R) (wp_destroy_array tu ety n p)
+    ∀ tu cv ety n p,
+    Proper (R ==> R) (wp_destroy_array tu cv ety n p)
   ) (only parsing).
   #[global] Instance wp_destroy_array_mono : APROPER bi_entails.
   Proof.
@@ -773,14 +785,14 @@ Section val_array.
     destroy_val tu ty this Q.
   Proof. solve_shift_fupd destroy_val_shift. Qed.
 
-  Lemma fupd_wp_destroy_array tu ety n p Q :
-    (|={top}=> wp_destroy_array tu ety n p Q) |--
-    wp_destroy_array tu ety n p Q.
+  Lemma fupd_wp_destroy_array tu cv ety n p Q :
+    (|={top}=> wp_destroy_array tu cv ety n p Q) |--
+    wp_destroy_array tu cv ety n p Q.
   Proof. solve_fupd_shift wp_destroy_array_shift. Qed.
 
-  Lemma wp_destroy_array_fupd tu ety n p Q :
-    wp_destroy_array tu ety n p (|={top}=> Q) |--
-    wp_destroy_array tu ety n p Q.
+  Lemma wp_destroy_array_fupd tu cv ety n p Q :
+    wp_destroy_array tu cv ety n p (|={top}=> Q) |--
+    wp_destroy_array tu cv ety n p Q.
   Proof. solve_shift_fupd wp_destroy_array_shift. Qed.
 
   (** Introduction rules *)
@@ -794,10 +806,7 @@ Section val_array.
         letI* := wp_destroy_named tu cls this in
         Q
       | Tarray ety sz =>
-        |>
-        letI* := if q_const cv then wp_make_mutable tu this rty else id in
-        letI* := wp_destroy_array tu ety sz this in
-        Q
+        |> wp_destroy_array tu cv ety sz this Q
       | Tref r_ty
       | Trv_ref r_ty =>
         wp_destroy_prim tu cv (Tref r_ty) this Q
@@ -826,14 +835,93 @@ Section val_array.
       by rewrite destroy_val_wp_destroy_val -wp_destroy_val_intro.
     Qed.
 
-    Lemma wp_destroy_array_intro tu ety n p Q :
-      foldl (fun Q i => destroy_val tu ety (p .[ erase_qualifiers ety ! Z.of_N i ]) Q) Q (seqN 0 n)
-      |-- wp_destroy_array tu ety n p Q.
+    Lemma wp_destroy_array_intro tu cv ety n p Q :
+      foldl (fun Q i => wp_destroy_val tu cv ety (p .[ erase_qualifiers ety ! Z.of_N i ]) Q) Q (seqN 0 n)
+      |-- wp_destroy_array tu cv ety n p Q.
     Proof.
       wp_destroy_array_unfold. apply wp_gen_intro. intros.
-      by apply destroy_val_frame.
+      by apply wp_destroy_val_frame.
     Qed.
   End intro.
+
+  Lemma wp_destroy_array_0 tu cv ety (p : ptr) Q :
+    wp_destroy_array tu cv ety 0 p Q -|- |={top}=> Q.
+  Proof. rewrite wp_destroy_array.unlock. apply wp_gen_0. Qed.
+
+  Lemma wp_destroy_array_succ tu cv ety n (p : ptr) Q :
+    wp_destroy_array tu cv ety (N.succ n) p Q -|-
+    letI* := wp_destroy_val tu cv ety (p .[ erase_qualifiers ety ! Z.of_N n ]) in
+    wp_destroy_array tu cv ety n p Q.
+  Proof.
+    rewrite wp_destroy_array.unlock /wp_destroy_array_body -/(wp_gen _ _ _).
+    by rewrite wp_gen_succ.
+  Qed.
+
+  Lemma anyR_wp_destroy_val_val tu cv ty (this : ptr) Q :
+    is_value_type ty ->
+    let c := qual_norm' (fun cv _ => q_const cv) cv ty in
+    this |-> anyR (erase_qualifiers ty) (cQp.mk c 1) ** Q
+    |-- wp_destroy_val tu cv ty this Q.
+  Proof.
+    cbn. rewrite is_value_type_decompose_type erase_qualifiers_decompose_type.
+    rewrite qual_norm'_decompose_type wp_destroy_val_decompose_type.
+    have := is_qualified_decompose_type ty.
+    destruct (decompose_type ty) as [cv' rty]; cbn=>Hunqual Hvt.
+    rewrite -wp_destroy_val_intro. destruct rty; try done.
+    all: by rewrite -anyR_wp_destroy_prim_val.
+  Qed.
+  Lemma anyR_destroy_val_val tu ty (this : ptr) Q :
+    is_value_type ty ->
+    let c := qual_norm (fun cv _ => q_const cv) ty in
+    this |-> anyR (erase_qualifiers ty) (cQp.mk c 1) ** Q
+    |-- destroy_val tu ty this Q.
+  Proof.
+    rewrite is_value_type_decompose_type qual_norm_decompose_type.
+    rewrite erase_qualifiers_decompose_type destroy_val_decompose_type.
+    have := is_qualified_decompose_type ty.
+    destruct (decompose_type ty) as [cv rty]; cbn. intros.
+    by rewrite -anyR_wp_destroy_val_val ?qual_norm'_unqual.
+  Qed.
+
+  Lemma anyR_wp_destroy_val_ref tu cv ty (this : ptr) Q :
+    is_reference_type ty ->
+    let c := qual_norm' (fun cv _ => q_const cv) cv ty in
+    this |-> anyR (Tref $ erase_qualifiers $ as_ref ty) (cQp.mk c 1) ** Q
+    |-- wp_destroy_val tu cv ty this Q.
+  Proof.
+    cbn. rewrite is_reference_type_decompose_type as_ref_decompose_type.
+    rewrite qual_norm'_decompose_type wp_destroy_val_decompose_type.
+    have := is_qualified_decompose_type ty.
+    destruct (decompose_type ty) as [cv' rty]; cbn=>Hunqual Hvt.
+    rewrite -wp_destroy_val_intro. destruct rty; try done.
+    all: by rewrite -anyR_wp_destroy_prim_ref.
+  Qed.
+  Lemma anyR_destroy_val_ref tu ty (this : ptr) Q :
+    is_reference_type ty ->
+    let c := qual_norm (fun cv _ => q_const cv) ty in
+    this |-> anyR (Tref $ erase_qualifiers $ as_ref ty) (cQp.mk c 1) ** Q
+    |-- destroy_val tu ty this Q.
+  Proof.
+    rewrite is_reference_type_decompose_type qual_norm_decompose_type.
+    rewrite as_ref_decompose_type destroy_val_decompose_type.
+    have := is_qualified_decompose_type ty.
+    destruct (decompose_type ty) as [cv rty]; cbn. intros.
+    by rewrite -anyR_wp_destroy_val_ref ?qual_norm'_unqual.
+  Qed.
+
+  Lemma anyR_wp_destroy_array tu cv ety n (p : ptr) Q :
+    is_value_type ety ->
+    let c := qual_norm' (fun cv _ => q_const cv) cv ety in
+    p |-> anyR (Tarray (erase_qualifiers ety) n) (cQp.mk c 1) ** Q
+    |-- wp_destroy_array tu cv ety n p Q.
+  Proof.
+    intros. rewrite anyR_array. induction n as [|i IH] using N.peano_ind.
+    { rewrite arrayR_nil wp_destroy_array_0. by iIntros "[_ $]". }
+    rewrite N2Nat.inj_succ /=. rewrite repeat_cons arrayR_snoc.
+    rewrite repeat_length N_nat_Z _at_sep _at_offsetR _at_sep.
+    iIntros "((A & _ & E) & Q)". rewrite wp_destroy_array_succ.
+    rewrite -anyR_wp_destroy_val_val//. iFrame "E". rewrite -IH. iFrame "A Q".
+  Qed.
 
   Lemma wp_destroy_val_elim tu cv rty this Q :
     wp_destroy_val tu cv rty this Q
@@ -867,9 +955,9 @@ Section val_array.
     by rewrite destroy_val_wp_destroy_val  wp_destroy_val_value_type_elim.
   Qed.
 
-  Lemma wp_destroy_array_elim tu ety n p Q :
-    wp_destroy_array tu ety n p Q
-    |-- Reduce (A tu ety n p Q).
+  Lemma wp_destroy_array_elim tu cv ety n p Q :
+    wp_destroy_array tu cv ety n p Q
+    |-- Reduce (A tu cv ety n p Q).
   Proof. by wp_destroy_array_unfold. Qed.
 End val_array.
 
