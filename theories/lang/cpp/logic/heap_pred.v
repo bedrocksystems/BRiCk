@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-21 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -65,6 +65,9 @@ mlock Definition tptstoR `{Σ : cpp_logic} {σ : genv} (ty : type) (q : cQp.t) (
 Section tptstoR.
   Context `{Σ : cpp_logic} {σ : genv}.
 
+  Lemma _at_tptstoR (p : ptr) ty q v : p |-> tptstoR ty q v -|- tptsto ty q p v.
+  Proof. by rewrite tptstoR.unlock _at_as_Rep. Qed.
+
   #[global] Instance tptstoR_proper :
     Proper (genv_eq ==> eq ==> eq ==> eq ==> (⊣⊢)) (@tptstoR _ _).
   Proof.
@@ -122,9 +125,7 @@ Section tptstoR.
 
   #[global] Instance tptstoR_welltyped p ty q v :
     Observe (has_type_or_undef v ty) (p |-> tptstoR ty q v).
-  Proof.
-    rewrite tptstoR.unlock. rewrite _at_as_Rep. refine _.
-  Qed.
+  Proof. rewrite _at_tptstoR. refine _. Qed.
 
   #[global] Instance tptstoR_type_ptrR ty q v :
     Observe (type_ptrR ty) (tptstoR ty q v).
@@ -132,7 +133,6 @@ Section tptstoR.
     rewrite tptstoR.unlock type_ptrR_eq/type_ptrR_def.
     apply as_Rep_observe. intros; apply tptsto_type_ptr.
   Qed.
-
 End tptstoR.
 
 Section with_cpp.
@@ -157,14 +157,15 @@ Section with_cpp.
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
   #[global] Arguments primR {resolve} ty q v : rename.
 
-  Definition primR_alt resolve ty q v :
+  Definition primR_alt {σ} ty q v :
     primR ty q v -|-
-      as_Rep (fun p : ptr => tptsto ty q p v) **
+      tptstoR ty q v **
       [| not(exists raw, v = Vraw raw) |] **
       pureR (has_type v (drop_qualifiers ty)).
   Proof.
     apply Rep_equiv_at => p.
-    by rewrite primR_eq /primR_def !_at_sep !_at_as_Rep _at_only_provable.
+    rewrite primR_eq /primR_def tptstoR.unlock.
+    by rewrite !_at_sep !_at_as_Rep _at_only_provable.
   Qed.
 
   #[global] Instance primR_proper :
@@ -245,7 +246,7 @@ Section with_cpp.
 
   #[global] Instance primR_observe_has_type resolve ty q v :
     Observe (pureR (has_type v ty)) (primR ty q v).
-  Proof. apply observe_at=>p. rewrite primR_alt has_type_drop_qualifiers. apply _. Qed.
+  Proof. rewrite primR_alt has_type_drop_qualifiers. apply _. Qed.
 
   #[global] Instance _at_primR_observe_has_type resolve ty q v (p : ptr) :
     Observe (has_type v ty) (p |-> primR ty q v).
@@ -304,6 +305,9 @@ Section with_cpp.
     CFracValid0 (uninitR ty).
   Proof. rewrite uninitR_eq. solve_cfrac_valid. Qed.
 
+  Lemma uninitR_tptstoR {σ} ty q : uninitR ty q -|- tptstoR ty q Vundef.
+  Proof. by rewrite uninitR_eq /uninitR_def tptstoR.unlock. Qed.
+
   Lemma test:
     forall σ ty v v',
       v' = Vundef ->
@@ -339,9 +343,32 @@ Section with_cpp.
   #[global] Declare Instance anyR_cfractional : ∀ resolve ty, CFractional (anyR ty).
   #[global] Declare Instance anyR_observe_frac_valid resolve ty : CFracValid0 (anyR ty).
 
-  Axiom primR_anyR : ∀ resolve t q v, primR t q v |-- anyR t q.
-  Axiom uninitR_anyR : ∀ resolve t q, uninitR t q |-- anyR t q.
-  Axiom tptsto_raw_anyR : forall resolve p q r, tptsto Tu8 q p (Vraw r) |-- p |-> anyR Tu8 q.
+  (**
+  For value types and reference types, [anyR] coincides with
+  [tptstoR].
+  *)
+  Axiom anyR_tptstoR_val : ∀ {σ} t q, is_value_type t -> anyR t q -|- Exists v, tptstoR t q v.
+  Axiom anyR_tptstoR_ref : ∀ {σ} t q, anyR (Tref t) q -|- Exists v, tptstoR (Tref t) q v.
+
+  Lemma anyR_tptstoR_val_2 {σ} t q v : is_value_type t -> tptstoR t q v |-- anyR t q.
+  Proof. intros. by rewrite anyR_tptstoR_val// -(bi.exist_intro v). Qed.
+
+  Lemma anyR_tptstoR_ref_2 {σ} t q v : tptstoR (Tref t) q v |-- anyR (Tref t) q.
+  Proof. intros. by rewrite anyR_tptstoR_ref -(bi.exist_intro v). Qed.
+
+  (**
+  TODO: With some minor cleanup we ought to be able to derive
+  [primR_anyR], [uninitR_anyR] from [anyR_tptstoR_val],
+  [anyR_tptstoR_ref].
+  *)
+  Axiom primR_anyR : ∀ {σ}  t q v, primR t q v |-- anyR t q.
+  Axiom uninitR_anyR : ∀ {σ} t q, uninitR t q |-- anyR t q.
+
+  Lemma tptstoR_raw_anyR {σ} q r : tptstoR Tu8 q (Vraw r) |-- anyR Tu8 q.
+  Proof. exact: anyR_tptstoR_val_2. Qed.
+  Lemma tptsto_raw_anyR {σ} p q r : tptsto Tu8 q p (Vraw r) |-- p |-> anyR Tu8 q.
+  Proof. by rewrite -(tptstoR_raw_anyR _ r) _at_tptstoR. Qed.
+
   #[global] Declare Instance anyR_type_ptr_observe σ ty q : Observe (type_ptrR ty) (anyR ty q).
 
   #[global] Instance anyR_as_fractional resolve ty : AsCFractional0 (anyR ty).
@@ -749,10 +776,7 @@ Section with_cpp.
   Section tptstoR_primR.
     Lemma primR_tptstoR ty q v :
       primR ty q v |-- tptstoR ty q v.
-    Proof.
-      rewrite tptstoR.unlock primR_eq/primR_def.
-      apply as_Rep_mono; red; intro. iIntros "($ & % & %)".
-    Qed.
+    Proof. rewrite primR_alt. iIntros "($ & _)". Qed.
 
     Lemma tptstoR_Vxxx_primR ty q v :
       match v with
