@@ -298,7 +298,13 @@ prepare_cpp2v_env:
     - cat ./fm-ci-tools/fm_dune/build_env_dune.inc.sh
     - source ./fm-ci-tools/fm_dune/build_env_dune.inc.sh
     - ./fm-ci-tools/fm_dune/filter_build_env_dune.sh >> build.env
-    - ./fm-ci-tools/fm_dune/dune_lock_ci.py check_cleanup_job -t ${GRP_CI_TOKEN} -v RSYNC_PUSH -a build.env
+    # Lock cache only on Sundays(cache cleanup day)
+    - >
+      if [[ `date +%u` -eq 7 ]] ; then
+        for i in {1..3}; do
+          time ./fm-ci-tools/fm_dune/dune_lock_ci.py check_cleanup_job -t ${GRP_CI_TOKEN} -v RSYNC_PUSH -a build.env && break
+        done
+      fi
     # Workaround for https://github.com/ocaml/dune/issues/6005: we must ensure
     # that we run dune in bhv-shaped workspaces, since cache entries are keyed
     # on relative paths from the workspace root.
