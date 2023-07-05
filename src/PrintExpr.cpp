@@ -1165,11 +1165,15 @@ public:
         print.ctor("Edelete");
         print.output() << fmt::BOOL(expr->isArrayForm()) << fmt::nbsp;
 
-        if (expr->getOperatorDelete()) {
+        if (auto op = expr->getOperatorDelete()) {
+            if (op->isDestroyingOperatorDelete()) {
+                logging::fatal() << "destroying delete is not supported\n";
+                logging::die();
+            }
             print.begin_tuple();
-            cprint.printObjName(expr->getOperatorDelete(), print);
+            cprint.printObjName(op, print);
             print.next_tuple();
-            cprint.printQualType(expr->getOperatorDelete()->getType(), print);
+            cprint.printQualType(op->getType(), print);
             print.end_tuple();
         } else {
             logging::fatal() << "missing [delete] operator\n";
