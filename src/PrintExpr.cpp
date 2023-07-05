@@ -1159,17 +1159,6 @@ public:
         print.end_ctor();
     }
 
-    // todo(gmm): duplicated
-    static CXXDestructorDecl* get_dtor(QualType qt) {
-        if (auto rd = qt->getAsCXXRecordDecl()) {
-            return rd->getDestructor();
-        } else if (auto ary = qt->getAsArrayTypeUnsafe()) {
-            return get_dtor(ary->getElementType());
-        } else {
-            return nullptr;
-        }
-    };
-
     void VisitCXXDeleteExpr(const CXXDeleteExpr* expr, CoqPrinter& print,
                             ClangPrinter& cprint, const ASTContext&,
                             OpaqueNames& li) {
