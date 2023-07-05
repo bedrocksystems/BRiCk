@@ -1159,28 +1159,21 @@ public:
         print.end_ctor();
     }
 
-    // todo(gmm): duplicated
-    static CXXDestructorDecl* get_dtor(QualType qt) {
-        if (auto rd = qt->getAsCXXRecordDecl()) {
-            return rd->getDestructor();
-        } else if (auto ary = qt->getAsArrayTypeUnsafe()) {
-            return get_dtor(ary->getElementType());
-        } else {
-            return nullptr;
-        }
-    };
-
     void VisitCXXDeleteExpr(const CXXDeleteExpr* expr, CoqPrinter& print,
                             ClangPrinter& cprint, const ASTContext&,
                             OpaqueNames& li) {
         print.ctor("Edelete");
         print.output() << fmt::BOOL(expr->isArrayForm()) << fmt::nbsp;
 
-        if (expr->getOperatorDelete()) {
+        if (auto op = expr->getOperatorDelete()) {
+            if (op->isDestroyingOperatorDelete()) {
+                logging::fatal() << "destroying delete is not supported\n";
+                logging::die();
+            }
             print.begin_tuple();
-            cprint.printObjName(expr->getOperatorDelete(), print);
+            cprint.printObjName(op, print);
             print.next_tuple();
-            cprint.printQualType(expr->getOperatorDelete()->getType(), print);
+            cprint.printQualType(op->getType(), print);
             print.end_tuple();
         } else {
             logging::fatal() << "missing [delete] operator\n";
@@ -1219,21 +1212,6 @@ public:
                                        CoqPrinter& print, ClangPrinter& cprint,
                                        const ASTContext& ctxt,
                                        OpaqueNames& li) {
-#if 0
-        if (expr->getExtendingDecl()) {
-            cprint.printName(expr->getExtendingDecl());
-        } else {
-            error() << "no extending decl\n";
-        }
-        error() << "mangling number = " << expr->getManglingNumber() << "\n";
-#endif
-#if 0
-        logging::fatal() << "Error: got a 'MaterializeTemporaryExpr' at "
-                         << expr->getSourceRange().printToString(
-                                ctxt.getSourceManager())
-                         << "\n";
-        logging::die();
-#endif
         if (expr->getExtendingDecl() != nullptr) {
             using namespace logging;
             fatal() << "Error: binding a reference to a temporary is not "
