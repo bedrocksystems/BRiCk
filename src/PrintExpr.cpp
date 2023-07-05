@@ -1208,21 +1208,6 @@ public:
                                        CoqPrinter& print, ClangPrinter& cprint,
                                        const ASTContext& ctxt,
                                        OpaqueNames& li) {
-#if 0
-        if (expr->getExtendingDecl()) {
-            cprint.printName(expr->getExtendingDecl());
-        } else {
-            error() << "no extending decl\n";
-        }
-        error() << "mangling number = " << expr->getManglingNumber() << "\n";
-#endif
-#if 0
-        logging::fatal() << "Error: got a 'MaterializeTemporaryExpr' at "
-                         << expr->getSourceRange().printToString(
-                                ctxt.getSourceManager())
-                         << "\n";
-        logging::die();
-#endif
         if (expr->getExtendingDecl() != nullptr) {
             using namespace logging;
             fatal() << "Error: binding a reference to a temporary is not "
