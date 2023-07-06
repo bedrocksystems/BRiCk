@@ -830,8 +830,8 @@ Module Type Expr.
 
         NOTE that the AST *must* insert implicit casts for casting
              qualifiers so that the types match up exactly up to top-level
-             qualifiers, e.g. [foo(const int)] will be passed a value of
-             type [int] (not [const int]). the issue with type-level
+             qualifiers, e.g. <<foo(const int)>> will be passed a value of
+             type <<int>> (not <<const int>>). the issue with type-level
              qualifiers is addressed through the use of [normalize_type]
              below.
      *)
@@ -843,9 +843,9 @@ Module Type Expr.
         match arg_types fty with
         | Some targs =>
             let eval_f Q := wp_operand f (fun v fr => Exists fp, [| v = Vptr fp |] ** Q fp fr) in
-            letI* fps, vs, free := wp_args ooe [eval_f] targs es in
+            letI* fps, vs, ifree, free := wp_args ooe [eval_f] targs es in
             match fps with
-            | [fp] => |> wp_fptr fty fp vs (fun v => Q v free)
+            | [fp] => |> wp_fptr fty fp vs (fun v => interp ifree $ Q v free)
             | _ => UNREACHABLE ("wp_args did not return a singleton list for pre", fps)
             end
         | _ => False
@@ -865,11 +865,11 @@ Module Type Expr.
         iIntros (??) "K". iApply wp_operand_frame. reflexivity.
         iIntros (??) "X". iDestruct "X" as (?) "[A B]".
         iExists _; iFrame "A". iApply "K"; eauto. }
-      { iIntros (???).
+      { iIntros (????).
         repeat case_match; eauto.
         iIntros "X"; iNext.
         iRevert "X". iApply wp_fptr_frame.
-        iIntros (?). iApply "K". }
+        iIntros (?). iApply interp_frame; iApply "K". }
     Qed.
 
     Axiom wp_lval_call : forall f (es : list Expr) Q (ty : type),
@@ -953,9 +953,9 @@ Module Type Expr.
       let fty := normalize_type fty in
       match arg_types fty with
       | Some targs =>
-        letI* this, args, free := wp_args ooe [wp_glval obj] targs es in
+        letI* this, args, ifree, free := wp_args ooe [wp_glval obj] targs es in
         match this with
-        | [this] => invoke this args (fun v => Q v free)
+        | [this] => invoke this args (fun v => interp ifree $ Q v free)
         | _ => False
         end
       | _ => False
@@ -972,10 +972,10 @@ Module Type Expr.
       iApply wp_args_frame.
       { simpl. iSplitL; eauto. rewrite /wp.WPE.Mframe.
         iIntros (??) "X". iApply wp_glval_frame. reflexivity. eauto. }
-      iIntros (???).
+      iIntros (????).
       case_match; try iIntros "[]".
       case_match; try iIntros "[]".
-      iApply "f". iIntros (?); iApply "Q".
+      iApply "f". iIntros (?); iApply interp_frame; iApply "Q".
     Qed.
 
     Axiom wp_lval_member_call : forall ct ty fty f obj es Q,
@@ -1009,8 +1009,8 @@ Module Type Expr.
           let fty := normalize_type fty in
           match arg_types fty with
           | Some targs =>
-            letI* fps, vs, free := wp_args (evaluation_order.ooe oo) [] targs es in
-            |> wp_fptr fty (_global f) vs (fun v => Q v free)
+            letI* fps, vs, ifree, free := wp_args (evaluation_order.ooe oo) [] targs es in
+            |> wp_fptr fty (_global f) vs (fun v => interp ifree $ Q v free)
           | None => False
           end
        | operator_impl.MFunc fn ct fty =>
@@ -1200,16 +1200,17 @@ Module Type Expr.
              let arg_types := (drop_qualifiers ∘ snd) <$> ctor.(c_params) in
              let ctor_type := type_of_value (Oconstructor ctor) in
              (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
-             letI* _, argps, free := wp_args evaluation_order.nd nil (arg_types, ctor.(c_arity)) es in
-               |> mspec (Tnamed cls) ctor_type (_global cnd) (this :: argps) (fun resultp =>
-             (* in the semantics, constructors return [void] *)
-             resultp |-> primR Tvoid (cQp.mut 1) Vvoid **
-             let do_const Q :=
-               if q_const cv
-               then wp_make_const tu this (Tnamed cls) Q
-               else Q
-             in
-             Q free)
+             letI* _, argps, ifree, free := wp_args evaluation_order.nd nil (arg_types, ctor.(c_arity)) es in
+             |> letI* resultp := mspec (Tnamed cls) ctor_type (_global cnd) (this :: argps) in
+                interp ifree $
+                  (* in the semantics, constructors return [void] *)
+                  resultp |-> primR Tvoid (cQp.mut 1) Vvoid **
+                  let do_const Q :=
+                    if q_const cv
+                    then wp_make_const tu this (Tnamed cls) Q
+                    else Q
+                  in
+                  Q free
            | _ => False%I
            end
       |-- wp_init ty this (Econstructor cnd es ty) Q.

@@ -60,6 +60,37 @@ Definition setup_args (ts : list type) (ar : function_arity) (es : list Expr)
     | Ar_Variadic => Some normal_params
     end).
 
+(**
+  Destruction of function arguments is left implementation defined
+  in C++. See <https://eel.is/c++draft/expr.call#6> which states:
+
+  > It is implementation-defined whether the lifetime of a parameter
+  > ends when the function in which it is defined returns or at the
+  > end of the enclosing full-expression. The initialization and
+  > destruction of each parameter occurs within the context of the
+  > calling function.
+
+  In the BRiCk semantics, we specify this to be at the end of the full
+  expression. This preserves the C++ constructor-destructor stack
+  discipline, e.g.
+
+  <<
+    foo( (C{}, D{}), (C{}, D{}) )
+  >>
+
+  following the stack-discipline for destruction ordering, this would
+  require either: << ~D(); ~C(); ~D(); ~C() >> while destroying arguments
+  early would result in << ~D(); ~D(); ~C(); ~C() >>. The order of
+  argument evaluation is left unspecified, so the objects being destroyed
+  is left unspecified in the traces above.
+
+  NOTE: The Itanium ABI <https://refspecs.linuxbase.org/cxxabi-1.83.html#call>
+  weakens this by allowing trivially destructible objects to be destroyed
+  early.
+
+  This is a bug that must be fixed.
+ *)
+
 Section with_resolve.
   Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
   Variables (ρ : region).
@@ -71,9 +102,23 @@ Section with_resolve.
     | _ => None
     end.
 
-  (* [wp_arg] is essentially a notation *)
+  (* [wp_arg ty e K] evaluates [e] to initialize a parameter of type [ty].
+
+     This function does *not* add temporary destruction for trivially
+     destructible types so that they can be destroyed eagerly.
+
+     NOTE: This means that the order of construction and destruction of
+           these trivial objects will not follow the stack discipline,
+           but since these destructors are trivial, the difference is
+           not observable.
+   *)
+  #[local]
   Definition wp_arg ty e K :=
-    Forall p, wp_initialize tu ρ ty p e (fun free => K p (FreeTemps.delete ty p >*> free)%free).
+    Forall p,
+      letI* free := wp_initialize tu ρ ty p e in
+      K p (if is_trivially_destructible tu ty
+           then free
+           else FreeTemps.delete ty p >*> free)%free.
   #[global] Arguments wp_arg _ _ _ /.
 
   Lemma wp_arg_frame : forall ty e, |-- wp.WPE.Mframe (wp_arg ty e) (wp_arg ty e).
@@ -83,50 +128,56 @@ Section with_resolve.
     iSpecialize ("Y" $! p).
     iRevert "Y".
     iApply wp_initialize_frame. done.
-    iIntros (?); iApply "X".
+    case_match; eauto. iIntros (?); iApply "X".
   Qed.
 
   (**
      [wp_args eo pre ts_ar es] evaluates [pre ++ es] according to the evaluation order [eo].
      The expressions in [es] are evaluated using initialization semantics for the argument types
-     described in [ts_ar] (including handling for variadic functions). The continuation [Q] is applied
-     to the evaluated results of each argument, and the [FreeTemps] accounts for the correct destruction
-     of all temporaries.
+     described in [ts_ar] (including handling for variadic functions). The arguments to [Q] are:
+     1. the result of evaluating [pre]
+     2. the result of evaluating [es]
+     3. the immediate destructions, i.e. the object destructions that should occur immediately
+        after the function returns.
+     4. the delayed destructions, i.e. the destructionst that should occur at the end of the
+        full expression. The [FreeTemps] accounts for the correct destruction order.
 
      Unlike [es], [pre] is expressed directly as a semantic computation in order to unify the
      different ways that it can be used, e.g. to evaluate the object in [o.f()] (which is evaluated
      as a gl-value) or to evaluate the function in [f()] (which is evaluated as a pointer-typed operand).
    *)
   Definition wp_args (eo : evaluation_order.t) (pre : list (wp.WPE.M ptr))
-    (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> list ptr -> FreeTemps -> mpred)
+    (ts_ar : list type * function_arity) (es : list Expr)
+    (Q : list ptr -> list ptr -> FreeTemps -> FreeTemps -> mpred)
     : mpred :=
     (let '(ts,ar) := ts_ar in
     if check_arity ts ar es then
       let '(tes, va_info) := setup_args ts ar es in
       letI* ps, fs := eval eo (pre ++ map (fun '(t, e) => wp_arg t e) tes) in
         let (pre, ps) := split_at (length pre) ps in
+        let early_destroy :=
+          FreeTemps.seqs_rev $ omap id $ zip_with (fun '(ty, _) p => if is_trivially_destructible tu ty then Some (FreeTemps.delete ty p) else None) tes ps in
         match va_info with
         | Some non_va =>
             let (real, vargs) := split_at non_va ps in
             let types := map fst $ skipn non_va tes in
             let va_info := zip types vargs in
             Forall p, p |-> varargsR va_info -*
-                        Q pre (real ++ [p]) (FreeTemps.delete_va va_info p >*> fs)%free
+                        Q pre (real ++ [p]) (FreeTemps.delete_va va_info p >*> early_destroy)%free fs
         | None =>
-            Q pre ps fs
+            Q pre ps early_destroy fs
         end
     else
       False)%I.
 
-
   Lemma wp_args_frame_strong : forall eo pres ts_ar es Q Q',
       ([∗list] m ∈ pres, wp.WPE.Mframe m m)%I
-      |-- (Forall ps vs free,
+      |-- (Forall ps vs ifree free,
         [| length ps = length pres |] -*
         [| if ts_ar.2 is Ar_Variadic then
              length vs = length ts_ar.1 + 1
            else length vs = length es |] -*
-        Q ps vs free -* Q' ps vs free) -*
+        Q ps vs ifree free -* Q' ps vs ifree free) -*
       wp_args eo pres ts_ar es Q -* wp_args eo pres ts_ar es Q'.
   Proof.
     intros.
@@ -178,12 +229,12 @@ Section with_resolve.
 
   Lemma wp_args_frame : forall eo pres ts_ar es Q Q',
       ([∗list] m ∈ pres, wp.WPE.Mframe m m)%I
-      |-- (Forall ps vs free, Q ps vs free -* Q' ps vs free) -*
+      |-- (Forall ps vs ifree free, Q ps vs ifree free -* Q' ps vs ifree free) -*
           wp_args eo pres ts_ar es Q -* wp_args eo pres ts_ar es Q'.
   Proof.
     intros; iIntros "X Y".
     iApply (wp_args_frame_strong with "X").
-    iIntros (?????); iApply "Y".
+    iIntros (??????); iApply "Y".
   Qed.
 
   (*

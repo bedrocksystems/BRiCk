@@ -591,7 +591,8 @@ Notation GlobalInitializer := (GlobalInitializer' type Expr).
 Definition InitializerBlock' (type Expr : Set) : Set :=
   list (GlobalInitializer' type Expr).
 Notation InitializerBlock := (InitializerBlock' type Expr).
-#[global] Instance InitializerBlock_empty {type Expr} : Empty (InitializerBlock' type Expr) := nil.
+#[global] Instance InitializerBlock_empty {type Expr} : Empty (InitializerBlock' type Expr) :=
+  nil.
 
 (**
 A [translation_unit] value represents all the statically known information
@@ -606,7 +607,8 @@ Record translation_unit : Type :=
 ; byte_order : endian
 }.
 
-(** These [Lookup] instances come with no theory; use instead the unfolding lemmas below and the `fin_maps` theory. *)
+(** These [Lookup] instances come with no theory; use instead the unfolding
+    lemmas below and the `fin_maps` theory. *)
 #[global] Instance global_lookup : Lookup globname GlobDecl translation_unit :=
   fun k m => m.(types) !! k.
 #[global] Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
@@ -619,3 +621,24 @@ Proof. done. Qed.
 Lemma tu_lookup_symbols (t : translation_unit) (n : obj_name) :
   t !! n = t.(symbols) !! n.
 Proof. done. Qed.
+
+(** [is_trivially_destructible tu ty] returns [true] if [ty] is trivially destructible.
+
+    This classifies references as trivially destructible.
+ *)
+Fixpoint is_trivially_destructible (tu : translation_unit) (ty : type) {struct ty} : bool :=
+  qual_norm (fun _ t =>
+               match t with
+               | Tref _ | Trv_ref _
+               | Tnum _ _ | Tchar_ _
+               | Tvoid | Tbool | Tptr _
+               | Tenum _ => true
+               | Tnamed nm =>
+                   match tu.(types) !! nm with
+                   | Some (Gunion u) => u.(u_trivially_destructible)
+                   | Some (Gstruct s) => s.(s_trivially_destructible)
+                   | _ => false
+                   end
+               | Tarray ety _ => is_trivially_destructible tu ety
+               | _ => false
+               end) ty.
