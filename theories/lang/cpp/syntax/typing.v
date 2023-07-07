@@ -111,18 +111,19 @@ Lemma erase_qualifiers_decompose_type t :
   erase_qualifiers t = erase_qualifiers (decompose_type t).2.
 Proof. by rewrite erase_qualifiers_qual_norm qual_norm_decompose_type. Qed.
 
-Lemma drop_qualifiers_qual_norm' q t :
-  drop_qualifiers t = qual_norm' (fun _ t => drop_qualifiers t) q t.
-Proof. by elim: (qual_norm'_ok _ q t). Qed.
-Lemma drop_qualifiers_qual_norm t :
-  drop_qualifiers t = qual_norm (fun _ t => drop_qualifiers t) t.
-Proof. apply drop_qualifiers_qual_norm'. Qed.
-Lemma drop_qualifiers_decompose_type t :
-  drop_qualifiers t = drop_qualifiers (decompose_type t).2.
-Proof. by rewrite drop_qualifiers_qual_norm qual_norm_decompose_type. Qed.
-
 Lemma drop_qualifiers_unqual t : ~~ is_qualified t -> drop_qualifiers t = t.
 Proof. by destruct t; cbn; auto. Qed.
+
+Lemma drop_qualifiers_qual_norm' q t : drop_qualifiers t = qual_norm' (fun _ t => t) q t.
+Proof.
+  elim: (qual_norm'_ok _ q t).
+  { intros. by rewrite drop_qualifiers_unqual. }
+  { done. }
+Qed.
+Lemma drop_qualifiers_qual_norm t : drop_qualifiers t = qual_norm (fun _ t => t) t.
+Proof. apply drop_qualifiers_qual_norm'. Qed.
+Lemma drop_qualifiers_decompose_type t : drop_qualifiers t = (decompose_type t).2.
+Proof. by rewrite drop_qualifiers_qual_norm qual_norm_decompose_type. Qed.
 
 Lemma erase_qualifiers_idemp t : erase_qualifiers (erase_qualifiers t) = erase_qualifiers t.
 Proof.
@@ -149,11 +150,10 @@ Proof. move=><-. by rewrite drop_erase_qualifiers. Qed.
 #[deprecated(since="20230531", note="Use [drop_erase_qualifiers] or [drop_qualifiers_unqual]")]
 Notation erase_drop_idemp := erase_drop_idemp_deprecated.
 
-Lemma decompose_type_drop t : (decompose_type t).2 = drop_qualifiers t.
-Proof.
-  induction (decompose_type_ok t).
-  by rewrite drop_qualifiers_unqual. done.
-Qed.
+Lemma decompose_type_drop_deprecated t : (decompose_type t).2 = drop_qualifiers t.
+Proof. by rewrite drop_qualifiers_decompose_type. Qed.
+#[deprecated(since="20230531", note="Use [drop_qualifiers_decompose_type]")]
+Notation decompose_type_drop := decompose_type_drop_deprecated.
 
 Lemma decompose_erase_deprecated p t :
   decompose_type t = p -> erase_qualifiers t = erase_qualifiers p.2.
@@ -271,6 +271,13 @@ Fixpoint drop_reference (t : type) : type :=
   | _ => t
   end.
 
+Lemma drop_reference_qual_norm t :
+  drop_reference t = qual_norm (fun _ t => drop_reference t) t.
+Proof. by elim: (qual_norm_ok _ _). Qed.
+Lemma drop_reference_decompose_type t :
+  drop_reference t = let p := decompose_type t in drop_reference p.2.
+Proof. by rewrite drop_reference_qual_norm qual_norm_decompose_type. Qed.
+
 (** [class_name t] returns the name of the class that this type refers to
  *)
 Definition class_name (t : type) : option globname :=
@@ -332,6 +339,10 @@ Definition is_value_type (t : type) : bool :=
   | Tnullptr
   | Tfloat_ _
   | Tmember_pointer _ _
+  (**
+  NOTE: In C++ the the underlying type of an enumeration must be an
+  integral type. This definition presuppposes [t] a valid enumeration.
+  *)
   | Tenum _ (* enum types are value types *)
   | Tvoid => true
   | _ => false
@@ -353,6 +364,66 @@ Proof. apply is_value_type_qual_norm'. Qed.
 Lemma is_value_type_decompose_type t :
   is_value_type t = is_value_type (decompose_type t).2.
 Proof. by rewrite is_value_type_qual_norm qual_norm_decompose_type. Qed.
+
+(**
+[is_reference_type t] returns [true] if [t] is a (possibly
+cv-qualified) reference type.
+*)
+Definition is_reference_type (t : type) : bool :=
+  is_ref (drop_qualifiers t).
+
+Lemma is_reference_type_erase_qualifiers t :
+  is_reference_type (erase_qualifiers t) = is_reference_type t.
+Proof. induction t; cbn; auto. Qed.
+Lemma is_reference_type_drop_qualifiers t :
+  is_reference_type (drop_qualifiers t) = is_reference_type t.
+Proof. induction t; cbn; auto. Qed.
+
+Lemma is_reference_type_qual_norm' q t :
+  is_reference_type t = qual_norm' (fun _ t => is_reference_type t) q t.
+Proof. by elim: (qual_norm'_ok _ q t). Qed.
+Lemma is_reference_type_qual_norm t :
+  is_reference_type t = qual_norm (fun _ t => is_reference_type t) t.
+Proof. apply is_reference_type_qual_norm'. Qed.
+Lemma is_reference_type_decompose_type t :
+  is_reference_type t = is_reference_type (decompose_type t).2.
+Proof. by rewrite is_reference_type_qual_norm qual_norm_decompose_type. Qed.
+
+(**
+[as_ref' f x t] applies [f u] if [t] is a (possibly cv-qualified)
+reference type with underlying type [u], defaulting to [x] if [t] is
+not a reference type.
+
+The special cases [as_ref t : type] and [as_ref_option : option type]
+return the underlying type [u] (defaulting, respectively, to a dummy
+type and to [None]).
+*)
+
+Definition as_ref' {A} (f : type -> A) (x : A) (t : type) : A :=
+  if drop_qualifiers t is (Tref u | Trv_ref u) then f u else x.
+Notation as_ref := (as_ref' (fun u => u) Tvoid).
+Notation as_ref_option := (as_ref' Some None).
+
+Lemma as_ref'_erase_qualifiers {A} (f : type -> A) (x : A) t :
+  as_ref' f x (erase_qualifiers t) = as_ref' (f ∘ erase_qualifiers) x t.
+Proof. induction t; cbn; auto. Qed.
+Lemma as_ref_erase_qualifiers t :
+  as_ref (erase_qualifiers t) = erase_qualifiers (as_ref t).
+Proof. induction t; cbn; auto. Qed.
+
+Section as_ref'.
+  Context {A : Type} (f : type -> A) (x : A).
+  #[local] Notation as_ref' := (as_ref' f x).
+
+  Lemma as_ref_drop_qualifiers t : as_ref' (drop_qualifiers t) = as_ref' t.
+  Proof. induction t; cbn; auto. Qed.
+  Lemma as_ref_qual_norm' q t : as_ref' t = qual_norm' (fun _ t => as_ref' t) q t.
+  Proof. by elim: (qual_norm'_ok _ q t). Qed.
+  Lemma as_ref_qual_norm t : as_ref' t = qual_norm (fun _ t => as_ref' t) t.
+  Proof. apply as_ref_qual_norm'. Qed.
+  Lemma as_ref_decompose_type t : as_ref' t = as_ref' (decompose_type t).2.
+  Proof. by rewrite as_ref_qual_norm qual_norm_decompose_type. Qed.
+End as_ref'.
 
 (**
 Setting aside uninstantiated template arguments, there's a total
