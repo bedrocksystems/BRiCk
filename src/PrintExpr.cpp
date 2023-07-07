@@ -568,16 +568,19 @@ public:
         // todo(gmm): this is a complete hack because there is no way that i know of
         // to get the type of a builtin. what this does is get the type of the expression
         // that contains the builtin.
-        if (auto ref = dyn_cast<DeclRefExpr>(expr->getSubExpr())) {
-            if (is_builtin(ref->getDecl())) {
-                // assume that this is a builtin
-                print.ctor("Evar", false);
-                print.ctor("Gname", false);
-                cprint.printObjName(ref->getDecl(), print);
-                print.end_ctor();
-                done(expr, print, cprint);
-                return;
-            }
+        if (expr->getCastKind() == CastKind::CK_BuiltinFnToFnPtr) {
+            auto ref = dyn_cast<DeclRefExpr>(expr->getSubExpr());
+            assert(ref && "builtin function to function pointer must be applied to a literal variable");
+            assert(is_builtin(ref->getDecl()));
+            print.ctor("Ebuiltin", false);
+            // assume that this is a builtin
+            cprint.printObjName(ref->getDecl(), print);
+            print.output() << fmt::nbsp;
+            auto type = expr->getType();
+            assert(type->isPointerType() && "builtin to pointer is not a pointer");
+            cprint.printQualType(type.getTypePtr()->getPointeeType(), print);
+            print.end_ctor();
+            return;
         }
         VisitCastExpr(expr, print, cprint, ctxt, li);
     }

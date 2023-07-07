@@ -120,6 +120,9 @@ Notation Tvariable_array ty e := (Qconst (Tptr ty)) (only parsing).
 Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
   Ecast Cintegral (Econst_ref (Gname e) ety) Prvalue ty.
 
+Definition Ebuiltin (nm : obj_name) (ty : type) : Expr :=
+  Ecast Cbuiltin2fun (Evar (Gname nm) ty) Prvalue (Tptr ty).
+
 (** ** Statements *)
 
 Section stmt.

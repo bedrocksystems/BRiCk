@@ -545,10 +545,17 @@ Module Type Expr.
        We cannot write a rule for C functions without extending our
        treatment of value categories to account for this difference.
      *)
-    Axiom wp_operand_cast_fun2ptr_cpp : forall ty ty' g Q,
-        let e := Evar (Gname g) ty' in
+    Axiom wp_operand_cast_fun2ptr_cpp : forall ty g Q,
+        let e := Evar (Gname g) ty in
         wp_lval e (fun v => Q (Vptr v))
-        |-- wp_operand (Ecast Cfun2ptr e Prvalue ty) Q.
+        |-- wp_operand (Ecast Cfun2ptr e Prvalue (Tptr ty)) Q.
+
+    (** [Cbuiltin2ptr] is a cast from a builtin to a pointer.
+     *)
+    Axiom wp_operand_cast_builtin2fun_cpp : forall ty g Q,
+        let e := Evar (Gname g) ty in
+        wp_lval e (fun v => Q (Vptr v))
+        |-- wp_operand (Ecast Cbuiltin2fun e Prvalue (Tptr ty)) Q.
 
     (** Known places that bitcasts occur
         - casting between [void*] and [T*] for some [T].
