@@ -71,13 +71,13 @@ Section with_Σ.
     are compiled such that there is at least a full barrier betwen an SC load
     and an SC store.
     See https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html *)
-  Axiom wp_prval_atomic: forall ao es ty (Q : val → FreeTemps → epred),
+  Axiom wp_operand_atomic: forall ao es ty (Q : val → FreeTemps → epred),
        (let targs := List.map type_of es in
         match get_acc_type ao ty targs with
         | None => False
         | Some acc_type =>
-          nd_seqs (List.map wp_operand es) (fun (vs : list val) (free : FreeTemps) =>
-            wp_atom top ao acc_type vs (fun v => Q v free))
+          letI* vs, free := eval evaluation_order.nd (List.map wp_operand es) in
+          wp_atom top ao acc_type vs (fun v => Q v free)
         end)
     |-- wp_operand (Eatomic ao es ty) Q.
   (** ^ TODO the calling convention for atomics should change to be
