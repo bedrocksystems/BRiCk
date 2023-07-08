@@ -11,6 +11,24 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp initializers.
 Require Import bedrock.prelude.letstar.
 
+(* BEGIN UPSTREAM *)
+Lemma big_opL_map {PROP : bi} : forall {T U} (g : U -> T) ps (f : nat -> T -> PROP),
+    big_opL bi_sep f (map g ps) -|- big_opL bi_sep (fun a b => f a (g b)) ps.
+Proof.
+  induction ps; simpl; intros.
+  - reflexivity.
+  - rewrite IHps. reflexivity.
+Qed.
+
+Lemma big_opL_all  {PROP : bi} (T : Type) (P : T -> PROP) (ls : list T) :
+  bi_intuitionistically (Forall x, P x) |-- [∗list] x ∈ ls , P x.
+Proof.
+  induction ls; simpl; eauto.
+  iIntros "#H". iSplitL.
+  iApply "H". iApply IHls. iApply "H".
+Qed.
+(* END UPSTREAM *)
+
 Fixpoint split_at {T : Type} (n : nat) (ls : list T) : list T * list T :=
   match n , ls with
   | 0 , _ => (nil, ls)
@@ -100,20 +118,6 @@ Section with_resolve.
     else
       False)%I.
 
-  Lemma big_opL_map {PROP : bi} (T U : Type) (f : T -> U) (P : _ -> PROP) (ls : list T) :
-    ([∗list] x ∈ map f ls , P x)%I -|- [∗list] x ∈ ls , P (f x).
-  Proof.
-    induction ls; simpl; eauto.
-    by rewrite IHls.
-  Qed.
-
-  Lemma big_opL_all  {PROP : bi} (T : Type) (P : T -> PROP) (ls : list T) :
-    bi_intuitionistically (Forall x, P x) |-- [∗list] x ∈ ls , P x.
-  Proof.
-    induction ls; simpl; eauto.
-    iIntros "#H". iSplitL.
-    iApply "H". iApply IHls. iApply "H".
-  Qed.
 
   Lemma wp_args_frame_strong : forall eo pres ts_ar es Q Q',
       ([∗list] m ∈ pres, wp.WPE.Mframe m m)%I
