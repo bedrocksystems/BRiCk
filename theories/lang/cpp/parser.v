@@ -102,6 +102,8 @@ Section type.
     underlying.
   Definition Tunderlying (enum : type) {underlying : type} : type :=
     underlying.
+  Definition Tunary_xform (name : bs) (arg : type) {result : type} : type :=
+    result.
 
 End type.
 Notation Tdecay_type original adjusted := (adjusted) (only parsing).
