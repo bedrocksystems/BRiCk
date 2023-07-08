@@ -53,8 +53,10 @@ Section with_resolve.
     | _ => None
     end.
 
+  (* [wp_arg] is essentially a notation *)
   Definition wp_arg ty e K :=
     Forall p, wp_initialize tu ρ ty p e (fun free => K p (FreeTemps.delete ty p >*> free)%free).
+  #[global] Arguments wp_arg _ _ _ /.
 
   Lemma wp_arg_frame : forall ty e, |-- wp.WPE.Mframe (wp_arg ty e) (wp_arg ty e).
   Proof.
