@@ -56,7 +56,6 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
 
   #[global] Instance ptr_eq_dec : EqDecision ptr := _.
   #[global] Instance ptr_countable : Countable ptr := _.
-  Definition ptr_eq_dec' := ptr_eq_dec.
 
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
   Proof. done. Qed.

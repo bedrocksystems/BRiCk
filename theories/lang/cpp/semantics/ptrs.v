@@ -134,15 +134,7 @@ Module Type PTRS.
 
   Implicit Type (p : ptr).
 
-  Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
-  #[global] Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
-  (* TODO AUTO: replace [ptr_eq_dec'] with:
-
-    Axiom ptr_eq_dec : EqDecision ptr.
-    #[global] Existing Instance ptr_eq_dec.
-
-  However, removing [ptr_eq_dec'] breaks some clients, especially for
-  automation. *)
+  #[global] Declare Instance ptr_eq_dec : EqDecision ptr.
 
   Axiom ptr_countable : Countable ptr.
   #[global] Existing Instance ptr_countable.

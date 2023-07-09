@@ -1175,7 +1175,7 @@ Section with_cpp.
     Observe [| p <> nullptr |] (tptsto t q p v).
   Proof.
     apply: observe_intro.
-    destruct (ptr_eq_dec p nullptr); subst; last by eauto.
+    destruct (decide (p = nullptr)); subst; last by eauto.
     rewrite {1}tptsto_nonnull. exact: bi.False_elim.
   Qed.
 

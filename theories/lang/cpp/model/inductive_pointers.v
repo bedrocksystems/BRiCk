@@ -472,8 +472,6 @@ Module PTRS_IMPL <: PTRS_INTF.
   Lemma ptr_alloc_id_nullptr : ptr_alloc_id nullptr = Some null_alloc_id.
   Proof. done. Qed.
 
-  #[local] Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
-
   (* Instance ptr_equiv : Equiv ptr := (=).
   Instance offset_equiv : Equiv offset := (=).
   Instance ptr_equivalence : Equivalence (≡@{ptr}) := _.
