@@ -1189,29 +1189,44 @@ Module Type Expr.
           Q v FreeTemps.id
       |-- wp_operand (Eimplicit_init ty) Q.
 
+    Definition marg_types (t : type) : option (list type * function_arity) :=
+      match t with
+      | @Tfunction cc ar _ (_ :: args) =>
+          (* we drop the first argument which is for [this] *)
+          Some (args, ar)
+      | _ => None
+      end.
+
+    Definition type_of_ctor tu obj : option type :=
+      match tu.(symbols) !! obj with
+      | Some (Oconstructor ctor as v) =>
+          Some (type_of_value v)
+      | _ => None
+      end.
+
     Axiom wp_init_constructor : forall cls ty cv (this : ptr) cnd es Q,
       decompose_type ty = (cv, Tnamed cls) ->
         (* NOTE because the AST does not include the types of the arguments of
            the constructor, we have to look up the type in the environment.
          *)
-           match tu.(symbols) !! cnd with
-           | Some (Oconstructor ctor) =>
-             this |-> tblockR (Tnamed cls) (cQp.mut 1) -*
-             let arg_types := (drop_qualifiers ∘ snd) <$> ctor.(c_params) in
-             let ctor_type := type_of_value (Oconstructor ctor) in
-             (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
-             letI* _, argps, ifree, free := wp_args evaluation_order.nd nil (arg_types, ctor.(c_arity)) es in
-             |> letI* resultp := mspec (Tnamed cls) ctor_type (_global cnd) (this :: argps) in
-                interp ifree $
-                  (* in the semantics, constructors return [void] *)
-                  resultp |-> primR Tvoid (cQp.mut 1) Vvoid **
-                  let do_const Q :=
-                    if q_const cv
-                    then wp_make_const tu this (Tnamed cls) Q
-                    else Q
-                  in
-                  Q free
-           | _ => False%I
+           match type_of_ctor tu cnd with
+           | Some ctor_type =>
+             match marg_types ctor_type with
+             | Some arg_types =>
+                letI* _, argps, ifree, free := wp_args evaluation_order.nd nil arg_types es in
+                |> (this |-> tblockR (Tnamed cls) (cQp.mut 1) -*
+                   (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
+                   letI* resultp := wp_fptr ctor_type (_global cnd) (this :: argps) in
+                   interp ifree $
+                     (* in the semantics, constructors return [void] *)
+                     resultp |-> primR Tvoid (cQp.mut 1) Vvoid **
+                     let Q := Q free in
+                     if q_const cv
+                     then wp_make_const tu this (Tnamed cls) Q
+                     else Q)
+             | _ => False (* unreachable b/c we got a constructor *)
+             end
+           | _ => ERROR ("Constructor not found.", cnd)
            end
       |-- wp_init ty this (Econstructor cnd es ty) Q.
 
