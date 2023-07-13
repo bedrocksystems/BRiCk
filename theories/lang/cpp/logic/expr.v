@@ -873,22 +873,22 @@ Module Type Expr.
     Qed.
 
     Axiom wp_lval_call : forall f (es : list Expr) Q (ty : type),
-        wp_call (evaluation_order.ooe OOCall) (type_of f) f es (fun res free =>
+        wp_call (evaluation_order.order_of OOCall) (type_of f) f es (fun res free =>
            Reduce (lval_receive ty res $ fun v => Q v free))
         |-- wp_lval (Ecall f es ty) Q.
 
     Axiom wp_xval_call : forall f (es : list Expr) Q (ty : type),
-        wp_call (evaluation_order.ooe OOCall) (type_of f) f es (fun res free =>
+        wp_call (evaluation_order.order_of OOCall) (type_of f) f es (fun res free =>
            Reduce (xval_receive ty res $ fun v => Q v free))
         |-- wp_xval (Ecall f es ty) Q.
 
     Axiom wp_operand_call : forall ty f es Q,
-        wp_call (evaluation_order.ooe OOCall) (type_of f) f es (fun res free =>
+        wp_call (evaluation_order.order_of OOCall) (type_of f) f es (fun res free =>
            Reduce (operand_receive ty res $ fun v => Q v free))
        |-- wp_operand (Ecall f es ty) Q.
 
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
-        (letI* res, free := wp_call (evaluation_order.ooe OOCall) (type_of f) f es in
+        (letI* res, free := wp_call (evaluation_order.order_of OOCall) (type_of f) f es in
              Reduce (init_receive addr res $ Q free))
       |-- wp_init ty addr (Ecall f es ty) Q.
 
@@ -1009,14 +1009,14 @@ Module Type Expr.
           let fty := normalize_type fty in
           match arg_types fty with
           | Some targs =>
-            letI* fps, vs, ifree, free := wp_args (evaluation_order.ooe oo) [] targs es in
+            letI* fps, vs, ifree, free := wp_args (evaluation_order.order_of oo) [] targs es in
             |> wp_fptr fty (_global f) vs (fun v => interp ifree $ Q v free)
           | None => False
           end
        | operator_impl.MFunc fn ct fty =>
            match es with
            | eobj :: es =>
-               wp_mcall (dispatch ct fty fn (type_of eobj)) (evaluation_order.ooe oo) eobj fty es Q
+               wp_mcall (dispatch ct fty fn (type_of eobj)) (evaluation_order.order_of oo) eobj fty es Q
            | _ => False
            end
       end%I.

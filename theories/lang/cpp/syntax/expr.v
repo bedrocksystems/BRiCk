@@ -44,7 +44,7 @@ Module evaluation_order.
   | rl (* right-to-left, assignment operators (post C++17) *).
 
   (* The order of evaluation for each operator *when overloaded* *)
-  Definition ooe (oo : OverloadableOperator) : t :=
+  Definition order_of (oo : OverloadableOperator) : t :=
     match oo with
     | OOTilde | OOExclaim => nd
     | OOPlusPlus | OOMinusMinus =>
