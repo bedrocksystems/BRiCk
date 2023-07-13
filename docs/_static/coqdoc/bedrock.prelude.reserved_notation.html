@@ -65,10 +65,16 @@
 </div>
 
 <div class="doc">
-Boolean negation (compatible with SSR) 
+Boolean ops (compatible with SSR) 
 </div>
 <div class="code">
 <span class="id" title="keyword">Reserved Notation</span> &quot;~~ b" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 35, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;==&gt;" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 55, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;[ &amp;&amp; b1 &amp; c ]" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0).<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;[ &amp;&amp; b1 , b2 , .. , bn &amp; c ]"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0, <span class="id" title="var">format</span> "'[hv' [ &amp;&amp; '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/ '  &amp;  c ] ']'").<br/>
 
 <br/>
 </div>
@@ -107,6 +113,20 @@ Powers
 &nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 30, <span class="id" title="var">o</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
 &nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' x  '/' ^^{ o }  n ']'").<br/>
 <span class="id" title="keyword">Reserved Infix</span> &quot;^^" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 30, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Fancy updates 
+</div>
+<div class="code">
+<span class="id" title="keyword">Reserved Notation</span> &quot;|={ E1 , E2 }=&gt;? b P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 99, <span class="id" title="var">b</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 9, <span class="id" title="var">E1</span>, <span class="id" title="var">E2</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50, <span class="id" title="var">P</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' |={ E1 , E2 }=&gt;? b  '/' P ']'").<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;|={ E }=&gt;? b P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 99, <span class="id" title="var">b</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 9, <span class="id" title="var">E</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50, <span class="id" title="var">P</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' |={ E }=&gt;? b  '/' P ']'").<br/>
 
 <br/>
 </div>
