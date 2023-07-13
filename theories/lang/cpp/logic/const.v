@@ -13,8 +13,11 @@ From bedrock.lang.cpp.logic Require Import
   pred path_pred
   heap_pred layout wp.
 
+#[local] Set Printing Coercions.
+
 Section defs.
-  Context `{Σ : cpp_logic}  {σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
+  Implicit Types (Q : epred).
 
   (* [wp_make_cv from to addr ty Q] replaces the [from] ownership of [ty] at [addr] with
      [to] ownership and then proceeds as [Q].
@@ -51,8 +54,7 @@ Section defs.
       | Tfloat_ _
       | Tvoid =>
         let rty := erase_qualifiers rty in
-        (Exists v, addr |-> primR rty from v ** (addr |-> primR rty to v -* Q)) ∨
-        (          addr |-> uninitR rty from ** (addr |-> uninitR rty to -* Q))
+        Exists v, addr |-> tptstoR rty from v ** (addr |-> tptstoR rty to v -* Q)
 
       | Tref rty
       | Trv_ref rty =>
@@ -63,7 +65,7 @@ Section defs.
       | Tarray ety sz =>
         (* NOTE the order here is irrelevant because the operation is "atomic" *)
         fold_left (fun Q i =>
-            wp_const from to (addr .[ erase_qualifiers ety ! Z.of_N i ]) ty Q)
+            wp_const from to (addr .[ erase_qualifiers ety ! Z.of_N i ]) ety Q)
                     (seqN 0 sz) Q
 
       | Tnamed cls =>
@@ -117,6 +119,66 @@ Section defs.
      to be conservative.
    *)
   Axiom wp_const_intro : forall tu f t a ty Q, wp_const_body (wp_const tu) tu f t a ty Q |-- wp_const tu f t a ty Q.
+
+  Lemma wp_const_value_type_intro tu from to (p : ptr) ty (Q : epred) :
+    is_value_type ty ->
+    (
+      if qual_norm (fun cv _ => q_const cv) ty then Q
+      else
+        Exists v,
+        let R q := p |-> tptstoR (erase_qualifiers ty) q v in
+        R from ** (R to -* Q)
+    )
+    |-- wp_const tu from to p ty Q.
+  Proof.
+    rewrite is_value_type_decompose_type qual_norm_decompose_type.
+    rewrite erase_qualifiers_decompose_type.
+    have := is_qualified_decompose_type ty.
+    rewrite -wp_const_intro /wp_const_body.
+    destruct (decompose_type ty) as [cv rty]; cbn=>??.
+    case_match; first by rewrite -fupd_intro. destruct rty; try done.
+    all: by iIntros "(% & R & HQ) !>"; iExists _; iFrame "R";
+      iIntros "R !>"; iApply ("HQ" with "R").
+  Qed.
+
+  Lemma primR_wp_const_val tu from to (p : ptr) ty Q :
+    is_value_type ty ->
+    (
+      if qual_norm (fun cv _ => q_const cv) ty
+      then Q
+      else
+        Exists v,
+        let R q := p |-> primR (erase_qualifiers ty) q v in
+        R from ** (R to -* Q)
+    )
+    |-- wp_const tu from to p ty Q.
+  Proof.
+    intros. rewrite -wp_const_value_type_intro//.
+    case_match; first done. iIntros "(%v & R & HQ)". iExists v.
+    rewrite !primR_alt !_at_sep. iDestruct "R" as "($ & #Raw & #Ty)". iIntros "R".
+    iApply ("HQ" with "[$R $Raw $Ty]").
+  Qed.
+
+  Lemma primR_wp_const_ref tu from to (p : ptr) ty (Q : epred) :
+    is_reference_type ty ->
+    (
+      if qual_norm (fun cv _ => q_const cv) ty then Q
+      else
+        Exists v,
+        let R q := p |-> primR (Tref $ erase_qualifiers $ as_ref ty) q v in
+        R from ** (R to -* Q)
+    )
+    |-- wp_const tu from to p ty Q.
+  Proof.
+    cbn. rewrite is_reference_type_decompose_type.
+    rewrite qual_norm_decompose_type as_ref_decompose_type.
+    have := is_qualified_decompose_type ty.
+    rewrite -wp_const_intro /wp_const_body.
+    destruct (decompose_type ty) as [cv rty]; cbn=>??.
+    case_match; first by rewrite -fupd_intro. destruct rty; first [done | cbn].
+    all: iIntros "(% & R & HQ) !>"; iExists _; iFrame "R";
+      iIntros "R !>"; iApply ("HQ" with "R").
+  Qed.
 
   (* Sanity check the [_frame] property *)
   Lemma fold_left_frame : forall B (l : list B) (f f' : epred -> B -> epred)  (Q Q' : epred),

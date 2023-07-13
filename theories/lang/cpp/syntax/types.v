@@ -63,6 +63,36 @@ Proof. by intros [] [] []. Qed.
 Lemma merge_tq_QM_inj q1 q2 : merge_tq q1 q2 = QM -> q1 = QM /\ q2 = QM.
 Proof. destruct q1, q2; naive_solver. Qed.
 
+(**
+The preorder from
+<https://eel.is/c++draft/basic.type.qualifier#5>
+*)
+Definition tq_le (a b : type_qualifiers) : Prop :=
+  ∃ c, b = merge_tq a c.
+
+Definition is_tq_le (a b : type_qualifiers) : bool :=
+  bool_decide (a = b) ||
+  match a , b with
+  | QM , _ => true
+  | QC , QCV => true
+  | QV , QCV => true
+  | _, _ => false
+  end.
+
+Lemma tq_le_is_tq_le a b : tq_le a b <-> is_tq_le a b.
+Proof.
+  split.
+  { intros (c & ->). by destruct a, c. }
+  { rewrite /is_tq_le=>?. case_bool_decide.
+    - subst a. exists QM. by destruct b.
+    - destruct a, b; first [ done | by exists QV | by exists QC | by exists QCV ]. }
+Qed.
+
+#[global] Instance tq_le_dec : RelDecision tq_le.
+Proof.
+  refine (fun a b => cast_if (decide (is_tq_le a b))).
+  all: abstract (by rewrite tq_le_is_tq_le).
+Defined.
 
 (* Calling conventions are a little bit beyond what is formally blessed by
    C++, but the are necessary for low level code that links with other
@@ -405,8 +435,27 @@ Qualifier normalization
 *)
 | Tqualified_id t : Tqualified QM t ≡ t
 | Tqualified_merge q q' t : Tqualified q (Tqualified q' t) ≡ Tqualified (merge_tq q q') t
+(*
+"An array type whose elements are cv-qualified is also considered to
+have the same cv-qualifications as its elements. [...] Cv-qualifiers
+applied to an array type attach to the underlying element type."
+<https://www.eel.is/c++draft/basic.type.qualifier#3>
+*)
+| Tqualified_array q t n : Tqualified q (Tarray t n) ≡ Tarray (Tqualified q t) n
+(*
+"A function or reference type is always cv-unqualified."
+<https://www.eel.is/c++draft/basic.type.qualifier#1>
+*)
 | Tqualified_ref q t : Tqualified q (Tref t) ≡ Tref t
 | Tqualified_rv_ref q t : Tqualified q (Trv_ref t) ≡ Trv_ref t
+| Tqualified_func q cc ar ret args : Tqualified q (@Tfunction cc ar ret args) ≡ @Tfunction cc ar ret args
+(**
+"After producing the list of parameter types, any top-level
+cv-qualifiers modifying a parameter type are deleted when forming the
+function type."
+<https://www.eel.is/c++draft/dcl.fct#5>
+*)
+| Tqualified_func_param cc ar ret q t args args' : @Tfunction cc ar ret (args ++ Tqualified q t :: args') ≡ @Tfunction cc ar ret (args ++ t :: args')
 
 (**
 Reference collapsing
@@ -756,12 +805,6 @@ Proof. by destruct cv. Qed.
 Lemma is_QM_bool_decide cv : is_QM cv = bool_decide (cv = QM).
 Proof. by destruct cv. Qed.
 
-(**
-Keep these to a minimum.
-*)
-Lemma QM_cases cv : is_QM cv \/ ~~ is_QM cv.
-Proof. by destruct (is_QM cv); auto. Qed.
-
 (** [tqualified] *)
 
 Variant tqualified'_spec : type_qualifiers -> type -> type -> Prop :=
@@ -775,7 +818,7 @@ Lemma tqualified'_ok q t : tqualified'_spec q t (tqualified' q t).
 Proof.
   rewrite /tqualified'. destruct (boolP (is_ref t)); [by destruct t; auto|].
   destruct t; try done.
-  all: destruct (QM_cases q); by destruct q; auto.
+  all: destruct (boolP (is_QM q)); by destruct q; auto.
 Qed.
 
 Lemma tqualified'_equiv q t : tqualified' q t ≡ Tqualified q t.

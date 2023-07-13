@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-21 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -224,6 +224,11 @@ Section with_cpp.
     | (x,ty) :: xs =>
         match ptrs with
         | p :: ps =>
+            (*
+            NOTE: We need not gather additional qualifiers from an
+            array's element type as Clang's parser eagerly "decays" a
+            function's array parameter types to pointer types.
+            *)
             let '(cv, ty) := decompose_type ty in
             if q_const cv then
               wp_make_const tu p ty $ bind_vars xs ar ps (fun vap => Rbind x p $ ρ vap)

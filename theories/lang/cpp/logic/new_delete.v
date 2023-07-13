@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2021 BedRock Systems, Inc.
+ * Copyright (c) 2021-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -226,10 +226,9 @@ Module Type Expr__newdelete.
           }
           iApply Mbind_frame; last by iApply "args"; by iPureIntro.
           all: subst; cbn in *; inversion Hspec; subst; clear Hspec.
-          - iIntros (R S) "RS R"; iIntros (p); iSpecialize ("R" $! p).
-            iRevert "R". iApply wp_operand_frame; try reflexivity.
-            iIntros (??) "X Y". iSpecialize ("X" with "Y").
-            by iApply "RS".
+          - iIntros (R S) "HS wp %p". iSpecialize ("wp" $! p).
+            iApply (wp_initialize_unqualified_frame with "[HS] wp"); [done|].
+            iIntros (?) "R". iApply ("HS" with "R").
           - iIntros (p); iApply Mmap_frame; iIntros (R S) "RS R"; by iApply "RS".
           - iIntros (ps free) "H".
             iDestruct "H"
@@ -401,10 +400,9 @@ Module Type Expr__newdelete.
           }
           iApply Mbind_frame; last by iApply "args"; by iPureIntro.
           all: subst; cbn in *; inversion Hspec; subst; clear Hspec.
-          - iIntros (R S) "RS R"; iIntros (p); iSpecialize ("R" $! p).
-            iRevert "R". iApply wp_operand_frame; try reflexivity.
-            iIntros (??) "X Y". iSpecialize ("X" with "Y").
-            by iApply "RS".
+          - iIntros (R S) "HS wp %p". iSpecialize ("wp" $! p).
+            iApply (wp_initialize_unqualified_frame with "[HS] wp"); [done|].
+            iIntros (?) "R". iApply ("HS" with "R").
           - iIntros (p); iApply Mmap_frame; iIntros (R S) "RS R"; by iApply "RS".
           - iIntros (ps free') "H".
             iDestruct "H"

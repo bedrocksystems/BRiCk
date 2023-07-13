@@ -146,6 +146,9 @@ Lemma foldl_rev {A B} (f : A -> B -> A) acc l :
   foldl f acc (rev l) = foldr (fun x acc => f acc x) acc l.
 Proof. by rewrite -foldr_rev rev_involutive. Qed.
 
+Lemma foldl_left {A B} (f : A -> B -> A) acc l : foldl f acc l = fold_left f l acc.
+Proof. move: acc. induction l; cbn; auto. Qed.
+
 (* From stdlib's [repeat] to stdpp's [replicate]. *)
 Lemma repeat_replicate {A} (x : A) n :
   repeat x n = replicate n x.

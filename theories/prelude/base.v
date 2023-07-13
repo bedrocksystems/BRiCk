@@ -25,6 +25,11 @@ explosion. *)
 (** * Small extensions to [stdpp.base] *)
 
 Notation "~~ b" := (negb b) : bool_scope.
+Infix "==>" := implb : bool_scope.
+
+(** These associate to the right *)
+Notation "[&& b1 & c ]" := (b1 && c) (only parsing) : bool_scope.
+Notation "[&& b1 , b2 , .. , bn & c ]" := (b1 && (b2 && .. (bn && c) ..)) : bool_scope.
 
 (** Solve decidable goal [P] via [vm_compute] on [bool_decide P]. *)
 Ltac vm_decide := apply: bool_decide_eq_true_1; vm_compute; reflexivity.
@@ -85,6 +90,12 @@ End flip_app.
 Lemma subrelation_flip {A} (R S : relation A) :
   subrelation R S -> subrelation (flip R) (flip S).
 Proof. intros HR x y ?. exact: HR. Qed.
+
+(** [flip2] *)
+
+#[universes(polymorphic)]
+Definition flip2 {A B C D} (f : A -> B -> C -> D) (b : B) (c : C) (a : A) : D := f a b c.
+#[global] Arguments flip2 {_ _ _ _} _ _ _ _ / : assert.
 
 Lemma dec_stable_iff `{Decision P} : ¬ ¬ P ↔ P.
 Proof. split. apply dec_stable. tauto. Qed.
