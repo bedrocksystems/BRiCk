@@ -30,6 +30,7 @@ From iris.proofmode Require Import proofmode.
 Require Import bedrock.lang.bi.na_invariants.
 Require Import bedrock.lang.bi.cancelable_invariants.
 Export ChargeNotation.
+Require Import bedrock.lang.cpp.bi.cfractional.
 
 From bedrock.lang.cpp.syntax Require Import
      names
@@ -660,6 +661,42 @@ Module Type CPP_LOGIC
       (n > 0)%N ->
       type_ptr ty p1 ∧ type_ptr ty p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
         |={↑pred_ns}=> [| p1 = p2 |].
+
+    (** Padding
+        [struct_padding] and [union_padding] represent the object state of an aggregate.
+        Ownership of this token implies that the object is a alive. They only given when
+        an object is fully constructed, and are taken back at the end of the lifetime.
+        This is related to the "construction state" in Tahina's work, i.e.
+        <https://inria.hal.science/file/index/docid/674663/filename/cpp-construction.pdf>
+
+        TODO: The name [_padding] is historical and should be replaced by a better name.
+     *)
+    Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
+
+    #[global] Declare Instance struct_padding_timeless :  Timeless4 (@struct_padding).
+    #[global] Declare Instance struct_padding_fractional : forall {σ : genv} p cls, CFractional (struct_padding p cls).
+    #[global] Declare Instance struct_padding_frac_valid :  forall {σ : genv} p cls, CFracValid0 (struct_padding p cls).
+
+    #[global] Declare Instance struct_padding_type_ptr_observe : forall {σ : genv} p cls q,
+        Observe (type_ptr (Tnamed cls) p) (struct_padding p cls q).
+
+    (** [union_padding cls q active_member] is [q] ownership of
+     the union padding for union [cls] for the active member
+     [active_member]. When there is no active member the [active_member]
+     is [None], otherwise it is [Some idx] where [idx] is the numeric
+     index of member field.
+     *)
+    Axiom union_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> option nat -> mpred.
+
+    #[global] Declare Instance union_padding_timeless :  Timeless5 (@union_padding).
+    #[global] Declare Instance union_padding_fractional : forall {σ : genv} p cls, CFractional1 (union_padding p cls).
+    #[global] Declare Instance union_padding_frac_valid :  forall {σ : genv} p cls, CFracValid1 (union_padding p cls).
+
+    #[global] Declare Instance union_padding_type_ptr_observe : forall {σ : genv} p cls q active,
+        Observe (type_ptr (Tnamed cls) p) (union_padding p cls q active).
+    #[global] Declare Instance union_padding_agree : forall {σ : genv} p cls q q' i i',
+        Observe2 [| i = i' |] (union_padding p cls q i) (union_padding p cls q' i').
+
   End with_cpp.
 
   (* strict validity (not past-the-end) *)
@@ -1281,5 +1318,20 @@ Section with_cpp.
     rewrite (has_type_erase_qualifiers (drop_qualifiers _)) erase_drop_qualifiers.
     by rewrite -has_type_erase_qualifiers.
   Qed.
+
+  #[global] Instance struct_padding_as_fractional p cls : AsCFractional0 (struct_padding p cls).
+  Proof. solve_as_cfrac. Qed.
+  #[global] Instance struct_padding_valid_observe p q cls : Observe (_valid_ptr Strict p) (struct_padding p cls q).
+  Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
+  #[global] Instance struct_paddingR_valid_observe p q cls : Observe (_valid_ptr Relaxed p) (struct_padding p cls q).
+  Proof. rewrite -strict_valid_valid; apply _. Qed.
+
+  #[global] Instance union_padding_as_fractional p cls : AsCFractional1 (union_padding p cls).
+  Proof. solve_as_cfrac. Qed.
+
+  #[global] Instance union_padding_strict_valid_observe p q cls i : Observe (_valid_ptr Strict p) (union_padding p cls q i).
+  Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
+  #[global] Instance union_padding_valid_observe p q cls i : Observe (_valid_ptr Relaxed p) (union_padding p cls q i).
+  Proof. rewrite -strict_valid_valid; apply _. Qed.
 
 End with_cpp.

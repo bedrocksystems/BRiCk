@@ -19,7 +19,7 @@ From bedrock.lang.cpp.logic Require Import
      initializers
      wp call core_string
      translation_unit
-     dispatch layout.
+     dispatch.
 Require Import bedrock.lang.bi.errors.
 
 Module Type Expr.
@@ -1413,7 +1413,7 @@ Module Type Expr.
             let fs :=
               map base_to_li s.(s_bases) ++ map mem_to_li s.(s_fields) in
             init_fields cls base fs es
-               (base |-> struct_paddingR (cQp.mut 1) cls -*
+               (base |-> structR cls (cQp.mut 1) -*
                 (if has_vtable s then base |-> derivationR cls [cls] (cQp.mut 1) else emp) -*
                 do_const (Q FreeTemps.id))
         | Some (Gunion u) =>
@@ -1424,7 +1424,7 @@ Module Type Expr.
             [| length es = 1%nat |] **
             let fs := map mem_to_li $ firstn 1 u.(u_fields) in
             init_fields cls base fs es
-               (base |-> union_paddingR (cQp.mut 1) cls (Some 0) -*
+               (base |-> unionR cls (cQp.mut 1) (Some 0) -*
                 do_const (Q FreeTemps.id))
         | _ => False
         end)

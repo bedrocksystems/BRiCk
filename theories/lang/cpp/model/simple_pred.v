@@ -1335,6 +1335,26 @@ Module SimpleCPP.
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
     Proof. Admitted.
 
+    Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
+
+
+    #[global] Declare Instance struct_padding_timeless :  Timeless4 (@struct_padding).
+    #[global] Declare Instance struct_padding_fractional : forall {σ : genv} p cls, CFractional (struct_padding p cls).
+    #[global] Declare Instance struct_padding_frac_valid :  forall {σ : genv} p cls, CFracValid0 (struct_padding p cls).
+
+    #[global] Declare Instance struct_padding_type_ptr_observe : forall {σ : genv} p cls q, Observe (type_ptr (Tnamed cls) p) (struct_padding p cls q).
+
+    Axiom union_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> option nat -> mpred.
+
+    #[global] Declare Instance union_padding_timeless :  Timeless5 (@union_padding).
+    #[global] Declare Instance union_padding_fractional : forall {σ : genv} p cls, CFractional1 (union_padding p cls).
+    #[global] Declare Instance union_padding_frac_valid :  forall {σ : genv} p cls, CFracValid1 (union_padding p cls).
+
+    #[global] Declare Instance union_padding_type_ptr_observe : forall {σ : genv} p cls q active,
+        Observe (type_ptr (Tnamed cls) p) (union_padding p cls q active).
+    #[global] Declare Instance union_padding_agree : forall {σ : genv} p cls q q' i i',
+        Observe2 [| i = i' |] (union_padding p cls q i) (union_padding p cls q' i').
+
   End with_cpp.
 
 End SimpleCPP.
