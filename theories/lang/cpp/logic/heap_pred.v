@@ -821,10 +821,15 @@ Section padding.
 
   #[global] Instance structR_fractional : CFractional (structR cls).
   Proof. rewrite structR.unlock; eapply as_Rep_cfractional => ?; eapply struct_padding_fractional. Qed.
+  #[global] Instance structR_cfractional_eta : CFractional (fun q => structR cls q).
+  Proof.  apply structR_fractional. Qed.
+
   #[global] Instance structR_timeless : Timeless2 structR.
   Proof. rewrite structR.unlock; apply _. Qed.
   #[global] Instance structR_frac_valid : CFracValid0 (structR cls).
   Proof. rewrite structR.unlock. constructor. intros; apply as_Rep_only_provable_observe. refine _. Qed.
+  #[global] Instance structR_frac_valid_eta : CFracValid0 (fun q => structR cls q).
+  Proof. apply structR_frac_valid. Qed.
 
   #[global] Instance structR_as_fractional : AsCFractional0 (structR cls).
   Proof. solve_as_cfrac. Qed.
