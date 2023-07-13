@@ -285,8 +285,11 @@ NOTE [ty] *must* be a primitive type.
 mlock Definition primR `{Σ : cpp_logic, resolve : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
   [| ~~ is_raw v |] **
   (**
-  TODO: Clients often use [primR (erase_qualifiers ty)]. Consider
-  baking [erase_qualifiers] in, or omitting [drop_qualifiers].
+  NOTE: Clients use [primR (erase_qualifiers ty)] but we do not bake
+  [erase_qualifiers] in to simplify our automation.
+
+  TODO: In light of [has_type_drop_qualifiers], there's no need for
+  [drop_qualifiers].
   *)
   pureR (has_type v (drop_qualifiers ty)) **
   tptsto_fuzzyR ty q v.
@@ -674,6 +677,10 @@ Section with_cpp.
   Lemma has_type_nullptr p :
     has_type (Vptr p) Tnullptr -|- p |-> nullR.
   Proof. by rewrite has_type_nullptr' nullR_eq _at_as_Rep. Qed.
+
+  Lemma has_type_void v : has_type v Tvoid -|- [| v = Vvoid |].
+  Proof. by rewrite has_type_noptr ?has_type_prop_void. Qed.
+
   Lemma has_type_ptr p ty :
     has_type (Vptr p) (Tpointer ty) -|- p |-> (validR ** aligned_ofR ty).
   Proof.
@@ -881,6 +888,21 @@ Section with_cpp.
 
   Lemma primR_tptsto_fuzzyR ty q v : primR ty q v |-- tptsto_fuzzyR ty q v.
   Proof. rewrite primR.unlock. iIntros "(_ & _ & $)". Qed.
+
+  Lemma tptstoR_Vvoid_tptstoR_fuzzy q :
+    tptstoR Tvoid q Vvoid -|- tptsto_fuzzyR Tvoid q Vvoid.
+  Proof.
+    rewrite tptsto_fuzzyR.unlock. split'.
+    - iIntros "R". iExists Vvoid. by iFrame "R".
+    - iIntros "(% & %Hval & R)". apply val_related_Vundef in Hval. by simplify_eq.
+  Qed.
+  Lemma tptsto_fuzzyR_Vvoid_primR q : tptsto_fuzzyR Tvoid q Vvoid -|- primR Tvoid q Vvoid.
+  Proof.
+    rewrite primR.unlock. rewrite left_id.
+    by rewrite has_type_void pureR_only_provable only_provable_True// left_id.
+  Qed.
+  Lemma tptstoR_Vvoid_primR q : tptstoR Tvoid q Vvoid -|- primR Tvoid q Vvoid.
+  Proof. by rewrite tptstoR_Vvoid_tptstoR_fuzzy tptsto_fuzzyR_Vvoid_primR. Qed.
 
   Definition is_raw_or_undef (v : val) : bool :=
     if v is (Vundef | Vraw _) then true else false.
