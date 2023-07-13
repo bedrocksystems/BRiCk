@@ -104,14 +104,14 @@ Section with_Σ.
   #[global] Instance rawR_agree : AgreeCF1 rawR.
   Proof.
     intros. rewrite rawR.unlock. iIntros "R1 R2".
-    iDestruct (observe_2 [| val_related _ _ _ _ |] with "R1 R2") as %?.
+    iDestruct (observe_2 [| val_related _ _ _ |] with "R1 R2") as %?.
     eauto using val_related_Vraw.
   Qed.
 
   Lemma rawR_tptsto_acc (p : ptr) q r :
     p |-> rawR q r |--
-      Exists v', [| val_related σ Tu8 (Vraw r) v' |] ** tptsto Tu8 q p v' **
-      (Forall p' q' v', [| val_related σ Tu8 (Vraw r) v' |] -* tptsto Tu8 q' p' v' -* p' |-> rawR q' r).
+      Exists v', [| val_related Tu8 (Vraw r) v' |] ** tptsto Tu8 q p v' **
+      (Forall p' q' v', [| val_related Tu8 (Vraw r) v' |] -* tptsto Tu8 q' p' v' -* p' |-> rawR q' r).
   Proof.
     rewrite rawR.unlock. by rewrite tptsto_fuzzyR_tptsto_acc.
   Qed.

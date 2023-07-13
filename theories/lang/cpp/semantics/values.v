@@ -14,6 +14,7 @@ From bedrock.lang.cpp.arith Require Import operator builtins.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv ptrs.
 
+#[local] Set Printing Coercions.
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 Implicit Types (σ : genv).
@@ -162,8 +163,15 @@ Module Type RAW_BYTES_VAL
       depends on the type [ty]. *)
   Parameter raw_bytes_of_val : genv -> type -> val -> list raw_byte -> Prop.
 
-  Axiom raw_bytes_of_val_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) raw_bytes_of_val.
-  #[global] Existing Instance raw_bytes_of_val_Proper.
+  #[local] Notation PROPER R1 R2 := (
+    Proper (R1 ==> eq ==> eq ==> eq ==> R2) raw_bytes_of_val
+  ) (only parsing).
+
+  #[global] Declare Instance raw_bytes_of_val_mono : PROPER genv_leq impl.
+  #[global] Instance raw_bytes_of_val_flip_mono : PROPER (flip genv_leq) (flip impl).
+  Proof. repeat intro. exact: raw_bytes_of_val_mono. Qed.
+  #[global] Instance raw_bytes_of_val_flip_proper : PROPER genv_eq iff.
+  Proof. intros σ1 σ2 [??]; repeat intro. split; exact: raw_bytes_of_val_mono. Qed.
 
   Axiom raw_bytes_of_val_unique_encoding : forall {σ ty v rs rs'},
       raw_bytes_of_val σ ty v rs -> raw_bytes_of_val σ ty v rs' -> rs = rs'.
@@ -265,125 +273,136 @@ Module Type RAW_BYTES_MIXIN
        (Import V : VAL_MIXIN P R)
        (Import RD : RAW_BYTES_VAL P R V).
 
-  Inductive val_related : genv -> type -> val -> val -> Prop :=
-  | Veq_refl σ ty v: val_related σ ty v v
-  | Vqual σ t ty v1 v2:
-      val_related σ ty v1 v2 ->
-      val_related σ (Tqualified t ty) v1 v2
-  | Vraw_uint8 σ raw z
-      (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
-      val_related σ Tu8 (Vraw raw) (Vint z)
-  | Vuint8_raw σ z raw
-      (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
-      val_related σ Tu8 (Vint z) (Vraw raw).
+  (**
+  The relation [val_related ty] is, for most types [ty], equality on
+  values. For type [Tu8], it also includes the relation between [Vint]
+  and [Vraw] induced by [raw_bytes_of_val].
 
-  Lemma val_related_not_raw v1 v2 σ ty :
+  NOTE: Should we need it, we can show [val_related] to be compatible
+  with qualifier normalization ([qual_norm'], [qual_norm],
+  [decompose_type], [drop_qualifiers]) and erasure
+  ([erase_qualifiers]) up to [iff]. The following, for example, is
+  provable.
+  <<
+    ∀ {σ} ty v1 v2,
+    val_related ty v1 v2 <->
+    qual_norm (fun _ ty => val_related ty v1 v2) ty
+  >>
+  We have the option to strengthen that [<->] to [=]
+  <<
+    ∀ {σ} ty,
+    val_related ty =
+    qual_norm (fun _ => val_related_unqualified) ty
+  >>
+  by defining [val_related] using [qual_norm] and an auxiliary
+  type-indexed family of relations [val_related_unqualified], rather
+  than directly as an inductive.
+  *)
+
+  Inductive val_related {σ : genv} : type -> val -> val -> Prop :=
+  | Veq_refl ty v : val_related ty v v
+  | Vqual t ty v1 v2 :
+    val_related ty v1 v2 ->
+    val_related (Tqualified t ty) v1 v2
+  | Vraw_uint8 raw z (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
+    val_related Tu8 (Vraw raw) (Vint z)
+  | Vuint8_raw z raw (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
+    val_related Tu8 (Vint z) (Vraw raw).
+  #[local] Hint Constructors val_related : core.
+
+  Lemma val_related_not_raw {σ} v1 v2 ty :
     ~~ is_raw v1 -> ~~ is_raw v2 ->
-    val_related σ ty v1 v2 -> v1 = v2.
+    val_related ty v1 v2 -> v1 = v2.
   Proof. intros ??. induction 1; naive_solver. Qed.
 
-  Lemma val_related_Vint' {σ : genv} ty v1 v2 :
-    val_related _ ty v1 v2 ->
-    forall z1 z2, v1 = Vint z1 -> v2 = Vint z2 ->
-             z1 = z2.
+  Lemma val_related_Vint' {σ} ty v1 v2 :
+    val_related ty v1 v2 ->
+    forall z1 z2, v1 = Vint z1 -> v2 = Vint z2 -> z1 = z2.
   Proof.
     induction 1; simpl; intros; subst; eauto; try congruence.
   Qed.
-  Lemma val_related_Vint {σ : genv} ty z1 z2 :
-    val_related _ ty (Vint z1) (Vint z2) ->
-    z1 = z2.
-  Proof. intros. eapply val_related_Vint'; eauto. Qed.
+  Lemma val_related_Vint {σ} ty z1 z2 :
+    val_related ty (Vint z1) (Vint z2) -> z1 = z2.
+  Proof. intros. exact: val_related_Vint'. Qed.
 
-  Lemma val_related_Vchar' {σ : genv} ty v1 v2 :
-    val_related _ ty v1 v2 ->
-    forall z1 z2, v1 = Vchar z1 -> v2 = Vchar z2 ->
-             z1 = z2.
-  Proof.
-    induction 1; simpl; intros; subst; eauto; try congruence.
-  Qed.
-  Lemma val_related_Vchar {σ : genv} ty n1 n2 :
-    val_related _ ty (Vchar n1) (Vchar n2) ->
-    n1 = n2.
-  Proof. intros. eapply val_related_Vchar'; eauto. Qed.
+  Lemma val_related_Vchar' {σ} ty v1 v2 :
+    val_related ty v1 v2 ->
+    forall z1 z2, v1 = Vchar z1 -> v2 = Vchar z2 -> z1 = z2.
+  Proof. induction 1; naive_solver. Qed.
+  Lemma val_related_Vchar {σ} ty n1 n2 :
+    val_related ty (Vchar n1) (Vchar n2) -> n1 = n2.
+  Proof. intros. exact: val_related_Vchar'. Qed.
 
-  (* this stronger property holds because pointers do not have a
-     raw representation. *)
-  Lemma val_related_Vptr' {σ : genv} ty v1 v2 :
-    val_related _ ty v1 v2 ->
+  (*
+  NOTE: This stronger property holds because pointers do not have a
+  raw representation. (That's future work.).
+  *)
+  Lemma val_related_Vptr' {σ} ty v1 v2 :
+    val_related ty v1 v2 ->
     forall p1, v1 = Vptr p1 -> Vptr p1 = v2.
-  Proof.
-    induction 1; simpl; intros; subst; eauto; try congruence.
-  Qed.
-  Lemma val_related_Vptr {σ : genv} ty p1 v2 :
-    val_related _ ty (Vptr p1) v2 ->
-    Vptr p1 = v2.
-  Proof. intros; eapply val_related_Vptr'; eauto. Qed.
+  Proof. induction 1; naive_solver. Qed.
+  Lemma val_related_Vptr {σ} ty p1 v2 :
+    val_related ty (Vptr p1) v2 -> Vptr p1 = v2.
+  Proof. intros. exact: val_related_Vptr'. Qed.
+  Lemma val_related_ptr_iff {σ} ty v1 v2 :
+    val_related (Tptr ty) v1 v2 <-> v1 = v2.
+  Proof. split. by inversion 1. by intros ->. Qed.
 
   Lemma val_related_Vundef' {σ} ty v1 v2 :
-    val_related σ ty v1 v2 ->
+    val_related ty v1 v2 ->
     v1 = Vundef -> v2 = Vundef.
   Proof. induction 1; naive_solver. Qed.
-
   Lemma val_related_Vundef {σ} ty v :
-    val_related σ ty Vundef v -> v = Vundef.
+    val_related ty Vundef v -> v = Vundef.
   Proof. intros. exact: val_related_Vundef'. Qed.
 
   Lemma val_related_Vraw' {σ} ty v1 v2 :
-    val_related σ ty v1 v2 ->
+    val_related ty v1 v2 ->
     forall r1 r2, v1 = Vraw r1 -> v2 = Vraw r2 -> r1 = r2.
   Proof. induction 1; naive_solver. Qed.
-
   Lemma val_related_Vraw {σ} ty r1 r2 :
-    val_related σ ty (Vraw r1) (Vraw r2) -> r1 = r2.
+    val_related ty (Vraw r1) (Vraw r2) -> r1 = r2.
   Proof. intros. exact: val_related_Vraw'. Qed.
 
-  Lemma val_related_qual :
-    forall σ t ty v1 v2,
-      val_related σ ty v1 v2 ->
-      val_related σ (Tqualified t ty) v1 v2.
-  Proof. intros; by constructor. Qed.
+  Lemma val_related_qual {σ} q ty v1 v2 :
+    val_related ty v1 v2 ->
+    val_related (Tqualified q ty) v1 v2.
+  Proof. by constructor. Qed.
 
-  #[global] Instance val_related_reflexive σ ty : Reflexive (val_related σ ty).
-  Proof. constructor. Qed.
-
-  #[global] Instance val_related_symmetric σ ty : Symmetric (val_related σ ty).
+  #[global] Instance val_related_equivalence {σ} ty : Equivalence (val_related ty).
   Proof.
-    rewrite /Symmetric; intros * Hval_related;
-      induction Hval_related; subst; by constructor.
+    split; red.
+    { done. }
+    { induction 1; auto. }
+    intros v1 v2. induction 1.
+    { done. }
+    { inversion 1; simplify_eq; auto. }
+    { inversion 1; simplify_eq; auto.
+      have [->] := raw_bytes_of_val_unique_encoding Hraw Hraw0. auto. }
+    { inversion 1; simplify_eq; auto.
+      have -> := raw_bytes_of_val_int_unique_val Hraw Hraw0. auto. }
   Qed.
 
-  #[global] Instance val_related_transitive σ ty : Transitive (val_related σ ty).
-  Proof.
-    rewrite /Transitive; intros * Hval_related1;
-      induction Hval_related1; intros * Hval_related2.
-    - by auto.
-    - constructor; apply IHHval_related1;
-        inversion Hval_related2; subst;
-        by [constructor | auto].
-    - inversion Hval_related2 as [ | | | ??? Hraw' ]; subst.
-      + by constructor.
-      + pose proof (raw_bytes_of_val_unique_encoding Hraw Hraw') as [= ->].
-        by constructor.
-    - inversion Hval_related2 as [ | | ??? Hraw' | ]; subst.
-      + by constructor.
-      + pose proof (raw_bytes_of_val_int_unique_val Hraw Hraw') as ->.
-        by constructor.
-  Qed.
+  #[local] Notation PROPER R1 R2 := (
+    Proper (R1 ==> eq ==> eq ==> eq ==> R2) (@val_related)
+  ) (only parsing).
 
-  #[global] Instance val_related_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) val_related.
+  #[global] Instance val_related_mono : PROPER genv_leq impl.
   Proof.
-    repeat red; intros ?? Heq **; subst; split; intros Hval;
-      induction Hval; subst; constructor; auto;
-      by [rewrite -> Heq in Hraw | rewrite <- Heq in Hraw].
+    intros σ1 σ2 Hσ ty?<- v1?<- v2?<-. red. induction 1; auto.
+    all: rewrite Hσ in Hraw; auto.
   Qed.
+  #[global] Instance val_related_flip_mono : PROPER (flip genv_leq) (flip impl).
+  Proof. repeat intro. exact: val_related_mono. Qed.
+  #[global] Instance val_related_flip_proper : PROPER genv_eq iff.
+  Proof. intros σ1 σ2 [??]; repeat intro. split; exact: val_related_mono. Qed.
 
-  Lemma raw_bytes_of_val_uint_length : forall σ v rs sz sgn,
-      raw_bytes_of_val σ (Tnum sz sgn) v rs ->
-      length rs = bytesNat sz.
+  (** TODO: Arguably misplaced *)
+  Lemma raw_bytes_of_val_uint_length {σ} v rs sz sgn :
+    raw_bytes_of_val σ (Tnum sz sgn) v rs ->
+    length rs = bytesNat sz.
   Proof.
-    intros * Hraw_bytes_of_val%raw_bytes_of_val_sizeof.
-    inversion Hraw_bytes_of_val as [Hsz]. clear Hraw_bytes_of_val.
-    by apply N_of_nat_inj in Hsz.
+    by intros [= ?%N_of_nat_inj]%raw_bytes_of_val_sizeof.
   Qed.
 End RAW_BYTES_MIXIN.
 
@@ -452,7 +471,7 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
         (exists n, v = Vchar n /\ 0 <= n < 2^(char_type.bitsN ct))%N <-> has_type_prop v (Tchar_ ct).
 
     Axiom has_type_prop_void : forall v,
-        has_type_prop v Tvoid <-> v = Vundef.
+        has_type_prop v Tvoid <-> v = Vvoid.
 
     Axiom has_type_prop_bool : forall v,
         has_type_prop v Tbool <-> exists b, v = Vbool b.
@@ -638,7 +657,7 @@ Proof.
 Qed.
 
 Lemma has_type_prop_val_related {σ} ty v1 v2 :
-  val_related σ ty v1 v2 ->
+  val_related ty v1 v2 ->
   has_type_prop v1 ty <-> has_type_prop v2 ty.
 Proof.
   induction 1.
@@ -646,4 +665,3 @@ Proof.
   { by rewrite -!has_type_prop_qual_iff. }
   all: by rewrite has_type_prop_raw_bytes_of_val.
 Qed.
-
