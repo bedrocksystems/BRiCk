@@ -354,8 +354,8 @@ magic wands.
     [| v = Vvoid |] **
 
     (**
-    [primR] rather than [tptstoR] is enough because C++ code never
-    uses the raw bytes underlying an inhabitant of type void.
+    [primR] is enough because C++ code never uses the raw bytes
+    underlying an inhabitant of type void.
     *)
     (addr |-> primR Tvoid qf Vvoid -* |={top}=>?u Q frees)
 
@@ -369,7 +369,7 @@ magic wands.
   | Tnullptr =>
     letI* v, free := wp_operand tu ρ init in
     let qf := cQp.mk (q_const cv) 1 in
-    addr |-> tptstoR (erase_qualifiers ty) qf v -* |={top}=>?u Q free
+    addr |-> tptsto_fuzzyR (erase_qualifiers ty) qf v -* |={top}=>?u Q free
 
     (* non-primitives are handled via prvalue-initialization semantics *)
   | Tarray _ _
@@ -380,8 +380,8 @@ magic wands.
     letI* p, free := wp_lval tu ρ init in
     let qf := cQp.mk (q_const cv) 1 in
     (*
-    [primR] rather than [tptstoR] is enough because C++ code never
-    uses the raw bytes underlying an inhabitant of a reference type.
+    [primR] is enough because C++ code never uses the raw bytes
+    underlying an inhabitant of a reference type.
 
     TODO: [ref]s are never mutable, but we use [qf] here for
     compatibility with [implicit_destruct_struct]
@@ -393,8 +393,8 @@ magic wands.
     letI* p, free := wp_xval tu ρ init in
     let qf := cQp.mk (q_const cv) 1 in
     (*
-    [primR] rather than [tptstoR] is enough because C++ code never
-    uses the raw bytes underlying an inhabitant of a reference type.
+    [primR] is enough because C++ code never uses the raw bytes
+    underlying an inhabitant of a reference type.
 
     TODO: [ref]s are never mutable, but we use [qf] here for
     compatibility with [implicit_destruct_struct]
@@ -506,7 +506,7 @@ Section wp_initialize.
   #[local] Notation VAL_INIT u tu ρ cv ty addr init Q := (Cbn (
     letI* v, free := wp_operand tu ρ init in
     let qf := cQp.mk (q_const cv) 1 in
-    addr |-> tptstoR (erase_qualifiers ty) qf v -* |={top}=>?u Q free
+    addr |-> tptsto_fuzzyR (erase_qualifiers ty) qf v -* |={top}=>?u Q free
   )%I) (only parsing).
 
   Lemma wp_initialize_unqualified_intro_val tu ρ cv ty (addr : ptr) init Q :
@@ -521,7 +521,7 @@ Section wp_initialize.
     iApply wp_operand_well_typed.
     iApply (wp_operand_wand with "wp"). iIntros (v f).
     rewrite can_init_void// has_type_void. iIntros "HQ ->".
-    rewrite tptstoR_Vvoid_primR. by iFrame "HQ".
+    rewrite tptsto_fuzzyR_Vvoid_primR. by iFrame "HQ".
   Qed.
 
   Lemma wp_initialize_unqualified_elim_val tu ρ cv ty addr init Q :
@@ -533,7 +533,7 @@ Section wp_initialize.
     (* void *)
     iIntros "wp".
     iApply (wp_operand_wand with "wp"). iIntros (v f) "(-> & HQ) R".
-    iApply ("HQ" with "[R]"). cbn. by rewrite tptstoR_Vvoid_primR.
+    iApply ("HQ" with "[R]"). cbn. by rewrite tptsto_fuzzyR_Vvoid_primR.
   Qed.
 
   (**
