@@ -188,11 +188,10 @@ public:
     }
 
     void VisitVarDecl(const VarDecl *decl, Flags flags) {
-        if (!templates_ && !decl->isTemplated()) {
-            return;
+        if (templates_ || !decl->isTemplated()) {
+            go(decl, flags);
         }
 
-        go(decl, flags);
     }
 
     void VisitFieldDecl(const FieldDecl *, Flags) {
