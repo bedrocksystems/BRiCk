@@ -823,7 +823,7 @@ Module Type Expr.
         http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0145r3.pdf
      *)
 
-    (** [wp_call pfty f es Q] calls [f] taking the arguments from the
+    (** [wp_call ooe pfty f es Q] calls [f] taking the arguments from the
         evaluations of [es] and then acts like [Q].
         [pfty] is the type that the call is being carried out using,
         i.e. the syntactic type of the function (it is a pointer type).
@@ -937,9 +937,9 @@ Module Type Expr.
       { iIntros "X"; iNext; iRevert "X"; iApply mspec_frame. eauto. }
     Qed.
 
-    (** [wp_mcall f this this_type fty es Q] calls member function pointed to by
-        [f] (of type [fty], after stripping the member pointer) on [this] (of
-        type [this_type]) using arguments [es] and continues with [Q].
+    (** [wp_mcall invoke ooe obj fty es Q] calls a member function on [obj].
+        The function being called is embedded in the [invoke] function which
+        handles the difference between virtual and direct dispatch.
 
         NOTE that the AST *must* insert implicit casts for casting qualifiers so
              that the types match up exactly up to top-level qualifiers, e.g.
