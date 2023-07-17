@@ -344,9 +344,11 @@ Variant VarRef : Set :=
 #[global] Instance: EqDecision VarRef.
 Proof. solve_decision. Defined.
 
-Variant call_type : Set := Virtual | Direct.
-#[global] Instance: EqDecision call_type.
+Variant dispatch_type : Set := Virtual | Direct.
+#[global] Instance: EqDecision dispatch_type.
 Proof. solve_decision. Defined.
+#[deprecated(since="20230716",note="use [dispatch_type]")]
+Notation call_type := dispatch_type.
 
 Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
 #[global] Instance: EqDecision ValCat.
@@ -373,8 +375,8 @@ Proof. solve_decision. Defined.
 
 Module operator_impl.
   Variant t : Set :=
-    | Func (_ : obj_name) (_ : type)
-    | MFunc (_ : obj_name) (_ : call_type) (_ : type).
+    | Func (fn_name : obj_name) (fn_type : type)
+    | MFunc (fn_name : obj_name) (_ : dispatch_type) (fn_type : type).
 
   #[global] Instance: EqDecision t := ltac:(solve_decision).
 End operator_impl.
@@ -423,7 +425,7 @@ Inductive Expr : Set :=
 
 | Emember  (obj : Expr) (_ : field) (_ : type)
   (* TODO: maybe replace the left branch use [Expr] here? *)
-| Emember_call (method : (obj_name * call_type * type) + Expr) (obj : Expr) (_ : list Expr) (_ : type)
+| Emember_call (method : (obj_name * dispatch_type * type) + Expr) (obj : Expr) (_ : list Expr) (_ : type)
 
 | Eoperator_call (_ : OverloadableOperator) (_ : operator_impl.t) (ls : list Expr) (_ : type)
   (* ^^ in the case of a [Mfunc], [ls] is non-empty and the first expression is the object *)
@@ -463,7 +465,7 @@ Inductive Expr : Set :=
 | Eopaque_ref (name : N) (_ : ValCat) (_ : type)
 | Eunsupported (_ : bs) (_ : ValCat) (_ : type)
 .
-Notation MethodRef := ((obj_name * call_type * type) + Expr)%type (only parsing).
+Notation MethodRef := ((obj_name * dispatch_type * type) + Expr)%type (only parsing).
 
 #[global] Instance Expr_eq_dec : EqDecision Expr.
 Proof.

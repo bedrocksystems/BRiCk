@@ -112,7 +112,7 @@ Notation Tvariable_array ty e := (Qconst (Tptr ty)) (only parsing).
 
 (** ** Expressions *)
 
-Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : call_type) (ft : type) (obj : Expr) (es : list Expr) (ty : type) : Expr :=
+Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : dispatch_type) (ft : type) (obj : Expr) (es : list Expr) (ty : type) : Expr :=
   Eoperator_call oo (operator_impl.MFunc nm ct ft) (obj :: es) ty.
 
 Definition Eoperator_call (oo : OverloadableOperator) (f : obj_name) (ft : type) (es : list Expr) (ty : type) : Expr :=

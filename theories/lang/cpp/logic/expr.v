@@ -909,7 +909,7 @@ Module Type Expr.
         is to have the representation of member function pointers be closures
         that perform [virtual] resolution if necessary.
      *)
-    Definition dispatch (ct : call_type) (fty : type) (fn : obj_name) (this_type : type)
+    Definition dispatch (ct : dispatch_type) (fty : type) (fn : obj_name) (this_type : type)
       (obj : ptr) (args : list ptr) (Q : ptr -> epred) : mpred :=
       let fty := normalize_type fty in
       match ct with
