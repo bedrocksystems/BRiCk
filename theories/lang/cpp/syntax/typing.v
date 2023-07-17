@@ -144,23 +144,6 @@ Notation drop_erase := drop_erase_qualifiers.
 #[deprecated(since="20230531", note="Use [erase_drop_qualifiers]")]
 Notation erase_drop := drop_erase_qualifiers.
 
-Lemma erase_drop_idemp_deprecated ty :
-  erase_qualifiers ty = ty -> drop_qualifiers ty = ty.
-Proof. move=><-. by rewrite drop_erase_qualifiers. Qed.
-#[deprecated(since="20230531", note="Use [drop_erase_qualifiers] or [drop_qualifiers_unqual]")]
-Notation erase_drop_idemp := erase_drop_idemp_deprecated.
-
-Lemma decompose_type_drop_deprecated t : (decompose_type t).2 = drop_qualifiers t.
-Proof. by rewrite drop_qualifiers_decompose_type. Qed.
-#[deprecated(since="20230531", note="Use [drop_qualifiers_decompose_type]")]
-Notation decompose_type_drop := decompose_type_drop_deprecated.
-
-Lemma decompose_erase_deprecated p t :
-  decompose_type t = p -> erase_qualifiers t = erase_qualifiers p.2.
-Proof. intros <-. by rewrite erase_qualifiers_decompose_type. Qed.
-#[deprecated(since="20230531", note="Use [erase_qualifiers_decompose_type]")]
-Notation decompose_erase := decompose_erase_deprecated.
-
 Lemma unqual_drop_qualifiers ty tq ty' : drop_qualifiers ty <> Tqualified tq ty'.
 Proof. by induction ty. Qed.
 Lemma unqual_erase_qualifiers ty tq ty' : erase_qualifiers ty <> Tqualified tq ty'.
