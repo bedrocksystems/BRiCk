@@ -979,22 +979,22 @@ Module Type Expr.
     Qed.
 
     Axiom wp_lval_member_call : forall ct ty fty f obj es Q,
-        wp_mcall (dispatch ct fty f (type_of obj)) evaluation_order.l_nd obj fty es (fun res free =>
+        wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es (fun res free =>
            lval_receive ty res $ fun v => Q v free)
         |-- wp_lval (Emember_call (inl (f, ct, fty)) obj es ty) Q.
 
     Axiom wp_xval_member_call : forall ct ty fty f obj es Q,
-        wp_mcall (dispatch ct fty f (type_of obj)) evaluation_order.l_nd obj fty es (fun res free =>
+        wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es (fun res free =>
            xval_receive ty res $ fun v => Q v free)
         |-- wp_xval (Emember_call (inl (f, ct, fty)) obj es ty) Q.
 
     Axiom wp_operand_member_call : forall ct ty fty f obj es Q,
-        wp_mcall (dispatch ct fty f (type_of obj)) evaluation_order.l_nd obj fty es (fun res free =>
+        wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es (fun res free =>
            operand_receive ty res $ fun v => Q v free)
         |-- wp_operand (Emember_call (inl (f, ct, fty)) obj es ty) Q.
 
     Axiom wp_init_member_call : forall ct f fty es (addr : ptr) ty obj Q,
-        (letI* res, free := wp_mcall (dispatch ct fty f (type_of obj)) evaluation_order.l_nd obj fty es in
+        (letI* res, free := wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es in
            init_receive addr res $ Q free)
         |-- wp_init ty addr (Emember_call (inl (f, ct, fty)) obj es ty) Q.
 
@@ -1217,13 +1217,13 @@ Module Type Expr.
                 |> (this |-> tblockR (Tnamed cls) (cQp.mut 1) -*
                    (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
                    letI* resultp := wp_fptr ctor_type (_global cnd) (this :: argps) in
-                   interp ifree $
-                     (* in the semantics, constructors return [void] *)
-                     resultp |-> primR Tvoid (cQp.mut 1) Vvoid **
-                     let Q := Q free in
-                     if q_const cv
-                     then wp_make_const tu this (Tnamed cls) Q
-                     else Q)
+                   letI* := interp ifree in
+                    (* in the semantics, constructors return [void] *)
+                    resultp |-> primR Tvoid (cQp.mut 1) Vvoid **
+                    let Q := Q free in
+                    if q_const cv
+                    then wp_make_const tu this (Tnamed cls) Q
+                    else Q)
              | _ => False (* unreachable b/c we got a constructor *)
              end
            | _ => ERROR ("Constructor not found.", cnd)

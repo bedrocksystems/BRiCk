@@ -350,6 +350,7 @@ Proof. solve_decision. Defined.
 #[deprecated(since="20230716",note="use [dispatch_type]")]
 Notation call_type := dispatch_type.
 
+(** Base value categories as of C++11. *)
 Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
 #[global] Instance: EqDecision ValCat.
 Proof. solve_decision. Defined.
