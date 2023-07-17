@@ -150,11 +150,6 @@ Proof. move=><-. by rewrite drop_erase_qualifiers. Qed.
 #[deprecated(since="20230531", note="Use [drop_erase_qualifiers] or [drop_qualifiers_unqual]")]
 Notation erase_drop_idemp := erase_drop_idemp_deprecated.
 
-Lemma decompose_type_drop_deprecated t : (decompose_type t).2 = drop_qualifiers t.
-Proof. by rewrite drop_qualifiers_decompose_type. Qed.
-#[deprecated(since="20230531", note="Use [drop_qualifiers_decompose_type]")]
-Notation decompose_type_drop := decompose_type_drop_deprecated.
-
 Lemma decompose_erase_deprecated p t :
   decompose_type t = p -> erase_qualifiers t = erase_qualifiers p.2.
 Proof. intros <-. by rewrite erase_qualifiers_decompose_type. Qed.
