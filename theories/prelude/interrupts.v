@@ -47,7 +47,14 @@ Record IntConfig : Set :=
   ; int_owner : IntOwner
   ; int_status : IntStatus }.
 
-(* The IntConfig value before the first assign_int *)
+(** * The IntConfig value before the first assign_int
+
+From NOVA IFSPEC 5.5.2 (assign_int): other than [int_status := IntMasked], other
+values (CPU, trigger) are undefined for the initial interrupts. Furthermore,
+when the interrupt is masked, other values do not matter much, except when
+an EC requests a ctrl_sm DOWN on the interrupt sm, then NOVA checks that the
+EC's CPU matches the config's CPU.
+*)
 Definition initialIntConfig :=
   {| int_cpu := cpu.of_N 0
   ;  int_trigger := TriggerEdge
