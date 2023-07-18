@@ -14,13 +14,6 @@ code where they are immediately reduced away. They could be tucked
 into a module that only gets imported by cpp2v-generated files.
 *)
 
-(** TODO: Misplaced *)
-Fixpoint string_to_bytes (b : bs) : list N :=
-  match b with
-  | BS.EmptyString => nil
-  | BS.String b bs => Byte.to_N b :: string_to_bytes bs
-  end.
-
 (** ** Notations *)
 (**
 TODO: These seem misplaced.

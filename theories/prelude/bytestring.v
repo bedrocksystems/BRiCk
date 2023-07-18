@@ -86,8 +86,18 @@ Module Import BS.
     - by rewrite IHb', Ascii.ascii_of_byte_of_ascii.
   Qed.
 
-  #[deprecated(since="2021-09-21", note="Use [decide (arg1 = arg2)]")]
-  Notation t_dec := bytestring_eq_dec.
+  Definition bytes_to_string (xs : list N) : bs :=
+    BS.parse ((default Byte.x00 ∘ Byte.of_N) <$> xs).
+
+  Definition string_to_bytes (b : bs) : list N :=
+    Byte.to_N <$> BS.print b.
+
+  #[global] Instance bytes_to_string_to_bytes : Cancel eq bytes_to_string string_to_bytes.
+  Proof.
+    intros bs. unfold bytes_to_string, string_to_bytes; induction bs; csimpl. done.
+    by rewrite IHbs, Byte.of_to_N.
+  Qed.
+  (* TODO: [string_to_bytes (bytes_to_string bs) = bs], but it only holds for "valid" [bs]. *)
 
   (* [sepBy sep ls] concatenates the elements in [ls] using
     the separator [sep] *)
