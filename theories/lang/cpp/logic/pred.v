@@ -257,10 +257,10 @@ Module Type CPP_LOGIC
     Axiom tptsto_live : forall {σ} ty (q : cQp.t) p v,
       @tptsto σ ty q p v |-- live_ptr p ** True.
 
-    (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
+    (** [mdc_path σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object that can be reached
         using the *path* [mdc].
-        - if [mdc = []] then this object identity is not initialized yet,
+        - if [mdc = []] then this object mdc_path is not initialized yet,
           e.g. because its base classes are still being constructed.
         - otherwise, [mdc] is the *path* from the most derived class to this
           object. For example, suppose you have:
@@ -280,44 +280,44 @@ Module Type CPP_LOGIC
           for a fully constructed object of type `D` (at pointer [d]), you would
           have:
           [[
-          identity "::D" ["::D"]           1  d **
-          identity "::B" ["::D","::B"]      1 (d ., _base "::B") **
-          identity "::A" ["::D","::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
-          identity "::C" ["::D","::C"]      1 (d ,, _base "::C") **
-          idenitty "::A" ["::D","::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
+          mdc_path "::D" ["::D"]           1  d **
+          mdc_path "::B" ["::D","::B"]      1 (d ., _base "::B") **
+          mdc_path "::A" ["::D","::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
+          mdc_path "::C" ["::D","::C"]      1 (d ,, _base "::C") **
+          mdc_path "::A" ["::D","::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
           ]]
           in the partially constructed state, where "::D" has not yet been constructed
           but the base classes have been, you have the following:
           [[
-          identity "::B" ["::B"]      1 (d ., _base "::B") **
-          identity "::A" ["::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
-          identity "::C" ["::C"]      1 (d ,, _base "::C") **
-          idenitty "::A" ["::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
+          mdc_path "::B" ["::B"]      1 (d ., _base "::B") **
+          mdc_path "::A" ["::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
+          mdc_path "::C" ["::C"]      1 (d ,, _base "::C") **
+          mdc_path "::A" ["::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
           ]]
-          note that you do not get [identity "::D" [] 1 d] at this point, you
-          get [identity "::D" ["::D"] 1 d] when you update all the other identities
+          note that you do not get [mdc_path "::D" [] 1 d] at this point, you
+          get [mdc_path "::D" ["::D"] 1 d] when you update all the other identities
           (but not atomically)
 
-        [identity] is primarily used to dispatch virtual function calls.
+        [mdc_path] is primarily used to dispatch virtual function calls.
 
         compilers can use the ownership here to represent dynamic dispatch
         tables.
      *)
-    Parameter identity : forall {σ : genv}
+    Parameter mdc_path : forall {σ : genv}
         (this : globname) (most_derived : list globname),
         cQp.t -> ptr -> mpred.
-    #[global] Declare Instance identity_cfractional σ this mdc : CFractional1 (identity this mdc).
-    #[global] Declare Instance identity_cfrac_valid {σ} cls path : CFracValid1 (identity cls path).
-    #[global] Declare Instance identity_timeless : Timeless5 (@identity).
-    #[global] Declare Instance identity_strict_valid σ this mdc q p : Observe (strict_valid_ptr p) (identity this mdc q p).
+    #[global] Declare Instance mdc_path_cfractional σ this mdc : CFractional1 (mdc_path this mdc).
+    #[global] Declare Instance mdc_path_cfrac_valid {σ} cls path : CFracValid1 (mdc_path cls path).
+    #[global] Declare Instance mdc_path_timeless : Timeless5 (@mdc_path).
+    #[global] Declare Instance mdc_path_strict_valid σ this mdc q p : Observe (strict_valid_ptr p) (mdc_path this mdc q p).
 
     (** cpp2v-core#194: Agreement? *)
 
-    (** this allows you to forget an object identity, necessary for doing
+    (** this allows you to forget an object mdc_path, necessary for doing
         placement [new] over an existing object.
      *)
-    Axiom identity_forget : forall σ mdc this p,
-        @identity σ this mdc (cQp.m 1) p |-- |={↑pred_ns}=> @identity σ this nil (cQp.m 1) p.
+    Axiom mdc_path_forget : forall σ mdc this p,
+        @mdc_path σ this mdc (cQp.m 1) p |-- |={↑pred_ns}=> @mdc_path σ this nil (cQp.m 1) p.
 
     (** the pointer points to the code
 
@@ -1204,8 +1204,8 @@ Section with_cpp.
   #[global] Instance tptsto_as_cfractional ty : AsCFractional2 (tptsto ty).
   Proof. solve_as_cfrac. Qed.
 
-  #[global] Instance identity_as_cfractional this mdc :
-    AsCFractional1 (identity this mdc).
+  #[global] Instance mdc_path_as_cfractional this mdc :
+    AsCFractional1 (mdc_path this mdc).
   Proof. solve_as_cfrac. Qed.
 
   #[global] Instance tptsto_observe_nonnull t q p v :

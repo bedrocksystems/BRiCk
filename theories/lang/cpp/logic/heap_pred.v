@@ -24,10 +24,12 @@ Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 Section defs.
   Context `{Σ : cpp_logic}.
 
-  (** object identity *)
+  (** ** Object derivations
+      The path from the object to its complete object.
+   *)
   Definition derivationR {σ : genv} (cls : globname) (mdc : list globname)
              (q : cQp.t) : Rep :=
-    as_Rep (identity cls mdc q).
+    as_Rep (mdc_path cls mdc q).
 
   Definition validR_def : Rep := as_Rep valid_ptr.
   Definition validR_aux : seal (@validR_def). Proof. by eexists. Qed.
@@ -649,9 +651,9 @@ Section with_cpp.
   Proof.
     red. eapply Rep_entails_at. intros.
     rewrite _at_as_Rep _at_pers svalidR_eq _at_as_Rep.
-    apply identity_strict_valid.
+    apply mdc_path_strict_valid.
   Qed.
-  #[global] Instance identity_not_null p cls path q : Observe [| p <> nullptr |] (p |-> derivationR cls path q).
+  #[global] Instance mdc_path_not_null p cls path q : Observe [| p <> nullptr |] (p |-> derivationR cls path q).
   Proof.
     red.
     iIntros "X".
