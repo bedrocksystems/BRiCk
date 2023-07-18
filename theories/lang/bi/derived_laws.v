@@ -199,6 +199,14 @@ Section derived_laws.
     (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_and_1, exist_and_2. Qed.
 
+  Lemma exist_split {A B} (Φ : A * B → PROP) :
+    (∃ ab, Φ ab) ⊣⊢ (∃ a b, Φ (a, b)).
+  Proof.
+    iSplit.
+    iDestruct 1 as ([a b]) "A"; by iExists a, b.
+    iDestruct 1 as (a b) "A"; by iExists (a, b).
+  Qed.
+
   Lemma forall_sep_bot {A} (Φ1 Φ2 : A → PROP) (R : relation A) (bot : A) :
     (∀ x, R bot x) → Proper (R ==> (⊢)) Φ1 → Proper (R ==> (⊢)) Φ2 →
     (∀ a, Φ1 a ∗ Φ2 a) ⊢ (∀ a, Φ1 a) ∗ (∀ a, Φ2 a).
