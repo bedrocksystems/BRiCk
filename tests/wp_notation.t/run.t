@@ -335,7 +335,7 @@
          → list (wp.WPE.M ptr)
            → list type * function_arity
              → list expr.Expr
-               → (list ptr → list ptr → FreeTemps → mpred) → mpred
+               → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   
   Arguments NOTATION_wp_args_nowrap tys_ar es%list_scope 
     Q es%list_scope Q%function_scope
@@ -351,7 +351,7 @@
          → list (wp.WPE.M ptr)
            → list type * function_arity
              → list expr.Expr
-               → (list ptr → list ptr → FreeTemps → mpred) → mpred
+               → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   
   Arguments NOTATION_wp_args_wrap tys_ar es%list_scope 
     Q es%list_scope Q%function_scope
@@ -725,7 +725,7 @@
          → list (wp.WPE.M ptr)
            → list type * function_arity
              → list expr.Expr
-               → (list ptr → list ptr → FreeTemps → mpred) → mpred
+               → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   
   Arguments NOTATION_wp_args_nowrap tys_ar es%list_scope 
     Q es%list_scope Q%function_scope
@@ -742,7 +742,7 @@
          → list (wp.WPE.M ptr)
            → list type * function_arity
              → list expr.Expr
-               → (list ptr → list ptr → FreeTemps → mpred) → mpred
+               → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   
   Arguments NOTATION_wp_args_wrap tys_ar es%list_scope 
     Q es%list_scope Q%function_scope
