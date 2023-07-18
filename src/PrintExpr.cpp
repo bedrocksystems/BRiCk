@@ -549,7 +549,6 @@ public:
                 cprint.printExpr(i, print, li);
             });
         } else {
-            using namespace logging;
             logging::unsupported() << "unsupported operator call";
             logging::die();
         }
