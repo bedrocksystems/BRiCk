@@ -387,8 +387,8 @@ Section with_array_R.
 
   Lemma arrayR_snoc_obs p xs y
         `{Hobs : ∀ x, Observe (type_ptrR ty) (R x)} :
-        p |-> arr.arrayR ty R (xs ++ [y])
-    -|- p |-> arr.arrayR ty R xs ** p .[ty ! Z.of_nat (length xs)] |-> R y.
+        p |-> arrayR ty R (xs ++ [y])
+    -|- p |-> arrayR ty R xs ** p .[ty ! Z.of_nat (length xs)] |-> R y.
   Proof.
     rewrite arrayR_snoc !_at_sep !_at_offsetR _at_sep. f_equiv.
     rewrite (comm bi_sep).

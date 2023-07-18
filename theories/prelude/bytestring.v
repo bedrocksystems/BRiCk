@@ -86,8 +86,6 @@ Module Import BS.
     - by rewrite IHb', Ascii.ascii_of_byte_of_ascii.
   Qed.
 
-  #[deprecated(since="2021-09-21", note="Use [decide (arg1 = arg2)]")]
-  Notation t_dec := bytestring_eq_dec.
 
   (* [sepBy sep ls] concatenates the elements in [ls] using
     the separator [sep] *)
