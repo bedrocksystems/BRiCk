@@ -64,6 +64,8 @@ Module cstring.
   Definition t := BS.t.
   Bind Scope bs_scope with t.
 
+  (* TODO: Prove equivalent to
+  [BS.bytes_to_string (take (List.length zs - 1) zs)] *)
   Definition _from_zstring (zs : zstring.t) : cstring.t :=
     BS.parse (map (byte_of_ascii ∘ ascii_of_N)
                   (take (List.length zs - 1) zs)).
