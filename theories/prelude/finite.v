@@ -71,6 +71,10 @@ Lemma elem_of_filter_enum `{Finite A} `{∀ x, Decision (P x)} (a : A) :
   a ∈ filter P (enum A) ↔ P a.
 Proof. set_solver. Qed.
 
+Lemma list_find_enum_total `{Finite A} (a : A) :
+  is_Some (list_find (a =.) (enum A)).
+Proof. apply (list_find_elem_of _ _ a) => //. set_solver. Qed.
+
 (* stdlib adapters *)
 
 Section finite_stdlib.
