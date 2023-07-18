@@ -86,6 +86,12 @@ Module Import BS.
     - by rewrite IHb', Ascii.ascii_of_byte_of_ascii.
   Qed.
 
+  Fixpoint string_to_bytes (b : bs) : list N :=
+    match b with
+    | BS.EmptyString => nil
+    | BS.String b bs => Byte.to_N b :: string_to_bytes bs
+    end.
+
 
   (* [sepBy sep ls] concatenates the elements in [ls] using
     the separator [sep] *)
