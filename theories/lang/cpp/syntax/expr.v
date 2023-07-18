@@ -375,12 +375,15 @@ Variant OffsetInfo : Set :=
 Proof. solve_decision. Defined.
 
 Module operator_impl.
-  Variant t : Set :=
+  Variant t {type : Set} : Set :=
     | Func (fn_name : obj_name) (fn_type : type)
     | MFunc (fn_name : obj_name) (_ : dispatch_type) (fn_type : type).
+  #[global] Arguments t _ : clear implicits.
 
-  #[global] Instance: EqDecision t := ltac:(solve_decision).
+  #[global] Instance: forall (type : Set), EqDecision type -> EqDecision (t type) :=
+    ltac:(solve_decision).
 End operator_impl.
+#[global] Notation operator_impl := (operator_impl.t type).
 
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : type)
@@ -428,7 +431,7 @@ Inductive Expr : Set :=
   (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * dispatch_type * type) + Expr) (obj : Expr) (_ : list Expr) (_ : type)
 
-| Eoperator_call (_ : OverloadableOperator) (_ : operator_impl.t) (ls : list Expr) (_ : type)
+| Eoperator_call (_ : OverloadableOperator) (_ : operator_impl) (ls : list Expr) (_ : type)
   (* ^^ in the case of a [Mfunc], [ls] is non-empty and the first expression is the object *)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
