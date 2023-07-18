@@ -58,17 +58,54 @@ mlock Definition aligned_ofR `{Σ : cpp_logic} {σ} (ty : type) : Rep :=
   ∃ align : N, [| align_of ty = Some align |] ** alignedR align.
 #[global] Arguments aligned_ofR {_ Σ σ} _.
 
-(** [tptstoR ty q v] is [q] ownership of a memory location of type [ty] storing the value [v]
- *)
+mlock Definition nonnullR `{Σ : cpp_logic} : Rep :=
+  as_Rep (fun addr => [| addr <> nullptr |]).
+#[global] Arguments nonnullR {_ _} : assert.	(* mlock bug *)
+
+Section nonnullR.
+  Context `{Σ : cpp_logic, σ : genv}.
+
+  #[global] Instance nonnullR_persistent : Persistent nonnullR.
+  Proof. rewrite unlock. apply _. Qed.
+  #[global] Instance nonnullR_affine : Affine nonnullR.
+  Proof. rewrite unlock. apply _. Qed.
+  #[global] Instance nonnullR_timeless : Timeless nonnullR.
+  Proof. rewrite unlock. apply _. Qed.
+
+  #[global] Instance type_ptrR_observe_nonnull ty :
+    Observe nonnullR (type_ptrR ty).
+  Proof.
+    rewrite nonnullR.unlock type_ptrR_eq /type_ptrR_def.
+    exact: as_Rep_observe.
+  Qed.
+End nonnullR.
+
+(**
+[tptstoR ty q v] is [q] ownership of a memory location of type [ty]
+storing the value [v].
+
+Whereas [tptstoR] is precise w.r.t. the value (i.e., given two
+fractions, one learns the values are equal), [tptstoR_fuzzyR ty q v]
+lets one view the contents of the memory as either [v] or a related
+value [v'] (see [val_related] and [tptsto_fuzzyR_val_related]).
+*)
 mlock Definition tptstoR `{Σ : cpp_logic} {σ : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
   as_Rep (fun p => tptsto ty q p v).
-#[global] Arguments tptstoR {_ Σ σ} _ _ _.
+#[global] Arguments tptstoR {_ _ _} _ _ _ : assert.	(* mlock bug *)
+
+mlock Definition tptsto_fuzzyR `{Σ : cpp_logic, σ : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
+  Exists v', [| val_related σ ty v v' |] ** tptstoR ty q v'.
+#[global] Arguments tptsto_fuzzyR {_ _ _} _ _ _ : assert.	(* mlock bug *)
 
 Section tptstoR.
   Context `{Σ : cpp_logic} {σ : genv}.
 
+  (** [tptstoR] *)
+
   Lemma _at_tptstoR (p : ptr) ty q v : p |-> tptstoR ty q v -|- tptsto ty q p v.
   Proof. by rewrite tptstoR.unlock _at_as_Rep. Qed.
+
+  #[global] Instance: Params (@tptstoR) 2 := {}.
 
   #[global] Instance tptstoR_proper :
     Proper (genv_eq ==> eq ==> eq ==> eq ==> (⊣⊢)) (@tptstoR _ _).
@@ -99,35 +136,19 @@ Section tptstoR.
   Proof. rewrite tptstoR.unlock. solve_cfrac_valid. Qed.
 
   #[global] Instance tptstoR_observe_agree ty q1 q2 v1 v2 :
-    Observe2 [| val_related _ ty v1 v2 |] (tptstoR ty q1 v1) (tptstoR ty q2 v2).
+    Observe2 [| v1 = v2 |] (tptstoR ty q1 v1) (tptstoR ty q2 v2).
   Proof.
     rewrite tptstoR.unlock; apply: as_Rep_only_provable_observe_2=> p.
   Qed.
 
-  #[global] Instance tptstoR_observe_agree_Vint ty q1 q2 v1 v2 :
-    Observe2 [| v1 = v2 |] (tptstoR ty q1 (Vint v1)) (tptstoR ty q2 (Vint v2)).
-  Proof.
-    iIntros "X Y". iDestruct (observe_2 [| val_related _ _ _ _ |] with "X Y") as "%".
-    eapply val_related_Vint in H; eauto.
-  Qed.
-
-  #[global] Instance tptstoR_observe_agree_Vchar ty q1 q2 v1 v2 :
-    Observe2 [| v1 = v2 |] (tptstoR ty q1 (Vchar v1)) (tptstoR ty q2 (Vchar v2)).
-  Proof.
-    iIntros "X Y". iDestruct (observe_2 [| val_related _ _ _ _ |] with "X Y") as "%".
-    eapply val_related_Vchar in H; eauto.
-  Qed.
-
-  #[global] Instance tptstoR_observe_agree_Vptr ty q1 q2 v1 v2 :
-    Observe2 [| Vptr v1 = v2 |] (tptstoR ty q1 (Vptr v1)) (tptstoR ty q2 v2).
-  Proof.
-    iIntros "X Y". iDestruct (observe_2 [| val_related _ _ _ _ |] with "X Y") as "%".
-    eapply val_related_Vptr in H; eauto.
-  Qed.
-
-  #[global] Instance tptstoR_welltyped p ty q v :
+  #[global] Instance _at_tptstoR_welltyped p ty q v :
     Observe (has_type_or_undef v ty) (p |-> tptstoR ty q v).
   Proof. rewrite _at_tptstoR. refine _. Qed.
+  #[global] Instance tptstoR_welltyped ty q v :
+    Observe (pureR (has_type_or_undef v ty)) (tptstoR ty q v).
+  Proof.
+    apply observe_at=>p. rewrite _at_pureR. apply _.
+  Qed.
 
   #[global] Instance tptstoR_type_ptrR ty q v :
     Observe (type_ptrR ty) (tptstoR ty q v).
@@ -135,7 +156,141 @@ Section tptstoR.
     rewrite tptstoR.unlock type_ptrR_eq/type_ptrR_def.
     apply as_Rep_observe. intros; apply tptsto_type_ptr.
   Qed.
+
+  #[global] Instance tptstoR_nonnull ty q v : Observe nonnullR (tptstoR ty q v).
+  Proof. trans (type_ptrR ty); apply _. Qed.
+
+  (**
+  The various [tptsto] accessors in this file support low-level
+  mechanisms like constant casts (see [primR_wp_const_val]) and
+  transporting resources along [ptr_congP] and [offset_congP] (see,
+  e.g., [rawR_ptr_congP_transport]).
+  *)
+  Lemma tptstoR_tptsto_acc (p : ptr) ty q v :
+    p |-> tptstoR ty q v |--
+      tptsto ty q p v **
+      (Forall p' q' v', tptsto ty q' p' v' -* p' |-> tptstoR ty q' v').
+  Proof.
+    setoid_rewrite _at_tptstoR. iIntros "$". auto.
+  Qed.
+
+  (** [tptsto_fuzzyR] *)
+
+  Lemma _at_tptsto_fuzzyR (p : ptr) ty q v :
+    p |-> tptsto_fuzzyR ty q v -|-
+      Exists v', [| val_related σ ty v v' |] ** p |-> tptstoR ty q v'.
+  Proof.
+    rewrite tptsto_fuzzyR.unlock. rewrite _at_exists. f_equiv=>v'.
+    by rewrite _at_sep _at_only_provable.
+  Qed.
+
+  #[global] Instance: Params (@tptsto_fuzzyR) 2 := {}.
+  #[global] Instance tptsto_fuzzyR_mono :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> bi_entails) (@tptsto_fuzzyR _ _).
+  Proof.
+    intros σ1 σ2 Hσ ??-> ??-> ??->.
+    rewrite tptsto_fuzzyR.unlock. by setoid_rewrite Hσ.
+  Qed.
+  #[global] Instance tptsto_fuzzyR_flip_mono :
+    Proper (flip genv_leq ==> eq ==> eq ==> eq ==> flip bi_entails) (@tptsto_fuzzyR _ _).
+  Proof. repeat intro. by apply tptsto_fuzzyR_mono. Qed.
+  #[global] Instance tptsto_fuzzyR_proper :
+    Proper (genv_eq ==> eq ==> eq ==> eq ==> equiv) (@tptsto_fuzzyR _ _).
+  Proof.
+    intros σ1 σ2 [??] ??? ??? ???. split'; by apply tptsto_fuzzyR_mono.
+  Qed.
+
+  #[global] Instance tptsto_fuzzyR_timeless : Timeless3 tptsto_fuzzyR.
+  Proof. rewrite tptsto_fuzzyR.unlock. apply _. Qed.
+
+  #[global] Instance tptsto_fuzzyR_cfractional ty : CFractional1 (tptsto_fuzzyR ty).
+  Proof. rewrite tptsto_fuzzyR.unlock. apply _. Qed.
+  #[global] Instance tptsto_fuzzyR_cfrac_valid ty : CFracValid1 (tptsto_fuzzyR ty).
+  Proof. rewrite tptsto_fuzzyR.unlock. solve_cfrac_valid. Qed.
+
+  #[global] Instance tptsto_fuzzyR_welltyped ty q v :
+    Observe (pureR (has_type_or_undef v ty)) (tptsto_fuzzyR ty q v).
+  Proof.
+    rewrite tptsto_fuzzyR.unlock. iIntros "(% & % & R)".
+    iDestruct (tptstoR_welltyped with "R") as "#?".
+    by rewrite has_type_or_undef_val_related.
+  Qed.
+  #[global] Instance _at_tptsto_fuzzyR_welltyped p ty q v :
+    Observe (has_type_or_undef v ty) (p |-> tptsto_fuzzyR ty q v).
+  Proof. apply _at_observe_pureR, _. Qed.
+
+  #[global] Instance tptsto_fuzzyR_type_ptrR ty q v :
+    Observe (type_ptrR ty) (tptsto_fuzzyR ty q v).
+  Proof. rewrite tptsto_fuzzyR.unlock. apply _. Qed.
+
+  #[global] Instance tptsto_fuzzyR_nonnull ty q v :
+    Observe nonnullR (tptsto_fuzzyR ty q v).
+  Proof. rewrite tptsto_fuzzyR.unlock. apply _. Qed.
+
+  #[global] Instance tptstoR_tptsto_fuzzyR_agree ty q1 q2 v1 v2 :
+    Observe2 [| val_related σ ty v1 v2 |] (tptstoR ty q1 v1) (tptsto_fuzzyR ty q2 v2).
+  Proof.
+    rewrite tptsto_fuzzyR.unlock. iIntros "R1 (% & % & R2)".
+    iDestruct (observe_2 [| _ = _ |] with "R1 R2") as %?. simplify_eq. auto.
+  Qed.
+  #[global] Instance tptsto_fuzzyR_agree ty q1 q2 v1 v2 :
+    Observe2 [| val_related σ ty v1 v2 |] (tptsto_fuzzyR ty q1 v1) (tptsto_fuzzyR ty q2 v2).
+  Proof.
+    rewrite tptsto_fuzzyR.unlock. iIntros "(% & % & R1) (% & % & R2)".
+    iDestruct (observe_2 [| _ = _ |] with "R1 R2") as %?. simplify_eq.
+    iIntros "!> !%". by etrans.
+  Qed.
+
+  Lemma tptsto_fuzzyR_intro ty q v : tptstoR ty q v |-- tptsto_fuzzyR ty q v.
+  Proof.
+    rewrite tptsto_fuzzyR.unlock -(bi.exist_intro v). by iIntros "$".
+  Qed.
+
+  Lemma tptsto_fuzzyR_elim_r ty q1 q2 v1 v2 :
+    tptstoR ty q1 v1 ** tptsto_fuzzyR ty q2 v2 |-- tptstoR ty (q1 + q2) v1.
+  Proof.
+    rewrite tptsto_fuzzyR.unlock. iIntros "(R1 & (% & % & R2))".
+    iDestruct (observe_2 [| _ = _ |] with "R1 R2") as %?. simplify_eq.
+    iCombine "R1 R2" as "$".
+  Qed.
+  Lemma tptsto_fuzzyR_elim_l ty q1 q2 v1 v2 :
+    tptsto_fuzzyR ty q1 v1 ** tptstoR ty q2 v2 |-- tptstoR ty (q1 + q2) v2.
+  Proof. by rewrite comm tptsto_fuzzyR_elim_r comm_L. Qed.
+
+  Lemma tptsto_fuzzyR_val_related ty q v1 v2 :
+    val_related σ ty v1 v2 ->
+    tptsto_fuzzyR ty q v1 -|- tptsto_fuzzyR ty q v2.
+  Proof.
+    intros. rewrite tptsto_fuzzyR.unlock. f_equiv=>v'. do 2!f_equiv. split; by etrans.
+  Qed.
+
+  Lemma tptsto_fuzzyR_tptsto_acc (p : ptr) ty q v :
+    p |-> tptsto_fuzzyR ty q v |--
+      Exists v', [| val_related σ ty v v' |] ** tptsto ty q p v' **
+      (Forall p' q' v', [| val_related σ ty v v' |] -* tptsto ty q' p' v' -* p' |-> tptsto_fuzzyR ty q' v).
+  Proof.
+    setoid_rewrite _at_tptsto_fuzzyR. iIntros "(%v' & %Hval & R)".
+    iDestruct (tptstoR_tptsto_acc with "R") as "(R & HR)".
+    iExists v'. iFrame (Hval) "R". iIntros (??? Hval') "R". iExists _. iFrame (Hval').
+    iApply ("HR" with "R").
+  Qed.
 End tptstoR.
+
+(**
+[primR ty q v]: the argument pointer points to an initialized value
+[v] of C++ type [ty].
+
+NOTE [ty] *must* be a primitive type.
+*)
+mlock Definition primR `{Σ : cpp_logic, resolve : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
+  [| ~~ is_raw v |] **
+  (**
+  TODO: Clients often use [primR (erase_qualifiers ty)]. Consider
+  baking [erase_qualifiers] in, or omitting [drop_qualifiers].
+  *)
+  pureR (has_type v (drop_qualifiers ty)) **
+  tptsto_fuzzyR ty q v.
+#[global] Arguments primR {_ _ _} _ _ _ : assert.	(* mlock bug *)
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -145,59 +300,43 @@ Section with_cpp.
       of the argument. *)
   Parameter varargsR : list (type * ptr) -> Rep.
 
-
-  (** [primR ty q v]: the argument pointer points to an initialized value [v] of C++ type [ty].
-   *
-   * NOTE [ty] *must* be a primitive type.
-   *)
-  Definition primR_def {resolve : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
-    as_Rep (fun p : ptr => tptsto ty q p v **
-             [| not(exists raw, v = Vraw raw) |] **
-             has_type v (drop_qualifiers ty)).
-  Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
-  Definition primR := primR_aux.(unseal).
-  Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
-  #[global] Arguments primR {resolve} ty q v : rename.
-
-  Definition primR_alt {σ} ty q v :
-    primR ty q v -|-
-      tptstoR ty q v **
-      [| not(exists raw, v = Vraw raw) |] **
-      pureR (has_type v (drop_qualifiers ty)).
+  Lemma _at_primR {σ} (p : ptr) ty q v :
+    p |-> primR ty q v -|-
+      [| ~~ is_raw v |] **
+      has_type v (drop_qualifiers ty) **
+      p |-> tptsto_fuzzyR ty q v.
   Proof.
-    apply Rep_equiv_at => p.
-    rewrite primR_eq /primR_def tptstoR.unlock.
-    by rewrite !_at_sep !_at_as_Rep _at_only_provable.
+    by rewrite primR.unlock !_at_sep _at_only_provable _at_pureR.
   Qed.
 
+  #[global] Instance: Params (@primR) 2 := {}.
   #[global] Instance primR_proper :
-    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR).
+    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR _ _).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
-    rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
+    rewrite primR.unlock. by setoid_rewrite Hσ.
   Qed.
   #[global] Instance primR_mono :
-    Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> (⊢)) (@primR).
+    Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> (⊢)) (@primR _ _).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
-    rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
+    rewrite primR.unlock. by setoid_rewrite Hσ.
   Qed.
 
   #[global] Instance primR_timeless resolve ty q v
     : Timeless (primR ty q v).
-  Proof. rewrite primR_eq. apply _. Qed.
-
+  Proof. rewrite primR.unlock. apply _. Qed.
 
   #[global] Instance primR_cfractional resolve ty :
     CFractional1 (primR ty).
-  Proof. rewrite primR_eq. apply _. Qed.
+  Proof. rewrite primR.unlock. apply _. Qed.
   #[global] Instance primR_as_cfractional resolve ty :
     AsCFractional1 (primR ty).
   Proof. solve_as_cfrac. Qed.
 
   #[global] Instance primR_observe_cfrac_valid resolve ty :
     CFracValid1 (primR ty).
-  Proof. rewrite primR_eq. solve_cfrac_valid. Qed.
+  Proof. rewrite primR.unlock. solve_cfrac_valid. Qed.
 
   Section TEST.
     Context {σ : genv} (p : ptr).
@@ -229,14 +368,9 @@ Section with_cpp.
       (primR ty q1 v1)
       (primR ty q2 v2).
   Proof.
-    rewrite primR_eq/primR_def; apply: as_Rep_only_provable_observe_2=> p.
-    iIntros "(Htptsto1 & %Hnotraw1 & _)
-             (Htptsto2 & %Hnotraw2 & _)".
-    iApply (observe_2 with "Htptsto1 Htptsto2").
-    iApply observe_2_derive_only_provable => Hvs.
-    induction Hvs; subst; auto; exfalso;
-        [apply Hnotraw1 | apply Hnotraw2];
-        eauto.
+    rewrite primR.unlock. iIntros "(% & _ & R1) (% & _ & R2)".
+    iDestruct (observe_2 [| val_related _ _ _ _ |] with "R1 R2") as %?.
+    eauto using val_related_not_raw.
   Qed.
 
   (* Typical [f] are [Vint], [Vn] etc; this gives agreement for [u64R] etc. *)
@@ -248,7 +382,7 @@ Section with_cpp.
 
   #[global] Instance primR_observe_has_type resolve ty q v :
     Observe (pureR (has_type v ty)) (primR ty q v).
-  Proof. rewrite primR_alt has_type_drop_qualifiers. apply _. Qed.
+  Proof. rewrite primR.unlock has_type_drop_qualifiers. apply _. Qed.
 
   #[global] Instance _at_primR_observe_has_type resolve ty q v (p : ptr) :
     Observe (has_type v ty) (p |-> primR ty q v).
@@ -256,12 +390,25 @@ Section with_cpp.
 
   #[global] Instance primR_observe_has_type_prop resolve ty q v :
     Observe [| has_type_prop v ty |] (primR ty q v).
-  Proof. apply observe_at=>p. rewrite _at_only_provable -has_type_has_type_prop. apply _. Qed.
+  Proof.
+    apply observe_at=>p. rewrite _at_only_provable -has_type_has_type_prop.
+    apply _.
+  Qed.
 
   Lemma primR_has_type_prop {σ} ty q v :
     primR (resolve:=σ) ty q v |--
     primR (resolve:=σ) ty q v ** [| has_type_prop v ty |].
   Proof. apply: observe_elim. Qed.
+
+  Lemma primR_tptsto_acc {σ} p ty q v :
+    p |-> primR ty q v |--
+      Exists v', [| val_related σ ty v v' |] ** tptsto ty q p v' **
+      (Forall p' q' v', [| val_related σ ty v v' |] -* tptsto ty q' p' v' -* p' |-> primR ty q' v).
+  Proof.
+    setoid_rewrite _at_primR. iIntros "(%Hraw & #T & R)".
+    iDestruct (tptsto_fuzzyR_tptsto_acc with "R") as "(%v' & %Hval & R & HR)".
+    iExists v'. iFrame (Hval Hraw) "R T". iFrame "HR".
+  Qed.
 
   (**
      [uninitR ty q]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
@@ -325,16 +472,12 @@ Section with_cpp.
   Lemma primR_uninitR {resolve} ty q1 q2 v :
     primR ty q1 v |--
     uninitR ty q2 -*
-    primR ty (q1 ⋅ q2) Vundef.
+    primR ty (q1 + q2) Vundef.
   Proof.
-    apply Rep_entails_at=>p/=.
-    rewrite primR_eq/primR_def uninitR_eq/uninitR_def !_at_wand !_at_as_Rep.
-    iIntros "[T1 [%Hnotraw Hty]] /= T2".
-    iDestruct (observe_2 [| val_related resolve ty v Vundef |] with "T1 T2") as "%Hrelated".
-    assert (v = Vundef)
-      by (remember Vundef as v'; induction Hrelated;
-          try (by inversion Heqv'); auto); subst.
-    iCombine "T1 T2" as "T"; by iFrame "∗%".
+    rewrite primR.unlock uninitR_tptstoR. iIntros "(_ & #T & R1) R2".
+    iDestruct (observe_2 [| val_related _ _ _ _ |] with "R2 R1") as %->%val_related_Vundef.
+    iFrame "T". iDestruct (tptsto_fuzzyR_elim_l with "[$R1 $R2]") as "R".
+    by iDestruct (tptsto_fuzzyR_intro with "R") as "$".
   Qed.
 
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
@@ -354,9 +497,15 @@ Section with_cpp.
 
   Lemma anyR_tptstoR_val_2 {σ} t q v : is_value_type t -> tptstoR t q v |-- anyR t q.
   Proof. intros. by rewrite anyR_tptstoR_val// -(bi.exist_intro v). Qed.
-
   Lemma anyR_tptstoR_ref_2 {σ} t q v : tptstoR (Tref t) q v |-- anyR (Tref t) q.
   Proof. intros. by rewrite anyR_tptstoR_ref -(bi.exist_intro v). Qed.
+
+  Lemma anyR_tptsto_fuzzyR_val_2 {σ} t q v :
+    is_value_type t -> tptsto_fuzzyR t q v |-- anyR t q.
+  Proof.
+    intros. rewrite tptsto_fuzzyR.unlock. iIntros "(% & % & R)".
+    by rewrite anyR_tptstoR_val_2.
+  Qed.
 
   (**
   TODO: With some minor cleanup we ought to be able to derive
@@ -366,11 +515,6 @@ Section with_cpp.
   Axiom primR_anyR : ∀ {σ}  t q v, primR t q v |-- anyR t q.
   Axiom uninitR_anyR : ∀ {σ} t q, uninitR t q |-- anyR t q.
 
-  Lemma tptstoR_raw_anyR {σ} q r : tptstoR Tu8 q (Vraw r) |-- anyR Tu8 q.
-  Proof. exact: anyR_tptstoR_val_2. Qed.
-  Lemma tptsto_raw_anyR {σ} p q r : tptsto Tu8 q p (Vraw r) |-- p |-> anyR Tu8 q.
-  Proof. by rewrite -(tptstoR_raw_anyR _ r) _at_tptstoR. Qed.
-
   #[global] Declare Instance anyR_type_ptr_observe σ ty q : Observe (type_ptrR ty) (anyR ty q).
 
   #[global] Instance anyR_as_fractional resolve ty : AsCFractional0 (anyR ty).
@@ -379,9 +523,6 @@ Section with_cpp.
   Axiom _at_anyR_ptr_congP_transport : forall {σ} p p' ty q,
     ptr_congP σ p p' ** type_ptr ty p' |-- p |-> anyR ty q -* p' |-> anyR ty q.
 End with_cpp.
-
-#[global] Typeclasses Opaque primR.
-#[global] Opaque primR.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
@@ -425,8 +566,6 @@ Section with_cpp.
   Lemma _at_type_ptrR (p : ptr) ty : _at p (type_ptrR ty) -|- type_ptr ty p.
   Proof. by rewrite type_ptrR_eq _at_eq. Qed.
 
-
-
   Lemma svalidR_validR : svalidR |-- validR.
   Proof.
     rewrite validR_eq/validR_def svalidR_eq/svalidR_def.
@@ -467,21 +606,6 @@ Section with_cpp.
   Proof. apply _. Qed.
   #[global] Instance nullR_as_cfractional q : AsCFractional nullR (λ _, nullR) q.
   Proof. solve_as_cfrac. Qed.
-
-  Definition nonnullR_def : Rep :=
-    as_Rep (fun addr => [| addr <> nullptr |]).
-  Definition nonnullR_aux : seal (@nonnullR_def). Proof. by eexists. Qed.
-  Definition nonnullR := nonnullR_aux.(unseal).
-  Definition nonnullR_eq : @nonnullR = _ := nonnullR_aux.(seal_eq).
-
-  #[global] Hint Opaque nonnullR : typeclass_instances.
-
-  #[global] Instance nonnullR_persistent : Persistent nonnullR.
-  Proof. rewrite nonnullR_eq. apply _. Qed.
-  #[global] Instance nonnullR_affine : Affine nonnullR.
-  Proof. rewrite nonnullR_eq. apply _. Qed.
-  #[global] Instance nonnullR_timeless : Timeless nonnullR.
-  Proof. rewrite nonnullR_eq. apply _. Qed.
 
   (** ** [alignedR] *)
   #[global] Instance alignedR_persistent {al} : Persistent (alignedR al).
@@ -569,7 +693,7 @@ Section with_cpp.
 
   Lemma null_nonnull (R : Rep) : nullR |-- nonnullR -* R.
   Proof.
-    rewrite nullR_eq /nullR_def nonnullR_eq /nonnullR_def.
+    rewrite nullR_eq /nullR_def nonnullR.unlock.
     constructor=>p /=. rewrite monPred_at_wand/=.
     by iIntros "->" (? <-%ptr_rel_elim) "%".
   Qed.
@@ -666,18 +790,10 @@ Section with_cpp.
   (** Observing [type_ptr] *)
   #[global]
   Instance primR_type_ptr_observe ty q v : Observe (type_ptrR ty) (primR ty q v).
-  Proof.
-    red. rewrite primR_eq/primR_def.
-    apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
-    apply: observe.
-  Qed.
+  Proof. rewrite primR.unlock. apply _. Qed.
   #[global]
   Instance uninitR_type_ptr_observe ty q : Observe (type_ptrR ty) (uninitR ty q).
-  Proof.
-    red. rewrite uninitR_eq/uninitR_def.
-    apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
-    apply: observe.
-  Qed.
+  Proof. rewrite uninitR_tptstoR. apply _. Qed.
 
   (** Observing [valid_ptr] *)
   #[global]
@@ -720,15 +836,11 @@ Section with_cpp.
   #[global]
   Instance primR_nonnull_observe {ty q v} :
     Observe nonnullR (primR ty q v).
-  Proof.
-    rewrite nonnullR_eq primR_eq. apply monPred_observe=>p /=. apply _.
-  Qed.
+  Proof. rewrite primR.unlock. apply _. Qed.
   #[global]
   Instance uninitR_nonnull_observe {ty q} :
     Observe nonnullR (uninitR ty q).
-  Proof.
-    rewrite nonnullR_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
-  Qed.
+  Proof. rewrite uninitR_tptstoR. apply _. Qed.
   Axiom anyR_nonnull_observe : ∀ {ty q}, Observe nonnullR (anyR ty q).
   #[global] Existing Instance anyR_nonnull_observe.
 
@@ -768,45 +880,28 @@ Section with_cpp.
     case_match; refine _.
   Qed.
 
-  #[global] Instance type_ptrR_observe_nonnull ty :
-    Observe nonnullR (type_ptrR ty).
+  Lemma primR_tptsto_fuzzyR ty q v : primR ty q v |-- tptsto_fuzzyR ty q v.
+  Proof. rewrite primR.unlock. iIntros "(_ & _ & $)". Qed.
+
+  Definition is_raw_or_undef (v : val) : bool :=
+    if v is (Vundef | Vraw _) then true else false.
+
+  Lemma tptsto_fuzzyR_Vxxx_primR ty q v :
+    ~~ is_raw_or_undef v -> tptsto_fuzzyR ty q v -|- primR ty q v.
   Proof.
-    apply monPred_observe=>p /=.
-    rewrite monPred_at_type_ptrR nonnullR_eq /=. refine _.
+    split'; try apply primR_tptsto_fuzzyR.
+    rewrite primR.unlock. iIntros "R".
+    iDestruct (observe_elim (pureR $ has_type_or_undef _ _) with "R") as "($ & #T)".
+    rewrite has_type_or_undef_unfold -has_type_drop_qualifiers.
+    rewrite pureR_or pureR_only_provable. iDestruct "T" as "[$ | ->]".
+    by destruct v. done.
   Qed.
 
-  Section tptstoR_primR.
-    Lemma primR_tptstoR ty q v :
-      primR ty q v |-- tptstoR ty q v.
-    Proof. rewrite primR_alt. iIntros "($ & _)". Qed.
-
-    Lemma tptstoR_Vxxx_primR ty q v :
-      match v with
-      | Vundef | Vraw _ => False
-      | _ => True
-      end ->
-      tptstoR ty q v -|- primR ty q v.
-    Proof.
-      split'; try apply primR_tptstoR.
-      rewrite tptstoR.unlock primR_eq/primR_def.
-      apply as_Rep_mono; iIntros (p) "X".
-      iDestruct (observe_elim (has_type_or_undef _ _) with "X") as "[$ #HT]".
-      rewrite has_type_or_undef_unfold -has_type_drop_qualifiers.
-      iDestruct "HT" as "[$ | ->]"; last done.
-      by iIntros "!%" ([? ->]).
-    Qed.
-
-    Lemma tptstoR_Vint_primR ty q z :
-      tptstoR ty q (Vint z) -|- primR ty q (Vint z).
-    Proof. by eapply tptstoR_Vxxx_primR. Qed.
-    Lemma tptstoR_Vchar_primR ty q n :
-      tptstoR ty q (Vchar n) -|- primR ty q (Vchar n).
-    Proof. by eapply tptstoR_Vxxx_primR. Qed.
-    Lemma tptstoR_Vptr_primR ty q p :
-      tptstoR ty q (Vptr p) -|- primR ty q (Vptr p).
-    Proof. by eapply tptstoR_Vxxx_primR. Qed.
-  End tptstoR_primR.
-
+  Lemma tptstoR_Vxxx_primR ty q v :
+    ~~ is_raw_or_undef v -> tptstoR ty q v |-- primR ty q v.
+  Proof.
+    intros. by rewrite tptsto_fuzzyR_intro tptsto_fuzzyR_Vxxx_primR.
+  Qed.
 End with_cpp.
 
 mlock Definition structR `{Σ : cpp_logic} {σ : genv} (cls : globname) (q : cQp.t) : Rep :=
@@ -891,13 +986,6 @@ End padding.
 
 #[global] Typeclasses Opaque derivationR.
 #[global] Typeclasses Opaque type_ptrR validR svalidR.
-
-#[deprecated(note="since 2022-04-07; use `nonnullR` instead")]
-Notation is_nonnull := nonnullR (only parsing).
-#[deprecated(note="since 2022-04-07; use `nonnullR_eq` instead")]
-Notation is_nonnull_eq := nonnullR_eq (only parsing).
-#[deprecated(note="since 2022-04-07; use `nonnullR_def` instead")]
-Notation is_nonnull_def := nonnullR_def (only parsing).
 
 #[deprecated(note="since 2022-04-07; use `nullR` instead")]
 Notation is_null := nullR (only parsing).

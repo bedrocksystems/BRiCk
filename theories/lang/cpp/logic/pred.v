@@ -205,33 +205,30 @@ Module Type CPP_LOGIC
     Axiom tptsto_nonnull : forall {σ} ty q a,
       @tptsto σ ty q nullptr a |-- False.
 
-    Axiom tptsto_proper :
+    #[global] Declare Instance tptsto_params : Params (@tptsto) 2.
+    #[global] Declare Instance tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
-    Axiom tptsto_mono :
+    #[global] Declare Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    #[global] Existing Instances tptsto_proper tptsto_mono.
 
     #[global] Declare Instance tptsto_timeless : Timeless5 (@tptsto).
     #[global] Declare Instance tptsto_cfractional {σ} ty : CFractional2 (tptsto ty).
 
     #[global] Declare Instance tptsto_cfrac_valid {σ} t : CFracValid2 (tptsto t).
 
-    Axiom tptsto_welltyped : forall {σ} p ty q v,
+    #[global] Declare Instance tptsto_welltyped : forall {σ} p ty q v,
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
-    #[global] Existing Instances tptsto_welltyped.
 
-    Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
-      Observe2 [| val_related σ ty v1 v2 |]
+    (**
+    NOTE: We'll eventually need the stronger [tptsto_learn : ∀ {σ} ty
+    q1 q2 p v1 v2, <absorb> (tptsto ty q1 p v1) //\\ <absorb> (tptsto
+    ty q2 p v2) |-- [! v1 = v2 !]] but setting up the proof in
+    [simple_pred] now would be a bit of a digression.
+    *)
+    #[global] Declare Instance tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
+      Observe2 [| v1 = v2 |]
                (@tptsto σ ty q1 p v1)
                (@tptsto σ ty q2 p v2).
-    #[global] Existing Instances tptsto_agree.
-
-    (* TODO (JH/PG): Add in a proper instance using this which allows us to rewrite
-         `val_related` values within `tptsto`s.
-
-         <https://gitlab.com/bedrocksystems/cpp2v-core/-/merge_requests/377#note_530611061> *)
-    Axiom tptsto_val_related_transport : forall {σ} ty q p v1 v2,
-        [| val_related σ ty v1 v2 |] |-- @tptsto σ ty q p v1 -* @tptsto σ ty q p v2.
 
     (** The allocation is alive. Neither persistent nor fractional.
       See https://eel.is/c++draft/basic.stc.general#4 and
@@ -1220,8 +1217,7 @@ Section with_cpp.
     tptsto ty (cQp.mk c1 1) p v1 ** tptsto ty (cQp.mk c2 q) p v2 |-- False.
   Proof.
     iIntros "[T1 T2]".
-    iDestruct (tptsto_agree with "T1 T2") as %Hvs.
-    iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T1".
+    iDestruct (tptsto_agree with "T1 T2") as %->.
     iCombine "T1 T2" as "T".
     by iDestruct (cfrac_valid_2 with "T") as %?%Qp.not_add_le_l.
   Qed.

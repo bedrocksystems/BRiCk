@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2022 BedRock Systems, Inc.
+ * Copyright (c) 2022-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -90,7 +90,7 @@ Section rawsR_transport.
       iIntros "[_ %]"; iFrame "%"; iApply (type_ptr_valid with "tptr2").
     - rewrite /rawsR !arrayR_cons !_at_sep !_at_type_ptrR !_at_offsetR; fold (rawsR q rs).
       iIntros "[_ [raw raws]]"; iFrame "#"; iSplitL "raw".
-      + iApply (_at_rawR_ptr_congP_transport with "congP"); iFrame "∗".
+      + iApply (rawR_ptr_congP_transport with "congP"); iFrame "∗".
       + destruct rs.
         * rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
           iDestruct "raws" as "[#valid %]"; iFrame "%".
@@ -468,7 +468,7 @@ Section primR_transport.
     rewrite primR_to_rawsR !_at_exists.
     iDestruct "prim" as (rs) "H"; iExists rs.
     rewrite !_at_sep !_at_only_provable !_at_type_ptrR.
-    iDestruct "H" as "(raws & %raw_bytes & _)"; iFrame "#%".
+    iDestruct "H" as "(%raw_bytes & _ & raws)"; iFrame "#%".
     pose proof (raw_bytes_of_val_sizeof raw_bytes) as Hlen.
     rewrite Hlen in Hsz'; inversion Hsz'; subst.
     rewrite lengthN_fold.
@@ -523,8 +523,7 @@ Section with_rawable.
                 !_at_sep !_at_offsetR.
         iIntros "(#tptr & raw & raws)".
         iFrame "#"; iSplitL "raw".
-        * rewrite rawR_eq/rawR_def _at_as_Rep.
-          by iApply tptsto_raw_anyR.
+        * rewrite rawR.unlock. by rewrite anyR_tptsto_fuzzyR_val_2.
         * rewrite o_sub_0 in IHrs; auto; rewrite offset_ptr_id in IHrs.
           iApply IHrs.
           rewrite dropN_zero /rawsR _at_type_ptrR; iFrame "#∗".
