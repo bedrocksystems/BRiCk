@@ -207,6 +207,11 @@ Lemma glob_def_genv_compat_enum {σ gn tu} {Hσ : tu ⊧ σ} ty brs
   exists brs', glob_def σ gn = Some (Genum ty brs').
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_genum. Qed.
 
+Lemma glob_def_genv_compat_constant {σ gn tu} {Hσ : tu ⊧ σ} ty e
+  (Hl : tu !! gn = Some (Gconstant ty (Some e))) :
+  glob_def σ gn = Some (Gconstant ty (Some e)).
+Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gconstant. Qed.
+
 (* XXX rename/deprecate? *)
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
 Proof. by intros ? ->. Qed.
