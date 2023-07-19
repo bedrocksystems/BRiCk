@@ -1335,3 +1335,6 @@ Section with_cpp.
   Proof. rewrite -strict_valid_valid; apply _. Qed.
 
 End with_cpp.
+
+#[deprecated(since="20230719",note="use [mdc_path]")]
+Notation identity := mdc_path (only parsing).
