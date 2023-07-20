@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -409,6 +409,10 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
      the intermediate [offset] might not [eval_offset] to [Some] integral value.
    *)
   (* #[global] Instance ptr_cong_trans {σ : genv} : Transitive (ptr_cong σ). *)
+
+  Lemma offset_ptr_cong σ (p : ptr) o1 o2 :
+    offset_cong σ o1 o2 -> ptr_cong σ (p ,, o1) (p ,, o2).
+  Proof. rewrite /ptr_cong. naive_solver. Qed.
 
   (** ** [same_address] lemmas *)
 
