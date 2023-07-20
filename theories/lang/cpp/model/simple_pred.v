@@ -901,23 +901,23 @@ Module SimpleCPP.
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
-    Definition identity {σ : genv} (this : globname) (most_derived : list globname)
+    Definition mdc_path {σ : genv} (this : globname) (most_derived : list globname)
                (q : cQp.t) (p : ptr) : mpred := strict_valid_ptr p.
 
-    Instance identity_cfractional {σ} this mdc : CFractional1 (identity this mdc).
-    Proof. move =>p q1 q2. rewrite /identity. iSplit; [ iIntros "#P" | iIntros "[#P ?]" ]; iFrame "#". Qed.
-    Axiom identity_cfrac_valid : forall {σ} cls path,
-      CFracValid1 (identity cls path).
-    Instance identity_timeless {σ} this mdc q p : Timeless (identity this mdc q p) := _.
-    Instance identity_strict_valid {σ} this mdc q p : Observe (strict_valid_ptr p) (identity this mdc q p).
+    Instance mdc_path_cfractional {σ} this mdc : CFractional1 (mdc_path this mdc).
+    Proof. move =>p q1 q2. rewrite /mdc_path. iSplit; [ iIntros "#P" | iIntros "[#P ?]" ]; iFrame "#". Qed.
+    Axiom mdc_path_cfrac_valid : forall {σ} cls path,
+      CFracValid1 (mdc_path cls path).
+    Instance mdc_path_timeless {σ} this mdc q p : Timeless (mdc_path this mdc q p) := _.
+    Instance mdc_path_strict_valid {σ} this mdc q p : Observe (strict_valid_ptr p) (mdc_path this mdc q p).
     Proof. refine _. Qed.
 
-    (** this allows you to forget an object identity, necessary for doing
+    (** this allows you to forget an object mdc_path, necessary for doing
         placement [new] over an existing object.
      *)
-    Theorem identity_forget : forall σ mdc this p,
-        @identity σ this mdc (cQp.mut 1) p |-- |={↑pred_ns}=> @identity σ this nil (cQp.mut 1) p.
-    Proof. rewrite /identity. eauto. Qed.
+    Theorem mdc_path_forget : forall σ mdc this p,
+        @mdc_path σ this mdc (cQp.mut 1) p |-- |={↑pred_ns}=> @mdc_path σ this nil (cQp.mut 1) p.
+    Proof. rewrite /mdc_path. eauto. Qed.
 
     Definition tptsto' {σ : genv} (t : type) (q : cQp.t) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
@@ -1334,6 +1334,26 @@ Module SimpleCPP.
     #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
     Proof. Admitted.
+
+    Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
+
+
+    #[global] Declare Instance struct_padding_timeless :  Timeless4 (@struct_padding).
+    #[global] Declare Instance struct_padding_fractional : forall {σ : genv} p cls, CFractional (struct_padding p cls).
+    #[global] Declare Instance struct_padding_frac_valid :  forall {σ : genv} p cls, CFracValid0 (struct_padding p cls).
+
+    #[global] Declare Instance struct_padding_type_ptr_observe : forall {σ : genv} p cls q, Observe (type_ptr (Tnamed cls) p) (struct_padding p cls q).
+
+    Axiom union_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> option nat -> mpred.
+
+    #[global] Declare Instance union_padding_timeless :  Timeless5 (@union_padding).
+    #[global] Declare Instance union_padding_fractional : forall {σ : genv} p cls, CFractional1 (union_padding p cls).
+    #[global] Declare Instance union_padding_frac_valid :  forall {σ : genv} p cls, CFracValid1 (union_padding p cls).
+
+    #[global] Declare Instance union_padding_type_ptr_observe : forall {σ : genv} p cls q active,
+        Observe (type_ptr (Tnamed cls) p) (union_padding p cls q active).
+    #[global] Declare Instance union_padding_agree : forall {σ : genv} p cls q q' i i',
+        Observe2 [| i = i' |] (union_padding p cls q i) (union_padding p cls q' i').
 
   End with_cpp.
 

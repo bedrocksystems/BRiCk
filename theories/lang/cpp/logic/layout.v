@@ -17,48 +17,8 @@ Require Export bedrock.lang.cpp.logic.raw.
 Require Import bedrock.lang.bi.linearity.
 
 Section with_Σ.
-  Context `{Σ : cpp_logic}.
+  Context `{Σ : cpp_logic} {σ : genv}.
 
-  (** TODO move to pred.v *)
-  (* TODO swap the order of [cQp.t] and [globname] *)
-  Axiom struct_paddingR : forall {σ:genv}, cQp.t -> globname -> Rep.
-
-  (* [union_paddingR q cls active_member] is [q] fractional ownership of
-     the union padding for union [cls] for the active member
-     [active_member]. When there is no active member the [active_member]
-     is [None], otherwise it is [Some idx] where [idx] is the numeric
-     index of member field.
-
-     TODO swap the order of [cQp.t] and [globname].
-  *)
-  Axiom union_paddingR : forall {σ:genv}, cQp.t -> globname -> option nat -> Rep.
-
-  Context {σ : genv}.
-
-  #[global] Declare Instance struct_padding_fractional : CFractional1 struct_paddingR.
-  #[global] Declare Instance struct_padding_timeless : Timeless2 struct_paddingR.
-  #[global] Declare Instance struct_padding_frac_valid : CFracValid1 struct_paddingR.
-
-  #[global] Declare Instance union_padding_fractional : CFractional2 union_paddingR.
-  #[global] Declare Instance union_padding_timeless : Timeless3 union_paddingR.
-  #[global] Declare Instance union_padding_frac_valid : CFracValid2 union_paddingR.
-
-  #[global] Instance struct_padding_as_fractional : AsCFractional1 struct_paddingR.
-  Proof. solve_as_cfrac. Qed.
-  #[global] Instance union_padding_as_fractional : AsCFractional2 union_paddingR.
-  Proof. solve_as_cfrac. Qed.
-
-  #[global] Declare Instance struct_paddingR_type_ptr_observe : forall q cls, Observe (type_ptrR (Tnamed cls)) (struct_paddingR q cls).
-  #[global] Instance struct_paddingR_strict_valid_observe q cls : Observe svalidR (struct_paddingR q cls).
-  Proof. rewrite -type_ptrR_svalidR; apply _. Qed.
-  #[global] Instance struct_paddingR_valid_observe q cls : Observe validR (struct_paddingR q cls).
-  Proof. rewrite -svalidR_validR; apply _. Qed.
-
-  #[global] Declare Instance union_paddingR_type_ptr_observe : forall q cls i, Observe (type_ptrR (Tnamed cls)) (union_paddingR q cls i).
-  #[global] Instance union_paddingR_strict_valid_observe q cls i : Observe svalidR (union_paddingR q cls i).
-  Proof. rewrite -type_ptrR_svalidR; apply _. Qed.
-  #[global] Instance union_paddingR_valid_observe q cls i : Observe validR (union_paddingR q cls i).
-  Proof. rewrite -svalidR_validR; apply _. Qed.
 
   (** Convert a `struct` to its raw representation.
    Justified by the concept of object representation.
@@ -67,7 +27,7 @@ Section with_Σ.
   Axiom struct_to_raw : forall cls st rss q,
     glob_def σ cls = Some (Gstruct st) ->
     st.(s_layout) ∈ [POD;Standard] ->
-       struct_paddingR q cls **
+       structR cls q **
        ([∗ list] b ∈ st.(s_bases),
           Exists rs, [| rss !! FieldOrBase.Base b.1 = Some rs |] ** _base cls b.1 |-> rawsR q rs) **
        ([∗ list] fld ∈ st.(s_fields),
@@ -103,7 +63,7 @@ Section with_Σ.
       let qt := mut_type fld q in
       _field f |-> R qt.2 qt.1) **
     (if has_vtable st then derivationR cls nil q else emp) **
-    struct_paddingR q cls.
+    structR cls q.
 
   (** implicit destruction of an aggregate *)
   Axiom implicit_destruct_struct
@@ -124,12 +84,12 @@ Section with_Σ.
   (** [union_def R cls st q] is the ownership of the union where [R ty q] is
       owned for each field and base class *)
   Definition union_def (R : type -> cQp.t -> Rep) (cls : globname) (st : translation_unit.Union) (q : cQp.t) : Rep :=
-    union_paddingR q cls None \\//
+    unionR cls q None \\//
     ([\/ list] idx |-> m ∈ st.(u_fields),
       let f := _field {| f_name := m.(mem_name) ; f_type := cls |} in
       let qt := mut_type m q in
       f |-> R qt.2 qt.1 **
-      union_paddingR q cls (Some idx)).
+      unionR cls q (Some idx)).
 
   (** implicit destruction of a union. *)
   Axiom implicit_destruct_union : forall (cls : globname) un q,
@@ -162,7 +122,7 @@ Section with_Σ.
       -* [∧ list] idx ↦ it ∈ un.(u_fields),
           let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
           |={↑pred_ns}=> f |-> tblockR (erase_qualifiers it.(mem_type)) (cQp.mut 1) **
-               union_paddingR resolve (cQp.mut 1) cls (Some idx).
+               unionR cls (cQp.mut 1) (Some idx).
 *)
 
   (** decompose a union into the classical disjunction of the alternatives
@@ -245,10 +205,4 @@ Section with_Σ.
            _sub t (Z.of_nat i) |-> tblockR t q.
   Proof. Admitted.
 
-  #[global] Instance struct_paddingR_nonnull q cls : Observe nonnullR (struct_paddingR q cls).
-  Proof.
-    iIntros "H".
-    iDestruct (observe (type_ptrR _) with "H") as "#T".
-    iApply (observe with "T").
-  Qed.
 End with_Σ.

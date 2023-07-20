@@ -102,6 +102,8 @@ Section type.
     underlying.
   Definition Tunderlying (enum : type) {underlying : type} : type :=
     underlying.
+  Definition Tunary_xform (name : bs) (arg : type) {result : type} : type :=
+    result.
 
 End type.
 Notation Tdecay_type original adjusted := (adjusted) (only parsing).
@@ -109,6 +111,12 @@ Notation Tincomplete_array ty := (Qconst (Tptr ty)) (only parsing).
 Notation Tvariable_array ty e := (Qconst (Tptr ty)) (only parsing).
 
 (** ** Expressions *)
+
+Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : dispatch_type) (ft : type) (obj : Expr) (es : list Expr) (ty : type) : Expr :=
+  Eoperator_call oo (operator_impl.MFunc nm ct ft) (obj :: es) ty.
+
+Definition Eoperator_call (oo : OverloadableOperator) (f : obj_name) (ft : type) (es : list Expr) (ty : type) : Expr :=
+  Eoperator_call oo (operator_impl.Func f ft) es ty.
 
 Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
   Ecast Cintegral (Econst_ref (Gname e) ety) Prvalue ty.

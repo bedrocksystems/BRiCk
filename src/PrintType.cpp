@@ -73,11 +73,23 @@ public:
         cprint.printQualType(type->getModifiedType(), print);
     }
 
+    static const char*
+    getTransformName(UnaryTransformType::UTTKind k) {
+#if CLANG_VERSION_MAJOR >= 16
+        switch (k) {
+#define TRANSFORM_TYPE_TRAIT_DEF(Enum, Str) case UnaryTransformType::UTTKind::Enum: return #Str;
+#include "clang/Basic/TransformTypeTraits.def"
+#undef TRANSFORM_TYPE_TRAIT_DEF
+        default: return "unknown";
+        }
+#else
+        return "unknown";
+#endif
+    }
+
     void VisitUnaryTransformType(const UnaryTransformType* type,
                                  CoqPrinter& print, ClangPrinter& cprint) {
-
-        switch (type->getUTTKind()) {
-
+        switch (auto kind = type->getUTTKind()) {
         case UnaryTransformType::UTTKind::EnumUnderlyingType:
 
             // An `__underlying_type (type)` expression
@@ -90,21 +102,24 @@ public:
 
             print.ctor("@Tunderlying", false);
             print.type() << fmt::nbsp;
-
-            // The enumeration
-            cprint.printQualType(type->getBaseType(), print);
-            print.output() << fmt::nbsp;
-
-            // The underlying type
-            cprint.printQualType(type->getUnderlyingType(), print);
-            print.end_ctor();
-
             break;
 
         default:
-            unsupported_type(type, print, cprint);
+            print.ctor("Tunary_xform", false);
+            print.type() << fmt::nbsp;
+
+            print.str(getTransformName(kind));
+            print.output() << "%bs" << fmt::nbsp;
             break;
         }
+
+        // The argument
+        cprint.printQualType(type->getBaseType(), print);
+        print.output() << fmt::nbsp;
+
+        // The result
+        cprint.printQualType(type->getUnderlyingType(), print);
+        print.end_ctor();
     }
 
     void VisitDeducedType(const DeducedType* type, CoqPrinter& print,

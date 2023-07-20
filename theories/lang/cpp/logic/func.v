@@ -14,7 +14,7 @@ Require Import bedrock.lang.cpp.semantics.
 
 From bedrock.lang.cpp.logic Require Import
   pred path_pred heap_pred wp builtins cptr const
-  layout initializers translation_unit destroy.
+  initializers translation_unit destroy.
 
 (* UPSTREAM. *)
 Lemma wand_frame {PROP : bi} (R Q Q' : PROP) :
@@ -426,9 +426,9 @@ Section with_cpp.
       initialize the bases, then the identity, then initialize the members, following
       http://eel.is/c++draft/class.base.init#13 (except virtual base classes, which are unsupported) *)
       this |-> svalid_members cls s.(s_fields) -*
-      bases (ident (members (this |-> struct_paddingR (cQp.mut 1) cls -* Q)))
-      (* NOTE we get the [struct_paddingR] at the end since
-         [struct_paddingR (cQp.mut 1) cls |-- type_ptrR (Tnamed cls)].
+      bases (ident (members (this |-> structR cls (cQp.mut 1) -* Q)))
+      (* NOTE we get the [structR] at the end since
+         [structR (cQp.mut 1) cls |-- type_ptrR (Tnamed cls)].
        *)
     end.
 
@@ -541,7 +541,7 @@ Section with_cpp.
           |> let ρ va := Remp (Some thisp) va Tvoid in
              bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ cleanup =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (fun which => thisp |-> union_paddingR (cQp.mut 1) ctor.(c_class) which -*
+                  (fun which => thisp |-> unionR ctor.(c_class) (cQp.mut 1) which -*
                              wp ρ body (Kcleanup cleanup (Kreturn_void (|={⊤}=> |> Forall p, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p))))))
         | Some _ =>
           ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
@@ -593,7 +593,7 @@ Section with_cpp.
       let epilog :=
           match tu !! dtor.(d_class) with
           | Some (Gstruct s) => Some $ fun (thisp : ptr) =>
-            thisp |-> struct_paddingR (cQp.mut 1) dtor.(d_class) **
+            thisp |-> structR dtor.(d_class) (cQp.mut 1) **
             wpd_members dtor.(d_class) thisp s.(s_fields)
                (* ^ fields are destroyed *)
                (thisp |-> wp_revert_identity dtor.(d_class)
@@ -625,7 +625,7 @@ Section with_cpp.
         let ρ := Remp (Some thisp) None Tvoid in
           |> (* the function prolog consumes a step. *)
              match body return Kpred -> mpred with
-             | Defaulted => fun k => k Normal
+             | Defaulted => fun k => |={top}=> k Normal
              | UserDefined body => wp ρ body
              end (Kreturn_void (epilog thisp))
       | _ , _ => False

@@ -11,13 +11,13 @@ Require Import bedrock.prelude.base.
 From bedrock.lang.cpp Require Import semantics ast.
 From bedrock.lang.cpp.logic Require Import
   pred path_pred
-  heap_pred layout wp.
+  heap_pred.
 
 #[local] Set Printing Coercions.
 
 Section defs.
   Context `{Σ : cpp_logic, σ : genv}.
-  Implicit Types (Q : epred).
+  Implicit Types (Q : mpred).
 
   (* [wp_make_cv from to addr ty Q] replaces the [from] ownership of [ty] at [addr] with
      [to] ownership and then proceeds as [Q].
@@ -35,8 +35,8 @@ Section defs.
   (* TODO this needs to be extended because if it is casting [volatile],
      then it needs to descend under [const] *)
   #[local] Notation "|={ E }=> P" := (|={E}=> P)%I (only parsing).
-  Definition wp_const_body (wp_const : forall (from to : cQp.t) (addr : ptr) (ty : type) (Q : epred), mpred)
-      (tu : translation_unit) (from to : cQp.t)  (addr : ptr) (ty : type) (Q : epred) : mpred :=
+  Definition wp_const_body (wp_const : forall (from to : cQp.t) (addr : ptr) (ty : type) (Q : mpred), mpred)
+      (tu : translation_unit) (from to : cQp.t)  (addr : ptr) (ty : type) (Q : mpred) : mpred :=
     let '(cv, rty) := decompose_type ty in
     let Q := |={top}=> Q in
     if q_const cv then Q
@@ -73,7 +73,7 @@ Section defs.
           | Some gd =>
               match gd with
               | Gunion u =>
-                Exists br, addr |-> union_paddingR from cls br ** (addr |-> union_paddingR to cls br -*
+                Exists br, addr |-> unionR cls from br ** (addr |-> unionR cls to br -*
                 match br with
                 | None =>  Q
                 | Some br => match u.(u_fields) !! br with
@@ -102,7 +102,7 @@ Section defs.
                                         (addr ,, _field {| f_type := cls; f_name := m.(mem_name) |})
                                         m.(mem_type) Q)
                     (s_fields st)
-                    (addr |-> struct_paddingR from cls ** (addr |-> struct_paddingR to cls -* do_identity Q))
+                    (addr |-> structR cls from ** (addr |-> structR cls to -* do_identity Q))
               | Gtype
               | Genum _ _
               | Gconstant _ _
@@ -120,7 +120,7 @@ Section defs.
    *)
   Axiom wp_const_intro : forall tu f t a ty Q, wp_const_body (wp_const tu) tu f t a ty Q |-- wp_const tu f t a ty Q.
 
-  Lemma wp_const_value_type_intro tu from to (p : ptr) ty (Q : epred) :
+  Lemma wp_const_value_type_intro tu from to (p : ptr) ty (Q : mpred) :
     is_value_type ty ->
     (
       if qual_norm (fun cv _ => q_const cv) ty then Q
@@ -159,7 +159,7 @@ Section defs.
     iApply ("HQ" with "[$R $Raw $Ty]").
   Qed.
 
-  Lemma primR_wp_const_ref tu from to (p : ptr) ty (Q : epred) :
+  Lemma primR_wp_const_ref tu from to (p : ptr) ty (Q : mpred) :
     is_reference_type ty ->
     (
       if qual_norm (fun cv _ => q_const cv) ty then Q
@@ -181,7 +181,7 @@ Section defs.
   Qed.
 
   (* Sanity check the [_frame] property *)
-  Lemma fold_left_frame : forall B (l : list B) (f f' : epred -> B -> epred)  (Q Q' : epred),
+  Lemma fold_left_frame : forall B (l : list B) (f f' : mpred -> B -> mpred)  (Q Q' : mpred),
     (Q -* Q') |-- □ (Forall Q1 Q1' a, (Q1 -* Q1') -* (f Q1 a -* f' Q1' a)) -*  fold_left f l Q -* fold_left f' l Q'.
   Proof.
     move=>B l.
@@ -191,7 +191,7 @@ Section defs.
   Qed.
 
   (* Sanity check *)
-  Lemma wp_const_body_frame_uniform : forall CAST tu q q' p ty (Q Q' : epred),
+  Lemma wp_const_body_frame_uniform : forall CAST tu q q' p ty (Q Q' : mpred),
     Q -* Q'
     |-- □ (Forall a b p ty Q Q', (Q -* Q') -* CAST a b p ty Q -* CAST a b p ty Q') -*
         wp_const_body CAST tu q q' p ty Q -* wp_const_body CAST tu q q' p ty Q'.
@@ -255,7 +255,7 @@ Section defs.
   Qed.
 
   (*
-  Lemma cv_cast_body_frame : forall CAST CAST' tu tu' q q' p ty (Q Q' : epred),
+  Lemma cv_cast_body_frame : forall CAST CAST' tu tu' q q' p ty (Q Q' : mpred),
     sub_module tu tu' ->
         Q -* Q'
     |-- □ (Forall a b p ty Q Q', (Q -* Q') -* CAST a b p ty Q -* CAST' a b p ty Q') -*

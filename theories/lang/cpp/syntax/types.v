@@ -965,7 +965,7 @@ Proof. move: q. by induction t; cbn. Qed.
 (**
 normalization of types
 - compresses adjacent [Tqualified] constructors
-- drops (irrelevant) qualifiers on function arguments and return types
+- drops (irrelevant) qualifiers on function arguments
  *)
 Fixpoint normalize_type (t : type) : type :=
   let drop_norm := qual_norm (fun _ t => normalize_type t) in
@@ -979,7 +979,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Trv_ref t => Trv_ref (normalize_type t)
   | Tarray t n => Tarray (normalize_type t) n
   | @Tfunction cc ar r args =>
-    Tfunction (cc:=cc) (ar:=ar) (drop_norm r) (List.map drop_norm args)
+    Tfunction (cc:=cc) (ar:=ar) (normalize_type r) (List.map drop_norm args)
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
   | Tqualified q t => qual_norm q t
   | Tnum _ _ => t
@@ -1008,7 +1008,8 @@ Section normalize_type_idempotent.
       generalize dependent q; generalize dependent q';
         induction ty using type_ind'; intros *;
         rewrite /qual_norm/= ?normalize_type_idempotent//.
-      - rewrite map_map /qual_norm !IHty /merge_tq/=;
+      - f_equal.
+        rewrite map_map /qual_norm /merge_tq/=;
           erewrite map_ext_Forall; eauto; eapply Forall_impl;
           [|eassumption]; intros * HForall; simpl in HForall; apply HForall.
       - by rewrite IHty !assoc_L.
@@ -1019,21 +1020,20 @@ Section normalize_type_idempotent.
         try solve[destruct q; simpl; now rewrite ?normalize_type_idempotent].
       destruct q; simpl;
         rewrite map_map /qual_norm ?_drop_norm_idempotent /merge_tq/=;
+        rewrite normalize_type_idempotent;
         try solve[erewrite map_ext_Forall; eauto; induction tys;
                   [ now constructor
                   | constructor;
                     [ now apply _drop_norm_idempotent
-                    | apply IHtys; now apply Forall_inv_tail in H]]].
-    }
+                    | apply IHtys; now apply Forall_inv_tail in H]]]. }
     { (* normalize_type_involutive *)
       intros *; induction ty using type_ind'; simpl; rewrite ?IHty; eauto.
-      rewrite map_map /qual_norm _drop_norm_idempotent /merge_tq/=.
+      rewrite map_map /qual_norm /merge_tq/=.
       erewrite map_ext_Forall; eauto; induction tys;
         [ now constructor
         | constructor;
           [ now apply _drop_norm_idempotent
-          | apply IHtys; now apply Forall_inv_tail in H]].
-    }
+          | apply IHtys; now apply Forall_inv_tail in H]]. }
   Qed.
 End normalize_type_idempotent.
 

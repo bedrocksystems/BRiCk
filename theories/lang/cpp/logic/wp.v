@@ -274,6 +274,14 @@ Section with_cpp.
   #[local] Definition Mmap {T U} (f : T -> U) (t : M T) : M U :=
     fun K => t (fun v => K (f v)).
 
+  Lemma Mmap_frame_strong {T U} c (f : T -> U) :
+    Mframe c c
+    |-- Forall Q Q', (Forall x y, Q (f x) y -* Q' (f x) y) -* Mmap f c Q -* Mmap f c Q'.
+  Proof.
+    rewrite /Mframe/Mmap; iIntros "A" (??) "B".
+    iApply "A". iIntros (??); iApply "B".
+  Qed.
+
   Lemma Mmap_frame {T U} c (f : T -> U) :
     Mframe c c |-- Mframe (Mmap f c) (Mmap f c).
   Proof.
@@ -329,37 +337,7 @@ Section with_cpp.
 
   Definition nd_seqs {T} qs := @nd_seqs' T (length qs) qs.
 
-  Lemma nd_seqs'_frame {T} n : forall (ls : list (M T)),
-      n = length ls ->
-      ([∗list] m ∈ ls, Mframe m m)
-      |-- Mframe (nd_seqs' n ls) (nd_seqs' n ls).
-  Proof.
-    induction n; simpl; intros.
-    { case_match.
-      { subst. simpl.
-        iIntros "_" (??) "X". iApply "X". }
-      { iIntros "?" (??) "? []". } }
-    { destruct ls. exfalso; simpl in *; congruence.
-      inversion H.
-      iIntros "LS" (??) "X Y"; iIntros (???) "%P".
-      iSpecialize ("Y" $! pre).
-      iSpecialize ("Y" $! post).
-      iSpecialize ("Y" $! q).
-      iDestruct ("Y" with "[]") as "Y"; first eauto.
-      rewrite P.
-      iDestruct "LS" as "(a&b&c)".
-      iRevert "Y".
-      iApply (Mbind_frame with "b [a c]"); eauto.
-      iIntros (?).
-      iApply Mmap_frame.
-      rewrite -H1.
-      iApply IHn.
-      { have: (length (m :: ls) = length (pre ++ q :: post)) by rewrite P.
-        rewrite !app_length /=. lia. }
-      iSplitL "a"; eauto. }
-  Qed.
-
-  Lemma nd_seqs_frame_strong {T} n : forall (ls : list (M T)) Q Q',
+  Lemma nd_seqs'_frame_strong {T} n : forall (ls : list (M T)) Q Q',
       n = length ls ->
       Forall x y, [| length x = length ls |] -* Q x y -* Q' x y
       |-- ([∗list] m ∈ ls, Mframe m m) -*
@@ -398,6 +376,39 @@ Section with_cpp.
       rewrite skipn_length. lia. }
   Qed.
 
+  Lemma nd_seqs'_frame {T} n : forall (ls : list (M T)),
+      n = length ls ->
+      ([∗list] m ∈ ls, Mframe m m)
+      |-- Mframe (nd_seqs' n ls) (nd_seqs' n ls).
+  Proof.
+    induction n; simpl; intros.
+    { case_match.
+      { subst. simpl.
+        iIntros "_" (??) "X". iApply "X". }
+      { iIntros "?" (??) "? []". } }
+    { destruct ls. exfalso; simpl in *; congruence.
+      inversion H.
+      iIntros "LS" (??) "X Y"; iIntros (???) "%P".
+      iSpecialize ("Y" $! pre).
+      iSpecialize ("Y" $! post).
+      iSpecialize ("Y" $! q).
+      iDestruct ("Y" with "[]") as "Y"; first eauto.
+      rewrite P.
+      iDestruct "LS" as "(a&b&c)".
+      iRevert "Y".
+      iApply (Mbind_frame with "b [a c]"); eauto.
+      iIntros (?).
+      iApply Mmap_frame.
+      rewrite -H1.
+      iApply IHn.
+      { have: (length (m :: ls) = length (pre ++ q :: post)) by rewrite P.
+        rewrite !app_length /=. lia. }
+      iSplitL "a"; eauto. }
+  Qed.
+  Lemma nd_seqs_frame : forall {T} (ms : list (_ T)),
+      ([∗list] m ∈ ms, Mframe m m) |-- Mframe (nd_seqs ms) (nd_seqs ms).
+  Proof. intros. by iApply nd_seqs'_frame. Qed.
+
   (* sanity check on [nd_seq] and [nd_seqs] *)
   Example nd_seq_example : forall {T} (a b : M T),
       Proper (Mrel _) a -> Proper (Mrel _) b ->
@@ -429,8 +440,39 @@ Section with_cpp.
   Qed.
 
   (** *** sequencing of monadic compuations *)
-  Definition seq {T U} (wp1 : M T) (wp2 : M U) : M (T * U) :=
+  Definition Mseq {T U} (wp1 : M T) (wp2 : M U) : M (T * U) :=
     Mbind wp1 (fun v => Mmap (fun x => (v, x)) wp2).
+
+  Lemma Mseq_frame {T U} wp1 wp2 :
+    Mframe wp1 wp1 |-- Mframe wp2 wp2 -* Mframe (@Mseq T U wp1 wp2) (Mseq wp1 wp2).
+  Proof.
+    iIntros "A B" (??) "C".
+    rewrite /Mseq.
+    iApply (Mbind_frame with "A [B]"); last iAssumption.
+    iIntros (???) "X". iApply (Mmap_frame with "B"). done.
+  Qed.
+
+  (** [seqs es] is sequential evaluation of [es] *)
+  Fixpoint seqs {T} (es : list (M T)) : M (list T) :=
+    match es with
+    | nil => Mret []
+    | e :: es => Mmap (fun '(a,b) => a:: b) (Mseq e (seqs es))
+    end.
+
+  Lemma seqs_frame_strong {T} : forall (ls : list (M T)) Q Q',
+      ([∗list] m ∈ ls, Mframe m m)%I
+      |-- (Forall x y, [| length x = length ls |] -* Q x y -* Q' x y) -*
+          (seqs ls Q) -* (seqs ls Q').
+  Proof.
+    induction ls; simpl; intros.
+    - iIntros "_ X"; iApply "X"; eauto.
+    - iIntros "[A AS] K".
+      rewrite /Mbind. iApply "A".
+      iIntros (??).
+      iApply (IHls with "AS").
+      iIntros (???).
+      iApply "K". simpl. eauto.
+  Qed.
 
   (** *** interleaving of monadic values
 
@@ -456,12 +498,77 @@ Section with_cpp.
     iIntros (????) "A B". iApply "C". iApply ("K" with "A B").
   Qed.
 
+
   (** lifting [Mpar] to homogeneous lists *)
   Fixpoint Mpars {T} (f : list (M T)) : M (list T) :=
     match f with
     | nil => Mret nil
     | f :: fs => Mmap (fun '(v, vs) => v :: vs) $ Mpar f (Mpars fs)
     end.
+
+  Lemma Mpars_frame_strong {T} : forall (ls : list (M T)) Q Q',
+      ([∗list] m ∈ ls, Mframe m m)%I
+      |-- (Forall x y, [| length x = length ls |] -* Q x y -* Q' x y) -*
+          (Mpars ls Q) -* (Mpars ls Q').
+  Proof.
+    induction ls; simpl; intros.
+    - iIntros "_ X"; iApply "X"; eauto.
+    - iIntros "[A AS] K".
+      rewrite /Mmap.
+      rewrite /Mpar.
+      iIntros "X".
+      iDestruct "X" as (??) "(L & R & KK)".
+      iExists _, _. iFrame "L".
+      iDestruct (IHls with "AS [] R") as "IH".
+      2: iFrame "IH".
+      { instantiate (1:=fun x y => [| length x = length ls |] ** Q2 x y).
+        iIntros (???) "$". eauto. }
+      iIntros (????) "? [% ?]".
+      iApply "K".
+      { simpl. eauto. }
+      iApply ("KK" with "[$] [$]").
+  Qed.
+
+  (** *** evaluation by a scheme *)
+
+  (** [eval eo es] evaluates [es] according to the evaluation scheme [eo] *)
+  Definition eval (eo : evaluation_order.t) {T} (es : list (M T)) : M (list T) :=
+    match eo with
+    | evaluation_order.nd => nd_seqs es
+    | evaluation_order.l_nd =>
+        match es with
+        | e :: es => Mbind e (fun v => Mmap (fun vs => v :: vs) (nd_seqs es))
+        | [] => Mret []
+        end
+    | evaluation_order.rl => Mmap (@rev _) (seqs (rev es))
+    end.
+
+  Lemma eval_frame_strong {T} oe : forall (ls : list (M T)) Q Q',
+      ([∗list] m ∈ ls, Mframe m m)%I
+      |-- (Forall x y, [| length x = length ls |] -* Q x y -* Q' x y) -*
+          eval oe ls Q -* eval oe ls Q'.
+  Proof.
+    destruct oe; intros.
+    - rewrite /=/nd_seqs. iIntros "A B".
+      iApply (nd_seqs'_frame_strong with "B A"). done.
+    - simpl.
+      destruct ls; simpl.
+      { iIntros "_ X"; iApply "X". done. }
+      { iIntros "[X Y] K".
+        iApply "X". iIntros (??).
+        iApply (nd_seqs'_frame_strong with "[K] Y"); eauto.
+        iIntros (???).
+        rewrite /Mret.
+        iApply "K". simpl; eauto. }
+    - simpl.
+      iIntros "X K".
+      rewrite /Mmap. iApply (seqs_frame_strong with "[X]").
+      { iStopProof. induction ls; simpl; eauto.
+        iIntros "[$ K]".
+        iDestruct (IHls with "K") as "$". eauto. }
+      { iIntros (???); iApply "K".
+        rewrite rev_length. eauto. rewrite -(rev_length ls). eauto. }
+  Qed.
 
 
   (* The expressions in the C++ language are categorized into five
