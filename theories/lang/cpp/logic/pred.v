@@ -1294,17 +1294,17 @@ Section with_cpp.
 
   #[global] Instance struct_padding_as_fractional p cls : AsCFractional0 (struct_padding p cls).
   Proof. solve_as_cfrac. Qed.
-  #[global] Instance struct_padding_valid_observe p q cls : Observe (_valid_ptr Strict p) (struct_padding p cls q).
+  #[global] Instance struct_padding_valid_observe p q cls : Observe (strict_valid_ptr p) (struct_padding p cls q).
   Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
-  #[global] Instance struct_paddingR_valid_observe p q cls : Observe (_valid_ptr Relaxed p) (struct_padding p cls q).
+  #[global] Instance struct_paddingR_valid_observe p q cls : Observe (valid_ptr p) (struct_padding p cls q).
   Proof. rewrite -strict_valid_valid; apply _. Qed.
 
   #[global] Instance union_padding_as_fractional p cls : AsCFractional1 (union_padding p cls).
   Proof. solve_as_cfrac. Qed.
 
-  #[global] Instance union_padding_strict_valid_observe p q cls i : Observe (_valid_ptr Strict p) (union_padding p cls q i).
+  #[global] Instance union_padding_strict_valid_observe p q cls i : Observe (strict_valid_ptr p) (union_padding p cls q i).
   Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
-  #[global] Instance union_padding_valid_observe p q cls i : Observe (_valid_ptr Relaxed p) (union_padding p cls q i).
+  #[global] Instance union_padding_valid_observe p q cls i : Observe (valid_ptr p) (union_padding p cls q i).
   Proof. rewrite -strict_valid_valid; apply _. Qed.
 
 End with_cpp.
