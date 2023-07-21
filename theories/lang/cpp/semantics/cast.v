@@ -101,7 +101,7 @@ Section conv_int.
   Qed.
 
   Lemma has_type_prop_representation_type_not_raw ty v :
-    ~is_raw v ->
+    ~~ is_raw v ->
     has_type_prop v ty <-> has_type_prop v (representation_type tu ty).
   Proof using Hmod.
     induction ty; rewrite /representation_type /= //.
@@ -178,23 +178,17 @@ Section conv_int.
   (* Note that a no-op conversion on a raw value is not permitted. *)
   Lemma conv_int_num_id sz sgn v :
     let ty := Tnum sz sgn in
-    ~(exists r, v = Vraw r) ->
+    ~~ is_raw v ->
     has_type_prop v ty ->
     conv_int tu ty ty v v.
   Proof using Hmod.
     rewrite /=/conv_int/underlying_type/=.
-    intros. split; eauto.
+    intros ? Hty. split; eauto.
     destruct sgn. split; eauto.
-    apply has_int_type' in H0.
-    destruct H0.
-    - destruct H0 as [?[??]].
-      subst.
-      revert H1.
-      rewrite /bound/min_val/max_val.
-      intros.
-      rewrite to_unsigned_id; eauto.
-      destruct sz; simpl; try lia.
-    - exfalso. apply H. destruct H0 as [?[??]]. eauto.
+    apply has_int_type' in Hty.
+    destruct Hty as [(? & -> & Hty) | (? & -> & ?)]; last done.
+    move: Hty. rewrite /bound/min_val/max_val. intros.
+    rewrite to_unsigned_id//. destruct sz; cbn; lia.
   Qed.
 
   (* conversion is deterministic *)

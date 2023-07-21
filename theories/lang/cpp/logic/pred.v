@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -205,33 +205,30 @@ Module Type CPP_LOGIC
     Axiom tptsto_nonnull : forall {σ} ty q a,
       @tptsto σ ty q nullptr a |-- False.
 
-    Axiom tptsto_proper :
+    #[global] Declare Instance tptsto_params : Params (@tptsto) 2.
+    #[global] Declare Instance tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
-    Axiom tptsto_mono :
+    #[global] Declare Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    #[global] Existing Instances tptsto_proper tptsto_mono.
 
     #[global] Declare Instance tptsto_timeless : Timeless5 (@tptsto).
     #[global] Declare Instance tptsto_cfractional {σ} ty : CFractional2 (tptsto ty).
 
     #[global] Declare Instance tptsto_cfrac_valid {σ} t : CFracValid2 (tptsto t).
 
-    Axiom tptsto_welltyped : forall {σ} p ty q v,
+    #[global] Declare Instance tptsto_welltyped : forall {σ} p ty q v,
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
-    #[global] Existing Instances tptsto_welltyped.
 
-    Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
-      Observe2 [| val_related σ ty v1 v2 |]
+    (**
+    NOTE: We'll eventually need the stronger [tptsto_learn : ∀ {σ} ty
+    q1 q2 p v1 v2, <absorb> (tptsto ty q1 p v1) //\\ <absorb> (tptsto
+    ty q2 p v2) |-- [! v1 = v2 !]] but setting up the proof in
+    [simple_pred] now would be a bit of a digression.
+    *)
+    #[global] Declare Instance tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
+      Observe2 [| v1 = v2 |]
                (@tptsto σ ty q1 p v1)
                (@tptsto σ ty q2 p v2).
-    #[global] Existing Instances tptsto_agree.
-
-    (* TODO (JH/PG): Add in a proper instance using this which allows us to rewrite
-         `val_related` values within `tptsto`s.
-
-         <https://gitlab.com/bedrocksystems/cpp2v-core/-/merge_requests/377#note_530611061> *)
-    Axiom tptsto_val_related_transport : forall {σ} ty q p v1 v2,
-        [| val_related σ ty v1 v2 |] |-- @tptsto σ ty q p v1 -* @tptsto σ ty q p v2.
 
     (** The allocation is alive. Neither persistent nor fractional.
       See https://eel.is/c++draft/basic.stc.general#4 and
@@ -1220,10 +1217,19 @@ Section with_cpp.
     tptsto ty (cQp.mk c1 1) p v1 ** tptsto ty (cQp.mk c2 q) p v2 |-- False.
   Proof.
     iIntros "[T1 T2]".
-    iDestruct (tptsto_agree with "T1 T2") as %Hvs.
-    iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T1".
+    iDestruct (tptsto_agree with "T1 T2") as %->.
     iCombine "T1 T2" as "T".
     by iDestruct (cfrac_valid_2 with "T") as %?%Qp.not_add_le_l.
+  Qed.
+
+  Lemma offset_ptr_congP (p : ptr) o1 o2 :
+    offset_congP σ o1 o2 |--
+    type_ptr Tu8 (p ,, o1) -*
+    type_ptr Tu8 (p ,, o2) -*
+    ptr_congP σ (p ,, o1) (p ,, o2).
+  Proof.
+    iIntros "% T1 T2". rewrite /ptr_congP. iFrame "T1 T2".
+    auto using offset_ptr_cong.
   Qed.
 
   (** *** Just wrappers. *)
@@ -1286,6 +1292,32 @@ Section with_cpp.
     live_ptr p ⊢ ∃ aid, [| ptr_alloc_id p = Some aid |] ∗ live_alloc_id aid.
   Proof. rewrite /live_ptr; iIntros. case: (ptr_alloc_id p) => /= [aid|]; eauto. Qed.
 
+  #[global] Instance struct_padding_as_fractional p cls : AsCFractional0 (struct_padding p cls).
+  Proof. solve_as_cfrac. Qed.
+  #[global] Instance struct_padding_valid_observe p q cls : Observe (strict_valid_ptr p) (struct_padding p cls q).
+  Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
+  #[global] Instance struct_paddingR_valid_observe p q cls : Observe (valid_ptr p) (struct_padding p cls q).
+  Proof. rewrite -strict_valid_valid; apply _. Qed.
+
+  #[global] Instance union_padding_as_fractional p cls : AsCFractional1 (union_padding p cls).
+  Proof. solve_as_cfrac. Qed.
+
+  #[global] Instance union_padding_strict_valid_observe p q cls i : Observe (strict_valid_ptr p) (union_padding p cls q i).
+  Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
+  #[global] Instance union_padding_valid_observe p q cls i : Observe (valid_ptr p) (union_padding p cls q i).
+  Proof. rewrite -strict_valid_valid; apply _. Qed.
+
+End with_cpp.
+
+#[deprecated(since="20230719",note="use [mdc_path]")]
+Notation identity := mdc_path (only parsing).
+
+Section has_type.
+  Context `{Σ : cpp_logic}.
+
+  (** [has_type] *)
+
+  #[global] Instance: Params (@has_type) 2 := {}.
   #[global] Instance has_type_proper :
     Proper (genv_eq ==> eq ==> eq ==> (≡)) (@has_type _ Σ).
   Proof. intros ?? H ??? ???; split'; apply has_type_mono => //; apply H. Qed.
@@ -1294,47 +1326,82 @@ Section with_cpp.
     Proper (flip genv_leq ==> eq ==> eq ==> flip bi_entails) (@has_type _ Σ).
   Proof. by move=> ??+ ??-> ??-> => ->. Qed.
 
-  #[global] Instance has_type_or_undef_proper :
-    Proper (genv_eq ==> eq ==> eq ==> (≡)) (@has_type_or_undef _ Σ).
-  Proof. rewrite has_type_or_undef_unfold; solve_proper. Qed.
-  #[global] Instance has_type_or_undef_mono :
-    Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type_or_undef _ Σ).
-  Proof. rewrite has_type_or_undef_unfold; solve_proper. Qed.
-  #[global] Instance has_type_knowledge : Knowledge2 has_type_or_undef.
+  #[global] Instance has_type_knowledge {σ} : Knowledge2 has_type_or_undef.
   Proof. rewrite has_type_or_undef_unfold; split; apply _. Qed.
-  #[global] Instance has_type_timeless : Timeless2 has_type_or_undef.
+  #[global] Instance has_type_timeless {σ} : Timeless2 has_type_or_undef.
   Proof. rewrite has_type_or_undef_unfold; apply _. Qed.
 
-  Lemma has_type_qual_iff t q x :
+  Lemma has_type_nonptr {σ} v ty :
+    nonptr_prim_type ty ->
+    has_type v ty -|- [| has_type_prop v ty |].
+  Proof.
+    intros. split'.
+    - by rewrite -has_type_has_type_prop.
+    - by rewrite -has_type_prop_has_type_noptr.
+  Qed.
+
+  Lemma has_type_qual_iff {σ} t q x :
     has_type x t -|- has_type x (Tqualified q t).
   Proof.
     by rewrite (has_type_erase_qualifiers t)
       (has_type_erase_qualifiers (Tqualified _ _)).
   Qed.
 
-  Lemma has_type_drop_qualifiers v ty :
+  Lemma has_type_drop_qualifiers {σ} v ty :
     has_type v ty -|- has_type v (drop_qualifiers ty).
   Proof.
     rewrite (has_type_erase_qualifiers (drop_qualifiers _)) erase_drop_qualifiers.
     by rewrite -has_type_erase_qualifiers.
   Qed.
 
-  #[global] Instance struct_padding_as_fractional p cls : AsCFractional0 (struct_padding p cls).
-  Proof. solve_as_cfrac. Qed.
-  #[global] Instance struct_padding_valid_observe p q cls : Observe (_valid_ptr Strict p) (struct_padding p cls q).
-  Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
-  #[global] Instance struct_paddingR_valid_observe p q cls : Observe (_valid_ptr Relaxed p) (struct_padding p cls q).
-  Proof. rewrite -strict_valid_valid; apply _. Qed.
+  Lemma has_type_val_related {σ} ty v1 v2 :
+    val_related σ ty v1 v2 ->
+    has_type v1 ty -|- has_type v2 ty.
+  Proof.
+    induction 1.
+    { done. }
+    { by rewrite -!has_type_qual_iff. }
+    all: by rewrite !has_type_nonptr ?has_type_prop_raw_bytes_of_val.
+  Qed.
 
-  #[global] Instance union_padding_as_fractional p cls : AsCFractional1 (union_padding p cls).
-  Proof. solve_as_cfrac. Qed.
+  (** [has_type_or_undef] *)
 
-  #[global] Instance union_padding_strict_valid_observe p q cls i : Observe (_valid_ptr Strict p) (union_padding p cls q i).
-  Proof. rewrite -type_ptr_strict_valid; apply _. Qed.
-  #[global] Instance union_padding_valid_observe p q cls i : Observe (_valid_ptr Relaxed p) (union_padding p cls q i).
-  Proof. rewrite -strict_valid_valid; apply _. Qed.
+  Definition is_undef (v : val) : bool :=
+    if v is Vundef then true else false.
 
-End with_cpp.
+  #[global] Instance: Params (@has_type_or_undef) 2 := {}.
+  #[global] Instance has_type_or_undef_proper :
+    Proper (genv_eq ==> eq ==> eq ==> (≡)) (@has_type_or_undef _ Σ).
+  Proof. rewrite has_type_or_undef_unfold; solve_proper. Qed.
+  #[global] Instance has_type_or_undef_mono :
+    Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type_or_undef _ Σ).
+  Proof. rewrite has_type_or_undef_unfold; solve_proper. Qed.
 
-#[deprecated(since="20230719",note="use [mdc_path]")]
-Notation identity := mdc_path (only parsing).
+  Lemma has_type_or_undef_undef {σ} t : |-- has_type_or_undef Vundef t.
+  Proof. rewrite has_type_or_undef_unfold. by iRight. Qed.
+
+  Lemma has_type_or_undef_nonundef {σ} t v :
+    ~~ is_undef v -> has_type_or_undef v t -|- has_type v t.
+  Proof.
+    intros. rewrite has_type_or_undef_unfold. split'.
+    - iIntros "[$ | %]". by destruct v.
+    - iIntros "?". by iLeft.
+  Qed.
+
+  Lemma has_type_or_undef_qual_iff {σ} t q v :
+    has_type_or_undef v t -|- has_type_or_undef v (Tqualified q t).
+  Proof.
+    by rewrite !has_type_or_undef_unfold -!has_type_qual_iff.
+  Qed.
+
+  Lemma has_type_or_undef_val_related {σ} ty v1 v2 :
+    val_related σ ty v1 v2 ->
+    has_type_or_undef v1 ty |-- has_type_or_undef v2 ty.
+  Proof.
+    induction 1.
+    { done. }
+    { by rewrite -!has_type_or_undef_qual_iff. }
+    all: rewrite !has_type_or_undef_nonundef//.
+    all: by rewrite !has_type_nonptr// has_type_prop_raw_bytes_of_val.
+  Qed.
+End has_type.

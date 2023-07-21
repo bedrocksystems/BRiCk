@@ -154,9 +154,10 @@ Section defs.
     |-- wp_const tu from to p ty Q.
   Proof.
     intros. rewrite -wp_const_value_type_intro//.
-    case_match; first done. iIntros "(%v & R & HQ)". iExists v.
-    rewrite !primR_alt !_at_sep. iDestruct "R" as "($ & #Raw & #Ty)". iIntros "R".
-    iApply ("HQ" with "[$R $Raw $Ty]").
+    case_match; first done. iIntros "(%v & R & HQ)".
+    iDestruct (primR_tptsto_acc with "R") as "(%v' & V & R & HR)".
+    iExists v'. rewrite !_at_tptstoR. iFrame "R". iIntros "R".
+    iApply "HQ". iApply ("HR" with "V R").
   Qed.
 
   Lemma primR_wp_const_ref tu from to (p : ptr) ty (Q : mpred) :

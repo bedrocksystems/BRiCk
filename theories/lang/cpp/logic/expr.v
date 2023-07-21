@@ -12,7 +12,7 @@ Require Import iris.proofmode.tactics.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred
+     pred path_pred heap_pred raw
      const
      operator
      destroy
@@ -428,9 +428,38 @@ Module Type Expr.
     https://eel.is/c++draft/basic.lval#11.
     *)
     Axiom wp_operand_cast_l2r : forall ty e Q,
-        wp_glval e (fun a free => Exists v,
-           (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
-        |-- wp_operand (Ecast Cl2r e Prvalue ty) Q.
+        (
+          letI* a, free := wp_glval e in
+          Exists v,
+          (Exists q, a |-> tptsto_fuzzyR (erase_qualifiers ty) q v ** True) //\\
+          Q v free
+        ) |-- wp_operand (Ecast Cl2r e Prvalue ty) Q.
+
+    Lemma wp_operand_cast_l2r_prim ty e Q :
+        (
+          letI* a, free := wp_glval e in
+          Exists v,
+          (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\
+          Q v free
+        ) |-- wp_operand (Ecast Cl2r e Prvalue ty) Q.
+    Proof.
+      intros. rewrite -wp_operand_cast_l2r. iIntros "wp".
+      iApply (wp_glval_wand with "wp"). iIntros (p f) "?".
+      by setoid_rewrite primR_tptsto_fuzzyR.
+    Qed.
+
+    Lemma wp_operand_cast_l2r_raw : forall e Q,
+        (
+          letI* a, free := wp_glval e in
+          Exists r,
+          (Exists q, a |-> rawR q r ** True) //\\
+          Q (Vraw r) free
+        ) |-- wp_operand (Ecast Cl2r e Prvalue Tu8) Q.
+    Proof.
+      intros. rewrite -wp_operand_cast_l2r /=. iIntros "wp".
+      iApply (wp_glval_wand with "wp"). iIntros (p f) "(%r & ?)".
+      iExists (Vraw r). by rewrite rawR.unlock.
+    Qed.
 
     (** No-op casts [Cnoop] are casts that only affect the type and not the value.
         Clang states that these casts are only used for adding and removing [const].

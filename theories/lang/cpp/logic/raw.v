@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021,2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -15,208 +15,220 @@ Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
      arr builtins heap_pred pred z_to_bytes.
 
+(**
+[rawR q r]: the argument pointer points to [raw_byte] [r] within the
+C++ abstract machine.
+*)
+mlock Definition rawR `{Σ : cpp_logic, σ : genv} (q : cQp.t) (r : raw_byte) : Rep :=
+  tptsto_fuzzyR Tu8 q (Vraw r).
+#[global] Arguments rawR {_ _ _} _ _ : assert.	(* mlock bug *)
+
+(**
+[rawsR q rs]: An array of raw bytes
+*)
+Definition rawsR `{Σ : cpp_logic, σ : genv} (q : cQp.t) (rs : list raw_byte) : Rep :=
+  arrayR Tu8 (rawR q) rs.
+
+(*
+TODO: The axioms here should be at the level of [tptsto], stated in
+pred.v, and proved in simple_pred.v with the properties of [primR] and
+[anyR] derived.
+
+Also, the proof of [raw_int_byte_primR] below suggest some TODOs for
+[raw_bytes_of_val].
+*)
+Axiom primR_to_rawsR : ∀ `{Σ : cpp_logic, σ : genv} ty q v,
+  primR ty q v -|-
+  Exists rs, [| raw_bytes_of_val σ ty v rs |] ** type_ptrR ty ** rawsR q rs.
+
+Definition decodes {σ : genv} (endianness : endian) (sgn : signed) (l : list N) (z : Z) : Prop :=
+  List.Forall (fun v => has_type_prop (Vn v) Tu8) l /\
+  _Z_from_bytes endianness sgn l = z.
+
+Definition decodes_uint {σ : genv} (l : list N) (z : Z) : Prop :=
+  Reduce (decodes (genv_byte_order σ) Unsigned l z).
+
+(*
+TODO (JH): Determine if we can axiomatize a more specific property and
+use it to derive this reasoning principle.
+*)
+Axiom decode_uint_anyR : ∀ `{Σ : cpp_logic, σ : genv} q sz,
+  anyR (Tnum sz Unsigned) q -|-
+  anyR (Tarray Tuchar (bytesN sz)) q ** type_ptrR (Tnum sz Unsigned).
+
+(* JH: TODO: Determine what new axioms we should add here. *)
+Axiom raw_byte_of_int_eq : ∀ {σ : genv} sz x rs,
+  raw_bytes_of_val σ (Tnum sz Unsigned) (Vint x) rs <->
+  ∃ l, decodes_uint l x /\ raw_int_byte <$> l = rs /\ length l = bytesNat sz.
+
 Section with_Σ.
   Context `{Σ : cpp_logic} {σ : genv}.
 
-  (** [rawR q rs]: the argument pointer points to [raw_byte] [r] within the C++ abstract machine. *)
-  Definition rawR_def (q : cQp.t) (r : raw_byte) : Rep :=
-    as_Rep (fun p => tptsto Tuchar q p (Vraw r)).
-  Definition rawR_aux : seal (@rawR_def). Proof. by eexists. Qed.
-  Definition rawR := rawR_aux.(unseal).
-  Definition rawR_eq : @rawR = _ := rawR_aux.(seal_eq).
-  #[global] Arguments rawR q raw : rename.
+  (** [rawR] *)
 
-  Lemma _at_rawR_ptr_congP_transport (p1 p2 : ptr) (q : cQp.t) (r : raw_byte) :
+  #[local] Notation PROPER R S := (
+    Proper (R ==> eq ==> eq ==> S) (@rawR _ _)
+  ) (only parsing).
+  #[global] Instance rawR_mono : PROPER genv_leq bi_entails.
+  Proof. rewrite rawR.unlock. solve_proper. Qed.
+  #[global] Instance rawR_flip_mono : PROPER (flip genv_leq) (flip bi_entails).
+  Proof. repeat intro. exact: rawR_mono. Qed.
+  #[global] Instance rawR_proper : PROPER genv_eq equiv.
+  Proof. intros σ1 σ2 [??] ??? ???. split'; exact: rawR_mono. Qed.
+
+  #[global] Instance rawR_timeless : Timeless2 rawR.
+  Proof. rewrite rawR.unlock. apply _. Qed.
+
+  #[global] Instance rawR_cfractional : CFractional1 rawR.
+  Proof. rewrite rawR.unlock. apply _. Qed.
+  #[global] Instance rawR_as_cfractional : AsCFractional1 rawR.
+  Proof. solve_as_cfrac. Qed.
+  #[global] Instance rawR_cfrac_valid : CFracValid1 rawR.
+  Proof. rewrite rawR.unlock. solve_cfrac_valid. Qed.
+
+  #[global] Instance rawR_wellyped q r :
+    Observe (pureR (has_type (Vraw r) Tu8)) (rawR q r).
+  Proof.
+    rewrite -has_type_or_undef_nonundef// rawR.unlock. apply _.
+  Qed.
+  #[global] Instance _at_rawR_wellyped (p : ptr) q r :
+    Observe (has_type (Vraw r) Tu8) (p |-> rawR q r).
+  Proof. apply _at_observe_pureR, _. Qed.
+
+  #[global] Instance rawR_type_ptrR q r : Observe (type_ptrR Tu8) (rawR q r).
+  Proof. rewrite rawR.unlock. apply _. Qed.
+
+  #[global] Instance rawR_nonnull q r : Observe nonnullR (rawR q r).
+  Proof. rewrite rawR.unlock. apply _. Qed.
+
+  #[global] Instance rawR_agree : AgreeCF1 rawR.
+  Proof.
+    intros. rewrite rawR.unlock. iIntros "R1 R2".
+    iDestruct (observe_2 [| val_related _ _ _ _ |] with "R1 R2") as %?.
+    eauto using val_related_Vraw.
+  Qed.
+
+  Lemma rawR_tptsto_acc (p : ptr) q r :
+    p |-> rawR q r |--
+      Exists v', [| val_related σ Tu8 (Vraw r) v' |] ** tptsto Tu8 q p v' **
+      (Forall p' q' v', [| val_related σ Tu8 (Vraw r) v' |] -* tptsto Tu8 q' p' v' -* p' |-> rawR q' r).
+  Proof.
+    rewrite rawR.unlock. by rewrite tptsto_fuzzyR_tptsto_acc.
+  Qed.
+
+  Lemma rawR_ptr_congP_transport p1 p2 q r :
     ptr_congP σ p1 p2 |-- p1 |-> rawR q r -* p2 |-> rawR q r.
   Proof.
-    rewrite rawR_eq/rawR_def !_at_as_Rep.
-    iApply tptsto_ptr_congP_transport.
+    iIntros "#P R".
+    iDestruct (rawR_tptsto_acc with "R") as "(%v' & V & R & HR)".
+    iDestruct (tptsto_ptr_congP_transport with "P R") as "R".
+    iApply ("HR" with "V R").
   Qed.
 
-  Lemma _at_rawR_offset_congP_transport (p : ptr) (o1 o2 : offset) (q : cQp.t) (r : raw_byte) :
-        offset_congP σ o1 o2 ** type_ptr Tu8 (p ,, o2)
-    |-- p ,, o1 |-> rawR q r -* p ,, o2 |-> rawR q r.
+  Lemma rawR_offset_congP_transport (p : ptr) o1 o2 q r :
+    offset_congP σ o1 o2 |--
+    type_ptr Tu8 (p ,, o2) -*
+    p ,, o1 |-> rawR q r -*
+    p ,, o2 |-> rawR q r.
   Proof.
-    iIntros "[%cong #tptr'] raw".
-    iDestruct (observe (type_ptr Tu8 (p ,, o1)) with "raw") as "#tptr". 1: {
-      rewrite rawR_eq/rawR_def !_at_as_Rep; by apply: _.
-    }
-    iRevert "raw"; iApply _at_rawR_ptr_congP_transport.
-    unfold ptr_congP; iFrame "#"; iPureIntro.
-    unfold ptr_cong; exists p, o1, o2; intuition.
+    iIntros "#O #T2 R".
+    iDestruct (observe (type_ptr _ _) with "R") as "#T1".
+    iApply (rawR_ptr_congP_transport with "[] R").
+    by iApply offset_ptr_congP.
   Qed.
 
-  Definition rawsR (q : cQp.t) (rs : list raw_byte) : Rep := arrayR Tuchar (rawR q) rs.
+  (** [rawsR] *)
 
-  Section Theory.
-    Section primR_Axiom.
-      (* TODO: improve our axiomatic support for raw values - including "shattering"
-         non-raw values into their constituent raw pieces - to enable deriving
-         [primR_to_rawsR].
-       *)
-      Axiom primR_to_rawsR: forall ty q v,
-        primR ty q v -|-
-        Exists rs,
-          rawsR q rs **
-          [| raw_bytes_of_val σ ty v rs |] **
-          type_ptrR ty.
+  (**
+  NOTE: [rawsR] could have [Param] and [Proper] instances supporting
+  [genv_le], [genv_eq].
+  *)
 
-      Lemma raw_int_byte_primR : forall q r z,
-        (raw_int_byte z = r)%Z ->
-        rawR q r -|- primR Tuchar q (Vn z).
-      Proof.
-        intros * Hz; subst; rewrite primR_to_rawsR; split'.
-        - iIntros "HrawR"; iExists [raw_int_byte z].
-          rewrite /rawsR arrayR_singleton.
-          iDestruct (observe (type_ptrR (Tnum char_bits Unsigned)) with "HrawR")
-            as "#Htype_ptrR". {
-            rewrite rawR_eq/rawR_def type_ptrR_eq/type_ptrR_def;
-              apply as_Rep_observe=> p; apply _.
-          }
-          iFrame "#∗"; iPureIntro.
-          (* TODO: Missing Axioms describing the behavior of raw_bytes_of_val for `uint8` *)
-          admit.
-        - iIntros "H"; iDestruct "H" as (rs) "(HrawsR & %Hraw_bytes_of_val & Htype_ptrR)".
-          (* TODO: Missing Axioms describing the behavior of raw_bytes_of_val for `uint8` *)
-          admit.
-      Admitted.
+  #[global] Instance rawsR_timeless q rs : Timeless (rawsR q rs).
+  Proof. apply _. Qed.
 
-      Section decodes.
-        (* TODO (JH): Determine if we can axiomatize a more specific property and use it
-             to derive this reasoning principle. *)
-        Axiom decode_uint_anyR : forall q sz,
-          anyR (Tnum sz Unsigned) q -|-
-          anyR (Tarray Tuchar (bytesN sz)) q **
-          type_ptrR (Tnum sz Unsigned).
+  #[global] Instance rawsR_cfractional : CFractional1 rawsR.
+  Proof. apply _. Qed.
+  #[global] Instance rawsR_as_fractional : AsCFractional1 rawsR.
+  Proof. solve_as_cfrac. Qed.
 
-        Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
-          List.Forall (fun v => has_type_prop (Vn v) Tu8) l /\
-          _Z_from_bytes endianness sgn l = z.
+  Lemma rawsR_observe_frac_valid q rs :
+    (0 < length rs) ->
+    Observe [| cQp.frac q ≤ 1 |]%Qp (rawsR q rs).
+  Proof.
+    intros Hlen; rewrite /rawsR; induction rs;
+      by [ simpl in Hlen; lia
+         | rewrite arrayR_cons; apply _].
+  Qed.
 
-        (* JH: TODO: Deprecate the following stuff *)
-        Definition decodes_uint (l : list N) (z : Z) :=
-          Unfold decodes (decodes (genv_byte_order σ) Unsigned l z).
+  Lemma rawsR_observe_agree q1 q2 rs1 rs2 :
+    length rs1 = length rs2 ->
+    Observe2 [| rs1 = rs2 |] (rawsR q1 rs1) (rawsR q2 rs2).
+  Proof.
+    generalize dependent rs2; induction rs1 as [| r1 ? ?]; intros * Hlen.
+    - destruct rs2; [| simpl in Hlen; lia].
+      rewrite /Observe2; iIntros "? ? !>"; by iPureIntro.
+    - destruct rs2 as [| r2 ?]; [simpl in Hlen; lia |].
+      rewrite !cons_length in Hlen; inversion Hlen.
+      rewrite /rawsR !arrayR_cons;
+        fold (rawsR q1 rs1);
+        fold (rawsR q2 rs2).
+      iIntros "(Htype_ptrR1 & HrawR1 & HrawsR1)
+               (Htype_ptrR2 & HrawR2 & HrawsR2)".
+      iDestruct (observe_2 [| r1 = r2 |] with "HrawR1 HrawR2") as %->.
+      specialize (IHrs1 rs2 ltac:(auto)).
+      iDestruct (observe_2 [| rs1 = rs2 |] with "HrawsR1 HrawsR2") as %->.
+      iModIntro; by iPureIntro.
+  Qed.
 
-        (* JH: TODO: Determine what new axioms we should add here. *)
-        Axiom raw_byte_of_int_eq : forall sz x rs,
-            raw_bytes_of_val σ (Tnum sz Unsigned) (Vint x) rs <->
-            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs /\
-                    length l = bytesNat sz).
+  Lemma raw_int_byte_primR' q r n :
+    raw_int_byte n = r ->
+    rawR q r -|- primR Tu8 q (Vn n).
+  Proof.
+    intros <-. rewrite primR_to_rawsR. split'.
+    - iIntros "R". iExists [raw_int_byte n].
+      rewrite /rawsR arrayR_singleton.
+      iDestruct (observe (type_ptrR Tu8) with "R") as "#T". iFrame "R T".
+      (**
+      TODO: Missing axiom [raw_bytes_of_val σ Tu8 (Vn n) [raw_int_byte n]]
+      *)
+      admit.
+    - iIntros "(% & %Hraw & #T & R)".
+      (**
+      TODO: Missing axioms allowing us to invert [raw_bytes_of_val σ
+      Tu8 (Vn n) rs] to learn [rs] the singleton [raw_int_byte n ::
+      nil].
+      *)
+      admit.
+  Admitted.
+  Lemma raw_int_byte_primR q n : rawR q (raw_int_byte n) -|- primR Tu8 q (Vn n).
+  Proof. exact: raw_int_byte_primR'. Qed.
 
-        (** TODO: determine whether this is correct with respect to pointers *)
-        Lemma decode_uint_primR : forall q sz (x : Z),
-          primR (Tnum sz Unsigned) q (Vint x) -|-
-          Exists (rs : list raw_byte) (l : list N),
-            arrayR Tu8 (fun c => primR Tu8 q (Vint c)) (Z.of_N <$> l) **
-            type_ptrR (Tnum sz Unsigned) **
-            [| decodes_uint l x |] **
-            [| raw_int_byte <$> l = rs |] **
-            [| length l = bytesNat sz |].
-        Proof.
-          move => q sz x.
-          rewrite primR_to_rawsR. setoid_rewrite raw_byte_of_int_eq.
-          iSplit.
-          - iDestruct 1 as (rs) "(Hraw & H & $)".
-            iDestruct "H" as %[l [Hdec [Hrs Hlen]]].
-            iExists rs, _; iSplit => //. clear Hdec.
-            rewrite /rawsR arrayR_eq/arrayR_def. iStopProof.
-            (* TODO i need to do induction here because the [Proper] instances are too weak. *)
-            clear Hlen.
-            generalize dependent rs.
-            induction l => rs Hrs // /=; simpl in Hrs.
-            + by subst.
-            + destruct rs; inversion Hrs; subst; simpl.
-              rewrite !arrR_cons; eauto.
-              rewrite -IHl /=; [| auto];
-              by rewrite raw_int_byte_primR.
-          - iDestruct 1 as (rs l) "(Harray & $ & %Hdec & %Hbytes & %Hlen)".
-            iExists rs; iSplit => //; eauto with iFrame.
-            clear Hlen Hdec; rewrite -{}Hbytes.
-            rewrite /rawsR arrayR_eq/arrayR_def; iStopProof.
-            induction l => // /=.
-            rewrite !arrR_cons; eauto.
-            by rewrite -IHl /= raw_int_byte_primR.
-        Qed.
-      End decodes.
-    End primR_Axiom.
-
-    Section rawR.
-      #[global] Instance rawR_proper :
-        Proper ((=) ==> (=) ==> (⊣⊢)) (@rawR).
-      Proof. by intros ??-> ??->. Qed.
-      #[global] Instance rawR_mono :
-        Proper ((=) ==> (=) ==> (⊢)) (@rawR).
-      Proof. by intros ??-> ??->. Qed.
-
-      #[global] Instance rawR_timeless q raw :
-        Timeless (rawR q raw).
-      Proof. rewrite rawR_eq. apply _. Qed.
-
-      #[global] Instance rawR_cfractional : CFractional1 rawR.
-      Proof. rewrite rawR_eq. apply _. Qed.
-      #[global] Instance rawR_as_cfractional : AsCFractional1 rawR.
-      Proof. solve_as_cfrac. Qed.
-
-      #[global] Instance rawR_observe_frac_valid : CFracValid1 rawR.
-      Proof. rewrite rawR_eq. solve_cfrac_valid. Qed.
-
-      #[global] Instance rawR_observe_agree : AgreeCF1 rawR.
-      Proof.
-        intros. rewrite rawR_eq/rawR_def.
-        apply: as_Rep_only_provable_observe_2=> p.
-        iIntros "Hptsto1 Hptsto2".
-        iPoseProof (tptsto_agree with "Hptsto1 Hptsto2") as "%Hraws"; eauto.
-        iModIntro; iPureIntro; by inversion Hraws.
-      Qed.
-    End rawR.
-
-    Section rawsR.
-      #[global] Instance rawsR_proper :
-        Proper ((=) ==> (=) ==> (⊣⊢)) (@rawsR).
-      Proof. by intros ??-> ??->. Qed.
-      #[global] Instance rawsR_mono :
-        Proper ((=) ==> (=) ==> (⊢)) (@rawsR).
-      Proof. by intros ??-> ??->. Qed.
-
-      #[global] Instance rawsR_timeless q rs :
-        Timeless (rawsR q rs).
-      Proof. apply _. Qed.
-
-      #[global] Instance rawsR_cfractional : CFractional1 rawsR.
-      Proof. apply _. Qed.
-      #[global] Instance rawsR_as_fractional : AsCFractional1 rawsR.
-      Proof. solve_as_cfrac. Qed.
-
-      Lemma rawsR_observe_frac_valid q rs :
-        (0 < length rs) ->
-        Observe [| cQp.frac q ≤ 1 |]%Qp (rawsR q rs).
-      Proof.
-        intros Hlen; rewrite /rawsR; induction rs;
-          by [ simpl in Hlen; lia
-             | rewrite arrayR_cons; apply _].
-      Qed.
-
-      Lemma rawsR_observe_agree q1 q2 rs1 rs2 :
-        length rs1 = length rs2 ->
-        Observe2 [| rs1 = rs2 |] (rawsR q1 rs1) (rawsR q2 rs2).
-      Proof.
-        generalize dependent rs2; induction rs1 as [| r1 ? ?]; intros * Hlen.
-        - destruct rs2; [| simpl in Hlen; lia].
-          rewrite /Observe2; iIntros "? ? !>"; by iPureIntro.
-        - destruct rs2 as [| r2 ?]; [simpl in Hlen; lia |].
-          rewrite !cons_length in Hlen; inversion Hlen.
-          rewrite /rawsR !arrayR_cons;
-            fold (rawsR q1 rs1);
-            fold (rawsR q2 rs2).
-          iIntros "(Htype_ptrR1 & HrawR1 & HrawsR1)
-                   (Htype_ptrR2 & HrawR2 & HrawsR2)".
-          iDestruct (observe_2 [| r1 = r2 |] with "HrawR1 HrawR2") as %->.
-          specialize (IHrs1 rs2 ltac:(auto)).
-          iDestruct (observe_2 [| rs1 = rs2 |] with "HrawsR1 HrawsR2") as %->.
-          iModIntro; by iPureIntro.
-      Qed.
-    End rawsR.
-  End Theory.
+  (** TODO: determine whether this is correct with respect to pointers *)
+  Lemma decode_uint_primR q sz (x : Z) :
+    primR (Tnum sz Unsigned) q (Vint x) -|-
+      Exists (rs : list raw_byte) (l : list N),
+      (**
+      Reconsider: We may only need one list and [raw_bytes_of_val σ
+      (Tnum sz Unsigned) (Vint x) rs]
+      *)
+      [| decodes_uint l x |] **
+      [| raw_int_byte <$> l = rs |] **
+      [| length l = bytesNat sz |] **
+      type_ptrR (Tnum sz Unsigned) **
+      arrayR Tu8 (fun c => primR Tu8 q (Vint c)) (Z.of_N <$> l).
+  Proof.
+    rewrite primR_to_rawsR. f_equiv=>rs. rewrite raw_byte_of_int_eq. split'.
+    - iIntros "(%Hraw & T & Rs)". destruct Hraw as (l & Hdec & Hrs & Hlen).
+      iExists l. iFrame (Hdec Hrs Hlen) "T".
+      rewrite -{}Hrs /rawsR arrayR_eq/arrayR_def. rewrite arrR_mono//.
+      decompose_Forall. apply Forall_forall=>b ? /=.
+      by rewrite raw_int_byte_primR.
+    - iIntros "(%l & %Hdec & %Hrs & %Hlen & #T & Rs)". iFrame "T".
+      iSplit; eauto. rewrite -{}Hrs /rawsR arrayR_eq/arrayR_def. rewrite arrR_mono//.
+      decompose_Forall. apply Forall_forall=>b ? /=.
+      by rewrite raw_int_byte_primR.
+  Qed.
 
 End with_Σ.
 

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -173,6 +173,13 @@ Module Type RAW_BYTES_VAL
       raw_bytes_of_val σ (Tnum sz sgn) (Vint z') rs ->
       z = z'.
 
+  Axiom raw_bytes_of_val_int_bound : forall {σ sz sgn z rs},
+      (**
+      NOTE: We only need this for [sz = W8]
+      *)
+      raw_bytes_of_val σ (Tnum sz sgn) (Vint z) rs ->
+      bound sz sgn z.
+
   Axiom raw_bytes_of_val_sizeof : forall {σ ty v rs},
       raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
 
@@ -270,6 +277,11 @@ Module Type RAW_BYTES_MIXIN
       (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
       val_related σ Tu8 (Vint z) (Vraw raw).
 
+  Lemma val_related_not_raw v1 v2 σ ty :
+    ~~ is_raw v1 -> ~~ is_raw v2 ->
+    val_related σ ty v1 v2 -> v1 = v2.
+  Proof. intros ??. induction 1; naive_solver. Qed.
+
   Lemma val_related_Vint' {σ : genv} ty v1 v2 :
     val_related _ ty v1 v2 ->
     forall z1 z2, v1 = Vint z1 -> v2 = Vint z2 ->
@@ -306,6 +318,24 @@ Module Type RAW_BYTES_MIXIN
     val_related _ ty (Vptr p1) v2 ->
     Vptr p1 = v2.
   Proof. intros; eapply val_related_Vptr'; eauto. Qed.
+
+  Lemma val_related_Vundef' {σ} ty v1 v2 :
+    val_related σ ty v1 v2 ->
+    v1 = Vundef -> v2 = Vundef.
+  Proof. induction 1; naive_solver. Qed.
+
+  Lemma val_related_Vundef {σ} ty v :
+    val_related σ ty Vundef v -> v = Vundef.
+  Proof. intros. exact: val_related_Vundef'. Qed.
+
+  Lemma val_related_Vraw' {σ} ty v1 v2 :
+    val_related σ ty v1 v2 ->
+    forall r1 r2, v1 = Vraw r1 -> v2 = Vraw r2 -> r1 = r2.
+  Proof. induction 1; naive_solver. Qed.
+
+  Lemma val_related_Vraw {σ} ty r1 r2 :
+    val_related σ ty (Vraw r1) (Vraw r2) -> r1 = r2.
+  Proof. intros. exact: val_related_Vraw'. Qed.
 
   Lemma val_related_qual :
     forall σ t ty v1 v2,
@@ -433,7 +463,7 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
         has_type_prop v (Tenum nm) <->
         exists tu ty ls,
           tu ⊧ σ /\ tu !! nm = Some (Genum ty ls) /\
-          (~is_raw v) /\ has_type_prop v (drop_qualifiers ty).
+          ~~ is_raw v /\ has_type_prop v (drop_qualifiers ty).
 
     (** Note in the case of [Tuchar], the value [v] could be a
         raw value. *)
@@ -594,3 +624,26 @@ Declare Module Export PTRS_INTF_AXIOM : PTRS_INTF.
 Module Export VALUES_INTF_AXIOM <: VALUES_INTF_FUNCTOR PTRS_INTF_AXIOM.
   Include VALUES_INTF_FUNCTOR PTRS_INTF_AXIOM.
 End VALUES_INTF_AXIOM.
+
+(** Derived *)
+
+Lemma has_type_prop_raw_bytes_of_val {σ} z raw :
+  raw_bytes_of_val σ Tu8 (Vint z) [raw] ->
+  has_type_prop (Vraw raw) Tu8 <-> has_type_prop (Vint z) Tu8.
+Proof.
+  rewrite !has_int_type'. split.
+  { intros [(? & ? & _)|(? & ? & _)]; first done.
+    left. eexists; split; first done. exact: raw_bytes_of_val_int_bound. }
+  { intros [(? & ? & _)|(? & ? & _)]; last done. right. by eexists. }
+Qed.
+
+Lemma has_type_prop_val_related {σ} ty v1 v2 :
+  val_related σ ty v1 v2 ->
+  has_type_prop v1 ty <-> has_type_prop v2 ty.
+Proof.
+  induction 1.
+  { done. }
+  { by rewrite -!has_type_prop_qual_iff. }
+  all: by rewrite has_type_prop_raw_bytes_of_val.
+Qed.
+

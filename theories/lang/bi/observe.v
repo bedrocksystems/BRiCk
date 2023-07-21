@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-21,23 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -127,6 +127,13 @@ End proof_mode.
 Section observe.
   Context {PROP : bi}.
   Implicit Types P Q : PROP.
+
+  #[global] Instance Observe_trans : Transitive (Observe (PROP:=PROP)).
+  Proof.
+    intros P Q R ??. iIntros "R".
+    iDestruct (observe Q with "R") as "#Q".
+    iApply (observe with "Q").
+  Qed.
 
   #[global] Instance Observe2_symm Q : Symmetric (Observe2 Q).
   Proof. Fail apply _. iIntros (P1 P2 HQ) "P2 P1". iApply (HQ with "P1 P2"). Qed.
