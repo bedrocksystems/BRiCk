@@ -39,7 +39,7 @@
 
 <div class="code">
 <span class="comment">(*<br/>
-&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020-21,23&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020-2023&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
@@ -213,6 +213,14 @@ Enable things like <span class="inlinecode"><span class="id" title="var">iIntros
 <span class="id" title="keyword">Section</span> <a id="observe" class="idref" href="#observe"><span class="id" title="section">observe</span></a>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="PROP:65" class="idref" href="#PROP:65"><span class="id" title="binder">PROP</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#bi"><span class="id" title="record">bi</span></a>}.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> <span class="id" title="var">P</span> <span class="id" title="var">Q</span> : <a class="idref" href="bedrock.lang.bi.observe.html#observe.PROP"><span class="id" title="variable">PROP</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="Observe_trans" class="idref" href="#Observe_trans"><span class="id" title="instance">Observe_trans</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Classes.RelationClasses.html#Transitive"><span class="id" title="class">Transitive</span></a> (<a class="idref" href="bedrock.lang.bi.observe.html#Observe"><span class="id" title="class">Observe</span></a> (<span class="id" title="var">PROP</span>:=<a class="idref" href="bedrock.lang.bi.observe.html#observe.PROP"><span class="id" title="variable">PROP</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">P</span> <span class="id" title="var">Q</span> <span class="id" title="var">R</span> ??. <span class="id" title="var">iIntros</span> "R".<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iDestruct</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.bi.observe.html#observe"><span class="id" title="definition">observe</span></a> <span class="id" title="var">Q</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">with</span></a> "R"<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">)</span></a> <span class="id" title="keyword">as</span> "#Q".<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">iApply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.bi.observe.html#observe"><span class="id" title="definition">observe</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">with</span></a> "Q"<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.ltac_tactics.html#c65a9d4b357f2165cc71fe44c81db669"><span class="id" title="notation">)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>
 &nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="Observe2_symm" class="idref" href="#Observe2_symm"><span class="id" title="instance">Observe2_symm</span></a> <a id="Q:66" class="idref" href="#Q:66"><span class="id" title="binder">Q</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Classes.RelationClasses.html#Symmetric"><span class="id" title="class">Symmetric</span></a> (<a class="idref" href="bedrock.lang.bi.observe.html#Observe2"><span class="id" title="class">Observe2</span></a> <a class="idref" href="bedrock.lang.bi.observe.html#Q:66"><span class="id" title="variable">Q</span></a>).<br/>
