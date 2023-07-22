@@ -665,8 +665,6 @@ Module Type CPP_LOGIC
         an object is fully constructed, and are taken back at the end of the lifetime.
         This is related to the "construction state" in Tahina's work, i.e.
         <https://inria.hal.science/file/index/docid/674663/filename/cpp-construction.pdf>
-
-        TODO: The name [_padding] is historical and should be replaced by a better name.
      *)
     Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
 
