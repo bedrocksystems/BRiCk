@@ -993,8 +993,3 @@ Notation is_null := nullR (only parsing).
 Notation is_null_eq := nullR_eq (only parsing).
 #[deprecated(note="since 2022-04-07; use `nullR_def` instead")]
 Notation is_null_def := nullR_def (only parsing).
-
-#[deprecated(note="since 2023-07-13; use `structR` instead")]
-Notation struct_paddingR q cls := (structR cls q) (only parsing).
-#[deprecated(note="since 2023-07-13; use `unionR` instead")]
-Notation union_paddingR q cls := (unionR cls q) (only parsing).
