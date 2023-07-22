@@ -830,26 +830,6 @@ Section with_cpp.
         wp_operand tu ρ e (fun v frees => has_type v (type_of e) -* Q v frees)
     |-- wp_operand tu ρ e Q.
 
-  (* BEGIN wp_init <-> wp_operand *)
-  Axiom wp_operand_wp_init : forall {σ : genv} tu ρ ty addr e Q,
-      is_value_type ty ->
-      wp_operand tu ρ e (fun v frees => _at addr (primR ty (cQp.mut 1) v) -* Q frees)
-    |-- wp_init tu ρ ty addr e Q.
-
-  (** This is justified in the logic but technically not sactioned by the standard
-
-    [[
-   Axiom wp_init_wp_operand : forall {σ : genv} M ρ e Q (ty := type_of e),
-      is_value_type ty ->
-      wp_prval M ρ e (fun p ty' frees =>
-         [| ty' = ty |] -*
-         ∃ v, _at p (primR ty (cQp.mut 1) v) ** Q v frees)
-    |-- wp_operand M ρ e Q.
-    ]]
-   *)
-  (* END wp_init <-> wp_operand *)
-
-
   #[global] Instance Proper_wp_operand {σ : genv} :
     Proper (sub_module ==> eq ==> eq ==> Mrel _) (@wp_operand σ).
   Proof.

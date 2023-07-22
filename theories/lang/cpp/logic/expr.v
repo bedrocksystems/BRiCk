@@ -1285,9 +1285,6 @@ Module Type Expr.
                reflect the fact that the C++ Standard introduces
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
-
-               NOTE the use of [wp_initialize] here is essentially the same as [wp_init]
-               because you can not have arrays of reference-type.
            *)
          wp_initialize ety (base .[ ety ! idx ]) e
                        (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
