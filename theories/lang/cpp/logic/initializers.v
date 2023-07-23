@@ -423,6 +423,18 @@ Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (�
 #[global] Arguments wp_initialize {_ _ _} _ _ !_ _ _ _ / : assert.
 (* END wp_initialize *)
 
+Lemma wp_initialize_unqualified_well_typed `{Σ : cpp_logic, σ : genv}
+  tu ρ cv ty addr init (Q : FreeTemps.t -> epred) :
+  (* this only holds if [ty] is a non-reference type. if [ty] is a reference type, then
+     the resulting location does not really have a type because the location of references
+     is not really a C++ location.
+     One option is to remove the reference collapsing quotient and instead exclude those types
+     in the dynamic semantics.
+   *)
+      wp_initialize_unqualified tu ρ cv ty addr init (fun free => reference_to ty addr -* Q free)
+  |-- wp_initialize_unqualified tu ρ cv ty addr init Q.
+Proof. Admitted.
+
 (**
 [wpi cls this init Q] evaluates the initializer [init] from the object
 [thisp] (of type [Tnamed cls]) and then proceeds as [Q].
