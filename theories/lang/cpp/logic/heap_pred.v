@@ -483,7 +483,11 @@ Section with_cpp.
   Qed.
 
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
-      uninitialized. *)
+      uninitialized.
+
+      NOTE: this can be defined by recursion on [ty] assuming well-founded translation
+            unit.
+   *)
   Parameter anyR : ∀ {resolve} (ty : type) (q : cQp.t), Rep.
   #[global] Arguments anyR {resolve} ty q : rename.
   #[global] Declare Instance anyR_timeless : ∀ resolve ty q, Timeless (anyR ty q).
