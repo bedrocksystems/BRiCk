@@ -333,6 +333,7 @@ magic wands.
 *)
 #[local] Notation fupd_compatible := false (only parsing).
 
+(* BEGIN wp_initialize *)
 #[local] Definition wp_initialize_unqualified_body `{Σ : cpp_logic, σ : genv}
     (u : bool) (tu : translation_unit) (ρ : region)
     (cv : type_qualifiers) (ty : decltype)
@@ -420,6 +421,7 @@ Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (�
   qual_norm (wp_initialize_unqualified tu ρ) qty addr init Q.
 #[global] Hint Opaque wp_initialize : typeclass_instances.
 #[global] Arguments wp_initialize {_ _ _} _ _ !_ _ _ _ / : assert.
+(* END wp_initialize *)
 
 (**
 [wpi cls this init Q] evaluates the initializer [init] from the object
