@@ -153,7 +153,7 @@ Module Type Expr.
           Exists r,
           (Exists q, p |-> primR (Tref $ erase_qualifiers ty) q (Vref r) ** True) //\\ Q r
           (* The rules for [primR] guarantee [strict_valid_ptr r] *)
-      | _ => has_type (Vref p) (Tref t) ** Q p
+      | _ => has_type (Vref p) (Tref $ erase_qualifiers t) ** Q p
       end.
 
     Definition _var (ρ : region) (v : VarRef) : ptr :=
