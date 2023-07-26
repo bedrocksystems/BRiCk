@@ -610,6 +610,21 @@ Section with_cpp.
                                                                      ^^^^^^^^^^^^^^^^^^ - just [valid_ptr] if [n = 0]?
      ^^^^ this is questionable because of materialized references
 
+     Consider
+     <<
+     struct X {};
+     struct C {
+        int a;
+        int& b;
+        int&& c;
+        X d;
+        X& e;
+        X&& f;
+        X g[1];
+        X& g[1];
+     }
+     >>
+
      * [primR_observe_has_type] states: [primR ty q v |-- has_type v ty].
        We use [primR (Tref ty) q v] to materialize a reference.
      It would be nice if we had [p |-> primR ty q v |-- has_type (Vref p) (Tref ty)], but this
