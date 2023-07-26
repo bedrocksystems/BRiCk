@@ -753,7 +753,7 @@ Module Type Expr.
       | Tnamed derived , Tnamed base =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
-            valid_ptr addr' ** Q addr' free)
+            strict_valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_lval (Ecast (Cderived2base path) e Lvalue ty) Q.
@@ -763,7 +763,7 @@ Module Type Expr.
       | Tnamed derived , Tnamed base =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
-            valid_ptr addr' ** Q addr' free)
+            strict_valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_xval (Ecast (Cderived2base path) e Xvalue ty) Q.
@@ -785,7 +785,7 @@ Module Type Expr.
       | Tnamed base , Tnamed derived =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, base_to_derived derived path in
-            valid_ptr addr' ** Q addr' free)
+            strict_valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_lval (Ecast (Cbase2derived path) e Lvalue ty) Q.
@@ -795,7 +795,7 @@ Module Type Expr.
       | Tnamed base , Tnamed derived =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, base_to_derived derived path in
-            valid_ptr addr' ** Q addr' free)
+            strict_valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_xval (Ecast (Cbase2derived path) e Xvalue ty) Q.
