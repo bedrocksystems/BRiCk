@@ -728,7 +728,7 @@ Module Type Expr.
              (([| (0 < va)%N |] **
                Exists p : ptr,
                  pinned_ptr va p **
-                 type_ptr (erase_qualifiers ptype) p **
+                 has_type (Vptr p) (Tptr ptype) **
                  Q (Vptr p) free) \\//
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
