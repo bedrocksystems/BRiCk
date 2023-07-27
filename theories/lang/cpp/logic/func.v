@@ -38,13 +38,13 @@ This
 *)
 mlock Definition svalid_members `{Σ : cpp_logic thread_info} {resolve:genv}
           (cls : globname)
-          (members : list Member)
+          (members : list (bs * type))
           : Rep :=
   svalidR ** aligned_ofR (Tnamed cls) **
   [∗list] m ∈ members,
-    if negb (zero_sized_array m.(mem_type)) then
-      _field {| f_type := cls ; f_name := m.(mem_name) |} |->
-        (svalidR ** aligned_ofR (erase_qualifiers m.(mem_type)))
+    if negb (zero_sized_array m.2) then
+      _field {| f_type := cls ; f_name := m.1 |} |->
+        (svalidR ** aligned_ofR (erase_qualifiers m.2))
         (* Alignment should be deducible from alignment of [this], but it is
         necessary for [wp_lval_deref] and inconvenient to deduce. *)
       else emp.
@@ -425,7 +425,7 @@ Section with_cpp.
       (** Provide strict validity for [this] and immediate members,
       initialize the bases, then the identity, then initialize the members, following
       http://eel.is/c++draft/class.base.init#13 (except virtual base classes, which are unsupported) *)
-      this |-> svalid_members cls s.(s_fields) -*
+      this |-> svalid_members cls ((fun m => (m.(mem_name), m.(mem_type))) <$> s.(s_fields)) -*
       bases (ident (members (this |-> structR cls (cQp.mut 1) -* Q)))
       (* NOTE we get the [structR] at the end since
          [structR (cQp.mut 1) cls |-- type_ptrR (Tnamed cls)].
