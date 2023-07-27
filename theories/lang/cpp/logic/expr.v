@@ -152,8 +152,8 @@ Module Type Expr.
       | Trv_ref ty =>
           Exists r,
           (Exists q, p |-> primR (Tref $ erase_qualifiers ty) q (Vref r) ** True) //\\ Q r
-          (* The rules for [primR] guarantee [strict_valid_ptr r] *)
-      | _ => has_type (Vref p) (Tref $ erase_qualifiers t) ** Q p
+          (* The rules for [primR] guarantee [reference_to ty r] *)
+      | _ => reference_to (erase_qualifiers t) p ** Q p
       end.
 
     Definition _var (ρ : region) (v : VarRef) : ptr :=
@@ -753,7 +753,7 @@ Module Type Expr.
       | Tnamed derived , Tnamed base =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
-            strict_valid_ptr addr' ** Q addr' free)
+            reference_to ty addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_lval (Ecast (Cderived2base path) e Lvalue ty) Q.
@@ -763,7 +763,7 @@ Module Type Expr.
       | Tnamed derived , Tnamed base =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
-            strict_valid_ptr addr' ** Q addr' free)
+            reference_to ty addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_xval (Ecast (Cderived2base path) e Xvalue ty) Q.
@@ -773,7 +773,7 @@ Module Type Expr.
       | Some (Tnamed derived) , Some (Tnamed base) =>
           wp_operand e (fun addr free =>
             let addr' := _eqv addr ,, derived_to_base derived path in
-            valid_ptr addr' ** Q (Vptr addr') free)
+            has_type (Vptr addr') ty ** Q (Vptr addr') free)
       | _, _ => False
       end
       |-- wp_operand (Ecast (Cderived2base path) e Prvalue ty) Q.
@@ -785,7 +785,7 @@ Module Type Expr.
       | Tnamed base , Tnamed derived =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, base_to_derived derived path in
-            strict_valid_ptr addr' ** Q addr' free)
+            reference_to ty addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_lval (Ecast (Cbase2derived path) e Lvalue ty) Q.
@@ -795,7 +795,7 @@ Module Type Expr.
       | Tnamed base , Tnamed derived =>
           wp_glval e (fun addr free =>
             let addr' := addr ,, base_to_derived derived path in
-            strict_valid_ptr addr' ** Q addr' free)
+            reference_to ty addr' ** Q addr' free)
       | _, _ => False
       end
       |-- wp_xval (Ecast (Cbase2derived path) e Xvalue ty) Q.
@@ -805,7 +805,7 @@ Module Type Expr.
          | Some (Tnamed base), Some (Tnamed derived) =>
           wp_operand e (fun addr free =>
             let addr' := _eqv addr ,, base_to_derived derived path in
-            valid_ptr addr' ** Q (Vptr addr') free)
+            has_type (Vptr addr') ty ** Q (Vptr addr') free)
          | _, _ => False
         end
       |-- wp_operand (Ecast (Cbase2derived path) e Prvalue ty) Q.
