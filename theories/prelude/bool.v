@@ -15,27 +15,31 @@ Notation "(<=)" := Bool.le (only parsing) : bool_scope.
 We can't readily use SSR's view lemmas due to [Is_true] vs [is_true].
 *)
 
+Lemma introT {P b} : reflect P b -> P -> b.
+Proof. by destruct 1. Qed.
+
+Lemma elimT {P b} : reflect P b -> b -> P.
+Proof. by destruct 1. Qed.
+
 (**
 This coercion enables the application of view lemmas to boolean
 expressions.
 *)
-Lemma elimT {b P} : reflect P b -> b -> P.
-Proof. by destruct 1. Qed.
 #[nonuniform] Coercion elimT : reflect >-> Funclass.
 
 Lemma boolP (b : bool) : b \/ ~~ b.
 Proof. destruct b; auto. Qed.
 
-Lemma negP (b : bool) : reflect (~ b) (~~ b).
+Lemma negP {b : bool} : reflect (~ b) (~~ b).
 Proof. destruct b; constructor; naive_solver. Qed.
 
-Lemma andP (b1 b2 : bool) : reflect (b1 /\ b2) (b1 && b2).
+Lemma andP {b1 b2 : bool} : reflect (b1 /\ b2) (b1 && b2).
 Proof. destruct b1, b2; constructor; naive_solver. Qed.
 
-Lemma orP (b1 b2 : bool) : reflect (b1 \/ b2) (b1 || b2).
+Lemma orP {b1 b2 : bool} : reflect (b1 \/ b2) (b1 || b2).
 Proof. destruct b1, b2; constructor; naive_solver. Qed.
 
-Lemma implyP (b1 b2 : bool) : reflect (b1 -> b2) (b1 ==> b2).
+Lemma implyP {b1 b2 : bool} : reflect (b1 -> b2) (b1 ==> b2).
 Proof. destruct b1, b2; constructor; naive_solver. Qed.
 
 (**
