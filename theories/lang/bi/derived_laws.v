@@ -236,8 +236,10 @@ Section derived_laws.
     { apply and_intro; f_equiv; trivial using and_elim_l, and_elim_r. }
   Qed.
 
-  Lemma wand_wand_swap (P Q R : PROP) :
-    (P -∗ Q -∗ R) -> (Q -∗ P -∗ R).
+  Lemma wand_wand (P Q R : PROP) : (P -∗ Q -∗ R) ⊣⊢ (Q -∗ P -∗ R).
+  Proof. by rewrite !wand_curry comm. Qed.
+
+  Lemma wand_wand_swap (P Q R : PROP) : (P ⊢ Q -∗ R) -> (Q ⊢ P -∗ R).
   Proof. intros HW. apply wand_intro_l, wand_elim_l', HW. Qed.
 
   Lemma and_wand_distr_r (P Q R : PROP) :
