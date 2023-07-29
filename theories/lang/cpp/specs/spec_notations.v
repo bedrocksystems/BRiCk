@@ -24,11 +24,11 @@ Reserved Notation "'\prepost{' x .. y '}' pp X"
    format "'[v' '[hv  ' '\prepost{' x  ..  y '}'  '/' pp ']' '//' X ']'").
 
 Reserved Notation "'\let' x ':=' e X"
-  (at level 10, x pattern, e at level 150, X at level 200, right associativity,
+  (at level 10, x binder, e at level 150, X at level 200, right associativity,
    format "'[v' '[hv  ' '\let'      x  ':='  '/' e ']' '//' X ']'").
 
 Reserved Notation "'\let{' x .. y '}' z ':=' e X"
-  (at level 10, x binder, y binder, z pattern, e at level 149, X at level 200, right associativity,
+  (at level 10, x binder, y binder, z binder, e at level 149, X at level 200, right associativity,
    format "'[v' '[hv  ' '\let{' x  ..  y '}'      z  ':='  '/' e ']' '//' X ']'").
 
 Reserved Notation "'\require' pre X"

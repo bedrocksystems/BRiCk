@@ -72,7 +72,7 @@ Section with_Σ.
    \with  (a : nat)
    \let x := 3%nat
    \with (lm : nat * nat)
-   \let (l,m) := lm
+   \let '(l,m) := lm
    \require l+m = 3
    \prepost emp
    \persist emp
