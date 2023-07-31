@@ -260,8 +260,9 @@ Module Type Expr.
                       match v with
                       | Vptr p =>
                         (* This side-condition is not redundant for [&*p].
-                        Technically, [aligned_ofR] should be implied by *)
-                        p |-> aligned_ofR (erase_qualifiers ty) ** p |-> svalidR **
+                           [aligned_ofR] should be implied by the fact
+                           that the pointer [v] is well typed. *)
+                        reference_to (erase_qualifiers ty) p **
                         Q p free
                       | _ => False
                       end)
@@ -513,20 +514,23 @@ Module Type Expr.
         end)
       |-- wp_init ty p (Ecast Cnoop e Prvalue ty) Q.
     Axiom wp_operand_cast_noop : forall ty e Q,
-        wp_operand e Q
+            wp_operand e (fun v free => has_type v ty ** Q v free)
         |-- wp_operand (Ecast Cnoop e Prvalue ty) Q.
 
     Axiom wp_lval_cast_noop : forall ty e Q,
-        wp_glval e Q
-        |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
+          (letI* p, free := wp_glval e in
+           reference_to ty p ** Q p free)
+      |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
 
     Axiom wp_xval_cast_noop : forall ty e Q,
-        wp_glval e Q
-        |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
+          (letI* p, free := wp_glval e in
+           reference_to ty p ** Q p free)
+      |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
 
-    Lemma wp_lval_lval_cast_noop ty e Q :
+    (*
+    Lemma wp_lval_cast_noop ty e Q :
         valcat_of e = Lvalue ->
-        wp_lval e Q
+            wp_glval e Q
         |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
     Proof. intros. by rewrite -wp_lval_cast_noop wp_glval_lval. Qed.
 
@@ -550,28 +554,29 @@ Module Type Expr.
         wp_lval e Q
         |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
     Proof. intros. by rewrite -wp_xval_cast_noop wp_glval_lval. Qed.
+     *)
 
     Definition int2bool_not_num (v : val) : Set.
     Proof. exact unit. Qed.
 
     Axiom wp_operand_cast_int2bool : forall ty e Q,
-        wp_operand e (fun v free =>
+         (letI* v, free := wp_operand e in
           match v with
           | Vint n => Q (Vbool (bool_decide (n <> 0))) free
           | _ => ERROR (int2bool_not_num v)
           end)
-        |-- wp_operand (Ecast Cint2bool e Prvalue ty) Q.
+      |-- wp_operand (Ecast Cint2bool e Prvalue ty) Q.
 
     Definition ptr2bool_not_ptr (v : val) : Set.
     Proof. exact unit. Qed.
 
     Axiom wp_operand_cast_ptr2bool : forall ty e Q,
-        wp_operand e (fun v free =>
+         (letI* v, free := wp_operand e in
           match v with
           | Vptr p => Q (Vbool (bool_decide (p <> nullptr))) free
           | _ => ERROR (ptr2bool_not_ptr v)
           end)
-        |-- wp_operand (Ecast Cptr2bool e Prvalue ty) Q.
+      |-- wp_operand (Ecast Cptr2bool e Prvalue ty) Q.
 
     (** [Cfun2ptr] is a cast from a function to a pointer.
 
@@ -636,7 +641,7 @@ Module Type Expr.
         |-- wp_init ty p (Ecast (Cuser Z) e Prvalue ty) Q.
 
     Axiom wp_operand_cast_user : forall e ty Z Q,
-            type_of e = ty ->
+        type_of e = ty ->
             wp_operand e Q
         |-- wp_operand (Ecast (Cuser Z) e Prvalue ty) Q.
 
@@ -1255,8 +1260,7 @@ Module Type Expr.
 
     Definition type_of_ctor tu obj : option type :=
       match tu.(symbols) !! obj with
-      | Some (Oconstructor ctor as v) =>
-          Some (type_of_value v)
+      | Some (Oconstructor ctor as v) => Some (type_of_value v)
       | _ => None
       end.
 
