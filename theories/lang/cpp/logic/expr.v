@@ -1290,10 +1290,11 @@ Module Type Expr.
            end
       |-- wp_init ty this (Econstructor cnd es ty) Q.
 
-    Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
+    Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z)
+      (Q : FreeTemps -> mpred) : mpred :=
       match es with
       | nil =>
-        base .[ ety ! idx ] |-> validR -* Q FreeTemps.id
+        Q FreeTemps.id
       | e :: rest =>
           (* NOTE: We nest the recursive calls to `wp_array_init` within
                the continuation of the `wp_initialize` statement to
@@ -1301,8 +1302,8 @@ Module Type Expr.
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-         wp_initialize ety (base .[ ety ! idx ]) e
-                       (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
+         letI* free := wp_initialize ety (base .[ ety ! idx ]) e in
+         interp free $ wp_array_init ety base rest (Z.succ idx) Q
       end.
 
     Lemma wp_array_init_frame ety base : forall es ix Q Q',
@@ -1311,7 +1312,7 @@ Module Type Expr.
           wp_array_init ety base es ix Q'.
     Proof.
       induction es; simpl; intros; iIntros "X".
-      { iIntros "A B"; iApply "X"; iApply "A"; done. }
+      { iIntros "A"; iApply "X"; iApply "A"; done. }
       { iApply wp_initialize_frame; [done|]. iIntros (?).
         iApply interp_frame. by iApply IHes. }
     Qed.
@@ -1325,6 +1326,9 @@ Module Type Expr.
     Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : N)
                (Q : FreeTemps -> mpred) : mpred :=
       let len := N.of_nat (length es) in
+      let Q free :=
+          base |-> type_ptrR (Tarray ety sz) -* Q free
+      in
       match (len ?= sz)%N with
       | Lt =>
           match f with
@@ -1347,9 +1351,12 @@ Module Type Expr.
     Proof.
       rewrite /wp_array_init_fill.
       case_match; eauto.
-      { iIntros "X"; iApply wp_array_init_frame. done. }
+      { iIntros "H"; iApply wp_array_init_frame.
+        iIntros (?) "A B"; iApply "H"; iApply "A"; done. }
       { case_match; eauto.
-        iApply wp_array_init_frame. }
+        iIntros "H".
+        iApply wp_array_init_frame.
+        iIntros (?) "A B"; iApply "H"; iApply "A"; done. }
     Qed.
 
     (** [is_array_of aty ety] checks that [aty] is a type representing an
@@ -1613,7 +1620,7 @@ Module Type Expr.
                       _arrayloop_init (Rbind (opaque_val oname) p
                                              (Rbind (arrayloop_loop_index level) idxp ρ))
                                       level trg init ety
-                                      (Q free)
+                                      (trg |-> type_ptrR (Tarray ety sz) -* Q free)
                                       sz 0)
       |-- wp_init tu ρ (Tarray ety sz) trg
                     (Earrayloop_init oname src level sz init ty) Q.
