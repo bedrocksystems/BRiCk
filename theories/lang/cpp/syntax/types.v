@@ -1368,6 +1368,16 @@ Lemma is_value_type_decompose_type t :
   is_value_type t = is_value_type (decompose_type t).2.
 Proof. by rewrite is_value_type_qual_norm qual_norm_decompose_type. Qed.
 
+(** For use in [init_validR] *)
+Fixpoint zero_sized_array ty : bool :=
+  qual_norm (fun _ t => match t with
+                     | Tarray ety n =>
+                         if bool_decide (n = 0%N) then true
+                         else  zero_sized_array ety
+                     | _ => false
+                     end) ty.
+#[global] Arguments zero_sized_array !_ /.
+
 (**
 [is_reference_type t] returns [true] if [t] is a (possibly
 cv-qualified) reference type.
