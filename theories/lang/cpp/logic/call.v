@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2022 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -236,16 +236,49 @@ Section with_resolve.
     iApply (wp_args_frame_strong with "X").
     iIntros (??????); iApply "Y".
   Qed.
+End with_resolve.
 
-  (*
-     The following definitions describe the "return"-convention. Specifically,
-     they describe how the returned pointer is received into the value category that
-     it is called with.
-     We consolidate these definitions here because they are shared between all
-     function calls.
-   *)
-  Definition xval_receive (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
-    Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
+(*
+The following definitions describe the "return"-convention.
+Specifically, they describe how the returned pointer is received into
+the value category that it is called with.
+
+We consolidate these definitions here because they are shared between
+all function calls.
+*)
+Definition xval_receive `{Σ : cpp_logic, σ : genv}
+    (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
+  (**
+  [primR] is enough because C++ code never uses the raw bytes
+  underlying an inhabitant of a reference type.
+  *)
+  Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
+#[global] Arguments xval_receive {_ _ _} _ _ _ / : assert.
+
+Definition lval_receive `{Σ : cpp_logic, σ : genv}
+    (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
+  (**
+  [primR] is enough because C++ code never uses the raw bytes
+  underlying an inhabitant of a reference type.
+  *)
+  Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
+#[global] Arguments lval_receive {_ _ _} _ _ _ / : assert.
+
+mlock Definition operand_receive `{Σ : cpp_logic, σ : genv}
+    (ty : type) (res : ptr) (Q : val -> epred) : mpred :=
+  Exists v,
+  let cv := qual_norm (fun cv _ => cv) ty in
+  res |-> tptsto_fuzzyR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) v **
+  Q v.
+#[global] Arguments operand_receive {_ _ _} _ _ _ : assert.	(* mlock bug *)
+
+Definition init_receive `{Σ : cpp_logic, σ : genv}
+    (addr res : ptr) (Q : epred) : mpred :=
+  [| addr = res |] -* Q.
+#[global] Arguments init_receive {_ _ _} _ _ _ / : assert.
+
+Section receive.
+  Context `{Σ : cpp_logic, σ : genv}.
 
   Lemma xval_receive_frame ty res (Q Q' : ptr -> epred) :
       Forall v, Q v -* Q' v |-- xval_receive ty res Q -* xval_receive ty res Q'.
@@ -253,39 +286,21 @@ Section with_resolve.
     rewrite /xval_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
   Qed.
 
-  Definition lval_receive (ty : type) (res : ptr) (Q : ptr -> epred) : mpred :=
-    Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
-
   Lemma lval_receive_frame ty res (Q Q' : ptr -> epred) :
       Forall v, Q v -* Q' v |-- lval_receive ty res Q -* lval_receive ty res Q'.
   Proof.
     rewrite /lval_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
   Qed.
 
-  Definition operand_receive (ty : type) (res : ptr) (Q : val -> epred) : mpred :=
-    Exists v,
-    let c := qual_norm (fun cv _ => q_const cv) ty in
-    res |-> primR (erase_qualifiers ty) (cQp.mk c 1) v **
-    Q v.
-
   Lemma operand_receive_frame ty res (Q Q' : val -> epred) :
       Forall v, Q v -* Q' v |-- operand_receive ty res Q -* operand_receive ty res Q'.
   Proof.
-    rewrite /operand_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
+    rewrite operand_receive.unlock. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
   Qed.
-
-  Definition init_receive (addr res : ptr) (Q : epred) : mpred :=
-    [| addr = res |] -* Q.
 
   Lemma init_receive_frame addr res (Q Q' : epred) :
       Q -* Q' |-- init_receive addr res Q -* init_receive addr res Q'.
   Proof.
     rewrite /init_receive. iIntros "X Y Z"; iApply "X"; iApply "Y"; done.
   Qed.
-
-  #[global] Arguments xval_receive _ _ _ / : assert.
-  #[global] Arguments lval_receive _ _ _ / : assert.
-  #[global] Arguments operand_receive _ _ _ / : assert.
-  #[global] Arguments init_receive _ _ _ / : assert.
-
-End with_resolve.
+End receive.

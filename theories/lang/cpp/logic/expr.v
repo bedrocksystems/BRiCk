@@ -913,7 +913,7 @@ Module Type Expr.
 
     Axiom wp_operand_call : forall ty f es Q,
         wp_call (evaluation_order.order_of OOCall) (type_of f) f es (fun res free =>
-           Reduce (operand_receive ty res $ fun v => Q v free))
+           operand_receive ty res $ fun v => Q v free)
        |-- wp_operand (Ecall f es ty) Q.
 
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,

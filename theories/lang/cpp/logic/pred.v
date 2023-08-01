@@ -1353,7 +1353,7 @@ Section has_type.
   Qed.
 
   Lemma has_type_val_related {σ} ty v1 v2 :
-    val_related σ ty v1 v2 ->
+    val_related ty v1 v2 ->
     has_type v1 ty -|- has_type v2 ty.
   Proof.
     induction 1.
@@ -1393,7 +1393,7 @@ Section has_type.
   Qed.
 
   Lemma has_type_or_undef_val_related {σ} ty v1 v2 :
-    val_related σ ty v1 v2 ->
+    val_related ty v1 v2 ->
     has_type_or_undef v1 ty |-- has_type_or_undef v2 ty.
   Proof.
     induction 1.

@@ -356,6 +356,9 @@ cv-qualified) reference type.
 Definition is_reference_type (t : type) : bool :=
   is_ref (drop_qualifiers t).
 
+Lemma value_type_non_ref {ty} : is_value_type ty -> ~~ is_reference_type ty.
+Proof. by induction ty. Qed.
+
 Lemma is_reference_type_erase_qualifiers t :
   is_reference_type (erase_qualifiers t) = is_reference_type t.
 Proof. induction t; cbn; auto. Qed.
@@ -408,6 +411,42 @@ Section as_ref'.
   Lemma as_ref_decompose_type t : as_ref' t = as_ref' (decompose_type t).2.
   Proof. by rewrite as_ref_qual_norm qual_norm_decompose_type. Qed.
 End as_ref'.
+
+(**
+[is_aggregate_type t] returns [true] if [t] is a (possibly qualified)
+structure or array type.
+*)
+Definition is_aggregate_type (ty : type) : bool :=
+  match drop_qualifiers ty with
+  | Tnamed _ | Tarray _ _ => true
+  | _ => false
+  end.
+
+Lemma is_aggregate_type_drop_qualifiers ty :
+  is_aggregate_type (drop_qualifiers ty) = is_aggregate_type ty.
+Proof.
+  by rewrite /is_aggregate_type drop_qualifiers_idemp.
+Qed.
+Lemma is_aggregate_type_erase_qualifiers ty :
+  is_aggregate_type (erase_qualifiers ty) = is_aggregate_type ty.
+Proof. by induction ty. Qed.
+
+Lemma is_aggregate_type_qual_norm' cv ty :
+  is_aggregate_type ty = qual_norm' (fun _ ty' => is_aggregate_type ty') cv ty.
+Proof. by elim: (qual_norm'_ok _ _ _). Qed.
+Lemma is_aggregate_type_qual_norm ty :
+  is_aggregate_type ty = qual_norm (fun _ ty' => is_aggregate_type ty')  ty.
+Proof. apply is_aggregate_type_qual_norm'. Qed.
+Lemma is_aggregate_type_decompose_type ty :
+  is_aggregate_type ty = is_aggregate_type (decompose_type ty).2.
+Proof.
+  by rewrite is_aggregate_type_qual_norm qual_norm_decompose_type.
+Qed.
+
+Lemma aggregate_type_non_ref ty : is_aggregate_type ty -> ~~ is_reference_type ty.
+Proof. by induction ty. Qed.
+Lemma aggregate_type_non_val ty : is_aggregate_type ty -> ~~ is_value_type ty.
+Proof. by induction ty. Qed.
 
 (**
 Setting aside uninstantiated template arguments, there's a total

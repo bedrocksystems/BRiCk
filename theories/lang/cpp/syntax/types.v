@@ -706,6 +706,10 @@ Lemma decompose_type_qual q t :
     (merge_tq q p.1, p.2).
 Proof. by rewrite decompose_type_unfold. Qed.
 
+Lemma decompose_type_idemp t :
+  decompose_type (decompose_type t).2 = (QM, (decompose_type t).2).
+Proof. by rewrite decompose_type_unqual. Qed.
+
 Lemma decompose_type_equiv t : let p := decompose_type t in Tqualified p.1 p.2 ≡ t.
 Proof.
   elim: (decompose_type_ok t); cbn.
