@@ -159,12 +159,18 @@ Module Type CPP_LOGIC
       Axiom has_type_ptr' : ∀ p ty,
         has_type (Vptr p) (Tpointer ty) -|-
         valid_ptr p ** [| aligned_ptr_ty ty p |].
+
+      Definition strict_valid_if_not_empty_array ty : ptr -> mpred :=
+        if zero_sized_array ty then valid_ptr else strict_valid_ptr.
+
       Axiom has_type_ref' : ∀ p ty,
         has_type (Vref p) (Tref ty) -|-
-        strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+          [| aligned_ptr_ty ty p |] **
+          strict_valid_if_not_empty_array ty p.
       Axiom has_type_rv_ref' : ∀ p ty,
         has_type (Vref p) (Trv_ref ty) -|-
-        strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+        [| aligned_ptr_ty ty p |] **
+        strict_valid_if_not_empty_array ty p.
 
     End with_genv.
 
