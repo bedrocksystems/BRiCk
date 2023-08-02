@@ -19,7 +19,7 @@ From bedrock.lang.cpp.logic Require Import
      initializers
      wp call core_string
      translation_unit
-     dispatch.
+     dispatch func.
 Require Import bedrock.lang.bi.errors.
 
 Module Type Expr.
@@ -1385,30 +1385,35 @@ Module Type Expr.
            else False)
       |-- wp_operand (Einitlist (e :: nil) None t) Q.
 
-    (** Initialize the fields of the class [cls] (at [base]) using the
-        expressions [es] and then proceed as [Q].
-     *)
-    Fixpoint init_fields (cls : globname) (base : ptr)
-      (fs : list (type * offset)) (es : list Expr) (Q : epred) {struct fs} : mpred :=
-      match fs , es with
-      | nil , nil => Q
-      | (ty, off) :: fs , e :: es =>
-          (* note that there is a sequence point after each element initialization.
-             See <https://eel.is/c++draft/dcl.init.aggr#7>
-           *)
-          wp_initialize ty (base ,, off) e
-             (fun free => interp free $ init_fields cls base fs es Q)
-      | _ , _ => False
-      end.
+    Definition struct_inits (s : Struct) (es : list Expr) : option (list Initializer) :=
+      let info :=
+          map (fun b e => {| init_path := InitBase b.1
+                        ; init_type := Tnamed b.1
+                        ; init_init := e |}) s.(s_bases) ++
+          map (fun m e => {| init_path := InitField m.(mem_name)
+                        ; init_type := m.(mem_type)
+                        ; init_init := e |}) s.(s_fields)
+      in
+      if bool_decide (length info = length es) then
+        Some $ List.map (fun '(f,e) => f e) $ combine info es
+      else None.
 
-    Lemma init_fields_frame cls base : forall fs es Q Q',
-        Q -* Q' |-- init_fields cls base fs es Q -* init_fields cls base fs es Q'.
-    Proof.
-      induction fs; simpl; intros; repeat case_match; eauto.
-      iIntros "X"; iApply wp_initialize_frame; [done|].
-      iIntros (?); iApply interp_frame.
-      by iApply IHfs.
-    Qed.
+    (* The standard allows initializing unions in a variety of ways.
+       See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
+       frontend desugars all of these to initialize exactly one element.
+     *)
+    Definition union_inits (u : translation_unit.Union) (es : list Expr)
+      : option (list Initializer) :=
+      match u.(u_fields) , es with
+      | m :: _ , e :: nil =>
+          let inits :=
+            {| init_path := InitField m.(mem_name)
+            ; init_type := m.(mem_type)
+            ; init_init := e |} :: nil
+          in
+          Some inits
+      | _ , _ => None
+      end.
 
     (** Using an initializer list to create a `struct` or `union`.
 
@@ -1425,35 +1430,28 @@ Module Type Expr.
      *)
     Axiom wp_init_initlist_agg : forall cls (base : ptr) cv es ty Q,
         decompose_type ty = (cv, Tnamed cls) ->
-        (let mem_to_li m := (m.(mem_type), o_field _ {| f_type := cls ; f_name := m.(mem_name) |}) in
-         let do_const Q :=
+        (let do_const Q :=
            if q_const cv
            then wp_make_const tu base (Tnamed cls) Q
            else Q
          in
-         let base_to_li '(base,_) := (Tnamed base, o_base _ cls base) in
          match tu.(types) !! cls with
-        | Some (Gstruct s) =>
-            (* these constraints are enforced by clang, see note above *)
-            [| length s.(s_bases) + length s.(s_fields) = length es |] **
-            let fs :=
-              map base_to_li s.(s_bases) ++ map mem_to_li s.(s_fields) in
-            init_fields cls base fs es
-               (base |-> structR cls (cQp.mut 1) -*
-                (if has_vtable s then base |-> derivationR cls [cls] (cQp.mut 1) else emp) -*
-                do_const (Q FreeTemps.id))
-        | Some (Gunion u) =>
-            (* The standard allows initializing unions in a variety of ways.
-               See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
-               frontent desugars all of these to initialize exactly one element.
-             *)
-            [| length es = 1%nat |] **
-            let fs := map mem_to_li $ firstn 1 u.(u_fields) in
-            init_fields cls base fs es
-               (base |-> unionR cls (cQp.mut 1) (Some 0) -*
-                do_const (Q FreeTemps.id))
-        | _ => False
-        end)
+         | Some (Gstruct s) =>
+             match struct_inits s es with
+             | Some inits =>
+                 letI* := wp_struct_initializer_list tu s ρ cls base inits in
+                   do_const (Q FreeTemps.id)
+             | _ => False
+             end
+         | Some (Gunion u) =>
+            match union_inits u es with
+            | Some inits =>
+                letI* := wp_union_initializer_list tu u ρ cls base inits in
+                do_const (Q FreeTemps.id)
+            | _ => False
+            end
+         | _ => False
+         end)
       |-- wp_init ty base (Einitlist es None ty) Q.
 
   End with_resolve.
