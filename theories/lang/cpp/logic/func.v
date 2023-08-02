@@ -451,29 +451,28 @@ Section with_cpp.
   Qed.
 
   Definition wp_union_initializer_list (u : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
-             (inits : list Initializer) (Q : option nat -> epred) : mpred :=
+             (inits : list Initializer) (Q : mpred) : mpred :=
     match inits with
-    | [] => Q None
+    | [] => Q
     | [{| init_path := InitField f ; init_type := te ; init_init := e |} as init] =>
         match list_find (fun m => f = m.(mem_name)) u.(u_fields) with
         | None => ERROR "field not found in union initialization"
-        | Some (n, m) => wpi ρ cls this init $ Q (Some n)
+        | Some (n, m) => wpi ρ cls this init $ this |-> unionR cls (cQp.m 1) (Some n) -* Q
         end
     | _ =>
       UNSUPPORTED "indirect (or self) union initialization is not currently supported"
     end.
 
-  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li (Q Q' : option nat -> epred),
-        (Forall n, Q n -* Q' n)
+  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li (Q Q' : epred),
+        (Q -* Q')
     |-- wp_union_initializer_list cls ρ ty p li Q -*
         wp_union_initializer_list cls ρ ty p li Q'.
   Proof.
     rewrite /wp_union_initializer_list/=. intros. case_match; eauto.
-    { iIntros "K"; iApply "K". }
     { iIntros "K".
       repeat case_match; eauto.
       iApply wpi_frame; [done|].
-      iApply "K". }
+      iIntros "X Y"; iApply "K"; iApply "X"; done. }
   Qed.
 
   (** A special version of return to match the C++ rule that
@@ -541,11 +540,9 @@ Section with_cpp.
           |> let ρ va := Remp (Some thisp) va Tvoid in
              bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ cleanup =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (fun which => thisp |-> unionR ctor.(c_class) (cQp.mut 1) which -*
-                             wp ρ body (Kcleanup cleanup (Kreturn_void (|={⊤}=> |> Forall p, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p))))))
-        | Some _ =>
-          ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
-        | None => False
+                  (wp ρ body (Kcleanup cleanup (Kreturn_void (|={⊤}=> |> Forall p, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p))))))
+        | _ =>
+            ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         end
       | _ => ERROR "constructor without leading [this] argument"
       end
