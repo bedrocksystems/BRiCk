@@ -425,15 +425,45 @@ Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (�
 
 Lemma wp_initialize_unqualified_well_typed `{Σ : cpp_logic, σ : genv}
   tu ρ cv ty addr init (Q : FreeTemps.t -> epred) :
-  (* this only holds if [ty] is a non-reference type. if [ty] is a reference type, then
-     the resulting location does not really have a type because the location of references
-     is not really a C++ location.
-     One option is to remove the reference collapsing quotient and instead exclude those types
-     in the dynamic semantics.
-   *)
       wp_initialize_unqualified tu ρ cv ty addr init (fun free => reference_to ty addr -* Q free)
   |-- wp_initialize_unqualified tu ρ cv ty addr init Q.
-Proof. Admitted.
+Proof.
+  rewrite wp_initialize_unqualified.unlock.
+  case_match; subst.
+  all: try (iApply wp_operand_frame; [ done | ];
+    iIntros (??) "X Y";
+    iDestruct (observe (reference_to _ _) with "Y") as "#?";
+    iApply ("X" with "Y");
+    rewrite -reference_to_erase; done).
+  - iApply wp_lval_frame; [ done | ];
+      iIntros (??) "X Y";
+      iDestruct (observe (reference_to _ _) with "Y") as "#?";
+      iApply ("X" with "Y");
+      rewrite (reference_to_erase (Tref t)); done.
+  - iApply wp_xval_frame; [ done | ];
+      iIntros (??) "X Y";
+      iDestruct (observe (reference_to _ _) with "Y") as "#?";
+      iApply ("X" with "Y"). admit.
+  - iApply wp_operand_frame; [ done | ].
+    iIntros (??) "[$ X] Y".
+    iDestruct (observe (reference_to _ _) with "Y") as "#?";
+    iApply ("X" with "Y"); eauto.
+  - etransitivity; [ | apply wp_init_well_typed ].
+    iApply wp_init_frame; [ done | ].
+    iIntros (?) "X Y". iApply "X".
+    rewrite (reference_to_erase (Tarray t n)).
+    rewrite reference_to_erase/=/tqualified'.
+    destruct cv; simpl; eauto.
+  - etransitivity; [ | apply wp_init_well_typed ].
+    iApply wp_init_frame; [ done | ].
+    iIntros (?) "X Y". iApply "X".
+    rewrite (reference_to_erase (Tnamed g)).
+    rewrite reference_to_erase/=/tqualified'.
+    destruct cv; simpl; eauto.
+  - iIntros ">?"; iModIntro; done.
+  - iIntros ">?"; iModIntro; done.
+  - iIntros ">?"; iModIntro; done.
+Admitted.
 
 (**
 [wpi cls this init Q] evaluates the initializer [init] from the object
