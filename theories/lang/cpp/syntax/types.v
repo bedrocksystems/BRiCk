@@ -476,16 +476,6 @@ function type."
 *)
 | Tqualified_func_param cc ar ret q t args args' : @Tfunction cc ar ret (args ++ Tqualified q t :: args') ≡ @Tfunction cc ar ret (args ++ t :: args')
 
-(**
-Reference collapsing
-
-<https://en.cppreference.com/w/cpp/language/reference#Reference_collapsing>
-*)
-| Tref_ref t : Tref (Tref t) ≡ Tref t
-| Tref_rv_ref t : Tref (Trv_ref t) ≡ Tref t
-| Trv_ref_ref t : Trv_ref (Tref t) ≡ Tref t
-| Trv_ref_rv_ref t : Trv_ref (Trv_ref t) ≡ Trv_ref t
-
 (** Equivalence *)
 | type_equiv_refl t : t ≡ t
 | type_equiv_sym t u : t ≡ u -> u ≡ t
@@ -1111,6 +1101,7 @@ Inductive tref_spec : type_qualifiers -> type -> type -> Prop :=
 Lemma tref_ok q t : tref_spec q t (tref q t).
 Proof. move: q. induction t=>q; auto. Qed.
 
+(*
 Lemma tref_equiv' q t : tref q t ≡ Tref (Tqualified q t).
 Proof.
   elim: (tref_ok q t).
@@ -1125,6 +1116,7 @@ Proof. by rewrite tref_equiv' Tqualified_id. Qed.
 #[global] Instance: Params (@tref) 1 := {}.
 #[global] Instance tref_proper q : Proper (equiv ==> equiv) (tref q).
 Proof. intros t1 t2 Ht. by rewrite !tref_equiv' Ht. Qed.
+*)
 
 Lemma tref_unfold q t :
   tref q t =
@@ -1149,6 +1141,7 @@ Inductive trv_ref_spec : type_qualifiers -> type -> type -> Prop :=
 Lemma trv_ref_ok q t : trv_ref_spec q t (trv_ref q t).
 Proof. move: q; induction t=>q; auto. Qed.
 
+(*
 Lemma trv_ref_equiv' q t : trv_ref q t ≡ Trv_ref (Tqualified q t).
 Proof.
   elim: (trv_ref_ok q t).
@@ -1163,6 +1156,7 @@ Proof. by rewrite trv_ref_equiv' Tqualified_id. Qed.
 #[global] Instance: Params (@trv_ref) 1 := {}.
 #[global] Instance trv_ref_proper q : Proper (equiv ==> equiv) (trv_ref q).
 Proof. intros t1 t2 Ht. by rewrite !trv_ref_equiv' Ht. Qed.
+*)
 
 Lemma trv_ref_unfold q t :
   trv_ref q t =
