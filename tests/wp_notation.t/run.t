@@ -326,14 +326,14 @@
   Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
   NOTATION_wp_args_nowrap =
   λ (tys_ar : expr.evaluation_order.t) (es : list (wp.WPE.M ptr)) 
-    (Q : list type * function_arity),
+    (Q : list decltype * function_arity),
     ::wpArgs
       ([region:
          "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
          [this := WpTestDefns.this]; return ptr<void>])
        : expr.evaluation_order.t
          → list (wp.WPE.M ptr)
-           → list type * function_arity
+           → list decltype * function_arity
              → list expr.Expr
                → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   
@@ -341,7 +341,7 @@
     Q es%list_scope Q%function_scope
   NOTATION_wp_args_wrap =
   λ (tys_ar : expr.evaluation_order.t) (es : list (wp.WPE.M ptr)) 
-    (Q : list type * function_arity),
+    (Q : list decltype * function_arity),
     ::wpArgs
       ([region:
          "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -349,7 +349,7 @@
          [this := WpTestDefns.this]; return ptr<void>])
        : expr.evaluation_order.t
          → list (wp.WPE.M ptr)
-           → list type * function_arity
+           → list decltype * function_arity
              → list expr.Expr
                → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   
@@ -715,7 +715,7 @@
   Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
   NOTATION_wp_args_nowrap =
   λ (tys_ar : expr.evaluation_order.t) (es : list (wp.WPE.M ptr)) 
-    (Q : list type * function_arity),
+    (Q : list decltype * function_arity),
     ::wpArgs
       [region:
         "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
@@ -723,7 +723,7 @@
       (Q)
        : expr.evaluation_order.t
          → list (wp.WPE.M ptr)
-           → list type * function_arity
+           → list decltype * function_arity
              → list expr.Expr
                → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   
@@ -731,7 +731,7 @@
     Q es%list_scope Q%function_scope
   NOTATION_wp_args_wrap =
   λ (tys_ar : expr.evaluation_order.t) (es : list (wp.WPE.M ptr)) 
-    (Q : list type * function_arity),
+    (Q : list decltype * function_arity),
     ::wpArgs
       [region:
         "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -740,7 +740,7 @@
       (Q)
        : expr.evaluation_order.t
          → list (wp.WPE.M ptr)
-           → list type * function_arity
+           → list decltype * function_arity
              → list expr.Expr
                → (list ptr → list ptr → FreeTemps → FreeTemps → mpred) → mpred
   

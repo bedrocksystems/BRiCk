@@ -51,7 +51,7 @@ guaranteed to have to initialize a value which will result in an
 
 #[local] Definition default_initialize_array_body `{Σ : cpp_logic, σ : genv}
     (u : bool) (default_initialize : ptr -> (FreeTemps -> epred) -> mpred)
-    (tu : translation_unit) (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
+    (tu : translation_unit) (ty : exprtype) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
   let folder i PP :=
     default_initialize (p ,, o_sub _ ty (Z.of_N i)) (fun free' => interp tu free' PP)
   in
@@ -60,7 +60,7 @@ guaranteed to have to initialize a value which will result in an
 mlock
 Definition default_initialize_array `{Σ : cpp_logic, σ : genv} :
   ∀ (default_initialize : ptr -> (FreeTemps -> epred) -> mpred)
-    (tu : translation_unit) (ty : type) (len : N) (p : ptr)
+    (tu : translation_unit) (ty : exprtype) (len : N) (p : ptr)
     (Q : FreeTemps -> epred), mpred :=
   Cbn (Reduce (default_initialize_array_body true)).
 #[global] Arguments default_initialize_array {_ _ _} _ _ _ _ _ _%I : assert.	(* mlock bug *)
@@ -87,9 +87,9 @@ described above.
 *)
 
 #[local] Definition default_initialize_body `{Σ : cpp_logic, σ : genv}
-    (u : bool) (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
+    (u : bool) (default_initialize : exprtype -> ptr -> (FreeTemps -> epred) -> mpred)
     (tu : translation_unit)
-    (ty : type) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
+    (ty : exprtype) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
   let ERROR := funI m => |={top}=>?u ERROR m in
   let UNSUPPORTED := funI m => |={top}=>?u UNSUPPORTED m in
   match ty with
@@ -121,7 +121,7 @@ described above.
 
 mlock
 Definition default_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
-    : ∀ (ty : type) (p : ptr) (Q : FreeTemps -> epred), mpred :=
+    : ∀ (ty : exprtype) (p : ptr) (Q : FreeTemps -> epred), mpred :=
   fix default_initialize ty p Q {struct ty} :=
   Cbn (Reduce (default_initialize_body true) default_initialize tu ty p Q).
 #[global] Arguments default_initialize {_ _ _} _ _ _ _%I : assert.	(* mlock bug *)
@@ -335,7 +335,7 @@ magic wands.
 
 #[local] Definition wp_initialize_unqualified_body `{Σ : cpp_logic, σ : genv}
     (u : bool) (tu : translation_unit) (ρ : region)
-    (cv : type_qualifiers) (ty : type)
+    (cv : type_qualifiers) (ty : decltype)
     (addr : ptr) (init : Expr) (Q : FreeTemps -> epred) : mpred :=
   let UNSUPPORTED := funI m => |={top}=>?u UNSUPPORTED m in
   match ty with
@@ -410,13 +410,13 @@ magic wands.
 mlock
 Definition wp_initialize_unqualified `{Σ : cpp_logic, σ : genv} :
   ∀ (tu : translation_unit) (ρ : region)
-    (cv : type_qualifiers) (ty : type)
+    (cv : type_qualifiers) (ty : decltype)
     (addr : ptr) (init : Expr) (Q : FreeTemps -> epred), mpred :=
   Cbn (Reduce (wp_initialize_unqualified_body fupd_compatible)).
 #[global] Arguments wp_initialize_unqualified {_ _ _} _ _ _ _ _ _ _%I : assert.	(* mlock bug *)
 
 Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ : region)
-    (qty : type) (addr : ptr) (init : Expr) (Q : FreeTemps -> epred) : mpred :=
+    (qty : decltype) (addr : ptr) (init : Expr) (Q : FreeTemps -> epred) : mpred :=
   qual_norm (wp_initialize_unqualified tu ρ) qty addr init Q.
 #[global] Hint Opaque wp_initialize : typeclass_instances.
 #[global] Arguments wp_initialize {_ _ _} _ _ !_ _ _ _ / : assert.

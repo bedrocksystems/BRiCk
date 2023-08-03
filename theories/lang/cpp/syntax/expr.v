@@ -299,7 +299,7 @@ with a value category).
 *)
 #[global] Instance Cast_eq_dec {type : Set} `{!EqDecision type} : EqDecision (Cast' type).
 Proof. solve_decision. Defined.
-Notation Cast := (Cast' type).
+Notation Cast := (Cast' exprtype).	(** TODO (FM-3431): Should be [decltype] *)
 Module Cast.
 
   Definition mapM {M} `{!FMap M, !MRet M} {A B : Set} (f : A -> M B) :
@@ -383,40 +383,40 @@ Module operator_impl.
   #[global] Instance: forall (type : Set), EqDecision type -> EqDecision (t type) :=
     ltac:(solve_decision).
 End operator_impl.
-#[global] Notation operator_impl := (operator_impl.t type).
+#[global] Notation operator_impl := (operator_impl.t functype).
 
 Inductive Expr : Set :=
-| Econst_ref (_ : VarRef) (_ : type)
+| Econst_ref (_ : VarRef) (_ : exprtype)
   (* ^ these are different because they do not have addresses *)
-| Evar     (_ : VarRef) (_ : type)
+| Evar     (_ : VarRef) (_ : exprtype)
   (* ^ local and global variable reference *)
 
-| Echar    (value : N) (_ : type)
+| Echar    (value : N) (_ : exprtype)
   (* ^ [value] is the unsigned character value *)
-| Estring  (values : list N) (ty : type) (* type = Tarray (const ty) (lengthN values) *)
+| Estring  (values : list N) (ty : exprtype) (* type = Tarray (const ty) (lengthN values) *)
   (* ^ [values] is a list of *characters*, e.g. if [ty] is a 2-byte
      character type, then each [N] in [values] represents 2 bytes. *)
-| Eint     (_ : Z) (_ : type)
+| Eint     (_ : Z) (_ : exprtype)
 | Ebool    (_ : bool)
   (* ^ literals *)
 
-| Eunop    (_ : UnOp) (_ : Expr) (_ : type)
-| Ebinop   (_ : BinOp) (_ _ : Expr) (_ : type)
+| Eunop    (_ : UnOp) (_ : Expr) (_ : exprtype)
+| Ebinop   (_ : BinOp) (_ _ : Expr) (_ : exprtype)
  (* ^ note(gmm): overloaded operators are already resolved. so an overloaded
   * operator shows up as a function call, not a `Eunop` or `Ebinop`.
   * this includes the assignment operator for classes.
   *)
 | Eread_ref (e : Expr) (* type = type_of e *)
-| Ederef (e : Expr) (_ : type) (* XXX type = strip [Tptr] from [type_of e] *)
+| Ederef (e : Expr) (_ : exprtype) (* XXX type = strip [Tptr] from [type_of e] *)
 | Eaddrof (e : Expr) (* type = Tptr (type_of e) *)
-| Eassign (e _ : Expr) (_ : type) (* XXX type = type_of e *)
-| Eassign_op (_ : BinOp) (e _ : Expr) (_ : type) (* XXX = type_of e *)
+| Eassign (e _ : Expr) (_ : exprtype) (* XXX type = type_of e *)
+| Eassign_op (_ : BinOp) (e _ : Expr) (_ : exprtype) (* XXX = type_of e *)
   (* ^ these are specialized because they are common *)
 
-| Epreinc (_ : Expr) (_ : type)
-| Epostinc (_ : Expr) (_ : type)
-| Epredec (_ : Expr) (_ : type)
-| Epostdec (_ : Expr) (_ : type)
+| Epreinc (_ : Expr) (_ : exprtype)
+| Epostinc (_ : Expr) (_ : exprtype)
+| Epredec (_ : Expr) (_ : exprtype)
+| Epostdec (_ : Expr) (_ : exprtype)
   (* ^ special unary operators *)
 
 | Eseqand (_ _ : Expr) (* type = Tbool *)
@@ -424,52 +424,52 @@ Inductive Expr : Set :=
 | Ecomma (e1 e2 : Expr) (* type = type_of e2 *)
   (* ^ these are specialized because they have special control flow semantics *)
 
-| Ecall    (_ : Expr) (_ : list Expr) (_ : type)
-| Ecast    (_ : Cast) (e : Expr) (_ : ValCat) (_ : type)
+| Ecall    (_ : Expr) (_ : list Expr) (_ : exprtype)
+| Ecast    (_ : Cast) (e : Expr) (_ : ValCat) (_ : exprtype)
 
-| Emember  (obj : Expr) (_ : field) (_ : type)
+| Emember  (obj : Expr) (_ : field) (_ : exprtype)
   (* TODO: maybe replace the left branch use [Expr] here? *)
-| Emember_call (method : (obj_name * dispatch_type * type) + Expr) (obj : Expr) (_ : list Expr) (_ : type)
+| Emember_call (method : (obj_name * dispatch_type * functype) + Expr) (obj : Expr) (_ : list Expr) (_ : exprtype)
 
-| Eoperator_call (_ : OverloadableOperator) (_ : operator_impl) (ls : list Expr) (_ : type)
+| Eoperator_call (_ : OverloadableOperator) (_ : operator_impl) (ls : list Expr) (_ : exprtype)
   (* ^^ in the case of a [Mfunc], [ls] is non-empty and the first expression is the object *)
 
-| Esubscript (_ : Expr) (_ : Expr) (_ : type)
-| Esize_of (_ : type + Expr) (_ : type)
-| Ealign_of (_ : type + Expr) (_ : type)
-| Eoffset_of (_ : OffsetInfo) (_ : type)
-| Econstructor (_ : obj_name) (_ : list Expr) (_ : type)
+| Esubscript (_ : Expr) (_ : Expr) (_ : exprtype)
+| Esize_of (_ : decltype + Expr) (_ : exprtype)
+| Ealign_of (_ : decltype + Expr) (_ : exprtype)
+| Eoffset_of (_ : OffsetInfo) (_ : exprtype)
+| Econstructor (_ : obj_name) (_ : list Expr) (_ : exprtype)
 | Eimplicit (_ : Expr)
-| Eimplicit_init (_ : type)
-| Eif       (_ _ _ : Expr) (_ : ValCat) (_ : type)
-| Eif2  (name : N) (common cond thn els : Expr) (_ : ValCat) (_ : type)
+| Eimplicit_init (_ : exprtype)
+| Eif       (_ _ _ : Expr) (_ : ValCat) (_ : exprtype)
+| Eif2  (name : N) (common cond thn els : Expr) (_ : ValCat) (_ : exprtype)
 
-| Ethis (_ : type)
+| Ethis (_ : exprtype)
 | Enull
-| Einitlist (_ : list Expr) (_ : option Expr) (_ : type)
+| Einitlist (_ : list Expr) (_ : option Expr) (_ : exprtype)
 
-| Enew (new_fn : obj_name * type) (new_args : list Expr)
-       (alloc_ty : type)
+| Enew (new_fn : obj_name * functype) (new_args : list Expr)
+       (alloc_ty : exprtype)
        (array_size : option Expr) (init : option Expr) (* type = Tptr alloc_ty *)
-| Edelete (is_array : bool) (del_fn : obj_name * type)
+| Edelete (is_array : bool) (del_fn : obj_name * functype)
           (* When [deleted_type] is a class with a [virtual] destructor and the
              most derived class has an [operator delete], [del_fn] will be
              ignored. *)
-          (arg : Expr) (deleted_type : type) (* type = Tvoid *)
+          (arg : Expr) (deleted_type : decltype) (* type = Tvoid *)
 
 | Eandclean (_ : Expr)
 | Ematerialize_temp (_ : Expr) (_ : ValCat)
 
-| Eatomic (_ : AtomicOp) (_ : list Expr) (_ : type)
-| Eva_arg (_ : Expr) (_ : type)
-| Epseudo_destructor (_ : type) (_ : Expr)
+| Eatomic (_ : AtomicOp) (_ : list Expr) (_ : exprtype)
+| Eva_arg (_ : Expr) (_ : exprtype)
+| Epseudo_destructor (_ : decltype) (_ : Expr)
 
-| Earrayloop_init (oname : N) (src : Expr) (level : N) (length : N) (init : Expr) (_ : type)
-| Earrayloop_index (level : N) (_ : type)
-| Eopaque_ref (name : N) (_ : ValCat) (_ : type)
-| Eunsupported (_ : bs) (_ : ValCat) (_ : type)
+| Earrayloop_init (oname : N) (src : Expr) (level : N) (length : N) (init : Expr) (_ : exprtype)
+| Earrayloop_index (level : N) (_ : exprtype)
+| Eopaque_ref (name : N) (_ : ValCat) (_ : exprtype)
+| Eunsupported (_ : bs) (_ : ValCat) (_ : exprtype)
 .
-Notation MethodRef := ((obj_name * dispatch_type * type) + Expr)%type (only parsing).
+Notation MethodRef := ((obj_name * dispatch_type * functype) + Expr)%type (only parsing).
 
 #[global] Instance Expr_eq_dec : EqDecision Expr.
 Proof.

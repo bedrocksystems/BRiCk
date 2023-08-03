@@ -922,11 +922,6 @@ Module Type Expr.
       |-- wp_init ty addr (Ecall f es ty) Q.
 
     (** * Member calls *)
-    Definition member_arg_types (fty : type) : option (list type) :=
-      match fty with
-      | Tfunction _ (_ :: args) => Some args
-      | _ => None
-      end.
 
     (** [dispatch ct] performs dispatch on the function with the call type.
 
@@ -938,7 +933,7 @@ Module Type Expr.
         is to have the representation of member function pointers be closures
         that perform [virtual] resolution if necessary.
      *)
-    Definition dispatch (ct : dispatch_type) (fty : type) (fn : obj_name) (this_type : type)
+    Definition dispatch (ct : dispatch_type) (fty : functype) (fn : obj_name) (this_type : type)
       (obj : ptr) (args : list ptr) (Q : ptr -> epred) : mpred :=
       let fty := normalize_type fty in
       match ct with
@@ -977,7 +972,7 @@ Module Type Expr.
              the use of [normalize_type] below. *)
 
     Definition wp_mcall (invoke : ptr -> list ptr -> (ptr -> epred) -> mpred)
-      ooe (obj : Expr) (fty : type) (es : list Expr)
+      ooe (obj : Expr) (fty : functype) (es : list Expr)
       (Q : ptr -> FreeTemps -> epred) : mpred :=
       let fty := normalize_type fty in
       match arg_types fty with
@@ -1218,7 +1213,7 @@ Module Type Expr.
           Q v FreeTemps.id
       |-- wp_operand (Eimplicit_init ty) Q.
 
-    Definition marg_types (t : type) : option (list type * function_arity) :=
+    Definition marg_types (t : functype) : option (list type * function_arity) :=
       match t with
       | @Tfunction cc ar _ (_ :: args) =>
           (* we drop the first argument which is for [this] *)

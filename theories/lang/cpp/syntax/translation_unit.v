@@ -35,14 +35,14 @@ Record Initializer' {type Expr : Set} : Set := Build_Initializer
 #[global] Arguments Build_Initializer {_ _} &.
 #[global] Instance: EqDecision2 Initializer'.
 Proof. solve_decision. Defined.
-Notation Initializer := (Initializer' type Expr).
+Notation Initializer := (Initializer' decltype Expr).
 
 Record Ctor' {type Expr : Set} : Set := Build_Ctor
 { c_class  : globname
-; c_params : list (ident * type)
+; c_params : list (ident * (*decl*)type)
 ; c_cc     : calling_conv
 ; c_arity  : function_arity
-; c_body   : option (OrDefault (list (Initializer' type Expr) * Stmt' type Expr))
+; c_body   : option (OrDefault (list (Initializer' (*decl*)type Expr) * Stmt' type Expr))
 }.
 #[global] Arguments Ctor' _ _ : clear implicits, assert.
 #[global] Arguments Build_Ctor {_ _} &.
@@ -72,8 +72,8 @@ Proof. solve_decision. Defined.
 Notation FunctionBody := (FunctionBody' type Expr).
 
 Record Func' {type Expr : Set} : Set := Build_Func
-{ f_return : type
-; f_params : list (ident * type)
+{ f_return : (*decl*)type
+; f_params : list (ident * (*decl*)type)
 ; f_cc     : calling_conv
 ; f_arity  : function_arity
 ; f_body   : option (FunctionBody' type Expr)
@@ -85,10 +85,10 @@ Proof. solve_decision. Defined.
 Notation Func := (Func' type Expr).
 
 Record Method' {type Expr : Set} : Set := Build_Method
-{ m_return  : type
+{ m_return  : (*decl*)type
 ; m_class   : globname
 ; m_this_qual : type_qualifiers
-; m_params  : list (ident * type)
+; m_params  : list (ident * (*decl*)type)
 ; m_cc      : calling_conv
 ; m_arity   : function_arity
 ; m_body    : option (OrDefault (Stmt' type Expr))
@@ -245,7 +245,7 @@ TODO: [Tmember_func], [type_of_value] seem misplaced
         in the type. The C++ typesystem prevents us from attempting to
         modify the value of [this] since it is not an Lvalue.
  *)
-Definition Tmember_func (ty : type) (fty : type) : type :=
+Definition Tmember_func (ty : exprtype) (fty : functype) : functype :=
   match fty with
   | @Tfunction cc ar ret args => Tfunction (cc:=cc) (ar:=ar) ret (Tptr ty :: args)
   | _ => fty

@@ -306,7 +306,7 @@ Section ObjValue_ler.
   Proof.
     intros a b c.
     destruct a, b => //=; destruct c => //=; intros;
-    repeat match goal with
+    repeat lazymatch goal with
            | H : Func |- _ => destruct H; simpl in *
            | H : Method |- _ => destruct H; simpl in *
            | H : Ctor |- _ => destruct H; simpl in *
