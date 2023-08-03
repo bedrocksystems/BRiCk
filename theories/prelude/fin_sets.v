@@ -8,9 +8,9 @@ Require Export stdpp.fin_sets.
 From bedrock.prelude Require Import base sets list.
 
 (** * Small extensions to [stdpp.fin_sets]. *)
+#[local] Set Default Proof Using "Type*".
 
 Section finset.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C}.
   Implicit Types X Y : C.
 
@@ -115,7 +115,6 @@ End set_seq.
 
 (** The [set_map] operation *)
 Section set_map.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C, Set_ B D}.
   #[local] Notation set_map := (set_map (C := C) (D := D)).
 
@@ -158,7 +157,6 @@ Section set_map.
 End set_map.
 
 Section set_map.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C, FinSet B D}.
   #[local] Notation set_map := (set_map (C := C) (D := D)).
 
@@ -205,7 +203,6 @@ End set_map.
 Contrast with [set_bind] (added in stdpp after we added [set_concat_map]. *)
 Section set_concat_map.
   Context `{FinSet A C} `{FinSet B D}.
-  #[local] Set Default Proof Using "Type*".
 
   Definition set_concat_map (f : A → list B) (xs : C) : D :=
     list_to_set (elements xs ≫= f).
@@ -262,7 +259,6 @@ End set_concat_map.
 
 (** Pairwise disjointness *)
 Section fin_set.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet C D, Disjoint C, !RelDecision (##@{C})}.
   Implicit Types Xs Ys : D.
 
