@@ -344,9 +344,9 @@ dummy
 <br/>
 <span class="comment">(*&nbsp;types&nbsp;*)</span><br/>
 <span class="id" title="keyword">Inductive</span> <a id="type" class="idref" href="#type"><span class="id" title="inductive">type</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
-| <a id="Tptr" class="idref" href="#Tptr"><span class="id" title="constructor">Tptr</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
-| <a id="Tref" class="idref" href="#Tref"><span class="id" title="constructor">Tref</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
-| <a id="Trv_ref" class="idref" href="#Trv_ref"><span class="id" title="constructor">Trv_ref</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Tptr" class="idref" href="#Tptr"><span class="id" title="constructor">Tptr</span></a> (<span class="id" title="var">_</span> : <span class="comment">(*expr*)</span><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Tref" class="idref" href="#Tref"><span class="id" title="constructor">Tref</span></a> (<span class="id" title="var">_</span> : <span class="comment">(*expr*)</span><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Trv_ref" class="idref" href="#Trv_ref"><span class="id" title="constructor">Trv_ref</span></a> (<span class="id" title="var">_</span> : <span class="comment">(*expr*)</span><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
 &nbsp;&nbsp;</div>
 
 <div class="doc">
@@ -367,9 +367,9 @@ dummy
 | <a id="Tarray" class="idref" href="#Tarray"><span class="id" title="constructor">Tarray</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) <span class="comment">(*&nbsp;unknown&nbsp;sizes&nbsp;are&nbsp;represented&nbsp;by&nbsp;pointers&nbsp;*)</span><br/>
 | <a id="Tnamed" class="idref" href="#Tnamed"><span class="id" title="constructor">Tnamed</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>)<br/>
 | <a id="Tenum" class="idref" href="#Tenum"><span class="id" title="constructor">Tenum</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>) <span class="comment">(*&nbsp;enumerations&nbsp;*)</span><br/>
-| <a id="Tfunction" class="idref" href="#Tfunction"><span class="id" title="constructor">Tfunction</span></a> {<a id="cc:70" class="idref" href="#cc:70"><span class="id" title="binder">cc</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#calling_conv"><span class="id" title="class">calling_conv</span></a>} {<a id="ar:71" class="idref" href="#ar:71"><span class="id" title="binder">ar</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#function_arity"><span class="id" title="class">function_arity</span></a>} (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Tfunction" class="idref" href="#Tfunction"><span class="id" title="constructor">Tfunction</span></a> {<a id="cc:70" class="idref" href="#cc:70"><span class="id" title="binder">cc</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#calling_conv"><span class="id" title="class">calling_conv</span></a>} {<a id="ar:71" class="idref" href="#ar:71"><span class="id" title="binder">ar</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#function_arity"><span class="id" title="class">function_arity</span></a>} (<span class="id" title="var">_</span> : <span class="comment">(*decl*)</span><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <span class="comment">(*decl*)</span><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
 | <a id="Tbool" class="idref" href="#Tbool"><span class="id" title="constructor">Tbool</span></a><br/>
-| <a id="Tmember_pointer" class="idref" href="#Tmember_pointer"><span class="id" title="constructor">Tmember_pointer</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Tmember_pointer" class="idref" href="#Tmember_pointer"><span class="id" title="constructor">Tmember_pointer</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>) (<span class="id" title="var">_</span> : <span class="comment">(*expr*)</span><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
 | <a id="Tfloat_" class="idref" href="#Tfloat_"><span class="id" title="constructor">Tfloat_</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#t"><span class="id" title="inductive">float_type.t</span></a>)<br/>
 | <a id="Tqualified" class="idref" href="#Tqualified"><span class="id" title="constructor">Tqualified</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_qualifiers"><span class="id" title="inductive">type_qualifiers</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type:66"><span class="id" title="inductive">type</span></a>)<br/>
 | <a id="Tnullptr" class="idref" href="#Tnullptr"><span class="id" title="constructor">Tnullptr</span></a><br/>
@@ -377,6 +377,49 @@ dummy
 &nbsp;&nbsp;&nbsp;some&nbsp;<span class="inlinecode"><span class="id" title="var">Tarch</span></span>&nbsp;types,&nbsp;e.g.&nbsp;ARM&nbsp;SVE,&nbsp;are&nbsp;"sizeless",&nbsp;hence&nbsp;<span class="inlinecode"><span class="id" title="var">option</span></span> <span class="inlinecode"><span class="id" title="var">size</span></span>.&nbsp;*)</span><br/>
 | <a id="Tarch" class="idref" href="#Tarch"><span class="id" title="constructor">Tarch</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="bedrock.lang.cpp.arith.types.html#bitsize"><span class="id" title="inductive">bitsize</span></a>) (<a id="name:72" class="idref" href="#name:72"><span class="id" title="binder">name</span></a> : <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.Bytestring_notations.bs"><span class="id" title="abbreviation">bs</span></a>)<br/>
 .<br/>
+</div>
+
+<div class="doc">
+For documentation purposes, we often use the following aliases.
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#decltype"><span class="id" title="definition">decltype</span></a></span> <i>declaration types</i> arise in variable declarations
+
+</li>
+</ul>
+(including function arguments)
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#exprtype"><span class="id" title="definition">exprtype</span></a></span> <i>expression types</i> are assigned to expressions
+
+</li>
+</ul>
+(together with value categories) by the static semantics of C++
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#functype"><span class="id" title="definition">functype</span></a></span> <i>function types</i> are known to be <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tfunction"><span class="id" title="constructor">Tfunction</span></a></span>
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+Roughly, we have an isomorphism <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#decltype"><span class="id" title="definition">decltype</span></a></span> <span class="inlinecode">≅</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#exprtype"><span class="id" title="definition">exprtype</span></a></span> <span class="inlinecode">×</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#ValCat"><span class="id" title="inductive">ValCat</span></a></span>. While
+variables can be declared with reference types, expressions never have
+reference types (that information being present in the expression's
+value category).
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="decltype" class="idref" href="#decltype"><span class="id" title="definition">decltype</span></a> : <span class="id" title="keyword">Set</span> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="exprtype" class="idref" href="#exprtype"><span class="id" title="definition">exprtype</span></a> : <span class="id" title="keyword">Set</span> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="functype" class="idref" href="#functype"><span class="id" title="definition">functype</span></a> : <span class="id" title="keyword">Set</span> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>.<br/>
 
 <br/>
 <a id="type_inhabited" class="idref" href="#type_inhabited"><span class="id" title="definition">#[</span></a><a id="type_inhabited" class="idref" href="#type_inhabited"><span class="id" title="definition">only</span></a><a id="type_inhabited" class="idref" href="#type_inhabited"><span class="id" title="definition">(</span></a><a id="type_inhabited" class="idref" href="#type_inhabited"><span class="id" title="definition">inhabited</span></a><a id="type_inhabited" class="idref" href="#type_inhabited"><span class="id" title="definition">)]</span></a> <a id="type_inhabited" class="idref" href="#type_inhabited"><span class="id" title="definition">derive</span></a> <a id="type_inhabited" class="idref" href="#type_inhabited"><span class="id" title="definition">type</span></a>.<br/>
