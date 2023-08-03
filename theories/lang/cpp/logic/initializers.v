@@ -423,13 +423,19 @@ Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (�
 #[global] Arguments wp_initialize {_ _ _} _ _ !_ _ _ _ / : assert.
 (* END wp_initialize *)
 
+Definition heap_type_of (t : type) : type :=
+  match erase_qualifiers t with
+  | Trv_ref ty => Tref ty
+  | t => t
+  end.
+
 Lemma wp_initialize_unqualified_well_typed `{Σ : cpp_logic, σ : genv}
   tu ρ cv ty addr init (Q : FreeTemps.t -> epred) :
-      wp_initialize_unqualified tu ρ cv ty addr init (fun free => reference_to ty addr -* Q free)
+      wp_initialize_unqualified tu ρ cv ty addr init (fun free => reference_to (heap_type_of ty) addr -* Q free)
   |-- wp_initialize_unqualified tu ρ cv ty addr init Q.
 Proof.
   rewrite wp_initialize_unqualified.unlock.
-  case_match; subst.
+  case_match; subst; eauto.
   all: try (iApply wp_operand_frame; [ done | ];
     iIntros (??) "X Y";
     iDestruct (observe (reference_to _ _) with "Y") as "#?";
@@ -437,13 +443,13 @@ Proof.
     rewrite -reference_to_erase; done).
   - iApply wp_lval_frame; [ done | ];
       iIntros (??) "X Y";
-      iDestruct (observe (reference_to _ _) with "Y") as "#?";
-      iApply ("X" with "Y");
-      rewrite (reference_to_erase (Tref t)); done.
+      iDestruct (observe (reference_to _ _) with "Y") as "#?".
+      iApply ("X" with "Y"). rewrite /heap_type_of/=. done.
   - iApply wp_xval_frame; [ done | ];
       iIntros (??) "X Y";
       iDestruct (observe (reference_to _ _) with "Y") as "#?";
-      iApply ("X" with "Y"). admit.
+      iApply ("X" with "Y").
+    rewrite /heap_type_of/=. done.
   - iApply wp_operand_frame; [ done | ].
     iIntros (??) "[$ X] Y".
     iDestruct (observe (reference_to _ _) with "Y") as "#?";
@@ -451,7 +457,7 @@ Proof.
   - etransitivity; [ | apply wp_init_well_typed ].
     iApply wp_init_frame; [ done | ].
     iIntros (?) "X Y". iApply "X".
-    rewrite (reference_to_erase (Tarray t n)).
+    rewrite /heap_type_of/=.
     rewrite reference_to_erase/=/tqualified'.
     destruct cv; simpl; eauto.
   - etransitivity; [ | apply wp_init_well_typed ].
@@ -460,10 +466,7 @@ Proof.
     rewrite (reference_to_erase (Tnamed g)).
     rewrite reference_to_erase/=/tqualified'.
     destruct cv; simpl; eauto.
-  - iIntros ">?"; iModIntro; done.
-  - iIntros ">?"; iModIntro; done.
-  - iIntros ">?"; iModIntro; done.
-Admitted.
+Qed.
 
 (**
 [wpi cls this init Q] evaluates the initializer [init] from the object

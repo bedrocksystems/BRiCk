@@ -937,6 +937,20 @@ Definition tqualified : type_qualifiers -> type -> type :=
 #[global] Hint Opaque tqualified : typeclass_instances.
 #[global] Arguments tqualified _ !_ / : simpl nomatch, assert.
 
+(** [drop_reference t] drops leading references to get to the underlying type.
+    If [t] is not a reference type, then it will not be changed (up to type
+    equivalence [≡]).
+ *)
+Definition drop_reference (t : type) : type :=
+  qual_norm (fun cv t => match t with
+                      | Tref t | Trv_ref t => t
+                      | _ => tqualified cv t
+                      end) t.
+
+Succeed Example TEST_drop_reference : drop_reference (Qconst (Tnamed "T")) = Qconst (Tnamed "T") := eq_refl.
+Succeed Example TEST_drop_reference : drop_reference (Qconst (Tref (Tnamed "T"))) = Tnamed "T" := eq_refl.
+Succeed Example TEST_drop_reference : drop_reference (Qconst (Tref (Qconst $ Tnamed "T"))) = Qconst (Tnamed "T") := eq_refl.
+
 (**
 [tref], [trv_ref] implement reference collapsing.
 
