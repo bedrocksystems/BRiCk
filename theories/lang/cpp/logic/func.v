@@ -32,32 +32,22 @@ Arguments UNSUPPORTED {_ _} _%bs.
 
 Makes [this] and immediate [members] of [cls] strictly valid, to implement the
 part of http://eel.is/c++draft/class.cdtor#3 about members.
-This enables their dereference via
-[wp_lval_deref].
-This
+This enables their dereference via [wp_lval_deref].
 *)
 mlock Definition svalid_members `{Σ : cpp_logic thread_info} {resolve:genv}
           (cls : globname)
           (members : list (bs * type))
           : Rep :=
-  svalidR ** aligned_ofR (Tnamed cls) **
+  reference_toR (Tnamed cls) **
   [∗list] m ∈ members,
-    if negb (zero_sized_array m.2) then
-      _field {| f_type := cls ; f_name := m.1 |} |->
-        (svalidR ** aligned_ofR (erase_qualifiers m.2))
-        (* Alignment should be deducible from alignment of [this], but it is
-        necessary for [wp_lval_deref] and inconvenient to deduce. *)
-      else emp.
+    _field {| f_type := cls ; f_name := m.1 |} |-> reference_toR m.2.
 #[global] Arguments svalid_members {_ _ _} _ _ : assert.
 
 Section svalid_members.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
   #[global] Instance svalid_members_persistent : Persistent2 svalid_members.
   Proof.
-    intros; rewrite svalid_members.unlock.
-    repeat apply: bi.sep_persistent.
-    apply: big_sepL_persistent.
-    intros; case_match; apply _.
+    intros; rewrite svalid_members.unlock. refine _.
   Qed.
   #[global] Instance svalid_members_affine : Affine2 svalid_members := _.
 End svalid_members.

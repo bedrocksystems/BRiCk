@@ -1121,6 +1121,38 @@ Module SimpleCPP.
       ptr_congP σ p1 p2 |-- @tptsto σ Tu8 q p1 v -* @tptsto σ Tu8 q p2 v.
     Proof. Admitted.
 
+    Definition strict_valid_if_not_empty_array ty : ptr -> mpred :=
+      if zero_sized_array ty then valid_ptr else strict_valid_ptr.
+    #[global] Instance stict_valid_if_not_empty_array_persistent ty p :
+      Persistent (strict_valid_if_not_empty_array ty p).
+    Proof. rewrite /strict_valid_if_not_empty_array. case_match; refine _. Qed.
+    #[global] Instance stict_valid_if_not_empty_array_affine ty p :
+      Affine (strict_valid_if_not_empty_array ty p).
+    Proof. rewrite /strict_valid_if_not_empty_array. case_match; refine _. Qed.
+    #[global] Instance stict_valid_if_not_empty_array_timeless ty p :
+      Timeless (strict_valid_if_not_empty_array ty p).
+    Proof. rewrite /strict_valid_if_not_empty_array. case_match; refine _. Qed.
+
+    Lemma zero_size_array_erase_qualifiers ty :
+      zero_sized_array (erase_qualifiers ty) = zero_sized_array ty.
+    Proof.
+      induction ty; rewrite /= /qual_norm /=; eauto.
+      - rewrite IHty. done.
+      - rewrite IHty. clear.
+        generalize (merge_tq QM t).
+        clear. induction ty; rewrite /= /qual_norm/=; eauto.
+        intros.
+        rewrite -!IHty. done.
+    Qed.
+
+    Lemma stict_valid_if_not_empty_array_erase ty p :
+      strict_valid_if_not_empty_array ty p
+      -|- strict_valid_if_not_empty_array (erase_qualifiers ty) p.
+    Proof.
+      rewrite /strict_valid_if_not_empty_array.
+      rewrite zero_size_array_erase_qualifiers. done.
+    Qed.
+
     Definition has_type {σ : genv} (v : val) (ty : type) : mpred :=
       [| has_type_prop v ty |] **
       match v with
@@ -1129,8 +1161,8 @@ Module SimpleCPP.
         | Tptr ty =>
           valid_ptr p ** [| aligned_ptr_ty ty p |]
         | Tref ty | Trv_ref ty =>
-          strict_valid_ptr p ** [| aligned_ptr_ty ty p |]
-        | Tnullptr => valid_ptr p
+          strict_valid_if_not_empty_array ty p ** [| aligned_ptr_ty ty p |]
+        | Tnullptr => [| p = nullptr |]
         | _ => emp
         end
       | _ => [| nonptr_prim_type ty |]
@@ -1138,6 +1170,14 @@ Module SimpleCPP.
 
     #[global] Instance has_type_mono :
       Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
+    Proof. solve_proper. Qed.
+
+    Definition reference_to {σ : genv} (ty : type) (p : ptr) : mpred :=
+      [| aligned_ptr_ty ty p |] ** [| p <> nullptr |] **
+        valid_ptr p ** if zero_sized_array ty then emp else strict_valid_ptr p.
+
+    #[global] Instance reference_to_mono :
+      Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@reference_to).
     Proof. solve_proper. Qed.
 
     Definition has_type_or_undef {σ} (v : val) ty : mpred :=
@@ -1153,7 +1193,7 @@ Module SimpleCPP.
       Proof.
         intros v ty; rewrite /has_type; split; last apply _.
         apply: bi.sep_persistent.
-        destruct v; try case_match; apply _.
+        destruct v; try case_match; try apply _.
       Qed.
 
       #[global] Instance has_type_timeless : Timeless2 has_type.
@@ -1162,7 +1202,7 @@ Module SimpleCPP.
         apply: bi.sep_timeless.
         (* TODO AUTO: this gives a measureable speedup :-( *)
         have ?: Refine (Timeless (PROP := mpred) emp) by apply _.
-        destruct v; try case_match; apply _.
+        destruct v; try case_match; try apply _.
       Qed.
 
       Lemma has_type_has_type_prop v ty :
@@ -1189,8 +1229,8 @@ Module SimpleCPP.
         case_match; simpl; eauto.
         all: try f_equiv.
         all: try rewrite aligned_ptr_ty_erase_qualifiers; auto.
-        exfalso.
-        by eapply unqual_drop_qualifiers.
+        all: try apply stict_valid_if_not_empty_array_erase.
+        exfalso; by eapply unqual_drop_qualifiers.
       Qed.
 
       Lemma has_type_nullptr' p :
@@ -1199,7 +1239,7 @@ Module SimpleCPP.
         rewrite /has_type/= has_type_prop_nullptr.
         rewrite (inj_iff Vptr).
         iSplit; first iIntros "[$ _]".
-        iIntros "->". rewrite -valid_ptr_nullptr. by iIntros "!%".
+        iIntros "->". iSplit; eauto.
       Qed.
 
       Lemma has_type_ptr' p ty :
@@ -1217,21 +1257,58 @@ Module SimpleCPP.
       Qed.
 
       Lemma has_type_ref' p ty :
-        has_type (Vref p) (Tref ty) -|- strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+        has_type (Vref p) (Tref ty) -|- reference_to ty p.
       Proof.
-        rewrite /has_type/= has_type_prop_ref.
-        iSplit. { iIntros "[_ $]". }
-        iIntros "[#S $]". iFrame "S".
-        iDestruct (strict_valid_ptr_nonnull with "S") as %?.
-        iIntros "!%". eauto.
+        rewrite /has_type/=/reference_to has_type_prop_ref.
+        iSplit.
+        { rewrite /strict_valid_if_not_empty_array.
+          iIntros "[%H [#H $]]".
+          destruct H as [? [H?]].
+          inversion H; subst. case_match; iFrame "%#∗".
+          by rewrite strict_valid_valid. }
+        { iIntros "[$ [%H [#V ?]]]".
+          iSplitR. iPureIntro. eexists; split; eauto.
+          rewrite /strict_valid_if_not_empty_array.
+          case_match; eauto. }
       Qed.
 
       Lemma has_type_rv_ref' p ty :
-        has_type (Vref p) (Trv_ref ty) -|- strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+        has_type (Vref p) (Trv_ref ty) -|- reference_to ty p.
       Proof.
         rewrite -has_type_ref'.
         by rewrite /has_type/= has_type_prop_ref has_type_prop_rv_ref.
       Qed.
+
+      #[global] Instance reference_to_knowledge : Knowledge2 reference_to.
+      Proof.
+        rewrite /reference_to. intros. case_match; split; refine _.
+      Qed.
+      #[global] Instance reference_to_timeless : Timeless2 reference_to.
+      Proof. rewrite /reference_to. intros. case_match; refine _. Qed.
+
+      Theorem reference_to_erase : forall ty p,
+          reference_to ty p -|- reference_to (erase_qualifiers ty) p.
+      Proof.
+        rewrite /reference_to. intros.
+        rewrite -aligned_ptr_ty_erase_qualifiers -zero_size_array_erase_qualifiers.
+        done.
+      Qed.
+
+      Theorem reference_to_intro : forall ty p,
+          strict_valid_ptr p |-- has_type (Vptr p) (Tptr ty) -* reference_to ty p.
+      Proof.
+        rewrite /has_type/reference_to/=.
+        iIntros (??) "#V [%Htype [? %Haligned]]".
+        iFrame "%".
+        iDestruct (observe [| _ <> nullptr |] with "V") as "#$".
+        iFrame. case_match; eauto.
+      Qed.
+      Theorem reference_to_elim : forall ty p,
+          reference_to ty p |--
+            [| aligned_ptr_ty ty p |] ** [| p <> nullptr |] **
+            valid_ptr p ** if zero_sized_array ty then emp else strict_valid_ptr p.
+      Proof. rewrite /reference_to. eauto. Qed.
+
     End with_genv.
 
     #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
@@ -1240,7 +1317,7 @@ Module SimpleCPP.
 
     (* TODO: the [Notation] connects to the wrong definition *)
     #[local] Theorem tptsto_reference_to : forall {σ} p ty q (v : val),
-      Observe (has_type (Vref p) (Tref ty)) (@tptsto σ ty q p v).
+      Observe (reference_to ty p) (@tptsto σ ty q p v).
     Proof. Admitted.
 
     Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
@@ -1352,6 +1429,9 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
     Axiom type_ptr_o_sub : forall p (m n : N) ty,
       (m < n)%N ->
       type_ptr (Tarray ty n) p ⊢ type_ptr ty (p ,, _sub ty m).
+
+    Axiom type_ptr_o_sub_end : forall p (n : N) ty,
+      type_ptr (Tarray ty n) p ⊢ valid_ptr (p ,, _sub ty n).
 
     Axiom o_base_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--

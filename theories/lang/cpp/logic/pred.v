@@ -135,6 +135,27 @@ Module Type CPP_LOGIC
     #[global] Declare Instance has_type_mono :
       Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
 
+    (**
+       [reference_to ty p] states that the location [p] stores a value of type [ty].
+
+       This should be thought of as closely related to [has_type (Vref p) (Tref ty)]
+       except that it holds on types that are not valid C++ types. For example,
+       if
+       <<
+       struct C { int& r; } x;
+       >>
+       then [reference_to (Tref Tint) (x ., ``::C::r``)].
+
+       In the future, [has_type (Vref (x ., ``::C::r``)) (Tref (Tref Tint))]
+       may not hold since [Tref (Tref Tint)] is not a valid C++ type. The
+       current blocker to this is that we use [tptsto] to represent
+       ownership of references. This would need to change.
+     *)
+    Parameter reference_to : forall {σ : genv}, type -> ptr -> mpred.
+
+    #[global] Declare Instance reference_to_mono :
+      Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@reference_to).
+
     Section with_genv.
       Context {σ : genv}.
 
@@ -160,37 +181,26 @@ Module Type CPP_LOGIC
         has_type (Vptr p) (Tpointer ty) -|-
         valid_ptr p ** [| aligned_ptr_ty ty p |].
 
-      Definition strict_valid_if_not_empty_array ty : ptr -> mpred :=
-        if zero_sized_array ty then valid_ptr else strict_valid_ptr.
-
+      (* These two definitions are needed because of [tptsto_has_type] *)
       Axiom has_type_ref' : ∀ p ty,
-        has_type (Vref p) (Tref ty) -|-
-          [| aligned_ptr_ty ty p |] **
-          strict_valid_if_not_empty_array ty p.
+        has_type (Vref p) (Tref ty) -|- reference_to ty p.
       Axiom has_type_rv_ref' : ∀ p ty,
-        has_type (Vref p) (Trv_ref ty) -|-
-        [| aligned_ptr_ty ty p |] **
-        strict_valid_if_not_empty_array ty p.
+        has_type (Vref p) (Trv_ref ty) -|- reference_to ty p.
+
+      #[global] Declare Instance reference_to_knowledge : Knowledge2 reference_to.
+      #[global] Declare Instance reference_to_timeless : Timeless2 reference_to.
+
+      Axiom reference_to_erase : forall ty p,
+          reference_to ty p -|- reference_to (erase_qualifiers ty) p.
+
+      Axiom reference_to_intro : forall ty p,
+          strict_valid_ptr p |-- has_type (Vptr p) (Tptr ty) -* reference_to ty p.
+      Axiom reference_to_elim : forall ty p,
+          reference_to ty p |--
+            [| aligned_ptr_ty ty p |] ** [| p <> nullptr |] **
+            valid_ptr p ** if zero_sized_array ty then emp else strict_valid_ptr p.
 
     End with_genv.
-
-    (**
-       [reference_to ty p] states that the location [p] stores a value of type [ty].
-
-       For now, we make this a [Notation] for [has_type] (see definition), but in the
-       future, this will change.
-
-       This should be thought of as closely related to [has_type (Vref p) (Tref ty)]
-       except that it holds on types that are not valid C++ types. For example,
-       if
-       <<
-       struct C { int& r; } x;
-       >>
-       then [reference_to (Tref Tint) (x ., ``::C::r``)] while
-       [has_type (Vref (x ., ``::C::r``)) (Tref (Tref Tint))] does not hold since
-       [Tref (Tref Tint)] is not a valid C++ type.
-     *)
-    #[local] Notation reference_to ty p := (has_type (Vref p) (Tref ty)).
 
     Parameter has_type_or_undef : forall {σ : genv}, val -> type -> mpred.
     Axiom has_type_or_undef_unfold :
@@ -823,12 +833,6 @@ End VALID_PTR_AXIOMS.
 
 Declare Module L : CPP_LOGIC PTRS_INTF_AXIOM VALUES_INTF_AXIOM LC.
 Export L.
-
-(** [reference_to ty r] states that [r] is a reference to an object of type [ty].
-
-    TODO: Introducing this as a [Notation] is temporary.
-  *)
-Notation reference_to ty r := (has_type (Vref r) (Tref ty)) (only parsing).
 
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS PTRS_INTF_AXIOM VALUES_INTF_AXIOM LC L.
 

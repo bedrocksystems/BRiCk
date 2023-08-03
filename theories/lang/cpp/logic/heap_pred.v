@@ -303,6 +303,17 @@ mlock Definition primR `{Σ : cpp_logic, resolve : genv} (ty : type) (q : cQp.t)
   tptsto_fuzzyR ty q v.
 #[global] Arguments primR {_ _ _} _ _ _ : assert.	(* mlock bug *)
 
+mlock Definition reference_toR `{Σ : cpp_logic, resolve : genv} (ty : type) : Rep :=
+  as_Rep (reference_to ty).
+#[global] Arguments reference_toR {_ _ _} _ : assert.	(* mlock bug *)
+
+#[global] Instance reference_toR_knoweldge `{Σ : cpp_logic, resolve : genv}
+  : Knowledge1 reference_toR.
+Proof. rewrite reference_toR.unlock; intros. split; refine _. Qed.
+#[global] Instance reference_toR_timeless `{Σ : cpp_logic, resolve : genv}
+  : Timeless1 reference_toR.
+Proof. rewrite reference_toR.unlock; intros. refine _. Qed.
+
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
@@ -702,16 +713,28 @@ Section with_cpp.
   Proof.
     by rewrite has_type_ptr' _at_sep _at_validR aligned_ofR_aligned_ptr_ty.
   Qed.
-  Lemma has_type_ref p ty :
-    has_type (Vref p) (Tref ty) |-- p |-> (svalidR ** aligned_ofR ty).
-  Proof.
-    by rewrite has_type_ref' _at_sep _at_svalidR aligned_ofR_aligned_ptr_ty.
-  Qed.
-  Lemma has_type_rv_ref p ty :
-    has_type (Vref p) (Trv_ref ty) -|- p |-> (svalidR ** aligned_ofR ty).
-  Proof.
-    by rewrite has_type_rv_ref' _at_sep _at_svalidR aligned_ofR_aligned_ptr_ty.
-  Qed.
+
+  (** ** [reference_to] *)
+  #[global] Instance reference_to_valid ty p : Observe (valid_ptr p) (reference_to ty p).
+  Proof. rewrite reference_to_elim. refine _. Qed.
+  #[global] Instance reference_to_aligned ty p : Observe [| aligned_ptr_ty ty p |] (reference_to ty p).
+  Proof. rewrite reference_to_elim. refine _. Qed.
+  #[global] Instance reference_to_aligned_ofR ty (p : ptr) : Observe (p |-> aligned_ofR ty) (reference_to ty p).
+  Proof. rewrite reference_to_elim aligned_ofR_aligned_ptr_ty. refine _. Qed.
+  #[global] Instance reference_to_not_null ty p : Observe [| p <> nullptr |] (reference_to ty p).
+  Proof. rewrite reference_to_elim. refine _. Qed.
+  #[global] Instance reference_to_strict_valid ty p :
+    TCEq (zero_sized_array ty) false ->
+    Observe (strict_valid_ptr p) (reference_to ty p).
+  Proof. rewrite reference_to_elim. move => ->. refine _. Qed.
+
+
+  #[global] Instance reference_to_aligned_observe p ty :
+    Observe (p |-> aligned_ofR ty) (reference_to ty p).
+  Proof. rewrite aligned_ofR_aligned_ptr_ty reference_to_elim; refine _. Qed.
+  #[global] Instance reference_to_valid_observe p ty :
+    Observe (p |-> validR) (reference_to ty p).
+  Proof. rewrite _at_validR reference_to_elim; refine _. Qed.
 
   Lemma null_nonnull (R : Rep) : nullR |-- nonnullR -* R.
   Proof.
