@@ -57,7 +57,10 @@ Proof.
 Qed.
 
 (** * sizeof() *)
-(** this is a partial implementation of [size_of] for primitives.
+(** The size of a C++ object.
+    This is *not* the same as the semantics of the <<sizeof()>> operator
+    because <<sizeof(int&)>> is actually <<sizeof(int)>> whereas
+    [size_of (Tref Tint)] is the size of the reference.
  *)
 Fixpoint size_of (resolve : genv) (t : type) : option N :=
   match t with
