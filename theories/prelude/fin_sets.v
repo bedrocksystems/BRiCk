@@ -124,7 +124,7 @@ Section set_map_functorial.
 
   Lemma set_map_id_L `{!LeibnizEquiv SA} (X : SA) :
     set_map id X = X.
-  Proof using Type*. unfold_leibniz. by rewrite set_map_id. Qed.
+  Proof. unfold_leibniz. by rewrite set_map_id. Qed.
 
   Section compose.
     Context `{FinSet B SB}.
@@ -134,14 +134,14 @@ Section set_map_functorial.
 
     Lemma set_map_compose (X : SA) :
       set_map (C := SB) (D := SC) g (set_map f X) ≡ set_map (g ∘ f) X.
-    Proof using Type*.
+    Proof.
       rewrite /set_map elements_list_to_set -?list_fmap_compose //.
       apply /NoDup_fmap /NoDup_elements.
     Qed.
 
     Lemma set_map_compose_L `{!LeibnizEquiv SC} (X : SA) :
       set_map (C := SB) (D := SC) g (set_map f X) = set_map (g ∘ f) X.
-    Proof using Type*. unfold_leibniz. apply /set_map_compose. Qed.
+    Proof. unfold_leibniz. apply /set_map_compose. Qed.
   End compose.
 End set_map_functorial.
 
@@ -169,27 +169,10 @@ Section set_map.
     (∀ y, f x = f y → y ∉ Y) → set_map f Y ## {[f x]}.
   Proof. set_solver. Qed.
 
-  Lemma set_map_singleton (f : A → B) (x : A) :
-    set_map f (singleton x) ≡ {[f x]}.
-  Proof. set_solver. Qed.
-  Lemma set_map_singleton_L `{!LeibnizEquiv D} (f : A → B) (x : A) :
-    set_map f (singleton x) = {[f x]}.
-  Proof. unfold_leibniz. apply set_map_singleton. Qed.
-
-  Lemma set_map_union (f : A → B) (X Y : C) :
-    set_map f (X ∪ Y) ≡ set_map f X ∪ set_map f Y.
-  Proof. set_solver. Qed.
-  Lemma set_map_union_L `{!LeibnizEquiv D} (f : A → B) (X Y : C) :
-    set_map f (X ∪ Y) = set_map f X ∪ set_map f Y.
-  Proof. unfold_leibniz. apply set_map_union. Qed.
-
-  Lemma set_map_empty (f : A -> B) : set_map f ∅ = ∅.
-  Proof. rewrite /set_map. by rewrite elements_empty. Qed.
-
   Lemma set_map_ext (f g : A -> B) (X : C)
     (Hext : ∀ x, x ∈ X → f x = g x) :
     set_map f X =@{D} set_map g X.
-  Proof using Type*.
+  Proof.
     rewrite /set_map. f_equiv. apply list_fmap_ext.
     intros i x ?%elem_of_list_lookup_2. exact /Hext /elem_of_elements.
   Qed.
