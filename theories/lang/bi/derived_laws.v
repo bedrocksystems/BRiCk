@@ -28,6 +28,7 @@ Module Export nary.
   Notation Persistent3 P := (∀ a, Persistent2 (P a)).
   Notation Persistent4 P := (∀ a, Persistent3 (P a)).
   Notation Persistent5 P := (∀ a, Persistent4 (P a)).
+  Notation Persistent6 P := (∀ a, Persistent5 (P a)).
 
   (** [AffineN] states that predicate [P] taking [N] arguments is [Affine] *)
   Notation Affine1 P := (∀ a, Affine (P a)).
@@ -35,6 +36,7 @@ Module Export nary.
   Notation Affine3 P := (∀ a, Affine2 (P a)).
   Notation Affine4 P := (∀ a, Affine3 (P a)).
   Notation Affine5 P := (∀ a, Affine4 (P a)).
+  Notation Affine6 P := (∀ a, Affine5 (P a)).
 
   (** [AbsorbingN] states that predicate [P] taking [N] arguments is [Absorbing] *)
   Notation Absorbing1 P := (∀ a, Absorbing (P a)).
@@ -42,6 +44,7 @@ Module Export nary.
   Notation Absorbing3 P := (∀ a, Absorbing2 (P a)).
   Notation Absorbing4 P := (∀ a, Absorbing3 (P a)).
   Notation Absorbing5 P := (∀ a, Absorbing4 (P a)).
+  Notation Absorbing6 P := (∀ a, Absorbing5 (P a)).
 
   (** [TimelessN] states that predicate [P] taking [N] arguments is [Timeless] *)
   Notation Timeless1 P := (∀ a, Timeless (P a)).

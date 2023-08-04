@@ -175,7 +175,7 @@ Section with_cpp.
 
   (** * Binding parameters *)
 
-  Fixpoint wp_make_mutables (ls : list (ptr * type)) (Q : epred) : mpred :=
+  Fixpoint wp_make_mutables (ls : list (ptr * decltype)) (Q : epred) : mpred :=
     match ls with
     | nil => Q
     | (p,t) :: ls => wp_make_mutables ls $ wp_make_mutable tu p t Q
@@ -189,7 +189,7 @@ Section with_cpp.
     iApply wp_const_frame; first reflexivity; eauto.
   Qed.
 
-  Definition Kcleanup (ls : list (ptr * type)) : Kpred -> Kpred :=
+  Definition Kcleanup (ls : list (ptr * decltype)) : Kpred -> Kpred :=
     Kat_exit (wp_make_mutables ls).
 
   Lemma Kcleanup_frame ls (Q Q' : Kpred) rt :
@@ -199,14 +199,14 @@ Section with_cpp.
     iIntros (??) "X"; iApply wp_make_mutables_frame; eauto.
   Qed.
 
-  (** [bind_vars args vals r Q] preforms initialization of the parameters
+  (** [bind_vars args vals r Q] performs initialization of the parameters
       given the values being passed.
 
       NOTE. We make arguments [const] here if necessary and then make them
             mutable again in the second argument to [Q].
    *)
-  Fixpoint bind_vars (args : list (ident * type)) (ar : function_arity) (ptrs : list ptr)
-    (ρ : option ptr -> region) (Q : region -> list (ptr * type) -> mpred) : mpred :=
+  Fixpoint bind_vars (args : list (ident * decltype)) (ar : function_arity) (ptrs : list ptr)
+    (ρ : option ptr -> region) (Q : region -> list (ptr * decltype) -> mpred) : mpred :=
     match args with
     | nil =>
         match ar with
@@ -266,8 +266,8 @@ Section with_cpp.
       match body with
       | Impl body =>
         let ρ va := Remp None va f.(f_return) in
-        bind_vars f.(f_params) f.(f_arity) args ρ (fun ρ cleanup =>
-        |> wp ρ body (Kcleanup cleanup $ Kreturn (funI x => |={⊤}=> |> Q x)))
+        letI* ρ, cleanup := bind_vars f.(f_params) f.(f_arity) args ρ in
+        |> wp ρ body (Kcleanup cleanup $ Kreturn (funI x => |={⊤}=> |> Q x))
       | Builtin builtin =>
         wp_builtin_func builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
@@ -293,8 +293,8 @@ Section with_cpp.
       match args with
       | thisp :: rest_vals =>
         let ρ va := Remp (Some thisp) va m.(m_return) in
-        bind_vars m.(m_params) m.(m_arity) rest_vals ρ (fun ρ cleanup =>
-        |> wp ρ body (Kcleanup cleanup (Kreturn (funI x => |={⊤}=> |>Q x))))
+        letI* ρ, cleanup := bind_vars m.(m_params) m.(m_arity) rest_vals ρ in
+        |> wp ρ body (Kcleanup cleanup (Kreturn (funI x => |={⊤}=> |>Q x)))
       | _ => False
       end
     | Some _ => UNSUPPORTED "defaulted methods"%bs
