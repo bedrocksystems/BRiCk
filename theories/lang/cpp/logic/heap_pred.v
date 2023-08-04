@@ -301,7 +301,7 @@ Section with_cpp.
   (** [varargsR ts_ps] is the ownership of a group of variadic arguments.
       The [type] is the type of the argument and the [ptr] is the location
       of the argument. *)
-  Parameter varargsR : list (type * ptr) -> Rep.
+  Parameter varargsR : forall {σ : genv}, list (type * ptr) -> Rep.
 
   Lemma _at_primR {σ} (p : ptr) ty q v :
     p |-> primR ty q v -|-
