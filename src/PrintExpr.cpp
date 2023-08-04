@@ -1094,11 +1094,11 @@ public:
         };
 
         if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
-            print.ctor("Ealign_of", false);
+            print.ctor("Ealignof", false);
             do_arg();
             done(expr, print, cprint);
         } else if (expr->getKind() == UnaryExprOrTypeTrait::UETT_SizeOf) {
-            print.ctor("Esize_of", false);
+            print.ctor("Esizeof", false);
             do_arg();
             done(expr, print, cprint);
         } else {
@@ -1115,7 +1115,7 @@ public:
     void VisitOffsetOfExpr(const OffsetOfExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext& ctxt,
                            OpaqueNames&) {
-        print.ctor("Eoffset_of");
+        print.ctor("Eoffsetof");
         assert(expr->getNumComponents() == 1);
         auto comm = expr->getComponent(0);
         switch (comm.getKind()) {

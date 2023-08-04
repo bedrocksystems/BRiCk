@@ -342,33 +342,33 @@ Module ExprNotations.
          , only printing).
 
   Notation "'sizeof(ty:' ty )"
-      := (Esize_of (inl ty) _)
+      := (Esizeof (inl ty) _)
          ( in custom CPP_expr at level 200
          , ty custom CPP_type at level 200
          , format "'[' sizeof(ty:  ty ) ']'"
          , only printing).
   Notation "'sizeof(expr:' e )"
-      := (Esize_of (inr e) _)
+      := (Esizeof (inr e) _)
          ( in custom CPP_expr at level 200
          , e custom CPP_expr at level 200
          , format "'[' sizeof(expr:  e ) ']'"
          , only printing).
 
   Notation "'alignof(ty:' ty )"
-      := (Ealign_of (inl ty) _)
+      := (Ealignof (inl ty) _)
          ( in custom CPP_expr at level 200
          , ty custom CPP_type at level 200
          , format "'[' alignof(ty:  ty ) ']'"
          , only printing).
   Notation "'alignof(expr:' e )"
-      := (Ealign_of (inr e) _)
+      := (Ealignof (inr e) _)
          ( in custom CPP_expr at level 200
          , e custom CPP_expr at level 200
          , format "'[' alignof(expr:  e ) ']'"
          , only printing).
 
   Notation "'offsetof(' fld ')'"
-      := (Eoffset_of (Oo_Field (Build_field _ fld%bs)) _)
+      := (Eoffsetof (Oo_Field (Build_field _ fld%bs)) _)
          ( in custom CPP_expr at level 200
          , fld constr
          , format "'[' offsetof( fld ) ']'"

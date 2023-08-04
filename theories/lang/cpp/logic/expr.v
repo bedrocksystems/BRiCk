@@ -831,14 +831,14 @@ Module Type Expr.
      *)
     Axiom wp_operand_sizeof : forall ety ty Q,
         Exists sz, [| size_of (drop_reference $ get_type ety) = Some sz |]  ** Q (Vn sz) FreeTemps.id
-        |-- wp_operand (Esize_of ety ty) Q.
+        |-- wp_operand (Esizeof ety ty) Q.
 
     (** `alignof(e)`
         https://eel.is/c++draft/expr.alignof
      *)
     Axiom wp_operand_alignof : forall ety ty Q,
-        Exists align, [| align_of (drop_reference $ get_type ety) = Some align |] ** Q (Vint (Z.of_N align)) FreeTemps.id
-        |-- wp_operand (Ealign_of ety ty) Q.
+       Exists align, [| align_of (drop_reference $ get_type ety) = Some align |] ** Q (Vint (Z.of_N align)) FreeTemps.id
+       |-- wp_operand (Ealignof ety ty) Q.
 
     (** * Function calls
 

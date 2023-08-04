@@ -435,9 +435,9 @@ Inductive Expr : Set :=
   (* ^^ in the case of a [Mfunc], [ls] is non-empty and the first expression is the object *)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : exprtype)
-| Esize_of (_ : decltype + Expr) (_ : exprtype)
-| Ealign_of (_ : decltype + Expr) (_ : exprtype)
-| Eoffset_of (_ : OffsetInfo) (_ : exprtype)
+| Esizeof (_ : decltype + Expr) (_ : exprtype)
+| Ealignof (_ : decltype + Expr) (_ : exprtype)
+| Eoffsetof (_ : OffsetInfo) (_ : exprtype)
 | Econstructor (_ : obj_name) (_ : list Expr) (_ : exprtype)
 | Eimplicit (_ : Expr)
 | Eimplicit_init (_ : exprtype)

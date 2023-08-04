@@ -35,9 +35,9 @@ Fixpoint type_of (e : Expr) : exprtype :=
   | Emember_call _ _ _ t
   | Eoperator_call _ _ _ t
   | Esubscript _ _ t
-  | Esize_of _ t
-  | Ealign_of _ t
-  | Eoffset_of _ t
+  | Esizeof _ t
+  | Ealignof _ t
+  | Eoffsetof _ t
   | Econstructor _ _ t => t
   | Eimplicit e => type_of e
   | Eif _ _ _ _ t
@@ -200,9 +200,9 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
     | Tptr _ => valcat_of_base e1
     | _ => valcat_of_base e2
     end
-  | Esize_of _ _ => Prvalue
-  | Ealign_of _ _ => Prvalue
-  | Eoffset_of _ _ => Prvalue
+  | Esizeof _ _ => Prvalue
+  | Ealignof _ _ => Prvalue
+  | Eoffsetof _ _ => Prvalue
   | Econstructor _ _ _ => Prvalue (* init *)
   | Eimplicit e => valcat_of e
   | Eif _ e1 e2 vc _ => vc
