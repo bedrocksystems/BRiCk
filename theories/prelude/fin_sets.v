@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-22
+ * Copyright (C) BedRock Systems Inc. 2020-23
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -8,9 +8,9 @@ Require Export stdpp.fin_sets.
 From bedrock.prelude Require Import base sets list.
 
 (** * Small extensions to [stdpp.fin_sets]. *)
+#[local] Set Default Proof Using "Type*".
 
 Section finset.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C}.
   Implicit Types X Y : C.
 
@@ -114,8 +114,38 @@ Section set_seq.
 End set_seq.
 
 (** The [set_map] operation *)
+
+Section set_map_functorial.
+  Context `{FinSet A SA}.
+
+  Lemma set_map_id (X : SA) :
+    set_map id X ≡ X.
+  Proof. by rewrite /set_map list_fmap_id list_to_set_elements. Qed.
+
+  Lemma set_map_id_L `{!LeibnizEquiv SA} (X : SA) :
+    set_map id X = X.
+  Proof using Type*. unfold_leibniz. by rewrite set_map_id. Qed.
+
+  Section compose.
+    Context `{FinSet B SB}.
+    Context `{Set_ C SC}.
+
+    Context (f : A -> B) `{!Inj eq eq f} (g : B -> C).
+
+    Lemma set_map_compose (X : SA) :
+      set_map (C := SB) (D := SC) g (set_map f X) ≡ set_map (g ∘ f) X.
+    Proof using Type*.
+      rewrite /set_map elements_list_to_set -?list_fmap_compose //.
+      apply /NoDup_fmap /NoDup_elements.
+    Qed.
+
+    Lemma set_map_compose_L `{!LeibnizEquiv SC} (X : SA) :
+      set_map (C := SB) (D := SC) g (set_map f X) = set_map (g ∘ f) X.
+    Proof using Type*. unfold_leibniz. apply /set_map_compose. Qed.
+  End compose.
+End set_map_functorial.
+
 Section set_map.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C, Set_ B D}.
   #[local] Notation set_map := (set_map (C := C) (D := D)).
 
@@ -155,10 +185,29 @@ Section set_map.
 
   Lemma set_map_empty (f : A -> B) : set_map f ∅ = ∅.
   Proof. rewrite /set_map. by rewrite elements_empty. Qed.
+
+  Lemma set_map_ext (f g : A -> B) (X : C)
+    (Hext : ∀ x, x ∈ X → f x = g x) :
+    set_map f X =@{D} set_map g X.
+  Proof using Type*.
+    rewrite /set_map. f_equiv. apply list_fmap_ext.
+    intros i x ?%elem_of_list_lookup_2. exact /Hext /elem_of_elements.
+  Qed.
 End set_map.
 
+(* Note: this instance seems to not match [λ x, set_map f x]. *)
+#[global] Instance set_map_cancel
+    `{FinSet A SA} `{FinSet B SB} `{!LeibnizEquiv SB}
+    (f : A -> B) (g : B -> A) `{!Cancel eq f g} :
+  Cancel eq (set_map (C := SA) f) (set_map (C := SB) g).
+Proof.
+  intros X. have ? : Inj eq eq g by exact: cancel_inj.
+  rewrite -{2}(set_map_id_L X) set_map_compose_L.
+  (* setoid_rewrite (cancel right.of_nova right.to_nova). *)
+  apply set_map_ext => x Hin. exact: cancel.
+Qed.
+
 Section set_map.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C, FinSet B D}.
   #[local] Notation set_map := (set_map (C := C) (D := D)).
 
@@ -205,7 +254,6 @@ End set_map.
 Contrast with [set_bind] (added in stdpp after we added [set_concat_map]. *)
 Section set_concat_map.
   Context `{FinSet A C} `{FinSet B D}.
-  #[local] Set Default Proof Using "Type*".
 
   Definition set_concat_map (f : A → list B) (xs : C) : D :=
     list_to_set (elements xs ≫= f).
@@ -262,7 +310,6 @@ End set_concat_map.
 
 (** Pairwise disjointness *)
 Section fin_set.
-  #[local] Set Default Proof Using "Type*".
   Context `{FinSet C D, Disjoint C, !RelDecision (##@{C})}.
   Implicit Types Xs Ys : D.
 
