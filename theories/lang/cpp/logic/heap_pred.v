@@ -322,6 +322,10 @@ Section with_cpp.
       of the argument. *)
   Parameter varargsR : forall {σ : genv}, list (type * ptr) -> Rep.
 
+  Lemma _at_reference_toR {σ : genv} ty (p : ptr) :
+    p |-> reference_toR ty -|- reference_to ty p.
+  Proof. by rewrite reference_toR.unlock _at_as_Rep. Qed.
+
   Lemma _at_primR {σ} (p : ptr) ty q v :
     p |-> primR ty q v -|-
       [| ~~ is_raw v |] **
