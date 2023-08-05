@@ -152,10 +152,6 @@ Section TestExprNotations.
                      ty.
   Print Ebinop_compound_1. Print Ebinop_compound_2.
 
-  #[local] Definition Eread_ref_lname : Expr := Eread_ref (Evar (Lname "FooBarBaz") ty).
-  #[local] Definition Eread_ref_gname : Expr := Eread_ref (Evar (Gname "FooBarBaz") ty).
-  Print Eread_ref_lname. Print Eread_ref_gname.
-
   #[local] Definition Ederef_Evar : Expr := Ederef (Evar (Lname "Qux") ty) ty.
   #[local] Definition Ederef_Enull : Expr := Ederef Enull ty.
   Print Ederef_Evar. Print Ederef_Enull.
@@ -240,7 +236,7 @@ Section TestExprNotations.
   #[local] Definition Ecast_elide_2 (cast : Cast) (vc : ValCat) := Ecast cast (Eint 314 ty) vc ty.
   Print Ecast_elide_1. Print Ecast_elide_2.
 
-  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) (Build_field "foo" "bar") ty.
+  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) (Build_field "foo" "bar") false ty.
   Print Emember_1.
 
   #[local] Definition Emember_call_nil_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e []%list ty.

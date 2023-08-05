@@ -5,8 +5,7 @@
   coqc -w -notation-overridden test_cpp_names.v
   Error: Can't find file ./test_cpp_names.v
   coqc -w -notation-overridden test_cpp.v
-  File "./test_cpp.v", line 92, characters 121-122:
-  Error:
-  Syntax error: '##ₚ.)' or '==.)' or '≢ₚ.)' or '≡ₚ.)' or '::.)' or '⊔.)' or '⊓.)' or '⊑.)' or '!!!.)' or '!!.)' or '≫=.)' or '##.)' or '∉.)' or '∈.)' or '*:.)' or '⊎.)' or '⊄.)' or '⊂.)' or '⊈.)' or '⊆.)' or '∖.)' or '∩.)' or '∪.)' or ',.)' or '∘.)' or '→.)' or '↔.)' or '∨.)' or '∧.)' or '≢.)' or '≡.)' or '≠.)' or '=.)' or '++.)' or '|' or '+++.)' or ':::.)' or 'as' or 'in' or ',' or ')' expected after [term level 200] (in [term]).
+  File "./test_cpp.v", line 88, characters 83-88:
+  Error: Syntax Error: Lexer: Unterminated string
   
   [1]

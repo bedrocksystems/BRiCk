@@ -388,7 +388,7 @@ End operator_impl.
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : exprtype)
   (* ^ these are different because they do not have addresses *)
-| Evar     (_ : VarRef) (_ : exprtype)
+| Evar     (_ : VarRef) (_ : decltype) (* << type is the decltype of the variable *)
   (* ^ local and global variable reference *)
 
 | Echar    (value : N) (_ : exprtype)
@@ -406,7 +406,6 @@ Inductive Expr : Set :=
   * operator shows up as a function call, not a `Eunop` or `Ebinop`.
   * this includes the assignment operator for classes.
   *)
-| Eread_ref (e : Expr) (* type = type_of e *)
 | Ederef (e : Expr) (_ : exprtype) (* XXX type = strip [Tptr] from [type_of e] *)
 | Eaddrof (e : Expr) (* type = Tptr (type_of e) *)
 | Eassign (e _ : Expr) (_ : exprtype) (* XXX type = type_of e *)
@@ -427,7 +426,7 @@ Inductive Expr : Set :=
 | Ecall    (_ : Expr) (_ : list Expr) (_ : exprtype)
 | Ecast    (_ : Cast) (e : Expr) (_ : ValCat) (_ : exprtype)
 
-| Emember  (obj : Expr) (_ : field) (_ : exprtype)
+| Emember  (obj : Expr) (_ : field) (mut : bool) (_ : decltype)
   (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * dispatch_type * functype) + Expr) (obj : Expr) (_ : list Expr) (_ : exprtype)
 

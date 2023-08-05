@@ -6,18 +6,81 @@
 From bedrock.prelude Require Import base list_numbers.
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
+Definition decompose_reference : decltype -> bool * exprtype :=
+  qual_norm (fun cv ty =>
+               match ty with
+               | Tref ty | Trv_ref ty =>
+                             let '(cv, ty) := decompose_type ty in
+                             (true, tqualified cv ty)
+               | _ => (false, tqualified cv ty)
+               end).
+
+(* [type_of_member obj_ty mut mem_type] is the [exprtype] of a member access
+   given the type of the object, the mutability of the member, and the [decltype]
+   of the member.
+
+   Examples on decltypes of members ([valcat_of] and [type_of_member]):
+
+   <<
+   struct C {
+     int x;
+     int &y;
+     int &&z;
+   };
+
+   void test() {
+     int x;
+     int &r{x};
+     int &&rr{...};
+
+            // exprtype valcat
+     x;     // int      L
+     r;     // int      L
+     rr;    // int      L
+
+     C c;
+     c.x;   // int      L
+     c.y;   // int      L
+     c.z;   // int      L
+     C{}.x; // int      X
+     C{}.y; // int      L
+     C{}.z; // int      L
+   }
+   >>
+ *)
+Definition type_of_member (obj_ty : exprtype) (mut : bool) (mem_type : decltype) : exprtype :=
+  let '(ref, ty) := decompose_reference mem_type in
+  if ref then ty
+  else
+    let qual :=
+      let '(ocv, _) := decompose_type obj_ty in
+      (* NOTE: C++ forbids <<mutable const int x>> even by
+             substitution & template instantiation, e.g.
+             <<mutable T mt>> with <<T = const int>>.
+             We arbitrary pick that <<mutable>> removes the effect
+             of the object qualifiers, but does not override the
+             qualifiers of the type (<<T>> above). This is in line
+             with our definition of [wp_const], where <<mutable>> simply
+             stops the <<const>> operation.
+             This does *not* introduce any soundness issue because it is
+             compile-time rejected by the compiler.
+       *)
+      CV (if mut then false else q_const ocv) (q_volatile ocv)
+    in
+    tqualified qual ty.
+
+
 (** [type_of e] returns the type of the expression [e]. *)
 Fixpoint type_of (e : Expr) : exprtype :=
   match e with
-  | Econst_ref _ t
-  | Evar _ t
+  | Econst_ref _ t => t
+  | Evar _ t => drop_reference t
   | Echar _ t => t
   | Estring vs t => Tarray (Qconst t) (1 + lengthN vs)
   | Eint _ t => t
   | Ebool _ => Tbool
   | Eunop _ _ t
   | Ebinop _ _ _ t => t
-  | Eread_ref e => type_of e
   | Ederef _ t => t
   | Eaddrof e => Tptr (type_of e)
   | Eassign _ _ t
@@ -30,8 +93,8 @@ Fixpoint type_of (e : Expr) : exprtype :=
   | Eseqor _ _ => Tbool
   | Ecomma _ e2 => type_of e2
   | Ecall _ _ t
-  | Ecast _ _ _ t
-  | Emember _ _ t
+  | Ecast _ _ _ t => t
+  | Emember e _ mut ty => type_of_member (type_of e) mut ty
   | Emember_call _ _ _ t
   | Eoperator_call _ _ _ t
   | Esubscript _ _ t
@@ -132,22 +195,10 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
 
       https://www.eel.is/c++draft/expr.mptr.oper#6
       *)
-      match e1 with
-      | Eread_ref _ => Lvalue
-      | Ematerialize_temp _ _ => Xvalue
-      | _ => UNEXPECTED_valcat e
-      end
+        valcat_of e1
     | Bdotip => Lvalue	(* derived from [Bdotp] *)
     | _ => Prvalue
     end
-  | Eread_ref e =>
-    (*
-    cpp2v ensures [e] is either a variable [Evar] or a field [Emember]
-    with reference type. According to cppreference, "the name of a
-    variable, [...], or a data member, regardless of type" is an
-    lvalue.
-    *)
-    Lvalue
   | Ederef _ _ => Lvalue
   | Eaddrof _ => Prvalue
   | Eassign _ _ _ => Lvalue
@@ -165,7 +216,13 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
     | Ecast Cfun2ptr _ _ (Tptr t) => valcat_from_function_type t
     | _ => UNEXPECTED_valcat e
     end
-  | Emember e _ _ => valcat_of e
+  | Emember e _ _ mty =>
+      match drop_qualifiers mty with
+      | Tref _ | Trv_ref _ =>
+        (* if the member type is a reference, then the expression is an lvalue *)
+        Lvalue
+      | _ => valcat_of e
+      end
   | Emember_call f _ _ _ =>
     match f with
     | inl (_, _, t)

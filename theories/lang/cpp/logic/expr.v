@@ -62,19 +62,6 @@ Module Type Expr.
 
     #[local] Notation size_of := (@size_of resolve) (only parsing).
 
-    (** * References
-
-        References are allocated explicitly in our semantics and are read
-        using a special [Eread_ref] node that is inserted into the program.
-
-        NOTE this rule requires that both [int&& x] and [int& x] are materialized
-        into [Tref].
-     *)
-    Axiom wp_lval_read_ref : forall e Q,
-        wp_lval e (fun r free => Exists (p : ptr),
-           (Exists q, r |-> primR (Tref $ erase_qualifiers $ type_of e) q (Vptr p) ** True) //\\ Q p free)
-      |-- wp_lval (Eread_ref e) Q.
-
     (* constants are rvalues *)
     Axiom wp_operand_constant : forall ty cnst e Q,
       tu.(types) !! cnst = Some (Gconstant ty (Some e)) ->
@@ -149,49 +136,70 @@ Module Type Expr.
           valid_ptr (_this ρ) ** Q (Vptr $ _this ρ) FreeTemps.id
       |-- wp_operand (Ethis ty) Q.
 
+    (* [read_decl p t Q] "returns" the reference referred to by
+       the pointer [p] when the declaation has type [t]. If the resulting value
+       is [r], then [has_type (Vref r) (Tref $ drop_references t)].
+
+       This logic encapsulates the handling of globals, locals, and members
+       that have reference type. In this case, the reference being returned
+       is the one that the reference location points to. If the location's
+       type is not a reference, then the pointer is returned *after* it is
+       checked to be strictly valid.
+     *)
+    Definition read_decl (p : ptr) (t : type) (Q : ptr -> mpred) :=
+      match drop_qualifiers t with
+      | Tref ty
+      | Trv_ref ty =>
+          Exists r,
+          (Exists q, p |-> primR (Tref $ erase_qualifiers ty) q (Vref r) ** True) //\\ Q r
+          (* The rules for [primR] guarantee [strict_valid_ptr r] *)
+      | _ => has_type (Vref p) (Tref t) ** Q p
+      end.
+
+    Definition _var (ρ : region) (v : VarRef) : ptr :=
+      match v with
+      | Lname x => _local ρ x
+      | Gname x => _global x
+      end.
+
     (* variables are lvalues *)
-    Axiom wp_lval_lvar : forall ty x Q,
-          valid_ptr (_local ρ x) ** Q (_local ρ x) FreeTemps.id
-      |-- wp_lval (Evar (Lname x) ty) Q.
+    Axiom wp_lval_var : forall ty x Q,
+          read_decl (_var ρ x) ty (fun p => Q p FreeTemps.id)
+      |-- wp_lval (Evar x ty) Q.
 
-    (* what about the type? if it exists *)
-    Axiom wp_lval_gvar : forall ty x Q,
-          valid_ptr (_global x) ** Q (_global x) FreeTemps.id
-      |-- wp_lval (Evar (Gname x) ty) Q.
-
-    (* [Emember a f ty] is an lvalue by default except when
+    (* [Emember a f mut ty] is an lvalue by default except when
      * - where [m] is a member enumerator or a non-static member function, or
      * - where [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
-    Axiom wp_lval_member : forall ty a m Q,
+    Axiom wp_lval_member : forall ty a m mut Q,
         match valcat_of a with
         | Prvalue => False
         | Lvalue =>
-          wp_lval a (fun base free =>
-                       let addr := base ,, _field m in
-                       valid_ptr addr ** Q addr free)
+          letI* base, free := wp_glval a in
+          letI* p := read_decl (base ,, _field m) ty in
+          Q p free
         | Xvalue => False
           (* NOTE If the object is a temporary, then the field access will also be a
              temporary. Being conservative is sensible in our semantic style.
           *)
         end
-      |-- wp_lval (Emember a m ty) Q.
+      |-- wp_lval (Emember a m mut ty) Q.
 
-    (* [Emember a m ty] is an xvalue if
+    (* [Emember a m mut ty] is an xvalue if
      * - [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
-    Axiom wp_xval_member : forall ty a m Q,
+    Axiom wp_xval_member : forall ty a m mut Q,
         match valcat_of a with
         | Prvalue => False
           (* This does not occur because our AST explicitly contains [Cl2r] casts.
            *)
         | Xvalue =>
-          wp_xval a (fun base free =>
-                       let addr := base ,, _field m in
-                       valid_ptr addr ** Q addr free)
-        | _ => False
+          letI* base, free := wp_xval a in
+          letI* p := read_decl (base ,, _field m) ty in
+          Q p free
+       | _ => False
         end%I
-      |-- wp_xval (Emember a m ty) Q.
+      |-- wp_xval (Emember a m mut ty) Q.
 
     (* [Esubscript e i _ _] when one operand is an array lvalue
      *   (in clang's syntax tree, this value is converted to an rvalue via

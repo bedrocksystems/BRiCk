@@ -203,14 +203,6 @@
        : Expr
   
   Ebinop_compound_2 uses section variable ty.
-  Eread_ref_lname = {e: $"FooBarBaz"}
-       : Expr
-  
-  Eread_ref_lname uses section variable ty.
-  Eread_ref_gname = {e: $::"FooBarBaz"}
-       : Expr
-  
-  Eread_ref_gname uses section variable ty.
   Ederef_Evar = {e: *$"Qux"}
        : Expr
   

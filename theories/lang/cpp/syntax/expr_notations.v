@@ -183,19 +183,6 @@ Module ExprNotations.
          , format "'[hv   ' ( x  '/' bop  y ) ']'"
          , only printing).
 
-  Notation "$ v"
-      := (Eread_ref (Evar (Lname v%bs) _))
-         ( in custom CPP_expr at level 0
-         , v constr
-         , format "'[' $ v ']'"
-         , only printing).
-  Notation "$ :: v"
-      := (Eread_ref (Evar (Gname v%bs) _))
-         ( in custom CPP_expr at level 0
-         , v constr
-         , format "'[' $ :: v ']'"
-         , only printing).
-
   Notation "* e"
       := (Ederef e _)
          ( in custom CPP_expr at level 30
@@ -306,7 +293,7 @@ Module ExprNotations.
          , only printing).
 
   Notation "e . fld"
-      := (Emember e (Build_field _ fld%bs) _)
+      := (Emember e (Build_field _ fld%bs) _ _)
          ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , fld constr
