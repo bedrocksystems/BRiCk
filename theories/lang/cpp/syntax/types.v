@@ -1270,6 +1270,10 @@ Fixpoint drop_reference (t : type) : exprtype :=
   | _ => t	(** We do not normalize qualifiers here to promote sharing *)
   end.
 
+Succeed Example TEST_drop_reference : drop_reference (Qconst (Tnamed "T")) = Qconst (Tnamed "T") := eq_refl.
+Succeed Example TEST_drop_reference : drop_reference (Qconst (Tref (Tnamed "T"))) = Tnamed "T" := eq_refl.
+Succeed Example TEST_drop_reference : drop_reference (Qconst (Tref (Qconst $ Tnamed "T"))) = Qconst (Tnamed "T") := eq_refl.
+
 (**
 [class_name t] returns the name of the class that this type refers to
 *)
