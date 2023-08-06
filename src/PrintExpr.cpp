@@ -560,11 +560,11 @@ public:
     void VisitCastExpr(const CastExpr* expr, CoqPrinter& print,
                        ClangPrinter& cprint, const ASTContext&,
                        OpaqueNames& li) {
-        if (expr->getCastKind() == CastKind::CK_ConstructorConversion) {
-            // note: the Clang AST records a "FunctionalCastExpr" with a constructor
-            // but the child node of this is the constructor!
-            cprint.printExpr(expr->getSubExpr(), print);
-        } else if (auto cf = expr->getConversionFunction()) {
+        if (expr->getCastKind() == CastKind::CK_ConstructorConversion ||
+            expr->getCastKind() == CastKind::CK_UserDefinedConversion) {
+            auto cf = expr->getConversionFunction();
+            assert(cf &&
+                   "UserDefinedConversion must have a ConversionFunction");
             // desugar user casts to function calls
             auto vd = dyn_cast<ValueDecl>(cf);
             assert(vd && "conversion function must be a [ValueDecl]");
@@ -612,10 +612,6 @@ public:
     void VisitCXXNamedCastExpr(const CXXNamedCastExpr* expr, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext& ctxt,
                                OpaqueNames& li) {
-        if (expr->getConversionFunction()) {
-            return VisitCastExpr(expr, print, cprint, ctxt, li);
-        }
-
         print.ctor("Ecast");
         if (isa<CXXReinterpretCastExpr>(expr)) {
             print.ctor("Creinterpret", false);
