@@ -307,10 +307,10 @@ Section ObjValue_ler.
     intros a b c.
     destruct a, b => //=; destruct c => //=; intros;
     repeat lazymatch goal with
-           | H : Func |- _ => destruct H; simpl in *
-           | H : Method |- _ => destruct H; simpl in *
-           | H : Ctor |- _ => destruct H; simpl in *
-           | H : Dtor |- _ => destruct H; simpl in *
+           | H : Func' _ _ |- _ => destruct H; simpl in *
+           | H : Method' _ _ |- _ => destruct H; simpl in *
+           | H : Ctor' _ _ |- _ => destruct H; simpl in *
+           | H : Dtor' _ _ |- _ => destruct H; simpl in *
            | H : false = true |- _ => inversion H
            | H : true = false |- _ => inversion H
            | H : bool_decide _ = true |- _ => apply bool_decide_eq_true_1 in H; subst

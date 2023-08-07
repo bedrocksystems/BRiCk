@@ -39,16 +39,16 @@ Notation Initializer := (Initializer' decltype Expr).
 
 Record Ctor' {type Expr : Set} : Set := Build_Ctor
 { c_class  : globname
-; c_params : list (ident * (*decl*)type)
+; c_params : list (ident * type)
 ; c_cc     : calling_conv
 ; c_arity  : function_arity
-; c_body   : option (OrDefault (list (Initializer' (*decl*)type Expr) * Stmt' type Expr))
+; c_body   : option (OrDefault (list (Initializer' type Expr) * Stmt' type Expr))
 }.
 #[global] Arguments Ctor' _ _ : clear implicits, assert.
 #[global] Arguments Build_Ctor {_ _} &.
 #[global] Instance: EqDecision2 Ctor'.
 Proof. solve_decision. Defined.
-Notation Ctor := (Ctor' type Expr).
+Notation Ctor := (Ctor' decltype Expr).
 
 Record Dtor' {type Expr : Set} : Set := Build_Dtor
 { d_class  : globname
@@ -59,7 +59,7 @@ Record Dtor' {type Expr : Set} : Set := Build_Dtor
 #[global] Arguments Build_Dtor {_ _} &.
 #[global] Instance: EqDecision2 Dtor'.
 Proof. solve_decision. Defined.
-Notation Dtor := (Dtor' type Expr).
+Notation Dtor := (Dtor' decltype Expr).
 
 Variant FunctionBody' {type Expr : Set} : Set :=
 | Impl (_ : Stmt' type Expr)
@@ -69,11 +69,11 @@ Variant FunctionBody' {type Expr : Set} : Set :=
 #[global] Arguments Impl _ _ &.
 #[global] Instance: EqDecision2 FunctionBody'.
 Proof. solve_decision. Defined.
-Notation FunctionBody := (FunctionBody' type Expr).
+Notation FunctionBody := (FunctionBody' decltype Expr).
 
 Record Func' {type Expr : Set} : Set := Build_Func
-{ f_return : (*decl*)type
-; f_params : list (ident * (*decl*)type)
+{ f_return : type
+; f_params : list (ident * type)
 ; f_cc     : calling_conv
 ; f_arity  : function_arity
 ; f_body   : option (FunctionBody' type Expr)
@@ -82,13 +82,13 @@ Record Func' {type Expr : Set} : Set := Build_Func
 #[global] Arguments Build_Func {_ _} &.
 #[global] Instance: EqDecision2 Func'.
 Proof. solve_decision. Defined.
-Notation Func := (Func' type Expr).
+Notation Func := (Func' decltype Expr).
 
 Record Method' {type Expr : Set} : Set := Build_Method
-{ m_return  : (*decl*)type
+{ m_return  : type
 ; m_class   : globname
 ; m_this_qual : type_qualifiers
-; m_params  : list (ident * (*decl*)type)
+; m_params  : list (ident * type)
 ; m_cc      : calling_conv
 ; m_arity   : function_arity
 ; m_body    : option (OrDefault (Stmt' type Expr))
@@ -97,7 +97,7 @@ Record Method' {type Expr : Set} : Set := Build_Method
 #[global] Arguments Build_Method {_ _} &.
 #[global] Instance: EqDecision2 Method'.
 Proof. solve_decision. Defined.
-Notation Method := (Method' type Expr).
+Notation Method := (Method' decltype Expr).
 
 Record Member' {type Expr : Set} : Set := mkMember
 { mem_name : ident
