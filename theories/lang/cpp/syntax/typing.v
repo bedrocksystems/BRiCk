@@ -126,6 +126,9 @@ Proof. apply drop_qualifiers_qual_norm'. Qed.
 Lemma drop_qualifiers_decompose_type t : drop_qualifiers t = (decompose_type t).2.
 Proof. by rewrite drop_qualifiers_qual_norm qual_norm_decompose_type. Qed.
 
+Lemma is_ref_drop_qualifiers t : is_ref t -> is_ref (drop_qualifiers t).
+Proof. by destruct t. Qed.
+
 Lemma erase_qualifiers_idemp t : erase_qualifiers (erase_qualifiers t) = erase_qualifiers t.
 Proof.
   move: t. fix IHt 1=>t.
@@ -356,6 +359,9 @@ cv-qualified) reference type.
 Definition is_reference_type (t : type) : bool :=
   is_ref (drop_qualifiers t).
 
+Lemma is_ref_incl t : is_ref t -> is_reference_type t.
+Proof. apply is_ref_drop_qualifiers. Qed.
+
 Lemma value_type_non_ref {ty} : is_value_type ty -> ~~ is_reference_type ty.
 Proof. by induction ty. Qed.
 
@@ -465,9 +471,12 @@ Definition valcat_from_type (t : decltype) : ValCat :=
   "Reference types cannot be cv-qualified at the top level".
   *)
   match drop_qualifiers t with
-  | Tref _
-  | Trv_ref (@Tfunction _ _ _ _) => Lvalue
-  | Trv_ref _ => Xvalue
+  | Tref _ => Lvalue
+  | Trv_ref u =>
+    match drop_qualifiers u with
+    | @Tfunction _ _ _ _ => Lvalue
+    | _ => Xvalue
+    end
   | _ => Prvalue
   end.
 
