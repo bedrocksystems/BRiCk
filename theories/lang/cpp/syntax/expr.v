@@ -348,7 +348,7 @@ Variant dispatch_type : Set := Virtual | Direct.
 #[global] Instance: EqDecision dispatch_type.
 Proof. solve_decision. Defined.
 #[deprecated(since="20230716",note="use [dispatch_type]")]
-Notation call_type := dispatch_type.
+Notation call_type := dispatch_type (only parsing).
 
 (** Base value categories as of C++11. *)
 Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
