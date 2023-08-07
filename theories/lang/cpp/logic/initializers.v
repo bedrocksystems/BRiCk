@@ -55,7 +55,7 @@ guaranteed to have to initialize a value which will result in an
   let folder i PP :=
     default_initialize (p ,, o_sub _ ty (Z.of_N i)) (fun free' => interp tu free' PP)
   in
-  foldr folder (p .[ ty ! Z.of_N len ] |-> validR -* |={top}=>?u Q FreeTemps.id) (seqN 0 len).
+  foldr folder (p |-> type_ptrR (Tarray ty len) -* |={top}=>?u Q FreeTemps.id) (seqN 0 len).
 
 mlock
 Definition default_initialize_array `{Σ : cpp_logic, σ : genv} :
@@ -160,7 +160,7 @@ Section default_initialize.
     |-- default_initialize_array di tu ty sz p Q -* default_initialize_array di' tu' ty sz p Q'.
   Proof.
     intros IHty Hsub. rewrite unlock.
-    generalize dependent (p .[ ty ! Z.of_N sz ] |-> validR).
+    generalize dependent (p |-> type_ptrR (Tarray ty sz)).
     induction (seqN 0 sz) =>/=; intros.
     - iIntros "X a b". iApply "X". by iApply "a".
     - iIntros "F". iApply IHty.
@@ -271,7 +271,7 @@ Section default_initialize.
     |-- default_initialize_array (default_initialize tu ty) tu ty sz p Q.
   Proof.
     rewrite default_initialize_array.unlock.
-    move: (Z.of_N _). induction (seqN 0 sz) as [|i l IH]=>j; cbn.
+    induction (seqN 0 sz) as [|???IH]; cbn.
     { by rewrite -fupd_intro. }
     iIntros "wp". iApply (default_initialize_frame with "[] wp"); [done|].
     iIntros (?) "wp". iApply (interp_frame with "[] wp").
