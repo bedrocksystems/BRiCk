@@ -6,14 +6,33 @@
 From bedrock.prelude Require Import base list_numbers.
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
-Definition decompose_reference : decltype -> bool * exprtype :=
-  qual_norm (fun cv ty =>
-               match ty with
-               | Tref ty | Trv_ref ty =>
-                             let '(cv, ty) := decompose_type ty in
-                             (true, tqualified cv ty)
-               | _ => (false, tqualified cv ty)
-               end).
+(**
+[decltype_to_exprtype t] computes the value category and expression
+type of an expression with declaration type [t].
+*)
+Definition decltype_to_exprtype (t : decltype) : ValCat * exprtype :=
+  (**
+  TODO: This repeats some case distinctions that are also relevant to
+  [valcat_of]. We could eliminate the duplication by deriving
+  [type_of], [valcat_of] from [decltype_of_expr] (rather than the
+  other way around).
+  *)
+  match drop_qualifiers t with
+  | Tref u => (Lvalue, u)
+  | Trv_ref u =>
+    match drop_qualifiers u with
+    | @Tfunction _ _ _ _ as f =>
+      (**
+      NOTE: We return the function type without qualifiers in light of
+      "A function or reference type is always cv-unqualified."
+      <https://www.eel.is/c++draft/basic.type.qualifier#1>
+      *)
+      (Lvalue, f)
+    | _ => (Xvalue, u)
+    end
+  | _ => (Prvalue, t)	(** Promote sharing, rather than normalize qualifiers *)
+  end.
+
 
 (* [type_of_member obj_ty mut mem_type] is the [exprtype] of a member access
    given the type of the object, the mutability of the member, and the [decltype]
@@ -49,9 +68,10 @@ Definition decompose_reference : decltype -> bool * exprtype :=
    >>
  *)
 Definition type_of_member (obj_ty : exprtype) (mut : bool) (mem_type : decltype) : exprtype :=
-  let '(ref, ty) := decompose_reference mem_type in
-  if ref then ty
-  else
+  let (ref, ty) := decltype_to_exprtype mem_type in
+  match ref with
+  | Lvalue | Xvalue => ty
+  | Prvalue =>
     let qual :=
       let '(ocv, _) := decompose_type obj_ty in
       (* NOTE: C++ forbids <<mutable const int x>> even by
@@ -67,8 +87,8 @@ Definition type_of_member (obj_ty : exprtype) (mut : bool) (mem_type : decltype)
        *)
       CV (if mut then false else q_const ocv) (q_volatile ocv)
     in
-    tqualified qual ty.
-
+    tqualified qual ty
+  end.
 
 (** [type_of e] returns the type of the expression [e]. *)
 Fixpoint type_of (e : Expr) : exprtype :=
@@ -318,29 +338,3 @@ Lemma decltype_of_expr_prvalue e :
   valcat_of e = Prvalue -> decltype_of_expr e = type_of e.
 Proof. by rewrite /decltype_of_expr=>->. Qed.
 
-(**
-[decltype_to_exprtype t] computes the value category and expression
-type of an expression with declaration type [t].
-*)
-Definition decltype_to_exprtype (t : decltype) : ValCat * exprtype :=
-  (**
-  TODO: This repeats some case distinctions that are also relevant to
-  [valcat_of]. We could eliminate the duplication by deriving
-  [type_of], [valcat_of] from [decltype_of_expr] (rather than the
-  other way around).
-  *)
-  match drop_qualifiers t with
-  | Tref u => (Lvalue, u)
-  | Trv_ref u =>
-    match drop_qualifiers u with
-    | @Tfunction _ _ _ _ as f =>
-      (**
-      NOTE: We return the function type without qualifiers in light of
-      "A function or reference type is always cv-unqualified."
-      <https://www.eel.is/c++draft/basic.type.qualifier#1>
-      *)
-      (Lvalue, f)
-    | _ => (Xvalue, u)
-    end
-  | _ => (Prvalue, t)	(** Promote sharing, rather than normalize qualifiers *)
-  end.

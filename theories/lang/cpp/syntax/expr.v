@@ -388,8 +388,9 @@ End operator_impl.
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : exprtype)
   (* ^ these are different because they do not have addresses *)
-| Evar     (_ : VarRef) (_ : decltype) (* << type is the decltype of the variable *)
-  (* ^ local and global variable reference *)
+| Evar     (_ : VarRef) (ty : decltype)
+  (* ^ local and global variable reference
+       [ty] is the declaration type of the variable *)
 
 | Echar    (value : N) (_ : exprtype)
   (* ^ [value] is the unsigned character value *)
@@ -426,7 +427,8 @@ Inductive Expr : Set :=
 | Ecall    (_ : Expr) (_ : list Expr) (_ : exprtype)
 | Ecast    (_ : Cast) (e : Expr) (_ : ValCat) (_ : exprtype)
 
-| Emember  (obj : Expr) (_ : field) (mut : bool) (_ : decltype)
+| Emember  (obj : Expr) (_ : field) (mut : bool) (ty : decltype)
+  (* ^ [ty] is the type of the member, [mut] is the mutability *)
   (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * dispatch_type * functype) + Expr) (obj : Expr) (_ : list Expr) (_ : exprtype)
 
