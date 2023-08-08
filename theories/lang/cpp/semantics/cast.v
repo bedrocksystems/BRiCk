@@ -49,6 +49,8 @@ Definition conv_int {σ : genv} (tu : translation_unit) (from to : type) (v v' :
       | _ => False
       end
   | Tnum _ _ , Tnum sz Signed =>
+      (* Prior to C++20, conversions to signed integer types were implementation
+         defined if the source value can not be represented in the target value *)
       has_type_prop v (Tnum sz Signed) /\ v' = v
   | Tbool , Tbool => v = v'
   | Tchar_ _ , Tbool =>
