@@ -1307,9 +1307,6 @@ Section with_cpp.
 
 End with_cpp.
 
-#[deprecated(since="20230719",note="use [mdc_path]")]
-Notation identity := mdc_path (only parsing).
-
 Section has_type.
   Context `{Σ : cpp_logic}.
 
