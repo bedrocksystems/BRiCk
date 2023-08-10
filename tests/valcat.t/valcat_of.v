@@ -11,39 +11,35 @@ From test Require valcat_of_11_cpp valcat_of_14_cpp valcat_of_17_cpp valcat_of_2
 
 Variant Error :=
 | ValCatError (_ : Expr) (observed expected : ValCat)
-| TypeError (_ : Expr) (observed expected : type)
-| TypeIncompatible (_ : Expr) (t vct : type)
+| ExprTypeError (_ : Expr) (observed expected : exprtype)
+| DeclTypeError (_ : Expr) (observed expected : decltype)
 | UnexpectedStmt (_ : Stmt)
 | UnexpectedDecl (_ : ObjValue)
 | MissingTest (_ : translation_unit).
 
-Definition vc_of_type (ty : type) : ValCat :=
-  match ty with
-  | Tref _ => Lvalue
-  | Trv_ref _ => Xvalue
-  | _ => Prvalue
-  end.
-Definition type_compat (e : Expr) (vct t : type) : list Error :=
-  if bool_decide (drop_reference vct = t) then nil
-  else TypeIncompatible e vct t :: nil.
-
 Fixpoint check_expr (e : Expr) :=
   match e with
-  | Ecomma (Ecomma (Ecast C2void e _ _) (Esize_of (inl vc_expected) _)) (Esize_of (inl type_expected) _) =>
-      (* [e] is the expression,
-         [vc_expected] is `decltype((e))`
-         [type_expected] is `decltype(e)` *)
-      let terr :=
-        let obs := drop_qualifiers $ type_of e in
-        let exp := drop_reference type_expected in
-        if bool_decide (obs = exp) then [] else [TypeError e obs exp]
-      in
-      let vcerr :=
-        let obs := valcat_of e in
-        let exp := vc_of_type vc_expected in
-        if bool_decide (obs = exp) then [] else [ValCatError e obs exp]
-      in
-      (* type_compat e vc_expected type_expected ++ *) terr ++ vcerr
+  | Ecomma (Ecast C2void e _ _) (Esize_of (inl t) _) =>
+    (*
+    [e] is the expression,
+    [t] is `decltype((e))`
+    *)
+    let dterr :=
+      let obs := decltype_of_expr e in
+      let exp := t in
+      if bool_decide (obs = exp) then [] else [DeclTypeError e obs exp]
+    in
+    let eterr :=
+      let obs := type_of e in
+      let exp := drop_reference t in
+      if bool_decide (obs = exp) then [] else [ExprTypeError e obs exp]
+    in
+    let vcerr :=
+      let obs := valcat_of e in
+      let exp := (decltype_to_exprtype t).1 in
+      if bool_decide (obs = exp) then [] else [ValCatError e obs exp]
+    in
+    dterr ++ eterr ++ vcerr
   | Eandclean e => check_expr e
   | _ => [UnexpectedStmt (Sexpr e)]
   end.

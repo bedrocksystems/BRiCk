@@ -59,38 +59,55 @@ Fixpoint type_of (e : Expr) : exprtype :=
   | Eunsupported _ _ t => t
   end.
 
-(**
-Setting aside uninstantiated template arguments, there's a total
-function from expressions to value categories.
-*)
-Definition UNEXPECTED_valcat {A} (tm : A) : ValCat.
-Proof. exact Prvalue. Qed.
-
-(**
-The value category of an explicit cast to type [t] or a call to a
-function returning type [t] or a [__builtin_va_arg] of type [t].
-*)
-Definition valcat_from_type (t : decltype) : ValCat :=
-  (*
-  Dropping qualifiers may not be necessary. Cppreference says
-  "Reference types cannot be cv-qualified at the top level".
+Module Import valcat_of_internal.
+  (**
+  Setting aside uninstantiated template arguments, there's a total
+  function from expressions to value categories.
   *)
-  match drop_qualifiers t with
-  | Tref _ => Lvalue
-  | Trv_ref u =>
-    match drop_qualifiers u with
-    | @Tfunction _ _ _ _ => Lvalue
-    | _ => Xvalue
-    end
-  | _ => Prvalue
-  end.
+  Definition UNEXPECTED_valcat {A} (tm : A) : ValCat.
+  Proof. exact Prvalue. Qed.
 
-(* See <https://eel.is/c++draft/expr.call#13> *)
-Definition valcat_from_function_type (t : functype) : ValCat :=
-  match t with
-  | @Tfunction _ _ ret _ => valcat_from_type ret
-  | _ => UNEXPECTED_valcat t
-  end.
+  (**
+  The value category of an explicit cast to type [t] or a call to a
+  function returning type [t] or a [__builtin_va_arg] of type [t].
+  *)
+  Definition valcat_from_type (t : decltype) : ValCat :=
+    (*
+    Dropping qualifiers may not be necessary. Cppreference says
+    "Reference types cannot be cv-qualified at the top level".
+    *)
+    match drop_qualifiers t with
+    | Tref _ => Lvalue
+    | Trv_ref u =>
+      match drop_qualifiers u with
+      | @Tfunction _ _ _ _ =>
+        (**
+        Both "a function call or an overloaded operator expression,
+        whose return type is rvalue reference to function" and "a cast
+        expression to rvalue reference to function type" are lvalue
+        expressions.
+
+        This also applies to <<__builtin_va_arg>> (an extension).
+
+        https://en.cppreference.com/w/cpp/language/value_category#lvalue
+        https://www.eel.is/c++draft/expr.call#13
+        https://www.eel.is/c++draft/expr.static.cast#1
+        https://www.eel.is/c++draft/expr.reinterpret.cast#1
+        https://www.eel.is/c++draft/expr.cast#1 (C-style casts)
+        *)
+        Lvalue
+      | _ => Xvalue
+      end
+    | _ => Prvalue
+    end.
+
+  (* See <https://eel.is/c++draft/expr.call#13> *)
+  Definition valcat_from_function_type (t : functype) : ValCat :=
+    match t with
+    | @Tfunction _ _ ret _ => valcat_from_type ret
+    | _ => UNEXPECTED_valcat t
+    end.
+End valcat_of_internal.
 
 Fixpoint valcat_of (e : Expr) : ValCat :=
   match e with
@@ -214,30 +231,59 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
   end.
 #[global] Arguments valcat_of !_ / : simpl nomatch, assert.
 
-#[projections(primitive)]
-Record vctype : Set := VCType { vctype_type : exprtype; vctype_valcat : ValCat }.
-Add Printing Constructor vctype.
+(**
+[decltype_of_exprtype vc t] computes the declaration type of an
+expression with value category [vc] and expression type [t].
+*)
+Definition decltype_of_exprtype (vc : ValCat) (t : exprtype) : decltype :=
+  (**
+  As [t : exprtype], we do not need [tref], [trv_ref].
+  *)
+  match vc with
+  | Lvalue => Tref t
+  | Xvalue => Trv_ref t
+  | Prvalue => t
+  end.
 
-#[global] Instance vctype_eq_dec : EqDecision vctype.
-Proof. solve_decision. Defined.
+(**
+[decltype_of_expr e] computes the declaration type of expression [e].
+*)
+Definition decltype_of_expr (e : Expr) : decltype :=
+  decltype_of_exprtype (valcat_of e) (type_of e).
 
-#[global] Instance vctype_countable : Countable vctype.
-Proof.
-  apply (inj_countable'
-    (fun r => (r.(vctype_type), r.(vctype_valcat)))
-    (fun p => VCType p.1 p.2)
-  ).
-  abstract (by intros []).
-Defined.
+Lemma decltype_of_expr_lvalue e :
+  valcat_of e = Lvalue -> decltype_of_expr e = Tref (type_of e).
+Proof. by rewrite /decltype_of_expr=>->. Qed.
+Lemma decltype_of_expr_xvalue e :
+  valcat_of e = Xvalue -> decltype_of_expr e = Trv_ref (type_of e).
+Proof. by rewrite /decltype_of_expr=>->. Qed.
+Lemma decltype_of_expr_prvalue e :
+  valcat_of e = Prvalue -> decltype_of_expr e = type_of e.
+Proof. by rewrite /decltype_of_expr=>->. Qed.
 
-Definition vctype_of (e : Expr) : vctype :=
-  VCType (type_of e) (valcat_of e).
-
-Lemma vctype_of_type e : vctype_type (vctype_of e) = type_of e.
-Proof. done. Qed.
-Lemma vctype_of_valcat e : vctype_valcat (vctype_of e) = valcat_of e.
-Proof. done. Qed.
-Lemma vctype_of_inv e vt :
-  vctype_of e = vt ->
-  type_of e = vt.(vctype_type) /\ valcat_of e = vt.(vctype_valcat).
-Proof. by intros <-. Qed.
+(**
+[decltype_to_exprtype t] computes the value category and expression
+type of an expression with declaration type [t].
+*)
+Definition decltype_to_exprtype (t : decltype) : ValCat * exprtype :=
+  (**
+  TODO: This repeats some case distinctions that are also relevant to
+  [valcat_of]. We could eliminate the duplication by deriving
+  [type_of], [valcat_of] from [decltype_of_expr] (rather than the
+  other way around).
+  *)
+  match drop_qualifiers t with
+  | Tref u => (Lvalue, u)
+  | Trv_ref u =>
+    match drop_qualifiers u with
+    | @Tfunction _ _ _ _ as f =>
+      (**
+      NOTE: We return the function type without qualifiers in light of
+      "A function or reference type is always cv-unqualified."
+      <https://www.eel.is/c++draft/basic.type.qualifier#1>
+      *)
+      (Lvalue, f)
+    | _ => (Xvalue, u)
+    end
+  | _ => (Prvalue, t)	(** Promote sharing, rather than normalize qualifiers *)
+  end.
