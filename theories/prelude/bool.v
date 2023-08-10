@@ -42,6 +42,9 @@ Proof. destruct b1, b2; constructor; naive_solver. Qed.
 Lemma implyP {b1 b2 : bool} : reflect (b1 -> b2) (b1 ==> b2).
 Proof. destruct b1, b2; constructor; naive_solver. Qed.
 
+Lemma contraNN {b1 b2 : bool} : (b1 -> b2) -> ~~ b2 -> ~~ b1.
+Proof. by destruct b1, b2. Qed.
+
 (**
 More flexible version of [reflect]: using [H : reflectPQ (m < n) (n ≤ m) b]
 instead of [H : reflect (m < n) b] avoids introducing [~(m < n)] in the context.
