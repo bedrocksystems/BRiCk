@@ -150,6 +150,17 @@ Module Type CPP_LOGIC
        may not hold since [Tref (Tref Tint)] is not a valid C++ type. The
        current blocker to this is that we use [tptsto] to represent
        ownership of references. This would need to change.
+
+       Note that the following code is (currently?) legal according to our
+       semantics:
+       <<
+       { long x; *static_cast<int*>(&x); }
+       >>
+       because [reference_to] only guarantees alignment, not anything
+       about the dynamic type of the object. Requiring a property of the dynamic
+       type of the object would require us to carry type information in
+       [strict_valid_ptr] (which would make it something like a pre-construction
+       state of [type_ptr]).
      *)
     Parameter reference_to : forall {σ : genv}, type -> ptr -> mpred.
 
@@ -193,6 +204,21 @@ Module Type CPP_LOGIC
       Axiom reference_to_erase : forall ty p,
           reference_to ty p -|- reference_to (erase_qualifiers ty) p.
 
+      (** The introduction and elimination forms are not the same
+          to avoid using [has_type] as types that are not C++ types.
+          In practice, the only way to prove a [reference_to] is to have
+          a [tptsto] assertion.
+
+          **A note on 0-sized objects**
+          0-sized objects are problematic from the point of view of C++ (they are not
+          permitted by the standard, but they are supported by standard compilers).
+          The problem with 0-sized objects is that they do not have a unique identity
+          but the BRiCk semantics will give them an identity using
+          [struct_padding]/[union_padding].
+
+          Mitigation: We currently address this by forbidding reasoning about
+                      constructors of 0-sized objects.
+       *)
       Axiom reference_to_intro : forall ty p,
           strict_valid_ptr p |-- has_type (Vptr p) (Tptr ty) -* reference_to ty p.
       Axiom reference_to_elim : forall ty p,
