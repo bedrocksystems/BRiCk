@@ -248,12 +248,10 @@ Module Type Expr.
 
         "The object or function" means we must require at least strict validity
         (to exclude null and past-the-end pointers).
-        We don't ask for [type_ptrR]: that would forbid (unnecessarily?) code like:
+        We don't ask for [type_ptrR]: that would (unnecessarily?) forbid code like:
         <<
         struct A { int x; int *y{&*x}; };
         >>
-        TODO: make alignment redundant, by incorporating it into "invariants"
-        for C++ pointers of type T reliably.
      *)
     Axiom wp_lval_deref : forall ty e Q,
         wp_operand e (fun v free =>
