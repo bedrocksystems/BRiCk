@@ -1373,7 +1373,7 @@ Fixpoint zero_sized_array ty : bool :=
   qual_norm (fun _ t => match t with
                      | Tarray ety n =>
                          if bool_decide (n = 0%N) then true
-                         else  zero_sized_array ety
+                         else zero_sized_array ety
                      | _ => false
                      end) ty.
 #[global] Arguments zero_sized_array !_ /.
