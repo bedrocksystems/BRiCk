@@ -175,7 +175,7 @@ Module Type Expr.
         match valcat_of a with
         | Prvalue => False
         | Lvalue =>
-          letI* base, free := wp_glval a in
+          letI* base, free := wp_lval a in
           letI* p := read_decl (base ,, _field m) ty in
           Q p free
         | Xvalue => False
