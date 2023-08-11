@@ -63,7 +63,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
  
 <div class="paragraph"> </div>
 
-<a id="lab147"></a><h1 class="section">Sub-module</h1>
+<a id="lab153"></a><h1 class="section">Sub-module</h1>
 
 
 <div class="paragraph"> </div>
@@ -93,7 +93,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 
 <div class="doc">
-<a id="lab148"></a><h1 class="section">Definitions for decidability</h1>
+<a id="lab154"></a><h1 class="section">Definitions for decidability</h1>
 
 </div>
 <div class="code">
@@ -138,7 +138,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 
 <div class="doc">
-<a id="lab149"></a><h2 class="section">Inclusion of types (<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#GlobDecl"><span class="id" title="abbreviation">GlobDecl</span></a></span>)</h2>
+<a id="lab155"></a><h2 class="section">Inclusion of types (<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#GlobDecl"><span class="id" title="abbreviation">GlobDecl</span></a></span>)</h2>
 
 <div class="paragraph"> </div>
 
@@ -244,7 +244,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 
 <div class="doc">
-<a id="lab150"></a><h3 class="section">Inclusion of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#type_table"><span class="id" title="definition">type_table</span></a></span>s</h3>
+<a id="lab156"></a><h3 class="section">Inclusion of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#type_table"><span class="id" title="definition">type_table</span></a></span>s</h3>
 
 </div>
 <div class="code">
@@ -319,7 +319,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 
 <div class="doc">
-<a id="lab151"></a><h2 class="section">Inclusion of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#ObjValue"><span class="id" title="abbreviation">ObjValue</span></a></span></h2>
+<a id="lab157"></a><h2 class="section">Inclusion of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#ObjValue"><span class="id" title="abbreviation">ObjValue</span></a></span></h2>
 
 <div class="paragraph"> </div>
 
@@ -335,7 +335,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 <div class="code">
 <span class="id" title="keyword">Definition</span> <a id="ObjValue_le" class="idref" href="#ObjValue_le"><span class="id" title="definition">ObjValue_le</span></a> (<a id="a:51" class="idref" href="#a:51"><span class="id" title="binder">a</span></a> <a id="b:52" class="idref" href="#b:52"><span class="id" title="binder">b</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#ObjValue"><span class="id" title="abbreviation">ObjValue</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> := <span class="id" title="keyword">Eval</span> <span class="id" title="tactic">cbv</span> <span class="id" title="keyword">beta</span> <span class="id" title="keyword">iota</span> <span class="id" title="keyword">zeta</span> <span class="id" title="keyword">delta</span> [ <span class="id" title="var">andb</span> ] <span class="id" title="tactic">in</span><br/>
-&nbsp;&nbsp;<span class="id" title="keyword">let</span> <a id="drop_norm:54" class="idref" href="#drop_norm:54"><span class="id" title="binder">drop_norm</span></a> <a id="t:53" class="idref" href="#t:53"><span class="id" title="binder">t</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#drop_qualifiers"><span class="id" title="definition">drop_qualifiers</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#normalize_type"><span class="id" title="definition">normalize_type</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.sub_module.html#t:53"><span class="id" title="variable">t</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <a id="drop_norm:54" class="idref" href="#drop_norm:54"><span class="id" title="binder">drop_norm</span></a> <a id="t:53" class="idref" href="#t:53"><span class="id" title="binder">t</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#drop_qualifiers"><span class="id" title="definition">drop_qualifiers</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#normalize_type"><span class="id" title="definition">normalize_type</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.sub_module.html#t:53"><span class="id" title="variable">t</span></a> <span class="id" title="tactic">in</span><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.semantics.sub_module.html#a:51"><span class="id" title="variable">a</span></a> , <a class="idref" href="bedrock.lang.cpp.semantics.sub_module.html#b:52"><span class="id" title="variable">b</span></a> <span class="id" title="keyword">with</span><br/>
 &nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Ovar"><span class="id" title="constructor">Ovar</span></a> <span class="id" title="var">t</span> <span class="id" title="var">oe</span> , <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Ovar"><span class="id" title="constructor">Ovar</span></a> <span class="id" title="var">t'</span> <span class="id" title="var">oe'</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.decidable.html#bool_decide"><span class="id" title="definition">bool_decide</span></a> (<span class="id" title="var">t</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="var">t'</span>) <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#::bool_scope:x_'&amp;&amp;'_x"><span class="id" title="notation">&amp;&amp;</span></a><br/>
@@ -411,10 +411,10 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> <span class="id" title="var">c</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">a</span>, <span class="id" title="var">b</span> =&gt; //=; <span class="id" title="tactic">destruct</span> <span class="id" title="var">c</span> =&gt; //=; <span class="id" title="tactic">intros</span>;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Func"><span class="id" title="abbreviation">Func</span></a> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Method"><span class="id" title="abbreviation">Method</span></a> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Ctor"><span class="id" title="abbreviation">Ctor</span></a> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Dtor"><span class="id" title="abbreviation">Dtor</span></a> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Func'"><span class="id" title="record">Func'</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Method'"><span class="id" title="record">Method'</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Ctor'"><span class="id" title="record">Ctor'</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Dtor'"><span class="id" title="record">Dtor'</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">inversion</span> <span class="id" title="var">H</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">inversion</span> <span class="id" title="var">H</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.decidable.html#bool_decide"><span class="id" title="definition">bool_decide</span></a> <span class="id" title="var">_</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">apply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.decidable.html#bool_decide_eq_true_1"><span class="id" title="lemma">bool_decide_eq_true_1</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">subst</span><br/>
@@ -434,7 +434,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 
 <div class="doc">
-<a id="lab152"></a><h3 class="section">Inclusion of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#symbol_table"><span class="id" title="definition">symbol_table</span></a></span>s</h3>
+<a id="lab158"></a><h3 class="section">Inclusion of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#symbol_table"><span class="id" title="definition">symbol_table</span></a></span>s</h3>
 
 </div>
 <div class="code">
@@ -571,7 +571,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 
 <div class="doc">
-<a id="lab153"></a><h2 class="section">Inclusion on <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#translation_unit"><span class="id" title="record">translation_unit</span></a></span></h2>
+<a id="lab159"></a><h2 class="section">Inclusion on <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#translation_unit"><span class="id" title="record">translation_unit</span></a></span></h2>
 
 </div>
 <div class="code">
@@ -600,7 +600,7 @@ TODO rename <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.sem
 </div>
 
 <div class="doc">
-<a id="lab154"></a><h1 class="section">Decidability</h1>
+<a id="lab160"></a><h1 class="section">Decidability</h1>
 
 
 <div class="paragraph"> </div>

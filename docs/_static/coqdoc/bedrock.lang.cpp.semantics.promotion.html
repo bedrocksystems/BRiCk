@@ -46,7 +46,7 @@
 </div>
 
 <div class="doc">
-<a id="lab155"></a><h1 class="section">Type-level semantics of type promotions</h1>
+<a id="lab161"></a><h1 class="section">Type-level semantics of type promotions</h1>
 
 
 <div class="paragraph"> </div>
@@ -80,7 +80,7 @@
 <div class="code">
 <span class="id" title="keyword">Definition</span> <a id="underlying_type" class="idref" href="#underlying_type"><span class="id" title="definition">underlying_type</span></a> (<a id="tu:1" class="idref" href="#tu:1"><span class="id" title="binder">tu</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#translation_unit"><span class="id" title="record">translation_unit</span></a>) (<a id="nm:2" class="idref" href="#nm:2"><span class="id" title="binder">nm</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a> :=<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#tu:1"><span class="id" title="variable">tu</span></a>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#types"><span class="id" title="projection">types</span></a>) <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#4fa0a1d38759705f0ddcbbfc0f886b59"><span class="id" title="notation">!!</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#nm:2"><span class="id" title="variable">nm</span></a> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Genum"><span class="id" title="constructor">Genum</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">_</span>) =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#drop_qualifiers"><span class="id" title="definition">drop_qualifiers</span></a> <span class="id" title="var">ty</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Genum"><span class="id" title="constructor">Genum</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">_</span>) =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#drop_qualifiers"><span class="id" title="definition">drop_qualifiers</span></a> <span class="id" title="var">ty</span><br/>
 &nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 
@@ -99,7 +99,7 @@
 </div>
 <div class="code">
 <span class="id" title="keyword">Definition</span> <a id="representation_type" class="idref" href="#representation_type"><span class="id" title="definition">representation_type</span></a> (<a id="tu:3" class="idref" href="#tu:3"><span class="id" title="binder">tu</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#translation_unit"><span class="id" title="record">translation_unit</span></a>) (<a id="ty:4" class="idref" href="#ty:4"><span class="id" title="binder">ty</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>) : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a> :=<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#drop_qualifiers"><span class="id" title="definition">drop_qualifiers</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#ty:4"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#drop_qualifiers"><span class="id" title="definition">drop_qualifiers</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#ty:4"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
 &nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tenum"><span class="id" title="constructor">Tenum</span></a> <span class="id" title="var">nm</span> <span class="id" title="keyword">as</span> <span class="id" title="var">ty</span> =&gt; <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.option.html#default"><span class="id" title="abbreviation">default</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#ty:4"><span class="id" title="variable">ty</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#underlying_type"><span class="id" title="definition">underlying_type</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#tu:3"><span class="id" title="variable">tu</span></a> <span class="id" title="var">nm</span><br/>
 &nbsp;&nbsp;| <span class="id" title="var">ty</span> =&gt; <a class="idref" href="bedrock.lang.cpp.semantics.promotion.html#ty:4"><span class="id" title="variable">ty</span></a><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
@@ -167,7 +167,7 @@ Succeed&nbsp;Example&nbsp;underlying_int&nbsp;:&nbsp;forall&nbsp;tu,&nbsp;underl
 </div>
 
 <div class="doc">
-<a id="lab156"></a><h2 class="section">Integral Promotion</h2>
+<a id="lab162"></a><h2 class="section">Integral Promotion</h2>
 
     This is used to promote a type to a type that supports arithmetic operators.
     For example, it converts types smaller than `int` to `int` (of some signedness).
@@ -289,7 +289,7 @@ Succeed&nbsp;Example&nbsp;underlying_int&nbsp;:&nbsp;forall&nbsp;tu,&nbsp;underl
 </div>
 
 <div class="doc">
-<a id="lab157"></a><h2 class="section">Arithmetic Promotion</h2>
+<a id="lab163"></a><h2 class="section">Arithmetic Promotion</h2>
 
   This computes a "join" on the types of the two arguments to an arithmetic
   operator.
