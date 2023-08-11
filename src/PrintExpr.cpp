@@ -128,6 +128,7 @@ class PrintExpr :
                             const ASTContext&, OpaqueNames&> {
 private:
     enum Done : unsigned {
+        NONE = 0,
         V = 1,
         T = 2,
         O = 4,
@@ -491,7 +492,7 @@ public:
         print.output() << fmt::line;
         print.list(expr->arguments(),
                    [&](auto print, auto i) { cprint.printExpr(i, print, li); });
-        done(expr, print, cprint);
+        done(expr, print, cprint, print.templates() ? Done::NONE : Done::T);
     }
 
     auto&& printOverloadableOperator(OverloadedOperatorKind oo,
@@ -951,7 +952,7 @@ public:
         }
         print.end_list();
 #endif
-        done(expr, print, cprint);
+        done(expr, print, cprint, print.templates() ? Done::NONE : Done::T);
     }
 
     void VisitCXXDefaultArgExpr(const CXXDefaultArgExpr* expr,

@@ -56,7 +56,7 @@ Proof.
   { by destruct pf as [ -> [ -> [ -> -> ] ] ]. }
   { intro. apply pf. inversion H; tauto. }
 Defined.
-Notation VarDecl := (VarDecl' type Expr).
+Notation VarDecl := (VarDecl' decltype Expr).
 
 Inductive Stmt' {type Expr : Set} : Set :=
 | Sseq    (_ : list Stmt')
@@ -97,7 +97,7 @@ Proof.
   rewrite -{1}/(EqDecision _) in IHs.
   decide equality; try solve_trivial_decision.
 Defined.
-Notation Stmt := (Stmt' type Expr).
+Notation Stmt := (Stmt' decltype Expr).
 
 Definition Sskip {type Expr : Set} : Stmt' type Expr := Sseq nil.
 

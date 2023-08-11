@@ -17,7 +17,7 @@ struct C {
 };
 
 // note, we use `sizeof` simply to get the type written into the AST.
-#define CHECK_VALCAT(e) ((void)(e)) , sizeof(decltype((e))), sizeof(decltype(e))
+#define CHECK_VALCAT(e) ((void)(e)) , sizeof(decltype((e)))
 
 template<typename TY>
 struct remove_reference { using result = TY; };

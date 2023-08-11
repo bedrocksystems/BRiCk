@@ -10,17 +10,21 @@ From bedrock.lang Require Import ast notations code_notations.
 
 (* TODO (JH): Add more examples here (and remove the duplicates) *)
 Section TestCodeNotations.
-  Context (ty : type) (e : Expr) (s : Stmt).
+  Context (ty : decltype) (e : Expr) (s : Stmt).
 
-  Check (Sexpr (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)).
+  Let stmt1 : Stmt :=
+    Sexpr (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid).
+  Print stmt1.
 
-  Check (Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid)) Tvoid)
-                (Eint 3%Z Tvoid) Tvoid).
+  Let expr1 : Expr :=
+    Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid)) Tvoid) (Eint 3%Z Tvoid) Tvoid.
+  Print expr1.
 
+  Let stmt2 : Stmt :=
+    Sseq (Sexpr (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil).
+  Print stmt2.
 
-  Check (Sseq (Sexpr (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil)).
-
-  Check
+  Let stmt3 : Stmt :=
     (Sseq (
               [ Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -40,8 +44,9 @@ Section TestCodeNotations.
               ; Sreturn None
               ]%list
     )).
+  Print stmt3.
 
-  Check
+  Let stmt4 : Stmt :=
     Sseq (
                 [ Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -53,8 +58,9 @@ Section TestCodeNotations.
                 ; Sreturn None
                 ]%list
     ).
+  Print stmt4.
 
-  Check
+  Let stmt5 : Stmt :=
     Sseq (
                 [ Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -66,8 +72,9 @@ Section TestCodeNotations.
                 ; Sreturn None
                 ]%list
     ).
+  Print stmt5.
 
-  Check
+  Let stmt6 : Stmt :=
     Sseq (
                 (Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -79,8 +86,9 @@ Section TestCodeNotations.
                   Scontinue) ::
                 nil
     ).
+  Print stmt6.
 
-  Check
+  Let stmt7 : Stmt :=
     Sseq (
                 (Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -99,8 +107,9 @@ Section TestCodeNotations.
                   (Sseq (
                       (Sexpr
                         (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) :: nil).
+  Print stmt7.
 
-  Check
+  Let stmt8 : Stmt :=
     Sseq (
            (Sdo
               (Sseq (
@@ -108,8 +117,9 @@ Section TestCodeNotations.
                           (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
               (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
            ) :: nil).
+  Print stmt8.
 
-  Check
+  Let stmt9 : Stmt :=
     Sseq (
            (Sdo
               (Sseq (
@@ -117,8 +127,9 @@ Section TestCodeNotations.
                           (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)) :: nil))
               (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
            ) :: nil).
+  Print stmt9.
 
-  Check
+  Let stmt10 : Stmt :=
     Sexpr
               (Eassign (Evar (Lname "should_continue") Tbool)
                  (Eunop Unot
@@ -150,8 +161,9 @@ Section TestCodeNotations.
                        Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]%list
                        Tbool) Tbool)
                  Tbool).
+  Print stmt10.
 
-  Check
+  Let stmt11 : Stmt :=
     (Sseq (
               [ Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint 0 (Qmut Ti32)))))
@@ -163,8 +175,9 @@ Section TestCodeNotations.
               ; Sreturn None
               ]
     )).
+  Print stmt11.
 
-  Check
+  Let stmt12 : Stmt :=
     (Sseq (
               [ Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -176,8 +189,9 @@ Section TestCodeNotations.
               ; Sreturn None
               ]
     )).
+  Print stmt12.
 
-  Check
+  Let stmt13 : Stmt :=
     (Sseq (
               (Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -188,8 +202,9 @@ Section TestCodeNotations.
                       (Epostinc (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
                 Scontinue) ::
               nil)).
+  Print stmt13.
 
-  Check
+  Let stmt14 : Stmt :=
     (Sseq (
               (Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
@@ -208,8 +223,9 @@ Section TestCodeNotations.
                 (Sseq (
                     (Sexpr
                       (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) :: nil)).
+  Print stmt14.
 
-  Check
+  Let stmt15 : Stmt :=
     (Sseq (
          (Sdo
             (Sseq (
@@ -217,8 +233,9 @@ Section TestCodeNotations.
                         (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
             (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
          ) :: nil)).
+  Print stmt15.
 
-  Check
+  Let stmt16 : Stmt :=
     (Sseq (
          (Sdo
             (Sseq (
@@ -226,8 +243,9 @@ Section TestCodeNotations.
                         (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)) :: nil))
             (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
          ) :: nil)).
+  Print stmt16.
 
-  Check
+  Let stmt17 : Stmt :=
     (Sexpr
             (Eassign (Evar (Lname "should_continue") Tbool)
                (Eunop Unot
@@ -259,4 +277,5 @@ Section TestCodeNotations.
                      Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]
                      Tbool) Tbool)
                Tbool)).
+  Print stmt17.
 End TestCodeNotations.
