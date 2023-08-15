@@ -137,6 +137,8 @@ Module Type CPP_LOGIC
 
     (**
        [reference_to ty p] states that the location [p] stores a value of type [ty].
+       Being a reference is stronger than being a pointer because pointers allow
+       past-the-end pointers while references do not.
 
        This should be thought of as closely related to [has_type (Vref p) (Tref ty)]
        except that it holds on types that are not valid C++ types. For example,
