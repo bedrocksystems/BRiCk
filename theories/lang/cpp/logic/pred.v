@@ -52,7 +52,7 @@ Definition pred_ns : namespace := nroot .@@ "bedrock" .@@ "lang" .@@ "cpp_logic"
 (* Used by [has_type_prop_has_type_noptr]. No theory. *)
 Definition nonptr_prim_type ty : bool :=
   match drop_qualifiers ty with
-  | Tchar_ _ | Tvoid | Tbool | Tenum _ | Tnum _ _ => true
+  | Tfloat_ _ | Tchar_ _ | Tvoid | Tbool | Tenum _ | Tnum _ _ => true
   | Tnullptr | Tpointer _ | Tref _ | Trv_ref _ | _ => false
   end.
 
@@ -135,6 +135,40 @@ Module Type CPP_LOGIC
     #[global] Declare Instance has_type_mono :
       Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@has_type).
 
+    (**
+       [reference_to ty p] states that the location [p] stores a value of type [ty].
+       Being a reference is stronger than being a pointer because pointers allow
+       past-the-end pointers while references do not.
+
+       This should be thought of as closely related to [has_type (Vref p) (Tref ty)]
+       except that it holds on types that are not valid C++ types. For example,
+       if
+       <<
+       struct C { int& r; } x;
+       >>
+       then [reference_to (Tref Tint) (x ., ``::C::r``)].
+
+       In the future, [has_type (Vref (x ., ``::C::r``)) (Tref (Tref Tint))]
+       may not hold since [Tref (Tref Tint)] is not a valid C++ type. The
+       current blocker to this is that we use [tptsto] to represent
+       ownership of references. This would need to change.
+
+       Note that the following code is (currently?) legal according to our
+       semantics:
+       <<
+       { long x; *static_cast<int*>(&x); }
+       >>
+       because [reference_to] only guarantees alignment, not anything
+       about the dynamic type of the object. Requiring a property of the dynamic
+       type of the object would require us to carry type information in
+       [strict_valid_ptr] (which would make it something like a pre-construction
+       state of [type_ptr]).
+     *)
+    Parameter reference_to : forall {σ : genv}, type -> ptr -> mpred.
+
+    #[global] Declare Instance reference_to_mono :
+      Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@reference_to).
+
     Section with_genv.
       Context {σ : genv}.
 
@@ -159,12 +193,40 @@ Module Type CPP_LOGIC
       Axiom has_type_ptr' : ∀ p ty,
         has_type (Vptr p) (Tpointer ty) -|-
         valid_ptr p ** [| aligned_ptr_ty ty p |].
+
+      (* These two definitions are needed because of [tptsto_has_type] *)
       Axiom has_type_ref' : ∀ p ty,
-        has_type (Vref p) (Tref ty) -|-
-        strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+        has_type (Vref p) (Tref ty) -|- reference_to ty p.
       Axiom has_type_rv_ref' : ∀ p ty,
-        has_type (Vref p) (Trv_ref ty) -|-
-        strict_valid_ptr p ** [| aligned_ptr_ty ty p |].
+        has_type (Vref p) (Trv_ref ty) -|- reference_to ty p.
+
+      #[global] Declare Instance reference_to_knowledge : Knowledge2 reference_to.
+      #[global] Declare Instance reference_to_timeless : Timeless2 reference_to.
+
+      Axiom reference_to_erase : forall ty p,
+          reference_to ty p -|- reference_to (erase_qualifiers ty) p.
+
+      (** The introduction and elimination forms are not the same
+          to avoid using [has_type] as types that are not C++ types.
+          In practice, the only way to prove a [reference_to] is to have
+          a [tptsto] assertion.
+
+          **A note on 0-sized objects**
+          0-sized objects are problematic from the point of view of C++ (they are not
+          permitted by the standard, but they are supported by standard compilers).
+          The problem with 0-sized objects is that they do not have a unique identity
+          but the BRiCk semantics will give them an identity using
+          [struct_padding]/[union_padding].
+
+          Mitigation: We currently address this by forbidding reasoning about
+                      constructors of 0-sized objects.
+       *)
+      Axiom reference_to_intro : forall ty p,
+          strict_valid_ptr p |-- has_type (Vptr p) (Tptr ty) -* reference_to ty p.
+      Axiom reference_to_elim : forall ty p,
+          reference_to ty p |--
+            [| aligned_ptr_ty ty p |] ** [| p <> nullptr |] **
+            valid_ptr p ** if zero_sized_array ty then emp else strict_valid_ptr p.
 
     End with_genv.
 
@@ -218,6 +280,9 @@ Module Type CPP_LOGIC
 
     #[global] Declare Instance tptsto_welltyped : forall {σ} p ty q v,
       Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
+
+    #[global] Declare Instance tptsto_reference_to : forall {σ} p ty q v,
+      Observe (reference_to ty p) (@tptsto σ ty q p v).
 
     (**
     NOTE: We'll eventually need the stronger [tptsto_learn : ∀ {σ} ty

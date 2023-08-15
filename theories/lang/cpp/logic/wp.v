@@ -604,6 +604,44 @@ Section with_cpp.
       (|={top}=> wp_lval tu ρ e (fun v free => |={top}=> Q v free))
     ⊢ wp_lval tu ρ e Q.
 
+  (* Proposal (the same thing for [wp_xval])
+     - this would require [has_type (Tref $ Tnamed x) (Vref r)] ~ [strict_valid_ptr r ** [| aligned (Tnamed x) .. |]]
+     - this would require [has_type (Tref $ Tarray x n) (Vptr r)] ~ [strict_valid_ptr r ** [| aligned x r |]]
+                                                                     ^^^^^^^^^^^^^^^^^^ - just [valid_ptr] if [n = 0]?
+     ^^^^ this is questionable because of materialized references
+
+     Consider
+     <<
+     struct X {};
+     struct C {
+        int a;
+        int& b;
+        int&& c;
+        X d;
+        X& e;
+        X&& f;
+        X g[1];
+        X& g[1];
+     }
+     >>
+
+     * [primR_observe_has_type] states: [primR ty q v |-- has_type v ty].
+       We use [primR (Tref ty) q v] to materialize a reference.
+     It would be nice if we had [p |-> primR ty q v |-- has_type (Vref p) (Tref ty)], but this
+     will only work when [ty] is not a reference type (potentially also <<void>>).
+
+     we need.
+     - [has_type (Vref r) (Tref ty) -|- [strict_valid_ptr r ** aligned_ptr_ty ty r]
+       (this rule has a problem with function references because there is no alignment for functions)
+       Two options:
+       1. functions have 1 alignment
+       2. there is a special rule for [has_type  (Vref r) (Tref (Tfunction ..))] that ignores this
+     -
+   *)
+  Axiom wp_lval_well_typed : forall {σ:genv} tu ρ e Q,
+      wp_lval tu ρ e (fun v free => reference_to (type_of e) v -* Q v free)
+    ⊢ wp_lval tu ρ e Q.
+
   Axiom wp_lval_models : forall {σ:genv} tu ρ e Q,
       denoteModule tu -* wp_lval tu ρ e Q
     ⊢ wp_lval tu ρ e Q.
@@ -721,6 +759,10 @@ Section with_cpp.
       denoteModule tu -* wp_init tu ρ ty p e Q
     ⊢ wp_init tu ρ ty p e Q.
 
+  Axiom wp_init_well_typed : forall {σ:genv} tu ty ρ p e Q,
+      wp_init tu ρ ty p e (fun frees => reference_to ty p -* Q frees)
+    ⊢ wp_init tu ρ ty p e Q.
+
   Axiom wp_init_frame : forall σ tu1 tu2 ρ ty p e k1 k2,
       sub_module tu1 tu2 ->
       Forall fs, k1 fs -* k2 fs |-- @wp_init σ tu1 ρ ty p e k1 -* @wp_init σ tu2 ρ ty p e k2.
@@ -827,28 +869,8 @@ Section with_cpp.
   (** C++ evaluation semantics guarantees that all expressions of type [t] that
       evaluate without UB evaluate to a well-typed value of type [t] *)
   Axiom wp_operand_well_typed : forall {σ : genv} tu ρ e Q,
-      wp_operand tu ρ e (fun v frees => has_type v (type_of e) -* Q v frees)
+        wp_operand tu ρ e (fun v frees => has_type v (type_of e) -* Q v frees)
     |-- wp_operand tu ρ e Q.
-
-  (* BEGIN wp_init <-> wp_operand *)
-  Axiom wp_operand_wp_init : forall {σ : genv} tu ρ ty addr e Q,
-      is_value_type ty ->
-      wp_operand tu ρ e (fun v frees => _at addr (primR ty (cQp.mut 1) v) -* Q frees)
-    |-- wp_init tu ρ ty addr e Q.
-
-  (** This is justified in the logic but technically not sactioned by the standard
-
-    [[
-   Axiom wp_init_wp_operand : forall {σ : genv} M ρ e Q (ty := type_of e),
-      is_value_type ty ->
-      wp_prval M ρ e (fun p ty' frees =>
-         [| ty' = ty |] -*
-         ∃ v, _at p (primR ty (cQp.mut 1) v) ** Q v frees)
-    |-- wp_operand M ρ e Q.
-    ]]
-   *)
-  (* END wp_init <-> wp_operand *)
-
 
   #[global] Instance Proper_wp_operand {σ : genv} :
     Proper (sub_module ==> eq ==> eq ==> Mrel _) (@wp_operand σ).

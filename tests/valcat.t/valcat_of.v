@@ -19,7 +19,7 @@ Variant Error :=
 
 Fixpoint check_expr (e : Expr) :=
   match e with
-  | Ecomma (Ecast C2void e _ _) (Esize_of (inl t) _) =>
+  | Ecomma (Ecast C2void e _ _) (Esizeof (inl t) _) =>
     (*
     [e] is the expression,
     [t] is `decltype((e))`

@@ -432,19 +432,11 @@ public:
                 done(expr, print, cprint);
             }
         } else {
-            // We add `Eread_ref` nodes when the type of the
-            // variable is a reference.
-            if (d->getType()->isReferenceType()) {
-                print.ctor("Eread_ref");
-            }
-
             print.ctor("Evar", false);
             printVarRef(d, print, cprint, on);
-            done(expr, print, cprint);
-
-            if (d->getType()->isReferenceType()) {
-                print.end_ctor();
-            }
+            print.output() << fmt::nbsp;
+            cprint.printQualType(d->getType(), print);
+            print.end_ctor();
         }
     }
 
@@ -560,11 +552,11 @@ public:
     void VisitCastExpr(const CastExpr* expr, CoqPrinter& print,
                        ClangPrinter& cprint, const ASTContext&,
                        OpaqueNames& li) {
-        if (expr->getCastKind() == CastKind::CK_ConstructorConversion) {
-            // note: the Clang AST records a "FunctionalCastExpr" with a constructor
-            // but the child node of this is the constructor!
-            cprint.printExpr(expr->getSubExpr(), print);
-        } else if (auto cf = expr->getConversionFunction()) {
+        if (expr->getCastKind() == CastKind::CK_ConstructorConversion ||
+            expr->getCastKind() == CastKind::CK_UserDefinedConversion) {
+            auto cf = expr->getConversionFunction();
+            assert(cf &&
+                   "UserDefinedConversion must have a ConversionFunction");
             // desugar user casts to function calls
             auto vd = dyn_cast<ValueDecl>(cf);
             assert(vd && "conversion function must be a [ValueDecl]");
@@ -594,14 +586,16 @@ public:
         // that contains the builtin.
         if (expr->getCastKind() == CastKind::CK_BuiltinFnToFnPtr) {
             auto ref = dyn_cast<DeclRefExpr>(expr->getSubExpr());
-            assert(ref && "builtin function to function pointer must be applied to a literal variable");
+            assert(ref && "builtin function to function pointer must be "
+                          "applied to a literal variable");
             assert(is_builtin(ref->getDecl()));
             print.ctor("Ebuiltin", false);
             // assume that this is a builtin
             cprint.printObjName(ref->getDecl(), print);
             print.output() << fmt::nbsp;
             auto type = expr->getType();
-            assert(type->isPointerType() && "builtin to pointer is not a pointer");
+            assert(type->isPointerType() &&
+                   "builtin to pointer is not a pointer");
             cprint.printQualType(type.getTypePtr()->getPointeeType(), print);
             print.end_ctor();
             return;
@@ -612,10 +606,6 @@ public:
     void VisitCXXNamedCastExpr(const CXXNamedCastExpr* expr, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext& ctxt,
                                OpaqueNames& li) {
-        if (expr->getConversionFunction()) {
-            return VisitCastExpr(expr, print, cprint, ctxt, li);
-        }
-
         print.ctor("Ecast");
         if (isa<CXXReinterpretCastExpr>(expr)) {
             print.ctor("Creinterpret", false);
@@ -757,15 +747,11 @@ public:
                 print.ctor("Ecomma");
                 cprint.printExpr(expr->getBase(), print, li);
                 print.output() << fmt::nbsp;
-                auto is_ref = vd->getType()->isReferenceType();
-                if (is_ref)
-                    print.ctor("Eread_ref");
                 print.ctor("Evar", false);
                 printVarRef(vd, print, cprint, li);
                 print.output() << fmt::nbsp;
-                done(expr, print, cprint);
-                if (is_ref)
-                    print.end_ctor();
+                cprint.printQualType(vd->getType(), print);
+                print.end_ctor();
                 print.end_ctor();
                 return;
             }
@@ -784,14 +770,12 @@ public:
             }
         }
 
-        auto is_ref = expr->getMemberDecl()->getType()->isReferenceType();
-        if (is_ref)
-            print.ctor("Eread_ref");
         print.ctor("Emember");
 
         auto base = expr->getBase();
-        __attribute__((unused)) auto record_type =
-            expr->getMemberDecl()->getDeclContext();
+        auto md = dyn_cast<FieldDecl>(expr->getMemberDecl());
+        assert(md && "MemberDecl expected to be a FieldDecl");
+        __attribute__((unused)) auto record_type = md->getDeclContext();
         // TODO Assert that the type of the base is the type of the field.
         if (expr->isArrow()) {
             print.ctor("Ederef");
@@ -809,10 +793,20 @@ public:
 
         print.output() << fmt::nbsp;
         //print.str(expr->getMemberDecl()->getNameAsString());
-        cprint.printField(expr->getMemberDecl(), print);
-        done(expr, print, cprint);
-        if (is_ref)
-            print.end_ctor();
+        cprint.printField(md, print);
+        print.output() << fmt::nbsp;
+
+        // The type of the expression is determined by the type of the object,
+        // the type of the member, and the mutability of the member.
+        // The only piece of information that we are missing is the mutability
+        // of the member.
+        // We can compute the type of the full expression by
+        // 1/ if the field type is reference, or rv_reference, that is type
+        // 2/ otherwise, taking the qualifiers of the object, remove [const]
+        //    if the field is [mutable], and then use the type of the field.
+        print.output() << fmt::BOOL(md->isMutable()) << fmt::nbsp;
+        cprint.printQualType(md->getType(), print);
+        print.end_ctor();
     }
 
     void VisitArraySubscriptExpr(const ArraySubscriptExpr* expr,
@@ -1098,11 +1092,11 @@ public:
         };
 
         if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
-            print.ctor("Ealign_of", false);
+            print.ctor("Ealignof", false);
             do_arg();
             done(expr, print, cprint);
         } else if (expr->getKind() == UnaryExprOrTypeTrait::UETT_SizeOf) {
-            print.ctor("Esize_of", false);
+            print.ctor("Esizeof", false);
             do_arg();
             done(expr, print, cprint);
         } else {
@@ -1119,7 +1113,7 @@ public:
     void VisitOffsetOfExpr(const OffsetOfExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext& ctxt,
                            OpaqueNames&) {
-        print.ctor("Eoffset_of");
+        print.ctor("Eoffsetof");
         assert(expr->getNumComponents() == 1);
         auto comm = expr->getComponent(0);
         switch (comm.getKind()) {

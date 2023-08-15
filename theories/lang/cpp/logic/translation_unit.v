@@ -15,14 +15,6 @@ Require Import iris.proofmode.proofmode.
 
 Import ChargeNotation.
 
-(** For use in [init_validR] *)
-Definition zero_sized_array (ty : type) : bool :=
-  match drop_qualifiers ty with
-  (* TODO: maybe arrays of unknown size should also use [false]? *)
-  | Tarray _ 0 => true
-  | _ => false
-  end.
-#[global] Arguments zero_sized_array !_ /.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {resolve:genv}.

@@ -21,7 +21,6 @@ Section with_Σ.
 
   Implicit Type (Q : val → mpred). (* atomics do not throw *)
 
-  #[local] Notation wp_prval := (wp_prval tu ρ).
   #[local] Notation wp_operand := (wp_operand tu ρ).
   #[local] Notation wp_args := (wp_args tu ρ).
 

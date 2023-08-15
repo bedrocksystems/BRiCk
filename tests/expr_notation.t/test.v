@@ -152,10 +152,6 @@ Section TestExprNotations.
                      ty.
   Print Ebinop_compound_1. Print Ebinop_compound_2.
 
-  #[local] Definition Eread_ref_lname : Expr := Eread_ref (Evar (Lname "FooBarBaz") ty).
-  #[local] Definition Eread_ref_gname : Expr := Eread_ref (Evar (Gname "FooBarBaz") ty).
-  Print Eread_ref_lname. Print Eread_ref_gname.
-
   #[local] Definition Ederef_Evar : Expr := Ederef (Evar (Lname "Qux") ty) ty.
   #[local] Definition Ederef_Enull : Expr := Ederef Enull ty.
   Print Ederef_Evar. Print Ederef_Enull.
@@ -240,7 +236,7 @@ Section TestExprNotations.
   #[local] Definition Ecast_elide_2 (cast : Cast) (vc : ValCat) := Ecast cast (Eint 314 ty) vc ty.
   Print Ecast_elide_1. Print Ecast_elide_2.
 
-  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) (Build_field "foo" "bar") ty.
+  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) (Build_field "foo" "bar") false ty.
   Print Emember_1.
 
   #[local] Definition Emember_call_nil_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e []%list ty.
@@ -262,28 +258,28 @@ Section TestExprNotations.
   #[local] Definition Esubscript_2 : Expr := Esubscript (Evar (Lname "foo") ty) (Eint 314 ty) ty.
   Print Esubscript_1. Print Esubscript_2.
 
-  #[local] Definition Esize_of_type_1 : Expr := Esize_of (inl ty) ty.
-  #[local] Definition Esize_of_type_2 : Expr := Esize_of (inl (Tptr (Tnum W8 Unsigned))) ty.
-  #[local] Definition Esize_of_type_3 : Expr := Esize_of (inl (Tnamed "Foo")) ty.
-  Print Esize_of_type_1. Print Esize_of_type_2. Print Esize_of_type_3.
+  #[local] Definition Esizeof_type_1 : Expr := Esizeof (inl ty) ty.
+  #[local] Definition Esizeof_type_2 : Expr := Esizeof (inl (Tptr (Tnum W8 Unsigned))) ty.
+  #[local] Definition Esizeof_type_3 : Expr := Esizeof (inl (Tnamed "Foo")) ty.
+  Print Esizeof_type_1. Print Esizeof_type_2. Print Esizeof_type_3.
 
-  #[local] Definition Esize_of_Expr_1 : Expr := Esize_of (inr e) ty.
-  #[local] Definition Esize_of_Expr_2 : Expr := Esize_of (inr (Eint 314 ty)) ty.
-  #[local] Definition Esize_of_Expr_3 : Expr := Esize_of (inr (Evar (Lname "foo") ty)) ty.
-  Print Esize_of_Expr_1. Print Esize_of_Expr_2. Print Esize_of_Expr_3.
+  #[local] Definition Esizeof_Expr_1 : Expr := Esizeof (inr e) ty.
+  #[local] Definition Esizeof_Expr_2 : Expr := Esizeof (inr (Eint 314 ty)) ty.
+  #[local] Definition Esizeof_Expr_3 : Expr := Esizeof (inr (Evar (Lname "foo") ty)) ty.
+  Print Esizeof_Expr_1. Print Esizeof_Expr_2. Print Esizeof_Expr_3.
 
-  #[local] Definition Ealign_of_type_1 : Expr := Ealign_of (inl ty) ty.
-  #[local] Definition Ealign_of_type_2 : Expr := Ealign_of (inl (Tptr (Tnum W8 Unsigned))) ty.
-  #[local] Definition Ealign_of_type_3 : Expr := Ealign_of (inl (Tnamed "Foo")) ty.
-  Print Ealign_of_type_1. Print Ealign_of_type_2. Print Ealign_of_type_3.
+  #[local] Definition Ealignof_type_1 : Expr := Ealignof (inl ty) ty.
+  #[local] Definition Ealignof_type_2 : Expr := Ealignof (inl (Tptr (Tnum W8 Unsigned))) ty.
+  #[local] Definition Ealignof_type_3 : Expr := Ealignof (inl (Tnamed "Foo")) ty.
+  Print Ealignof_type_1. Print Ealignof_type_2. Print Ealignof_type_3.
 
-  #[local] Definition Ealign_of_Expr_1 : Expr := Ealign_of (inr e) ty.
-  #[local] Definition Ealign_of_Expr_2 : Expr := Ealign_of (inr (Eint 314 ty)) ty.
-  #[local] Definition Ealign_of_Expr_3 : Expr := Ealign_of (inr (Evar (Lname "foo") ty)) ty.
-  Print Ealign_of_Expr_1. Print Ealign_of_Expr_2. Print Ealign_of_Expr_3.
+  #[local] Definition Ealignof_Expr_1 : Expr := Ealignof (inr e) ty.
+  #[local] Definition Ealignof_Expr_2 : Expr := Ealignof (inr (Eint 314 ty)) ty.
+  #[local] Definition Ealignof_Expr_3 : Expr := Ealignof (inr (Evar (Lname "foo") ty)) ty.
+  Print Ealignof_Expr_1. Print Ealignof_Expr_2. Print Ealignof_Expr_3.
 
-  #[local] Definition Eoffset_of_1 : Expr := Eoffset_of (Oo_Field (Build_field "Foo" "bar")) ty.
-  Print Eoffset_of_1.
+  #[local] Definition Eoffsetof_1 : Expr := Eoffsetof (Oo_Field (Build_field "Foo" "bar")) ty.
+  Print Eoffsetof_1.
 
   #[local] Definition Econstructor_nil : Expr := Econstructor "Foo" []%list ty.
   Print Econstructor_nil.

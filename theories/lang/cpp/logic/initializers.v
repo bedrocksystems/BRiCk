@@ -55,7 +55,7 @@ guaranteed to have to initialize a value which will result in an
   let folder i PP :=
     default_initialize (p ,, o_sub _ ty (Z.of_N i)) (fun free' => interp tu free' PP)
   in
-  foldr folder (p .[ ty ! Z.of_N len ] |-> validR -* |={top}=>?u Q FreeTemps.id) (seqN 0 len).
+  foldr folder (p |-> type_ptrR (Tarray ty len) -* |={top}=>?u Q FreeTemps.id) (seqN 0 len).
 
 mlock
 Definition default_initialize_array `{Σ : cpp_logic, σ : genv} :
@@ -160,7 +160,7 @@ Section default_initialize.
     |-- default_initialize_array di tu ty sz p Q -* default_initialize_array di' tu' ty sz p Q'.
   Proof.
     intros IHty Hsub. rewrite unlock.
-    generalize dependent (p .[ ty ! Z.of_N sz ] |-> validR).
+    generalize dependent (p |-> type_ptrR (Tarray ty sz)).
     induction (seqN 0 sz) =>/=; intros.
     - iIntros "X a b". iApply "X". by iApply "a".
     - iIntros "F". iApply IHty.
@@ -271,7 +271,7 @@ Section default_initialize.
     |-- default_initialize_array (default_initialize tu ty) tu ty sz p Q.
   Proof.
     rewrite default_initialize_array.unlock.
-    move: (Z.of_N _). induction (seqN 0 sz) as [|i l IH]=>j; cbn.
+    induction (seqN 0 sz) as [|???IH]; cbn.
     { by rewrite -fupd_intro. }
     iIntros "wp". iApply (default_initialize_frame with "[] wp"); [done|].
     iIntros (?) "wp". iApply (interp_frame with "[] wp").
@@ -333,6 +333,7 @@ magic wands.
 *)
 #[local] Notation fupd_compatible := false (only parsing).
 
+(* BEGIN wp_initialize *)
 #[local] Definition wp_initialize_unqualified_body `{Σ : cpp_logic, σ : genv}
     (u : bool) (tu : translation_unit) (ρ : region)
     (cv : type_qualifiers) (ty : decltype)
@@ -420,6 +421,52 @@ Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (�
   qual_norm (wp_initialize_unqualified tu ρ) qty addr init Q.
 #[global] Hint Opaque wp_initialize : typeclass_instances.
 #[global] Arguments wp_initialize {_ _ _} _ _ !_ _ _ _ / : assert.
+(* END wp_initialize *)
+
+Definition heap_type_of (t : type) : type :=
+  match erase_qualifiers t with
+  | Trv_ref ty => Tref ty
+  | t => t
+  end.
+
+Lemma wp_initialize_unqualified_well_typed `{Σ : cpp_logic, σ : genv}
+  tu ρ cv ty addr init (Q : FreeTemps.t -> epred) :
+      wp_initialize_unqualified tu ρ cv ty addr init (fun free => reference_to (heap_type_of ty) addr -* Q free)
+  |-- wp_initialize_unqualified tu ρ cv ty addr init Q.
+Proof.
+  rewrite wp_initialize_unqualified.unlock.
+  case_match; subst; eauto.
+  all: try (iApply wp_operand_frame; [ done | ];
+    iIntros (??) "X Y";
+    iDestruct (observe (reference_to _ _) with "Y") as "#?";
+    iApply ("X" with "Y");
+    rewrite -reference_to_erase; done).
+  - iApply wp_lval_frame; [ done | ];
+      iIntros (??) "X Y";
+      iDestruct (observe (reference_to _ _) with "Y") as "#?".
+      iApply ("X" with "Y"). rewrite /heap_type_of/=. done.
+  - iApply wp_xval_frame; [ done | ];
+      iIntros (??) "X Y";
+      iDestruct (observe (reference_to _ _) with "Y") as "#?";
+      iApply ("X" with "Y").
+    rewrite /heap_type_of/=. done.
+  - iApply wp_operand_frame; [ done | ].
+    iIntros (??) "[$ X] Y".
+    iDestruct (observe (reference_to _ _) with "Y") as "#?";
+    iApply ("X" with "Y"); eauto.
+  - etransitivity; [ | apply wp_init_well_typed ].
+    iApply wp_init_frame; [ done | ].
+    iIntros (?) "X Y". iApply "X".
+    rewrite /heap_type_of/=.
+    rewrite reference_to_erase/=/tqualified'.
+    destruct cv; simpl; eauto.
+  - etransitivity; [ | apply wp_init_well_typed ].
+    iApply wp_init_frame; [ done | ].
+    iIntros (?) "X Y". iApply "X".
+    rewrite (reference_to_erase (Tnamed g)).
+    rewrite reference_to_erase/=/tqualified'.
+    destruct cv; simpl; eauto.
+Qed.
 
 (**
 [wpi cls this init Q] evaluates the initializer [init] from the object

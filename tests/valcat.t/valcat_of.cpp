@@ -65,6 +65,12 @@ void test() {
   CHECK_VALCAT(C().r);
   CHECK_VALCAT(c.rr);
   CHECK_VALCAT(C().rr);
+  CHECK_VALCAT(static_cast<C&&>(c).r);
+  CHECK_VALCAT(static_cast<C&&>(c).rr);
+  CHECK_VALCAT(static_cast<C&&>(c).x);
+  CHECK_VALCAT(static_cast<C&>(c).r);
+  CHECK_VALCAT(static_cast<C&>(c).rr);
+  CHECK_VALCAT(static_cast<C&>(c).x);
   CHECK_VALCAT(c = c);
   CHECK_VALCAT(x[3] = 3);
   CHECK_VALCAT(x[3] = 3);

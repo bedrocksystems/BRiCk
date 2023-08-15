@@ -8,6 +8,8 @@
 
 namespace member{
 
+    int global;
+
     struct S {
         int x;
         int& r;
@@ -21,6 +23,7 @@ namespace member{
         LVALUE(s.r);
         LVALUE(r.r);
         LVALUE(x.r);
+        LVALUE((S{1,global}).r);
     }
 
     void xvalues(){

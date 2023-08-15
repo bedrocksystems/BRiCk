@@ -20,24 +20,6 @@
 using namespace clang;
 using namespace fmt;
 
-const std::string
-bitsize(unsigned n) {
-    switch (n) {
-    case 8:
-        return "W8";
-    case 16:
-        return "W16";
-    case 32:
-        return "W32";
-    case 64:
-        return "W64";
-    case 128:
-        return "W128";
-    default:
-        return "unknown_bit_size";
-    }
-}
-
 static void
 unsupported_type(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
     print.ctor("Tunsupported", false);
@@ -73,14 +55,16 @@ public:
         cprint.printQualType(type->getModifiedType(), print);
     }
 
-    static const char*
-    getTransformName(UnaryTransformType::UTTKind k) {
+    static const char* getTransformName(UnaryTransformType::UTTKind k) {
 #if CLANG_VERSION_MAJOR >= 16
         switch (k) {
-#define TRANSFORM_TYPE_TRAIT_DEF(Enum, Str) case UnaryTransformType::UTTKind::Enum: return #Str;
+#define TRANSFORM_TYPE_TRAIT_DEF(Enum, Str)                                    \
+    case UnaryTransformType::UTTKind::Enum:                                    \
+        return #Str;
 #include "clang/Basic/TransformTypeTraits.def"
 #undef TRANSFORM_TYPE_TRAIT_DEF
-        default: return "unknown";
+        default:
+            return "unknown";
         }
 #else
         return "unknown";
@@ -156,51 +140,6 @@ public:
     void VisitParenType(const ParenType* type, CoqPrinter& print,
                         ClangPrinter& cprint) {
         cprint.printQualType(type->getInnerType(), print);
-    }
-
-    void printTypeSugar(const BuiltinType* type, CoqPrinter& print,
-                        ClangPrinter& cprint) {
-        if (type->isSignedIntegerType()) {
-            switch (auto sz = cprint.getTypeSize(type)) {
-            case 8:
-                print.output() << "Ti8";
-                break;
-            case 16:
-                print.output() << "Ti16";
-                break;
-            case 32:
-                print.output() << "Ti32";
-                break;
-            case 64:
-                print.output() << "Ti64";
-                break;
-            case 128:
-                print.output() << "Ti128";
-                break;
-            default:
-                print.output() << "(Tnum " << bitsize(sz) << " Signed)";
-            }
-        } else if (type->isUnsignedIntegerType()) {
-            switch (auto sz = cprint.getTypeSize(type)) {
-            case 8:
-                print.output() << "Tu8";
-                break;
-            case 16:
-                print.output() << "Tu16";
-                break;
-            case 32:
-                print.output() << "Tu32";
-                break;
-            case 64:
-                print.output() << "Tu64";
-                break;
-            case 128:
-                print.output() << "Tu128";
-                break;
-            default:
-                print.output() << "(Tnum " << bitsize(sz) << " Unsigned)";
-            }
-        }
     }
 
     void VisitBuiltinType(const BuiltinType* type, CoqPrinter& print,

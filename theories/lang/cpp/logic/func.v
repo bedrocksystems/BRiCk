@@ -32,32 +32,22 @@ Arguments UNSUPPORTED {_ _} _%bs.
 
 Makes [this] and immediate [members] of [cls] strictly valid, to implement the
 part of http://eel.is/c++draft/class.cdtor#3 about members.
-This enables their dereference via
-[wp_lval_deref].
-This
+This enables their dereference via [wp_lval_deref].
 *)
 mlock Definition svalid_members `{Σ : cpp_logic thread_info} {resolve:genv}
           (cls : globname)
-          (members : list Member)
+          (members : list (bs * type))
           : Rep :=
-  svalidR ** aligned_ofR (Tnamed cls) **
+  reference_toR (Tnamed cls) **
   [∗list] m ∈ members,
-    if negb (zero_sized_array m.(mem_type)) then
-      _field {| f_type := cls ; f_name := m.(mem_name) |} |->
-        (svalidR ** aligned_ofR (erase_qualifiers m.(mem_type)))
-        (* Alignment should be deducible from alignment of [this], but it is
-        necessary for [wp_lval_deref] and inconvenient to deduce. *)
-      else emp.
+    _field {| f_type := cls ; f_name := m.1 |} |-> reference_toR m.2.
 #[global] Arguments svalid_members {_ _ _} _ _ : assert.
 
 Section svalid_members.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
   #[global] Instance svalid_members_persistent : Persistent2 svalid_members.
   Proof.
-    intros; rewrite svalid_members.unlock.
-    repeat apply: bi.sep_persistent.
-    apply: big_sepL_persistent.
-    intros; case_match; apply _.
+    intros; rewrite svalid_members.unlock. refine _.
   Qed.
   #[global] Instance svalid_members_affine : Affine2 svalid_members := _.
 End svalid_members.
@@ -425,7 +415,7 @@ Section with_cpp.
       (** Provide strict validity for [this] and immediate members,
       initialize the bases, then the identity, then initialize the members, following
       http://eel.is/c++draft/class.base.init#13 (except virtual base classes, which are unsupported) *)
-      this |-> svalid_members cls s.(s_fields) -*
+      this |-> svalid_members cls ((fun m => (m.(mem_name), m.(mem_type))) <$> s.(s_fields)) -*
       bases (ident (members (this |-> structR cls (cQp.mut 1) -* Q)))
       (* NOTE we get the [structR] at the end since
          [structR (cQp.mut 1) cls |-- type_ptrR (Tnamed cls)].
@@ -451,29 +441,28 @@ Section with_cpp.
   Qed.
 
   Definition wp_union_initializer_list (u : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
-             (inits : list Initializer) (Q : option nat -> epred) : mpred :=
+             (inits : list Initializer) (Q : mpred) : mpred :=
     match inits with
-    | [] => Q None
+    | [] => Q
     | [{| init_path := InitField f ; init_type := te ; init_init := e |} as init] =>
         match list_find (fun m => f = m.(mem_name)) u.(u_fields) with
         | None => ERROR "field not found in union initialization"
-        | Some (n, m) => wpi ρ cls this init $ Q (Some n)
+        | Some (n, m) => wpi ρ cls this init $ this |-> unionR cls (cQp.m 1) (Some n) -* Q
         end
     | _ =>
       UNSUPPORTED "indirect (or self) union initialization is not currently supported"
     end.
 
-  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li (Q Q' : option nat -> epred),
-        (Forall n, Q n -* Q' n)
+  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li (Q Q' : epred),
+        (Q -* Q')
     |-- wp_union_initializer_list cls ρ ty p li Q -*
         wp_union_initializer_list cls ρ ty p li Q'.
   Proof.
     rewrite /wp_union_initializer_list/=. intros. case_match; eauto.
-    { iIntros "K"; iApply "K". }
     { iIntros "K".
       repeat case_match; eauto.
       iApply wpi_frame; [done|].
-      iApply "K". }
+      iIntros "X Y"; iApply "K"; iApply "X"; done. }
   Qed.
 
   (** A special version of return to match the C++ rule that
@@ -541,11 +530,9 @@ Section with_cpp.
           |> let ρ va := Remp (Some thisp) va Tvoid in
              bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ cleanup =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (fun which => thisp |-> unionR ctor.(c_class) (cQp.mut 1) which -*
-                             wp ρ body (Kcleanup cleanup (Kreturn_void (|={⊤}=> |> Forall p, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p))))))
-        | Some _ =>
-          ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
-        | None => False
+                  (wp ρ body (Kcleanup cleanup (Kreturn_void (|={⊤}=> |> Forall p, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p))))))
+        | _ =>
+            ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         end
       | _ => ERROR "constructor without leading [this] argument"
       end

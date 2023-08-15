@@ -157,8 +157,8 @@ Section TestCodeNotations.
                           Prvalue
                           (Tptr (Tqualified QC Tvoid));
                        Ecast Carray2ptr (Evar (Lname "buffer") (Tarray Tu8 1024)) Prvalue (Tptr Tu8);
-                       Eread_ref (Evar (Lname "shared") (Tnamed "_Z9UmxShared"));
-                       Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]%list
+                       Evar (Lname "shared") (Tref (Tnamed "_Z9UmxShared"));
+                       Evar (Lname "client") (Tref Tu64); Evar (Lname "result") Ti32]%list
                        Tbool) Tbool)
                  Tbool).
   Print stmt10.
@@ -273,8 +273,8 @@ Section TestCodeNotations.
                         Prvalue
                         (Tptr (Tqualified QC Tvoid));
                      Ecast Carray2ptr (Evar (Lname "buffer") (Tarray Tu8 1024)) Prvalue (Tptr Tu8);
-                     Eread_ref (Evar (Lname "shared") (Tnamed "_Z9UmxShared"));
-                     Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]
+                     Evar (Lname "shared") (Tref (Tnamed "_Z9UmxShared"));
+                     Evar (Lname "client") (Tref Tu64); Evar (Lname "result") Ti32]
                      Tbool) Tbool)
                Tbool)).
   Print stmt17.

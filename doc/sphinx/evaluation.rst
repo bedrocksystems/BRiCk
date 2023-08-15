@@ -36,7 +36,7 @@ In |project| we capture the stack of objects to be destroyed using the type |lin
 Here |link:bedrock.lang.cpp.logic.wp#FreeTemps.id| represents the identity, characterizing that nothing needs to be destroyed.
 `delete ty p` represents that the value at pointer `p` (which should have type `ty`) needs to be destroyed.
 Note that to delete the value, the C++ abstract machine runs the destructor and reclaims the underlying memory.
-Note that virtual dispatch is *not* used when invoking the destructor.
+Virtual dispatch is *not* used when invoking the destructor.
 `seq a b` means that the temporaries in `a` must be destroyed *before* the temporaries in `b`.
 `par a b` means that the temporaries in `a` and the temporaries in `b` are destroyed in an interleaved manner [#parallel-destruction]_.
 
@@ -70,33 +70,7 @@ The `C++ standard <http://eel.is/c++draft/expr.prop#basic.lval-1.2>`_ describes 
    computes the value of an operand of an operator, as specified by the
    context in which it appears, or an expression that has type cv void."
 
-|link:bedrock.lang.cpp.logic.wp#WPE.wp_init| handles the second of these two.
-The parameter is the following:
-
-.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
-   :start-after: (* BEGIN wp_init *)
-   :end-before: (* END wp_init *)
-   :dedent:
-
-This definition has two interesting differences from `wp_lval` and `wp_xval`.
-The first is that it takes a |link:bedrock.lang.cpp.semantics.values#PTRS.ptr| that represents the location that the object is being constructed into.
-Because of this, the post-condition does not consume a value but instead a `FreeTemp` and a `FreeTemps`.
-Both of these are simply `FreeTemps` under the hood but in this context they mean slightly different things.
-The first argument is the `FreeTemp` that is used to destroy the object that is initialized by this expression.
-The second is used to destroy the temporaries that are created while initializing the object.
-For example, suppose you are calling a constructor `C(1+1)`.
-In this case, the constructed value (of type `C`) would be destroyed by `FreeTemp`, while the temporary that `1+1` evaluates to would be destroyed by `FreeTemps`.
-
-On top of `wp_init`, we can *define* `wp_prval` by universally quantifying the pointer that is being initialized and passing it to the continuation.
-
-.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
-   :start-after: (* BEGIN wp_prval *)
-   :end-before: (* END wp_prval *)
-   :dedent:
-
-Note that the pointer `p` is completely unconstrained in this definition.
-In practice the C++ abstract machine will pick this pointer to be fresh and reserve it before proceeding to initialize it when evaluating `e`.
-
+These are characterized by two predicate transformers.
 
 Operands
 ~~~~~~~~~~~
@@ -109,19 +83,45 @@ These operands are *always* primitives, since operators that accept aggregates a
    :dedent:
 
 Unlike `wp_init` and `wp_prval`, operands return |link:bedrock.lang.cpp.semantics.value#val|\ s.
-Because the value returned does not have an identity, there is nothing to destroy, so, unlike `wp_prval` and `wp_init`, the continuation takes a single `FreeTemps`, which will destroy the temporaries created when evaluating the operand.
+Because the value returned does not have an identity, there is nothing to destroy, so the `FreeTemps` returned to the continuation destroys only the temporaries created when evaluating the expression.
 
-The relationship between |link:wp_operand| and |link:wp_init| can be precisely characterized by the following two axioms.
+
+Initializing Aggregates
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+|link:bedrock.lang.cpp.logic.wp#WPE.wp_init| handles initialization of aggregates.
+The parameter is the following:
 
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
-   :start-after: (* BEGIN wp_init <-> wp_operand *)
-   :end-before: (* END wp_init <-> wp_operand *)
+   :start-after: (* BEGIN wp_init *)
+   :end-before: (* END wp_init *)
    :dedent:
 
-The first of these axioms states that initializing *a primitive* using an expression `e` can be viewed as evaluating `e` using operand semantics and then materializing a value (using |link:bedrock.lang.cpp.logic.heap_pred#primR|) with the value and the type of the expression.
-The second of these axioms, which is not technically justified by the standard and is therefore only provided for documentation purposes, states that evaluating an operand can be viewed as initializing a fresh primitive object, reading the value out of it, destroying it, and then returning the result to the continuation `Q`.
-The reason that this rule is not technically justified by the standard is because the C++ standard states explicitly that there is no identity associated with this sort of value.
-However, since the existence of a pointer does not imply that the object has a location in the |project| model, we can create a fresh `ptr` and then immediately destroy it.
+`wp_init` takes a |link:bedrock.lang.cpp.semantics.values#PTRS.ptr| that represents the location that the object is being constructed into.
+Because of this, the post-condition does not consume a value but only a `FreeTemps` used to destroy temporaries created during the evaluation of the expression.
+To destroy the actual object constructed by `wp_init ty into Q`, use `FreeTemps.delete ty into`.
+
+On top of `wp_init`, we can *define* `wp_prval` by universally quantifying the pointer that is being initialized and passing it to the continuation.
+
+.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
+   :start-after: (* BEGIN wp_prval *)
+   :end-before: (* END wp_prval *)
+   :dedent:
+
+Note that the pointer `p` is completely unconstrained in this definition.
+In practice the C++ abstract machine will pick this pointer to be fresh and reserve it before proceeding to initialize during the evaluation of `e`.
+
+Initialization
+----------------
+
+Initialization is slightly more complex than `wp_init` because you can initialize aggregates (using `wp_init`), primitives (using `wp_operand`), and references (using `wp_lval` and `wp_xval`).
+To capture this, |project| *defines* `wp_initialize` which provides the semantics to materialize a value into the C++ abstract machine state (which |project| reflects through separation logic assertions such as `primR`).
+`wp_initialize` is defined by induction on the type of the value being initialized with special handling of `const` qualifiers.
+
+.. literalinclude:: ../../theories/lang/cpp/logic/initializers.v
+   :start-after: (* BEGIN wp_initialize *)
+   :end-before: (* END wp_initialize *)
+   :dedent:
 
 
 Function Call Semantics

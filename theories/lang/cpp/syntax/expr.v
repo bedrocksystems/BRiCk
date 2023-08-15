@@ -388,8 +388,9 @@ End operator_impl.
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : exprtype)
   (* ^ these are different because they do not have addresses *)
-| Evar     (_ : VarRef) (_ : exprtype)
-  (* ^ local and global variable reference *)
+| Evar     (_ : VarRef) (ty : decltype)
+  (* ^ local and global variable reference
+       [ty] is the declaration type of the variable *)
 
 | Echar    (value : N) (_ : exprtype)
   (* ^ [value] is the unsigned character value *)
@@ -406,7 +407,6 @@ Inductive Expr : Set :=
   * operator shows up as a function call, not a `Eunop` or `Ebinop`.
   * this includes the assignment operator for classes.
   *)
-| Eread_ref (e : Expr) (* type = type_of e *)
 | Ederef (e : Expr) (_ : exprtype) (* XXX type = strip [Tptr] from [type_of e] *)
 | Eaddrof (e : Expr) (* type = Tptr (type_of e) *)
 | Eassign (e _ : Expr) (_ : exprtype) (* XXX type = type_of e *)
@@ -427,7 +427,8 @@ Inductive Expr : Set :=
 | Ecall    (_ : Expr) (_ : list Expr) (_ : exprtype)
 | Ecast    (_ : Cast) (e : Expr) (_ : ValCat) (_ : exprtype)
 
-| Emember  (obj : Expr) (_ : field) (_ : exprtype)
+| Emember  (obj : Expr) (_ : field) (mut : bool) (ty : decltype)
+  (* ^ [ty] is the type of the member, [mut] is the mutability *)
   (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * dispatch_type * functype) + Expr) (obj : Expr) (_ : list Expr) (_ : exprtype)
 
@@ -435,9 +436,9 @@ Inductive Expr : Set :=
   (* ^^ in the case of a [Mfunc], [ls] is non-empty and the first expression is the object *)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : exprtype)
-| Esize_of (_ : decltype + Expr) (_ : exprtype)
-| Ealign_of (_ : decltype + Expr) (_ : exprtype)
-| Eoffset_of (_ : OffsetInfo) (_ : exprtype)
+| Esizeof (_ : decltype + Expr) (_ : exprtype)
+| Ealignof (_ : decltype + Expr) (_ : exprtype)
+| Eoffsetof (_ : OffsetInfo) (_ : exprtype)
 | Econstructor (_ : obj_name) (_ : list Expr) (_ : exprtype)
 | Eimplicit (_ : Expr)
 | Eimplicit_init (_ : exprtype)

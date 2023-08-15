@@ -203,14 +203,6 @@
        : Expr
   
   Ebinop_compound_2 uses section variable ty.
-  Eread_ref_lname = {e: $"FooBarBaz"}
-       : Expr
-  
-  Eread_ref_lname uses section variable ty.
-  Eread_ref_gname = {e: $::"FooBarBaz"}
-       : Expr
-  
-  Eread_ref_gname uses section variable ty.
   Ederef_Evar = {e: *$"Qux"}
        : Expr
   
@@ -407,58 +399,58 @@
        : Expr
   
   Esubscript_2 uses section variable ty.
-  Esize_of_type_1 = {e: sizeof(ty: {?: ty})}
+  Esizeof_type_1 = {e: sizeof(ty: {?: ty})}
        : Expr
   
-  Esize_of_type_1 uses section variable ty.
-  Esize_of_type_2 = {e: sizeof(ty: ptr<uint8>)}
+  Esizeof_type_1 uses section variable ty.
+  Esizeof_type_2 = {e: sizeof(ty: ptr<uint8>)}
        : Expr
   
-  Esize_of_type_2 uses section variable ty.
-  Esize_of_type_3 = {e: sizeof(ty: "Foo")}
+  Esizeof_type_2 uses section variable ty.
+  Esizeof_type_3 = {e: sizeof(ty: "Foo")}
        : Expr
   
-  Esize_of_type_3 uses section variable ty.
-  Esize_of_Expr_1 = {e: sizeof(expr: {?: e})}
+  Esizeof_type_3 uses section variable ty.
+  Esizeof_Expr_1 = {e: sizeof(expr: {?: e})}
        : Expr
   
-  Esize_of_Expr_1 uses section variables ty e.
-  Esize_of_Expr_2 = {e: sizeof(expr: #314)}
+  Esizeof_Expr_1 uses section variables ty e.
+  Esizeof_Expr_2 = {e: sizeof(expr: #314)}
        : Expr
   
-  Esize_of_Expr_2 uses section variable ty.
-  Esize_of_Expr_3 = {e: sizeof(expr: $"foo")}
+  Esizeof_Expr_2 uses section variable ty.
+  Esizeof_Expr_3 = {e: sizeof(expr: $"foo")}
        : Expr
   
-  Esize_of_Expr_3 uses section variable ty.
-  Ealign_of_type_1 = {e: alignof(ty: {?: ty})}
+  Esizeof_Expr_3 uses section variable ty.
+  Ealignof_type_1 = {e: alignof(ty: {?: ty})}
        : Expr
   
-  Ealign_of_type_1 uses section variable ty.
-  Ealign_of_type_2 = {e: alignof(ty: ptr<uint8>)}
+  Ealignof_type_1 uses section variable ty.
+  Ealignof_type_2 = {e: alignof(ty: ptr<uint8>)}
        : Expr
   
-  Ealign_of_type_2 uses section variable ty.
-  Ealign_of_type_3 = {e: alignof(ty: "Foo")}
+  Ealignof_type_2 uses section variable ty.
+  Ealignof_type_3 = {e: alignof(ty: "Foo")}
        : Expr
   
-  Ealign_of_type_3 uses section variable ty.
-  Ealign_of_Expr_1 = {e: alignof(expr: {?: e})}
+  Ealignof_type_3 uses section variable ty.
+  Ealignof_Expr_1 = {e: alignof(expr: {?: e})}
        : Expr
   
-  Ealign_of_Expr_1 uses section variables ty e.
-  Ealign_of_Expr_2 = {e: alignof(expr: #314)}
+  Ealignof_Expr_1 uses section variables ty e.
+  Ealignof_Expr_2 = {e: alignof(expr: #314)}
        : Expr
   
-  Ealign_of_Expr_2 uses section variable ty.
-  Ealign_of_Expr_3 = {e: alignof(expr: $"foo")}
+  Ealignof_Expr_2 uses section variable ty.
+  Ealignof_Expr_3 = {e: alignof(expr: $"foo")}
        : Expr
   
-  Ealign_of_Expr_3 uses section variable ty.
-  Eoffset_of_1 = {e: offsetof("bar")}
+  Ealignof_Expr_3 uses section variable ty.
+  Eoffsetof_1 = {e: offsetof("bar")}
        : Expr
   
-  Eoffset_of_1 uses section variable ty.
+  Eoffsetof_1 uses section variable ty.
   Econstructor_nil = {e: #"Foo"()}
        : Expr
   

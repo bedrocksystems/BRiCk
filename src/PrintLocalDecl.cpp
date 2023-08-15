@@ -66,7 +66,7 @@ public:
             cprint.printExpr(init, print, names);
             print.end_ctor();
         } else {
-            print.none() << fmt::nbsp;
+            print.none();
         }
 
         print.end_ctor();
