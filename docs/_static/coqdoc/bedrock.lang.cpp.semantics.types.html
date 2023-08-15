@@ -102,7 +102,10 @@
 
 <div class="doc">
 <a id="lab166"></a><h1 class="section">sizeof()</h1>
- this is a partial implementation of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.size_of"><span class="id" title="abbreviation">size_of</span></a></span> for primitives.
+ The size of a C++ object.
+    This is *not* the same as the semantics of the <code>sizeof()</code> operator
+    because <code>sizeof(int&amp;)</code> is actually <code>sizeof(int)</code> whereas
+    <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.size_of"><span class="id" title="abbreviation">size_of</span></a></span> <span class="inlinecode">(<a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tref"><span class="id" title="constructor">Tref</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tint"><span class="id" title="abbreviation">Tint</span></a>)</span> is the size of the reference.
  
 </div>
 <div class="code">
