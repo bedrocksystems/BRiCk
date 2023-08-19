@@ -331,9 +331,11 @@ Module Cast.
     | Cdynamic gn1 gn2 => mret $ Cdynamic gn1 gn2
     | Cconst t => Cconst <$> f t
     end.
+  #[global] Hint Opaque mapM : typeclass_instances.
 
   Definition fmap : ∀ {A B : Set} (f : A -> B) (c : Cast' A), Cast' B :=
     @mapM (fun T => T) (fun _ _ f x => f x) (fun _ x => x).
+  #[global] Hint Opaque fmap : typeclass_instances.
 
 End Cast.
 
