@@ -147,6 +147,14 @@ Section Kpred.
           | _ => False
           end).
 
+  Lemma Kreturn_frame {σ : genv} (Q Q' : ptr -> mpred) rt : (Forall p, Q p -* Q' p) |-- Kreturn Q rt -* Kreturn Q' rt.
+  Proof.
+    destruct rt => /=; eauto.
+    - iIntros "X Y" (?) "Z"; iApply "X"; iApply "Y"; eauto.
+    - iIntros "X"; iApply "X".
+    - iIntros "X Y" (?) "Z"; iApply "X"; iApply "Y"; eauto.
+  Qed.
+
   Definition Kseq (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
     KP (funI rt =>
         match rt with

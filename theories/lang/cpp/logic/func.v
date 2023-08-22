@@ -547,6 +547,14 @@ Definition Kreturn_void `{Σ : cpp_logic} (P : mpred) : Kpred :=
   | _ => False
   end.
 
+Section with_cpp.
+  Context `{Σ : cpp_logic, σ : genv}.
+
+  Lemma Kreturn_void_frame (Q Q' : epred) rt :
+    (Q -* Q') |-- Kreturn_void Q rt -* Kreturn_void Q' rt.
+  Proof. destruct rt; auto. Qed.
+End with_cpp.
+
 (**
 [wp_ctor tu ctor args Q] is the weakest pre-condition (with
 post-condition [Q]) running the constructor [ctor] with arguments
