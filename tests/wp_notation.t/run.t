@@ -96,19 +96,19 @@
   
   Arguments NOTATION_wp_atomic_cons_wrap M Q%function_scope
   NOTATION_wp_builtin_nil =
-  λ Q : val → mpred, ::wpBuiltin (Type ↦ ptr<void>) {e: __builtin_popcount()}
-       : (val → mpred) → mpred
+  λ Q : val → epred, ::wpBuiltin (Type ↦ ptr<void>) {e: __builtin_popcount()}
+       : (val → epred) → mpred
   
   Arguments NOTATION_wp_builtin_nil Q%function_scope
   NOTATION_wp_builtin_cons_nowrap =
-  λ Q : val → mpred,
+  λ Q : val → epred,
     ::wpBuiltin
       (Type ↦ ptr<void>) {e: __builtin_popcount(Vundef, Vundef, Vundef)}
-       : (val → mpred) → mpred
+       : (val → epred) → mpred
   
   Arguments NOTATION_wp_builtin_cons_nowrap Q%function_scope
   NOTATION_wp_builtin_cons_wrap =
-  λ Q : val → mpred,
+  λ Q : val → epred,
     ::wpBuiltin
       (Type ↦ ptr<void>) 
       {e: __builtin_popcount(Vundef,
@@ -119,7 +119,7 @@
                              Vundef,
                              Vundef,
                              1123784018923740981723509817230984710298374098123740981723490817230984710293840891273489012734089%Z)}
-       : (val → mpred) → mpred
+       : (val → epred) → mpred
   
   Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
   NOTATION_wp_destroy_val_nowrap =
@@ -478,21 +478,21 @@
   
   Arguments NOTATION_wp_atomic_cons_wrap M Q%function_scope
   NOTATION_wp_builtin_nil =
-  λ Q : val → mpred,
+  λ Q : val → epred,
     ::wpBuiltin (Type ↦ ptr<void>) {e: {e: __builtin_popcount}()} Q
-       : (val → mpred) → mpred
+       : (val → epred) → mpred
   
   Arguments NOTATION_wp_builtin_nil Q%function_scope
   NOTATION_wp_builtin_cons_nowrap =
-  λ Q : val → mpred,
+  λ Q : val → epred,
     ::wpBuiltin
       (Type ↦ ptr<void>) {e: {e: __builtin_popcount}(Vundef, Vundef, Vundef)}
       Q
-       : (val → mpred) → mpred
+       : (val → epred) → mpred
   
   Arguments NOTATION_wp_builtin_cons_nowrap Q%function_scope
   NOTATION_wp_builtin_cons_wrap =
-  λ Q : val → mpred,
+  λ Q : val → epred,
     ::wpBuiltin
       (Type ↦ ptr<void>) 
       {e: {e: __builtin_popcount}(Vundef,
@@ -504,7 +504,7 @@
                                   Vundef,
                                   1123784018923740981723509817230984710298374098123740981723490817230984710293840891273489012734089%Z)}
       Q
-       : (val → mpred) → mpred
+       : (val → epred) → mpred
   
   Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
   NOTATION_destroy_val_nowrap =

@@ -133,75 +133,106 @@ Canonical Structure rt_biIndex : biIndex :=
 Definition KpredI `{Σ : cpp_logic} : bi := monPredI rt_biIndex mpredI.
 #[global] Notation Kpred := (bi_car KpredI).
 
-Section Kpred.
-  Context `{Σ : cpp_logic thread_info}.
+Definition KP `{Σ : cpp_logic} (P : ReturnType -> mpred) : Kpred := MonPred P _.
+#[global] Arguments KP _ _ _%I : assert.
+#[global] Hint Opaque KP : typeclass_instances.
 
-  Definition KP (P : ReturnType -> mpred) : Kpred := MonPred P _.
-  #[global] Arguments KP _%I.
+Section KP.
+  Context `{Σ : cpp_logic}.
 
-  Definition Kreturn {σ : genv} (P : ptr -> mpred) : Kpred :=
-    KP (funI rt =>
-          match rt with
-          | Normal | ReturnVoid => Forall p : ptr, p |-> primR Tvoid (cQp.mut 1) Vvoid -* P p
-          | ReturnVal p => P p
-          | _ => False
-          end).
+  Lemma KP_frame (Q1 Q2 : ReturnType -> mpred) (rt : ReturnType) :
+    Q1 rt -* Q2 rt
+    |-- KP Q1 rt -* KP Q2 rt.
+  Proof. done. Qed.
+End KP.
 
-  Lemma Kreturn_frame {σ : genv} (Q Q' : ptr -> mpred) rt : (Forall p, Q p -* Q' p) |-- Kreturn Q rt -* Kreturn Q' rt.
+Definition Kreturn `{Σ : cpp_logic, σ : genv} (Q : ptr -> mpred) : Kpred :=
+  KP $ funI rt =>
+  match rt with
+  | Normal | ReturnVoid => Forall p : ptr, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p
+  | ReturnVal p => Q p
+  | _ => False
+  end.
+#[global] Hint Opaque Kreturn : typeclass_instances.
+
+Section Kreturn.
+  Context `{Σ : cpp_logic, σ : genv}.
+
+  Lemma Kreturn_frame (Q Q' : ptr -> mpred) (rt : ReturnType) :
+    Forall p, Q p -* Q' p
+    |-- Kreturn Q rt -* Kreturn Q' rt.
   Proof.
-    destruct rt => /=; eauto.
-    - iIntros "X Y" (?) "Z"; iApply "X"; iApply "Y"; eauto.
-    - iIntros "X"; iApply "X".
-    - iIntros "X Y" (?) "Z"; iApply "X"; iApply "Y"; eauto.
+    iIntros "HQ". destruct rt; cbn; auto.
+    all: iIntros "HR" (?) "R"; iApply "HQ"; by iApply "HR".
   Qed.
+End Kreturn.
 
-  Definition Kseq (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
-    KP (funI rt =>
-        match rt with
-        | Normal => Q k
-        | rt => k rt
-        end).
+Definition Kseq `{Σ : cpp_logic} (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
+  KP $ funI rt =>
+  match rt with
+  | Normal => Q k
+  | rt => k rt
+  end.
+#[global] Hint Opaque Kseq : typeclass_instances.
 
-  #[global] Instance Kseq_mono : Proper (((⊢) ==> (⊢)) ==> (⊢) ==> (⊢)) Kseq.
+Section Kseq.
+  Context `{Σ : cpp_logic}.
+
+  Lemma Kseq_frame (Q1 Q2 : Kpred -> mpred) (k1 k2 : Kpred) (rt : ReturnType) :
+    (<affine> Forall k1 k2 : Kpred, (Forall rt : ReturnType, k1 rt -* k2 rt) -* Q1 k1 -* Q2 k2) |--
+    (Forall rt : ReturnType, k1 rt -* k2 rt) -*
+    Kseq Q1 k1 rt -* Kseq Q2 k2 rt.
   Proof.
-    intros Q1 Q2 HQ k1 k2 Hk; constructor => rt; rewrite /Kseq/KP/=.
-    destruct rt; try apply HQ; apply Hk.
+    iIntros "HQ Hk". destruct rt; cbn; try iExact "Hk".
+    rewrite bi.affinely_elim. by iApply "HQ".
   Qed.
+End Kseq.
 
-  Lemma Kseq_frame (Q1 Q2 : Kpred -> mpred) (k1 k2 : Kpred) :
-    (∀ k1 k2 : Kpred, (∀ rt, k1 rt -* k2 rt) -* Q1 k1 -* Q2 k2) |--
-    (∀ rt, k1 rt -* k2 rt) -*
-    ∀ rt, Kseq Q1 k1 rt -* Kseq Q2 k2 rt.
+(* loop with invariant `I` *)
+Definition Kloop `{Σ : cpp_logic} (I : mpred) (Q : Kpred) : Kpred :=
+  KP $ funI rt =>
+  match rt with
+  | Break | Normal => Q Normal
+  | Continue => I
+  | ReturnVal _ | ReturnVoid => Q rt
+  end.
+#[global] Hint Opaque Kloop : typeclass_instances.
+
+Section Kloop.
+  Context `{Σ : cpp_logic}.
+
+  Lemma Kloop_frame (I1 I2 : mpred) (k1 k2 : Kpred) (rt : ReturnType) :
+    <affine> (I1 -* I2) |--
+    <affine> (Forall rt : ReturnType, k1 rt -* k2 rt) -*
+    Kloop I1 k1 rt -* Kloop I2 k2 rt.
   Proof.
-    iIntros "Q k %".
-    rewrite /Kseq/=.
-    destruct rt; try iApply "k". by iApply "Q".
+    iIntros "HI Hk". destruct rt; cbn.
+    all: first [ iExact "Hk" | iApply "HI" ].
   Qed.
+End Kloop.
 
-  (* loop with invariant `I` *)
-  Definition Kloop (I : mpred) (Q : Kpred) : Kpred :=
-    KP (funI rt =>
-        match rt with
-        | Break | Normal => Q Normal
-        | Continue => I
-        | rt => Q rt
-        end).
+Definition Kat_exit `{Σ : cpp_logic} (Q : mpred -> mpred) (k : Kpred) : Kpred :=
+  KP $ fun rt => Q (k rt).
+#[global] Hint Opaque Kat_exit : typeclass_instances.
 
-  Definition Kat_exit (Q : mpred -> mpred) (k : Kpred) : Kpred :=
-    KP (funI rt => Q (k rt)).
+Section Kat_exit.
+  Context `{Σ : cpp_logic}.
 
-  Theorem Kat_exit_frame Q Q' (k k' : KpredI) :
-    Forall x y, (x -* y) -* Q x -* Q' y |-- Forall rt, (k rt -* k' rt) -* Kat_exit Q k rt -* Kat_exit Q' k' rt.
+  Lemma Kat_exit_frame (Q Q' : mpred -> mpred) (k k' : Kpred) :
+    Forall R R' : mpred, (R -* R') -* Q R -* Q' R' |--
+    Forall rt : ReturnType, (k rt -* k' rt) -*
+    Kat_exit Q k rt -* Kat_exit Q' k' rt.
   Proof.
-    rewrite /Kat_exit. iIntros "A" (?) "B" =>/=. iApply "A"; iApply "B".
+    iIntros "HQ %rt Hk". destruct rt; cbn.
+    all: by iApply "HQ".
   Qed.
+End Kat_exit.
 
-  #[global] Instance mpred_Kpred_BiEmbed : BiEmbed mpredI KpredI := _.
-
-  (* NOTE KpredI does not embed into mpredI because it doesn't respect
-     existentials.
-   *)
-End Kpred.
+(*
+NOTE KpredI does not embed into mpredI because it doesn't respect
+existentials.
+*)
+#[global] Instance mpred_Kpred_BiEmbed `{Σ : cpp_logic} : BiEmbed mpredI KpredI := _.
 
 (** * Regions
     To model the stack frame in separation logic, we use a notion of regions
@@ -1152,7 +1183,7 @@ Section with_cpp.
 
   Axiom wp_frame : forall {σ : genv} tu1 tu2 ρ s (k1 k2 : KpredI),
       sub_module tu1 tu2 ->
-      (Forall rt, k1 rt -* k2 rt) |-- wp tu1 ρ s k1 -* wp tu2 ρ s k2.
+      (Forall rt : ReturnType, k1 rt -* k2 rt) |-- wp tu1 ρ s k1 -* wp tu2 ρ s k2.
 
   #[global] Instance Proper_wp {σ} :
     Proper (sub_module ==> eq ==> eq ==> (⊢) ==> (⊢))
