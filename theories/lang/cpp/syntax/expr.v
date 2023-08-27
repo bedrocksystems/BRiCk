@@ -474,6 +474,9 @@ Inductive Expr : Set :=
 .
 Notation MethodRef := ((obj_name * dispatch_type * functype) + Expr)%type (only parsing).
 
+#[global] Instance expr_inhabited : Inhabited Expr.
+Proof. exact (populate Enull). Qed.
+
 #[global] Instance Expr_eq_dec : EqDecision Expr.
 Proof.
   rewrite /RelDecision /Decision.
