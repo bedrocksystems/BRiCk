@@ -10,33 +10,46 @@ Require Import bedrock.prelude.base.
 
 From bedrock.lang.cpp Require Import semantics ast.
 From bedrock.lang.cpp.logic Require Import
-  pred path_pred
+  pred path_pred wp
   heap_pred.
 
 #[local] Set Printing Coercions.
 
 Section defs.
   Context `{Σ : cpp_logic, σ : genv}.
-  Implicit Types (Q : mpred).
+  Implicit Types (ty : decltype) (Q : epred).
 
-  (* [wp_make_cv from to addr ty Q] replaces the [from] ownership of [ty] at [addr] with
-     [to] ownership and then proceeds as [Q].
+  (*
+  [wp_const tu from to addr ty Q] replaces the [from] ownership of
+  [ty] at [addr] with [to] ownership and then proceeds as [Q].
 
-     This is used to implement [wp_downcast_to_const] and [wp_upcast_to_const].
-   *)
-  Parameter wp_const : forall (tu : translation_unit) {σ : genv} (from to : cQp.t) (addr : ptr) (ty : type) (Q : mpred), mpred.
-  Axiom wp_const_frame : forall tu tu' f t a ty (Q Q' : mpred),
-      type_table_le tu.(types) tu'.(types) ->
-      Q -* Q' |-- wp_const tu f t a ty Q -* wp_const tu' f t a ty Q'.
+  This is used to implement [wp_make_const] and [wp_make_mutable].
+
+  TODO: Consider adjusting the [wp_const] theory to use [sub_module]
+  rather than [type_table_le] both for consistency and to benefit from
+  the [RewriteRelation] instance.
+
+  TODO: Consider reordering arguments to [wp_const] in order to bump
+  [Params], ease the statement of [Proper] instances, and speed up
+  setoid rewriting.
+  *)
+  Parameter wp_const : forall (tu : translation_unit) {σ : genv} (from to : cQp.t) (addr : ptr) (ty : decltype) (Q : epred), mpred.
+
+  Axiom wp_const_frame : forall tu tu' f t a ty Q Q',
+    type_table_le tu.(types) tu'.(types) ->
+    Q -* Q' |-- wp_const tu f t a ty Q -* wp_const tu' f t a ty Q'.
 
   Axiom wp_const_shift : forall tu f t a ty Q,
-      (|={top}=> wp_const tu f t a ty (|={top}=> Q)) |-- wp_const tu f t a ty Q.
+    (|={top}=> wp_const tu f t a ty (|={top}=> Q))
+    |-- wp_const tu f t a ty Q.
 
-  (* TODO this needs to be extended because if it is casting [volatile],
-     then it needs to descend under [const] *)
+  (*
+  TODO this needs to be extended because if it is casting [volatile],
+  then it needs to descend under [const]
+  *)
   #[local] Notation "|={ E }=> P" := (|={E}=> P)%I (only parsing).
-  Definition wp_const_body (wp_const : forall (from to : cQp.t) (addr : ptr) (ty : type) (Q : mpred), mpred)
-      (tu : translation_unit) (from to : cQp.t)  (addr : ptr) (ty : type) (Q : mpred) : mpred :=
+  #[local] Definition wp_const_body (wp_const : cQp.t -> cQp.t -> ptr -> decltype -> epred -> mpred)
+      (tu : translation_unit) (from to : cQp.t)  (addr : ptr) (ty : decltype) (Q : epred) : mpred :=
     let '(cv, rty) := decompose_type ty in
     let Q := |={top}=> Q in
     if q_const cv then Q
@@ -118,9 +131,11 @@ Section defs.
   (* NOTE: we prefer an entailment ([|--]) to a bi-entailment ([-|-]) or an equality
      to be conservative.
    *)
-  Axiom wp_const_intro : forall tu f t a ty Q, wp_const_body (wp_const tu) tu f t a ty Q |-- wp_const tu f t a ty Q.
+  Axiom wp_const_intro : forall tu f t a ty Q,
+    Reduce (wp_const_body (wp_const tu) tu f t a ty Q)
+    |-- wp_const tu f t a ty Q.
 
-  Lemma wp_const_value_type_intro tu from to (p : ptr) ty (Q : mpred) :
+  Lemma wp_const_value_type_intro tu from to (p : ptr) ty Q :
     is_value_type ty ->
     (
       if qual_norm (fun cv _ => q_const cv) ty then Q
@@ -134,7 +149,7 @@ Section defs.
     rewrite is_value_type_decompose_type qual_norm_decompose_type.
     rewrite erase_qualifiers_decompose_type.
     have := is_qualified_decompose_type ty.
-    rewrite -wp_const_intro /wp_const_body.
+    rewrite -wp_const_intro.
     destruct (decompose_type ty) as [cv rty]; cbn=>??.
     case_match; first by rewrite -fupd_intro. destruct rty; try done.
     all: by iIntros "(% & R & HQ) !>"; iExists _; iFrame "R";
@@ -160,7 +175,7 @@ Section defs.
     iApply "HQ". iApply ("HR" with "V R").
   Qed.
 
-  Lemma primR_wp_const_ref tu from to (p : ptr) ty (Q : mpred) :
+  Lemma primR_wp_const_ref tu from to (p : ptr) ty Q :
     is_reference_type ty ->
     (
       if qual_norm (fun cv _ => q_const cv) ty then Q
@@ -174,7 +189,7 @@ Section defs.
     cbn. rewrite is_reference_type_decompose_type.
     rewrite qual_norm_decompose_type as_ref_decompose_type.
     have := is_qualified_decompose_type ty.
-    rewrite -wp_const_intro /wp_const_body.
+    rewrite -wp_const_intro.
     destruct (decompose_type ty) as [cv rty]; cbn=>??.
     case_match; first by rewrite -fupd_intro. destruct rty; first [done | cbn].
     all: iIntros "(% & R & HQ) !>"; iExists _; iFrame "R";
@@ -182,7 +197,7 @@ Section defs.
   Qed.
 
   (* Sanity check the [_frame] property *)
-  Lemma fold_left_frame : forall B (l : list B) (f f' : mpred -> B -> mpred)  (Q Q' : mpred),
+  Lemma fold_left_frame : forall B (l : list B) (f f' : epred -> B -> mpred) (Q Q' : epred),
     (Q -* Q') |-- □ (Forall Q1 Q1' a, (Q1 -* Q1') -* (f Q1 a -* f' Q1' a)) -*  fold_left f l Q -* fold_left f' l Q'.
   Proof.
     move=>B l.
@@ -192,7 +207,7 @@ Section defs.
   Qed.
 
   (* Sanity check *)
-  Lemma wp_const_body_frame_uniform : forall CAST tu q q' p ty (Q Q' : mpred),
+  Lemma wp_const_body_frame CAST tu q q' p ty Q Q' :
     Q -* Q'
     |-- □ (Forall a b p ty Q Q', (Q -* Q') -* CAST a b p ty Q -* CAST a b p ty Q') -*
         wp_const_body CAST tu q q' p ty Q -* wp_const_body CAST tu q q' p ty Q'.

@@ -202,6 +202,13 @@ Section observe.
     by rewrite (comm bi_sep Q) /Observe bi.persistently_absorbingly.
   Qed.
 
+  Lemma observe_only_provable_impl (Q P : Prop) :
+    (P -> Q) -> Observe (PROP:=PROP) [| Q |] [| P |].
+  Proof. intros HQ. iIntros "% !> !%". exact: HQ. Qed.
+  Lemma observe_2_only_provable_impl (Q P1 P2 : Prop) :
+    (P1 -> P2 -> Q) -> Observe2 (PROP:=PROP) [| Q |] [| P1 |] [| P2 |].
+  Proof. intros HQ. iIntros "% % !> !%". exact: HQ. Qed.
+
   (* [observe_2_intro_persistent] makes the goal linearly unprovable (unless [P1] and [P2] are affine). *)
   Lemma observe_2_intro_persistent Q P1 P2 `{!Persistent Q} :
     (P1 ⊢ P2 -∗ Q) → Observe2 Q P1 P2.

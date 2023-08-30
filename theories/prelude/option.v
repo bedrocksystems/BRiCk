@@ -18,7 +18,14 @@
  *)
 
 From elpi Require Import locker.
-From bedrock.prelude Require Import base.
+From bedrock.prelude Require Import base bool.
+
+(** Boolean version of stdpp's [is_Some] *)
+Definition isSome {A} (m : option A) : bool :=
+  if m is Some _ then true else false.
+
+Lemma isSomeP {A} {m : option A} : reflect (is_Some m) (isSome m).
+Proof. destruct m; cbn; constructor. by eexists. exact: is_Some_None. Qed.
 
 (** * Theory for [is_Some_proj]
 

@@ -6,42 +6,50 @@
 Require Import bedrock.prelude.base.
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
+Require Import bedrock.lang.bi.errors.
 From bedrock.lang.cpp Require Import ast semantics.
 Require Import bedrock.lang.cpp.arith.builtins.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp.
 
-Section with_Σ.
-  Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+#[local] Arguments ERROR {_ _} _%bs : assert.
 
-  (****** Wp Semantics for builtins
+(** ** Wp Semantics for builtins *)
+(**
+NOTE: we use a non-standard calling convention where values are passed
+as if they were all evaluated using [wp_operand].
+*)
+Parameter wp_builtin : ∀ `{Σ : cpp_logic, σ : genv}
+    (b : BuiltinFn) (fty : functype) (** the type of the builtin *)
+    (args : list val) (Q : val -> epred), mpred.
 
-    NOTE: we use a non-standard calling convention where values are passed
-          as if they were all evaluated using [wp_operand].
-   *)
-  Parameter wp_builtin :
-      forall {resolve:genv},
-        BuiltinFn -> type (* the type of the builtin *) ->
-        list val -> (val -> mpred) -> mpred.
+Section wp_builtin.
+  Context `{Σ : cpp_logic, σ : genv}.
+  Implicit Types (Q : val -> epred).
 
-  Fixpoint read_args (targs : list type) (ls : list ptr) (Q : list val -> mpred) : mpred :=
-    match targs , ls with
-    | nil , nil => Q nil
-    | t :: ts , p :: ps =>
-      Exists v, (Exists q, _at p (primR t q v)) //\\ read_args ts ps (fun vs => Q (v :: vs))
-    | _ , _ => False
-    end.
+  Axiom wp_builtin_frame : ∀ b fty args Q Q',
+    Forall v, Q v -* Q' v
+    |-- wp_builtin b fty args Q -* wp_builtin b fty args Q'.
 
-  (** [wp_builtin_func b fty ls Q] captures the semantics of a builtin function in the
-      standard calling convention.
-   *)
-  Definition wp_builtin_func (b : BuiltinFn) (fty : type)
-             (ls : list ptr) (Q : ptr -> mpred) : mpred :=
-    match fty with
-    | Tfunction rty targs =>
-      read_args targs ls $ fun vs => wp_builtin b fty vs $ fun v => Forall p, _at p (primR rty (cQp.mut 1) v) -* Q p
-    | _ => False
-    end.
+  Axiom wp_builtin_shift : ∀ b fty args Q,
+    (|={top}=> wp_builtin b fty args (fun v => |={top}=> Q v))
+    |-- wp_builtin b fty args Q.
+
+  #[local] Notation PROPER R := (
+    ∀ b fty args,
+    Proper (pointwise_relation _ R ==> R) (wp_builtin b fty args)
+  ) (only parsing).
+  #[global] Instance: Params (@wp_builtin) 6 := {}.
+  #[global] Instance wp_builtin_mono : PROPER bi_entails.
+  Proof.
+    intros * Q1 Q2 HQ.
+    iApply wp_builtin_frame. iIntros (?).
+    by iApply HQ.
+  Qed.
+  #[global] Instance wp_builtin_flip_mono : PROPER (flip bi_entails).
+  Proof. repeat intro. exact: wp_builtin_mono. Qed.
+  #[global] Instance wp_builtin_proper : PROPER equiv.
+  Proof. intros * Q1 Q2 HQ. by split'; apply: wp_builtin_mono=>?; rewrite HQ. Qed.
 
   Lemma wp_unreachable : forall Q,
       False |-- wp_builtin Bin_unreachable (Tfunction Tvoid nil) nil Q.
@@ -59,7 +67,7 @@ Section with_Σ.
 
   (* Returns one plus the index of the least significant 1-bit of x,
      or if x is zero, returns zero. *)
-  Definition ffs_spec (sz : bitsize) (n : Z) (Q : val -> mpred) : mpred :=
+  Definition ffs_spec (sz : bitsize) (n : Z) (Q : val -> epred) : mpred :=
     [| has_type_prop (Vint n) (Tnum sz Signed) |] ** Q (Vint (first_set sz n)).
 
   Axiom wp_ffs : forall sz c Q,
@@ -78,7 +86,7 @@ Section with_Σ.
      significant bit position. If x is 0, the result is undefined. *)
 
 
-  Definition ctz_spec (sz : bitsize) (n : Z) (Q : val -> mpred) : mpred :=
+  Definition ctz_spec (sz : bitsize) (n : Z) (Q : val -> epred) : mpred :=
     [| has_type_prop (Vint n) (Tnum sz Unsigned) |] ** [| n <> 0 |] ** Q (Vint (trailing_zeros sz n)).
 
   Axiom wp_ctz : forall sz c Q,
@@ -95,7 +103,7 @@ Section with_Σ.
 
   (* Returns the number of leading 0-bits in x, starting at the most significant
      bit position. If x is 0, the result is undefined. *)
-  Definition clz_spec (sz : bitsize) (n : Z) (Q : val -> mpred) : mpred :=
+  Definition clz_spec (sz : bitsize) (n : Z) (Q : val -> epred) : mpred :=
     [| has_type_prop (Vint n) (Tnum sz Unsigned) |] ** [| n <> 0 |] ** Q (Vint (leading_zeros sz n)).
 
   Axiom wp_clz : forall sz c Q,
@@ -139,8 +147,13 @@ Section with_Σ.
       |-- wp_builtin Bin_launder (Tfunction (Tptr Tvoid) (Tptr Tvoid :: nil))
           (Vptr res :: nil) Q.
 
-End with_Σ.
+End wp_builtin.
 
+(** ** Endianness *)
+(**
+TODO: Justify these things being in this file, or move them where they
+belong.
+*)
 Section endian_conversion.
   Context `{Σ : cpp_logic} {σ : genv}.
 
@@ -169,3 +182,126 @@ Section endian_conversion.
   Definition of_end := @to_end.
 
 End endian_conversion.
+
+(** ** Builtin functions *)
+
+Definition read_args `{Σ : cpp_logic, σ : genv} :=
+  fix read_args (targs : list decltype) (ls : list ptr) (Q : list val -> epred) : mpred :=
+  match targs , ls with
+  | nil , nil => Q nil
+  | t :: ts , p :: ps =>
+    Exists v, (Exists q, p |-> primR t q v ** True) //\\
+    read_args ts ps (fun vs => Q (v :: vs))
+  | _ , _ => ERROR "read_args"
+  end.
+#[global] Hint Opaque read_args : typeclass_instances.
+
+Section with_Σ.
+  Context `{Σ : cpp_logic, σ : genv}.
+  Implicit Types (Q : list val -> epred).
+
+  Lemma read_args_frame targs args Q Q' :
+    Forall vs, Q vs -* Q' vs
+    |-- read_args targs args Q -* read_args targs args Q'.
+  Proof.
+    move: Q Q' args. induction targs; intros; destruct args; cbn; auto.
+    { iIntros "HQ ?". by iApply "HQ". }
+    { iIntros "HQ (%v & A)". iExists v.
+      iSplit; [by iDestruct "A" as "[$ _]" | iDestruct "A" as "[_ A]"].
+      iApply (IHtargs with "[HQ] A"). iIntros (?) "?".
+      by iApply "HQ". }
+  Qed.
+
+  #[local] Notation PROPER R := (
+    ∀ targs args,
+    Proper (pointwise_relation _ R ==> R) (read_args targs args)
+  ) (only parsing).
+  #[global] Instance: Params (@read_args) 5 := {}.
+  #[global] Instance read_args_mono : PROPER bi_entails.
+  Proof.
+    intros * Q1 Q2 HQ.
+    iApply read_args_frame. iIntros (?).
+    by iApply HQ.
+  Qed.
+  #[global] Instance read_args_flip_mono : PROPER (flip bi_entails).
+  Proof. repeat intro. exact: read_args_mono. Qed.
+  #[global] Instance read_args_proper : PROPER equiv.
+  Proof. intros * Q1 Q2 HQ. by split'; apply: read_args_mono=>?; rewrite HQ. Qed.
+End with_Σ.
+
+(**
+[wp_builtin_func b fty args Q] captures the semantics of applying
+builtin [b] with type [fty] to arguments [args] in the standard
+calling convention.
+*)
+#[local]
+Definition wp_builtin_func' `{Σ : cpp_logic, σ : genv} (u : bool)
+    (b : BuiltinFn) (fty : functype) (args : list ptr) (Q : ptr -> epred) : mpred :=
+  |={top}=>?u
+  match fty with
+  | Tfunction rty targs =>
+    let* vs := read_args targs args in
+    let* v := wp_builtin b fty vs in
+    Forall p : ptr, p |-> primR rty (cQp.mut 1) v -* |={top}=>?u Q p
+  | _ => ERROR "wp_builtin_func"
+  end.
+Definition wp_builtin_func `{Σ : cpp_logic, σ : genv} :=
+  Cbn (Reduce (wp_builtin_func' true)).
+#[global] Hint Opaque wp_builtin_func : typeclass_instances.
+
+Section with_Σ.
+  Context `{Σ : cpp_logic, σ : genv}.
+  Implicit Types (Q : ptr -> epred).
+
+  Lemma wp_builtin_func_frame b fty args Q Q' :
+    Forall p, Q p -* Q' p
+    |-- wp_builtin_func b fty args Q -* wp_builtin_func b fty args Q'.
+  Proof.
+    rewrite /wp_builtin_func. iIntros "HQ >wp !>".
+    destruct fty; try by rewrite {1}ERROR_elim.
+    iApply (read_args_frame with "[HQ] wp"). iIntros (?).
+    iApply wp_builtin_frame.  iIntros "% HR % R".
+    iApply "HQ". by iApply "HR".
+  Qed.
+
+  #[local] Notation PROPER R := (
+    ∀ b fty args,
+    Proper (pointwise_relation _ R ==> R) (wp_builtin_func b fty args)
+  ) (only parsing).
+  #[global] Instance: Params (@wp_builtin_func) 6 := {}.
+  #[global] Instance wp_builtin_func_mono : PROPER bi_entails.
+  Proof.
+    intros * Q1 Q2 HQ.
+    iApply wp_builtin_func_frame. iIntros (?).
+    by iApply HQ.
+  Qed.
+  #[global] Instance wp_builtin_func_flip_mono : PROPER (flip bi_entails).
+  Proof. repeat intro. exact: wp_builtin_func_mono. Qed.
+  #[global] Instance wp_builtin_func_proper : PROPER equiv.
+  Proof. intros * Q1 Q2 HQ. by split'; apply: wp_builtin_func_mono=>?; rewrite HQ. Qed.
+
+  Lemma wp_builtin_func_shift b fty args Q :
+    (|={top}=> wp_builtin_func b fty args (fun p => |={top}=> Q p))
+    |-- wp_builtin_func b fty args Q.
+  Proof.
+    rewrite /wp_builtin_func. iIntros ">>wp !>".
+    destruct fty; try by rewrite {1}ERROR_elim.
+    iApply (read_args_frame with "[] wp"). iIntros (?).
+    iApply wp_builtin_frame.  iIntros "% HR % R".
+    by iMod ("HR" with "R").
+  Qed.
+
+  Lemma wp_builtin_func_intro b fty args Q :
+    Cbn (Reduce (wp_builtin_func' false b fty args Q))
+    |-- wp_builtin_func b fty args Q.
+  Proof.
+    rewrite /wp_builtin_func. destruct fty; auto. rewrite -fupd_intro.
+    iApply read_args_frame. iIntros (?).
+    iApply wp_builtin_frame. iIntros "% HQ % ? !>". by iApply "HQ".
+  Qed.
+
+  Lemma wp_builtin_func_elim b fty args Q :
+    wp_builtin_func b fty args Q
+    |-- Cbn (Reduce (wp_builtin_func' true b fty args Q)).
+  Proof. done. Qed.
+End with_Σ.

@@ -27,22 +27,22 @@ Section with_Σ.
    *)
   Axiom code_at_ok : forall (f : Func) p,
       code_at σ tu f p
-      |-- Forall ls Q, wp_func (resolve:=σ) tu f ls Q -*
+      |-- Forall ls Q, wp_func tu f ls Q -*
                        wp_fptr (Σ:=Σ) tu.(types) (type_of_value (Ofunction f)) p ls Q.
 
   Axiom method_at_ok : forall (m : Method) p,
       method_at σ tu m p
-      |-- Forall ls Q, wp_method (resolve:=σ) tu m ls Q -*
+      |-- Forall ls Q, wp_method tu m ls Q -*
                        wp_fptr (Σ:=Σ) tu.(types) (type_of_value (Omethod m)) p ls Q.
 
   Axiom ctor_at_ok : forall (c : Ctor) p,
       ctor_at σ tu c p
-      |-- Forall ls Q, wp_ctor (resolve:=σ) tu c ls Q -*
+      |-- Forall ls Q, wp_ctor tu c ls Q -*
                        wp_fptr tu.(types) (type_of_value (Oconstructor c)) p ls Q.
 
   Axiom dtor_at_ok : forall (d : Dtor) p,
       dtor_at σ tu d p
-      |-- Forall ls Q, wp_dtor (resolve:=σ) tu d ls Q -*
+      |-- Forall ls Q, wp_dtor tu d ls Q -*
                        wp_fptr tu.(types) (type_of_value (Odestructor d)) p ls Q.
   (* END COMPILE SNIPPET *)
 

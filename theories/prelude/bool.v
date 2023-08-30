@@ -27,6 +27,10 @@ expressions.
 *)
 #[nonuniform] Coercion elimT : reflect >-> Funclass.
 
+(** Setoid rewriting along [<->] *)
+Lemma rwP {P b} : reflect P b -> P <-> b.
+Proof. case=>HP; cbn; by split. Qed.
+
 Lemma boolP (b : bool) : b \/ ~~ b.
 Proof. destruct b; auto. Qed.
 

@@ -29,6 +29,8 @@ Module Export nary.
   Notation Persistent4 P := (∀ a, Persistent3 (P a)).
   Notation Persistent5 P := (∀ a, Persistent4 (P a)).
   Notation Persistent6 P := (∀ a, Persistent5 (P a)).
+  Notation Persistent7 P := (∀ a, Persistent6 (P a)).
+  Notation Persistent8 P := (∀ a, Persistent7 (P a)).
 
   (** [AffineN] states that predicate [P] taking [N] arguments is [Affine] *)
   Notation Affine1 P := (∀ a, Affine (P a)).
@@ -37,6 +39,8 @@ Module Export nary.
   Notation Affine4 P := (∀ a, Affine3 (P a)).
   Notation Affine5 P := (∀ a, Affine4 (P a)).
   Notation Affine6 P := (∀ a, Affine5 (P a)).
+  Notation Affine7 P := (∀ a, Affine6 (P a)).
+  Notation Affine8 P := (∀ a, Affine7 (P a)).
 
   (** [AbsorbingN] states that predicate [P] taking [N] arguments is [Absorbing] *)
   Notation Absorbing1 P := (∀ a, Absorbing (P a)).
@@ -45,6 +49,8 @@ Module Export nary.
   Notation Absorbing4 P := (∀ a, Absorbing3 (P a)).
   Notation Absorbing5 P := (∀ a, Absorbing4 (P a)).
   Notation Absorbing6 P := (∀ a, Absorbing5 (P a)).
+  Notation Absorbing7 P := (∀ a, Absorbing6 (P a)).
+  Notation Absorbing8 P := (∀ a, Absorbing7 (P a)).
 
   (** [TimelessN] states that predicate [P] taking [N] arguments is [Timeless] *)
   Notation Timeless1 P := (∀ a, Timeless (P a)).
@@ -53,6 +59,8 @@ Module Export nary.
   Notation Timeless4 P := (∀ a, Timeless3 (P a)).
   Notation Timeless5 P := (∀ a, Timeless4 (P a)).
   Notation Timeless6 P := (∀ a, Timeless5 (P a)).
+  Notation Timeless7 P := (∀ a, Timeless6 (P a)).
+  Notation Timeless8 P := (∀ a, Timeless7 (P a)).
 End nary.
 
 (**
@@ -124,6 +132,9 @@ Section derived_laws.
 
   Lemma affinely_pure φ  : <affine> ⌜φ⌝ ⊣⊢@{PROP} [| φ |].
   Proof. by rewrite only_provable_unfold. Qed.
+
+  Lemma affinely_if_False b : <affine>?b False ⊣⊢@{PROP} False.
+  Proof. by destruct b; cbn; rewrite ?bi.affinely_False. Qed.
 
   Lemma intuitionistically_pure φ  : □ ⌜φ⌝ ⊣⊢@{PROP} [| φ |].
   Proof.
@@ -316,6 +327,10 @@ Section derived_laws.
     (P1 ∧ P2) ∗ Q ⊣⊢@{PROP}
     (P1 ∗ Q) ∧ (P2 ∗ Q).
   Proof. rewrite !(comm bi_sep _ Q). exact: persistent_sep_and_distr_l. Qed.
+
+  Lemma bupd_pure `{!BiBUpd PROP, !BiPlainly PROP, !BiBUpdPlainly PROP} (P : Prop) :
+    (|==> ⌜P⌝) ⊣⊢@{PROP} ⌜P⌝.
+  Proof. apply (anti_symm _). exact: bupd_plain. apply bupd_intro. Qed.
 End derived_laws.
 
 Section only_provable_derived_laws.
