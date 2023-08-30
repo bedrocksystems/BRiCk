@@ -35,6 +35,20 @@ Module fin.
     | left prf => n ↾ prf
     | right _ => 0 ↾ eq_refl
     end.
+
+  Definition of_nat (p : positive) (n : nat) : fin.t (Npos p) :=
+    fin.of_N p (N.of_nat n).
+
+  (** Alternative to [of_N] taking any positive [m : N] instead of [p : positive]. *)
+  Definition of_N' {m : N} (Hmpos : 0 < m) (n : N) : fin.t m :=
+    match decide (n < m)%N with
+    | left prf => n ↾ prf
+    | right _ => 0%N ↾ Hmpos
+    end.
+
+  Definition of_nat' {m : N} (Hmpos : 0 < m) (n : nat) : fin.t m :=
+    of_N' Hmpos (N.of_nat n).
+
   Definition to_N {n} (f : t n) : N := `f.
 
   Lemma to_N_lt {n} (f : t n) : to_N f < n.
@@ -45,21 +59,28 @@ Module fin.
   Proof. apply /sig_eq_pi /Heq. Qed.
 
   Lemma to_of_N (p : positive) (n : N) : n < N.pos p -> to_N (of_N p n) = n.
-  Proof. rewrite /fin.of_N. by case_match. Qed.
+  Proof. rewrite /fin.of_N. by case_decide. Qed.
 
   Lemma of_to_N {p} (x : t (N.pos p)) : of_N p (to_N x) = x.
-  Proof. apply t_eq, to_of_N. by case: x. Qed.
+  Proof. apply t_eq, to_of_N, to_N_lt. Qed.
+
+  Lemma to_of_N' {m} (Hmpos : 0 < m) (n : N) : n < m -> to_N (of_N' Hmpos n) = n.
+  Proof. rewrite /fin.of_N' => H. by case_decide. Qed.
+
+  Lemma of_to_N' {m} (Hmpos : 0 < m) (x : t m) : of_N' Hmpos (to_N x) = x.
+  Proof. apply t_eq, to_of_N', to_N_lt. Qed.
 
   (** Declared an instance, because it is not redudant after [t] is made opaque. *)
   #[global] Instance to_N_inj n : Inj eq eq (to_N (n := n)) := _.
   #[global] Instance t_eq_dec n : EqDecision (t n) := _.
   #[global] Instance t_countable n : Countable (t n) := _.
 
-  #[global] Instance t_pos_inhabited p : Inhabited (t (Npos p)) := populate (of_N _ 0).
+  #[global] Instance t_pos_inhabited p : Inhabited (t (Npos p)).
+  Proof. exact (populate (of_N _ 0)). Qed.
 
   (* More flexible variant of [t_pos_inhabited]. *)
-  Lemma t_gt_inhabited n : 0 < n -> Inhabited (t n).
-  Proof. case: n; [lia|]; apply _. Qed.
+  Lemma t_gt_inhabited n (Hnpos : 0 < n) : Inhabited (t n).
+  Proof. exact (populate (of_N' Hnpos 0)). Qed.
 
   #[global] Hint Opaque t : typeclass_instances.
 
