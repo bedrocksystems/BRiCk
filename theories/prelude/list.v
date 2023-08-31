@@ -459,24 +459,99 @@ Proof. done. Qed.
 Proof. rewrite map_fmap. apply fmap_inj. Qed.
 
 (** ** Basic theory about the [ap]/[<*>] combinator for lists. *)
+#[universes(polymorphic)]
 Section ap.
-  Context {A B : Type}.
-  Implicit Types (fs : list (A -> B)) (xs : list A).
+  Context {A B C : Type}.
+  Implicit Types (g : B -> C) (f : A -> B) (x : A).
+  Implicit Types (gs : list (B -> C)) (fs : list (A -> B)) (xs : list A).
 
-  Lemma list_ap_nil_l xs : (nil (A := A -> B)) <*> xs = [].
+  #[global] Instance ap_Permutation : Proper ((≡ₚ@{A -> B}) ==> (≡ₚ) ==> (≡ₚ)) ap.
+  Proof. rewrite /ap. solve_proper. Qed.
+
+  Lemma elem_of_list_ap fs xs y : y ∈ fs <*> xs <-> (∃ f x, y = f x /\ f ∈ fs /\ x ∈ xs).
+  Proof. rewrite /ap/monad_ap. set_solver. Qed.
+
+  #[global] Instance set_unfold_list_ap fs xs (P : (A -> B) -> Prop) (Q : A -> Prop) (y : B) :
+    (∀ f, SetUnfoldElemOf f fs (P f)) -> (∀ x, SetUnfoldElemOf x xs (Q x)) ->
+    SetUnfoldElemOf y (fs <*> xs) (∃ f x, y = f x /\ P f /\ Q x).
+  Proof. constructor. rewrite elem_of_list_ap. set_solver. Qed.
+
+  Lemma ap_nil_l xs : (nil (A := A -> B)) <*> xs = [].
   Proof. done. Qed.
-  Lemma list_ap_nil_r fs : fs <*> [] = [].
+  Lemma ap_nil_r fs : fs <*> [] = [].
   Proof. by elim: fs. Qed.
-  Lemma list_ap_cons_l f fs xs : (f :: fs) <*> xs = (f <$> xs) ++ (fs <*> xs).
+
+  Lemma ap_cons_l f fs xs : (f :: fs) <*> xs = (f <$> xs) ++ (fs <*> xs).
   Proof. done. Qed.
-  Lemma list_ap_cons_r_p fs x xs : fs <*> (x :: xs) ≡ₚ ((.$ x) <$> fs) ++ (fs <*> xs).
+  Lemma ap_cons_r_p fs x xs : fs <*> (x :: xs) ≡ₚ ((.$ x) <$> fs) ++ (fs <*> xs).
   Proof.
-    elim: fs => [//|f fs IH].
-    rewrite !list_ap_cons_l IH; csimpl; f_equiv.
-    by rewrite assoc (comm app (fmap f xs)) !assoc.
+    elim: fs =>// f fs IH. rewrite !ap_cons_l IH. csimpl. f_equiv.
+    by rewrite assoc (comm app (fmap f xs)) assoc.
   Qed.
 
-  (** Theory supporting [NoDup_fmap_ap] and (conjectured) n-ary variants. *)
+  Lemma list_ap_singleton_l f xs : [f] <*> xs = f <$> xs.
+  Proof. by rewrite ap_cons_l ap_nil_l right_id_L. Qed.
+  Lemma list_ap_singleton_r fs x : fs <*> [x] = (.$ x) <$> fs. (* interchange *)
+  Proof. done. Qed.
+
+  Lemma ap_app_l fs1 fs2 xs : (fs1 ++ fs2) <*> xs = (fs1 <*> xs) ++ (fs2 <*> xs).
+  Proof.
+    elim: fs1=>// f fs1 IH. csimpl. by rewrite !ap_cons_l IH assoc.
+  Qed.
+  Lemma ap_app_r fs xs1 xs2 : fs <*> (xs1 ++ xs2) ≡ₚ (fs <*> xs1) ++ (fs <*> xs2).
+  Proof.
+    elim: xs1=>[|x1 xs1 IH].
+    { by rewrite ap_nil_r !left_id_L. }
+    { rewrite [(_ :: _) ++ _]/=. by rewrite !ap_cons_r_p IH assoc. }
+  Qed.
+End ap.
+#[deprecated(since="2023-09-03", note="Use [ap_nil_l]")]
+Notation list_ap_nil_l := ap_nil_l (only parsing).
+#[deprecated(since="2023-09-03", note="Use [ap_nil_r]")]
+Notation list_ap_nil_r := ap_nil_r (only parsing).
+#[deprecated(since="2023-09-03", note="Use [ap_cons_l]")]
+Notation list_ap_cons_l := ap_cons_l (only parsing).
+#[deprecated(since="2023-09-03", note="Use [ap_cons_r_p]")]
+Notation list_ap_cons_r_p := ap_cons_r_p (only parsing).
+
+#[universes(polymorphic)]
+Lemma list_ap_compose {A B C} (gs : list (B -> C)) (fs : list (A -> B)) (xs : list A) :
+  compose <$> gs <*> fs <*> xs = gs <*> (fs <*> xs).
+Proof.
+  elim: gs => // g gs IH.
+  rewrite fmap_cons ap_cons_l ap_app_l {}IH. rewrite ap_cons_l. f_equiv.
+  elim: fs => // f fs IH.
+  rewrite fmap_cons ap_cons_l {}IH list_fmap_compose. by rewrite ap_cons_l fmap_app.
+Qed.
+
+(**
+The applicative functor laws follow easily.
+
+In stating them, we ignore our conventions to prefer singleton lists
+over [mret] and to prefer [f <$> _] over [[f] <*> _]. We use let
+bindings rather than clutter the environment with lemmas that ignore
+those conventions.
+*)
+#[universes(polymorphic)]
+Section applicative.
+  Let list_ap_id {A} (xs : list A) : mret id <*> xs = xs.
+  Proof. by rewrite list_ap_singleton_l list_fmap_id. Qed.
+  Let list_ap_compose {A B C} (gs : list (B -> C)) (fs : list (A -> B)) (xs : list A) :
+    mret compose <*> gs <*> fs <*> xs = gs <*> (fs <*> xs).
+  Proof. by rewrite list_ap_singleton_l list_ap_compose. Qed.
+  Let list_ap_morphism {A B} (f : A -> B) (x : A) : mret f <*> mret x =@{list B} mret (f x).
+  Proof. done. Qed.
+  Let list_ap_interchange {A B} (fs : list (A -> B)) (x : A) :
+    fs <*> mret x = mret (.$ x) <*> fs.
+  Proof. by rewrite list_ap_singleton_r list_ap_singleton_l. Qed.
+End applicative.
+
+(** Theory supporting [NoDup_fmap_ap] and (conjectured) n-ary variants. *)
+#[universes(polymorphic)]
+Section NoDup_ap.
+  Context {A B C : Type}.
+  Implicit Types (g : B -> C) (f : A -> B) (x : A).
+  Implicit Types (gs : list (B -> C)) (fs : list (A -> B)) (xs : list A).
 
   (** [pairwise_disj_funs fs] is our key "induction hypothesis" when [n] varies.
   It asserts that all functions in [fs] have disjoint images, combining
@@ -511,18 +586,19 @@ Section ap.
     NoDup (fs <*> xs).
   Proof.
     move=> HF. elim: fs HF xs => [//|f fs IH] HFFS [|x xs].
-    by rewrite list_ap_nil_r.
+    { by rewrite ap_nil_r. }
     move=> /NoDup_cons [Hf Hfs] /NoDup_cons [Hx Hxs].
     have ? : Inj eq eq f. { eapply pairwise_disj_funs_inj. done. exact: elem_of_list_here. }
     have HFS : pairwise_disj_funs fs by exact: pairwise_disj_funs_cons.
     specialize (IH HFS); red in HFFS.
-    rewrite !(list_ap_cons_l, list_ap_cons_r_p) fmap_cons
-      !(NoDup_app, NoDup_cons, NoDup_fmap); split_and!; eauto using NoDup_fmap_fun.
+    rewrite ap_cons_l ap_cons_r_p fmap_cons.
+    rewrite !(NoDup_app, NoDup_cons, NoDup_fmap).
+    split_and!; eauto using NoDup_fmap_fun.
     all: set_solver -HFS IH Hfs Hxs.
   Qed.
-End ap.
+End NoDup_ap.
 
-Section fmap_ap.
+Section NoDup_fmap_ap.
   Context {A B C : Type}.
   Implicit Types (f : A -> B -> C) (xs : list A) (ys : list B).
 
@@ -542,14 +618,14 @@ Section fmap_ap.
     Inj2 eq eq eq f ->
     NoDup xs ->
     pairwise_disj_funs (f <$> xs).
-  Proof. rewrite /pairwise_disj_funs; set_solver. Qed.
+  Proof. rewrite /pairwise_disj_funs. set_solver. Qed.
 
   Lemma NoDup_fmap_ap `{!Inj2 eq eq eq f} xs ys
     (Hxs : NoDup xs) (Hys : NoDup ys) : NoDup (f <$> xs <*> ys).
   Proof.
-    destruct ys as [|y ys]; first by rewrite list_ap_nil_r.
+    destruct ys as [|y ys]; first by rewrite ap_nil_r.
     have IhnB : Inhabited B by constructor.
     apply /NoDup_ap => //. exact: pairwise_disj_funs_fmap.
     exact: NoDup_fmap_2.
   Qed.
-End fmap_ap.
+End NoDup_fmap_ap.
