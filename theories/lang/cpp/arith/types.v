@@ -69,6 +69,13 @@ Lemma of_size_gt_O w :
 Proof. destruct w; reflexivity. Qed.
 (* Hint Resolve of_size_gt_O. *)
 
+Lemma bytesZ_positive s :
+  (0 < bytesZ s)%Z.
+Proof. destruct s; reflexivity. Qed.
+
+Lemma bytesZ_range s : (0 < bytesZ s < 17)%Z.
+Proof. destruct s; cbn; lia. Qed.
+
 (* Signed and Unsigned *)
 Variant signed : Set := Signed | Unsigned.
 #[global] Instance signed_eq_dec: EqDecision signed.
