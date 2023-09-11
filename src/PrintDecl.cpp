@@ -307,7 +307,7 @@ public:
         }
     }
 
-    bool printFields(const CXXRecordDecl *decl, const ASTRecordLayout &layout,
+    bool printFields(const CXXRecordDecl *decl, const ASTRecordLayout *layout,
                      CoqPrinter &print, ClangPrinter &cprint) {
         auto i = 0;
         print.list(decl->fields(), [&](auto print, auto field) {
@@ -327,7 +327,8 @@ public:
             printFieldInitializer(field, print, cprint);
             print.output() << fmt::nbsp;
             print.ctor("Build_LayoutInfo", false)
-                << layout.getFieldOffset(i++) << fmt::rparen << fmt::rparen;
+                << (layout ? layout->getFieldOffset(i++) : 0) << fmt::rparen
+                << fmt::rparen;
         });
         return true;
     }
@@ -336,7 +337,9 @@ public:
                         ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Union);
 
-        const auto &layout = ctxt.getASTRecordLayout(decl);
+        const auto layout = decl->isDependentContext() ?
+                                nullptr :
+                                &ctxt.getASTRecordLayout(decl);
         print.ctor("Dunion");
 
         cprint.printTypeName(decl, print);
@@ -373,9 +376,13 @@ public:
             print.none();
         }
 
-        print.output() << fmt::line << layout.getSize().getQuantity()
-                       << fmt::nbsp << layout.getAlignment().getQuantity()
-                       << fmt::nbsp;
+        if (layout) {
+            print.output() << fmt::line << layout->getSize().getQuantity()
+                           << fmt::nbsp << layout->getAlignment().getQuantity()
+                           << fmt::nbsp;
+        } else {
+            print.output() << fmt::line << 0 << fmt::nbsp << 0 << fmt::nbsp;
+        }
 
         print.end_ctor();
         print.end_ctor();
@@ -387,7 +394,9 @@ public:
                          ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Class ||
                decl->getTagKind() == TagTypeKind::TTK_Struct);
-        auto &layout = ctxt.getASTRecordLayout(decl);
+        const auto layout = decl->isDependentContext() ?
+                                nullptr :
+                                &ctxt.getASTRecordLayout(decl);
         print.ctor("Dstruct");
         cprint.printTypeName(decl, print);
         print.output() << fmt::nbsp;
@@ -401,8 +410,8 @@ public:
         print.ctor("Build_Struct");
 
         // print the base classes
-        print.list(decl->bases(), [&cprint, &layout, &decl](auto print,
-                                                            auto base) {
+        print.list(decl->bases(), [&cprint, layout, &decl](auto print,
+                                                           auto base) {
             if (base.isVirtual()) {
                 logging::unsupported()
                     << "virtual base classes not supported"
@@ -417,7 +426,10 @@ public:
                 if (not base.isVirtual()) {
                     print.output()
                         << ", Build_LayoutInfo "
-                        << layout.getBaseClassOffset(rec).getQuantity() << ")";
+                        << (layout ?
+                                layout->getBaseClassOffset(rec).getQuantity() :
+                                0)
+                        << ")";
                 } else {
                     print.output() << ", Build_LayoutInfo 0)";
                 }
@@ -497,11 +509,19 @@ public:
             print.output() << "Unspecified";
         }
 
-        // size
-        print.output() << fmt::nbsp << layout.getSize().getQuantity();
+        if (layout) {
+            // size
+            print.output() << fmt::nbsp << layout->getSize().getQuantity();
 
-        // alignment
-        print.output() << fmt::nbsp << layout.getAlignment().getQuantity();
+            // alignment
+            print.output() << fmt::nbsp << layout->getAlignment().getQuantity();
+        } else {
+            // size
+            print.output() << fmt::nbsp << 0;
+
+            // alignment
+            print.output() << fmt::nbsp << 0;
+        }
 
         print.end_ctor();
         print.end_ctor();
