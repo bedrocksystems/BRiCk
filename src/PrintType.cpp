@@ -106,6 +106,18 @@ public:
         print.end_ctor();
     }
 
+    void VisitAutoType(const AutoType* type, CoqPrinter& print,
+                       ClangPrinter& cprint) {
+        if (type->isDeduced()) {
+            cprint.printQualType(type->getDeducedType(), print);
+        } else {
+            if (print.templates())
+                print.output() << "Tauto";
+            else
+                unsupported_type(type, print, cprint);
+        }
+    }
+
     void VisitDeducedType(const DeducedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         if (type->isDeduced()) {
