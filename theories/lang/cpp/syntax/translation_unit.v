@@ -99,6 +99,16 @@ Record Method' {type Expr : Set} : Set := Build_Method
 Proof. solve_decision. Defined.
 Notation Method := (Method' decltype Expr).
 
+Definition static_method {type Expr : Set} (m : @Method' type Expr) : @Func' type Expr :=
+  {| f_return := m.(m_return)
+   ; f_params := m.(m_params)
+   ; f_cc := m.(m_cc)
+   ; f_arity := m.(m_arity)
+   ; f_body := match m.(m_body) with
+               | Some (UserDefined body) => Some (Impl body)
+               | _ => None
+               end |}.
+
 Record Member' {type Expr : Set} : Set := mkMember
 { mem_name : ident
 ; mem_type : type
