@@ -436,7 +436,9 @@ public:
             } else {
                 using namespace logging;
                 fatal() << "Error: base class of '" << decl->getNameAsString()
-                        << "' is not a RecordType at "
+                        << "' ("
+                        << base.getType().getTypePtr()->getTypeClassName()
+                        << ") is not a RecordType at "
                         << cprint.sourceRange(decl->getSourceRange()) << "\n";
                 die();
             }
