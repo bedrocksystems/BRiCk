@@ -82,7 +82,8 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
         std::string s_notation;
         llvm::raw_string_ostream notation{s_notation};
         llvm::StringRef def_name = def->getName();
-        if (def_name == "__builtin_va_list" || def_name.startswith("__SV") || def_name.startswith("__clang_sv"))
+        if (def_name == "__builtin_va_list" || def_name.startswith("__SV") ||
+            def_name.startswith("__clang_sv"))
             return;
         if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
             if (not print_path(notation, fd->getParent(), true))
@@ -120,6 +121,8 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
         } else if (isa<FunctionDecl>(def)) {
             // todo(gmm): skipping due to function overloading
         } else if (const TypedefDecl *td = dyn_cast<TypedefDecl>(def)) {
+            if (td->isTemplated())
+                return;
             if (not print_path(notation, td->getDeclContext(), true))
                 return;
 
@@ -129,6 +132,8 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             print.output() << " (only parsing, in custom cppglobal at level 0)."
                            << fmt::line;
         } else if (const auto *ta = dyn_cast<TypeAliasDecl>(def)) {
+            if (ta->isTemplated())
+                return;
             if (not print_path(notation, ta->getDeclContext(), true))
                 return;
 
