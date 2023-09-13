@@ -809,6 +809,18 @@ public:
         print.end_ctor();
     }
 
+    void
+    VisitCXXDependentScopeMemberExpr(const CXXDependentScopeMemberExpr* expr,
+                                     CoqPrinter& print, ClangPrinter& cprint,
+                                     const ASTContext&, OpaqueNames&) {
+        print.ctor("Eunresolved_member");
+        print.boolean(expr->isArrow()) << fmt::nbsp;
+        cprint.printExpr(expr->getBase(), print);
+        print.output() << fmt::nbsp;
+        print.str(expr->getMember().getAsString());
+        print.end_ctor();
+    }
+
     void VisitArraySubscriptExpr(const ArraySubscriptExpr* expr,
                                  CoqPrinter& print, ClangPrinter& cprint,
                                  const ASTContext&, OpaqueNames& li) {
