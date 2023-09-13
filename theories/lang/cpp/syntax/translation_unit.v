@@ -82,6 +82,9 @@ Record Func' {type Expr : Set} : Set := Build_Func
 #[global] Arguments Build_Func {_ _} &.
 #[global] Instance: EqDecision2 Func'.
 Proof. solve_decision. Defined.
+#[global] Instance Func_inhabited {type Expr : Set} `{!Inhabited type} :
+  Inhabited (Func' type Expr).
+Proof. solve_inhabited. Qed.
 Notation Func := (Func' decltype Expr).
 
 Record Method' {type Expr : Set} : Set := Build_Method
