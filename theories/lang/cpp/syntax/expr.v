@@ -391,7 +391,7 @@ Inductive Expr : Set :=
 | Ecall    (_ : Expr) (_ : list Expr) (_ : exprtype)
 | Ecast    (_ : Cast) (e : Expr) (_ : ValCat) (_ : exprtype)
 
-| Emember  (obj : Expr) (_ : field) (mut : bool) (ty : decltype)
+| Emember  (obj : Expr) (_ : ident) (mut : bool) (ty : decltype)
   (* ^ [ty] is the type of the member, [mut] is the mutability *)
   (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * dispatch_type * functype) + Expr) (obj : Expr) (_ : list Expr) (_ : exprtype)

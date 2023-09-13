@@ -738,62 +738,39 @@ public:
     void VisitMemberExpr(const MemberExpr* expr, CoqPrinter& print,
                          ClangPrinter& cprint, const ASTContext&,
                          OpaqueNames& li) {
-        /* TCB: semantics of accesses to static members.
-        When `m` is a static member of `T` and `e : T`,
-        we desugar `e->member` to `e, T::member`.
-        */
-        if (auto vd = dyn_cast<VarDecl>(expr->getMemberDecl())) {
-            if (vd->isStaticDataMember()) {
-                print.ctor("Ecomma");
-                cprint.printExpr(expr->getBase(), print, li);
-                print.output() << fmt::nbsp;
-                print.ctor("Evar", false);
-                printVarRef(vd, print, cprint, li);
-                print.output() << fmt::nbsp;
-                cprint.printQualType(vd->getType(), print);
-                print.end_ctor();
-                print.end_ctor();
-                return;
-            }
-        } else if (auto md = dyn_cast<CXXMethodDecl>(expr->getMemberDecl())) {
-            if (md->isStatic()) {
-                print.ctor("Ecomma");
-                cprint.printExpr(expr->getBase(), print, li);
-                print.output() << fmt::nbsp;
-                print.ctor("Evar", false);
-                printVarRef(md, print, cprint, li);
-                print.output() << fmt::nbsp;
-                cprint.printQualType(md->getType(), print);
-                print.end_ctor();
-                print.end_ctor();
-                return;
-            }
-        }
+        auto member = expr->getMemberDecl();
 
         print.ctor("Emember");
+        print.boolean(expr->isArrow()) << fmt::nbsp;
 
         auto base = expr->getBase();
         auto md = dyn_cast<FieldDecl>(expr->getMemberDecl());
         assert(md && "MemberDecl expected to be a FieldDecl");
-        __attribute__((unused)) auto record_type = md->getDeclContext();
-        // TODO Assert that the type of the base is the type of the field.
-        if (expr->isArrow()) {
-            print.ctor("Ederef");
-            cprint.printExpr(base, print, li);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(base->getType()->getPointeeType(), print);
-            assert(base->getType()->getPointeeCXXRecordDecl() == record_type &&
-                   "record projection type mismatch");
-            print.end_ctor();
-        } else {
-            cprint.printExpr(base, print, li);
-            assert(base->getType()->getAsCXXRecordDecl() == record_type &&
-                   "record projection type mismatch");
-        }
-
+        cprint.printExpr(base, print, li);
         print.output() << fmt::nbsp;
-        //print.str(expr->getMemberDecl()->getNameAsString());
-        cprint.printField(md, print);
+        if (auto fd = dyn_cast<FieldDecl>(member)) {
+            //print.str(expr->getMemberDecl()->getNameAsString());
+            print.output() << "(inl ";
+            print.str(fd->getName());
+            print.output() << ")" << fmt::nbsp;
+            print.boolean(fd->isMutable());
+        } else if (auto vd = dyn_cast<VarDecl>(member)) {
+            assert(vd->isStaticDataMember() &&
+                   "variable referenced through member must be a static data "
+                   "member");
+            print.output() << "(inr ";
+            cprint.printObjName(vd, print);
+            print.output() << ")" << fmt::nbsp;
+            print.boolean(false);
+        } else if (auto md = dyn_cast<CXXMethodDecl>(member)) {
+            print.output() << "(inr ";
+            cprint.printObjName(md, print);
+            print.output() << ")" << fmt::nbsp;
+            print.boolean(false);
+        } else {
+            logging::fatal() << "Unknown member in MemberExpr\n";
+            logging::die();
+        }
         print.output() << fmt::nbsp;
 
         // The type of the expression is determined by the type of the object,
@@ -804,8 +781,7 @@ public:
         // 1/ if the field type is reference, or rv_reference, that is type
         // 2/ otherwise, taking the qualifiers of the object, remove [const]
         //    if the field is [mutable], and then use the type of the field.
-        print.output() << fmt::BOOL(md->isMutable()) << fmt::nbsp;
-        cprint.printQualType(md->getType(), print);
+        cprint.printQualType(member->getType(), print);
         print.end_ctor();
     }
 
