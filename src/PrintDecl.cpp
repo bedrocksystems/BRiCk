@@ -564,8 +564,22 @@ public:
 
     // TODO: the current implementation of [printTemplateArgs] does
     // not, yet, support nested records.
-    template<typename T>
-    void printTemplateArgs(const T *decl, CoqPrinter &print,
+    void printTemplateArgs(const FunctionDecl *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        print.begin_list();
+
+        if (auto params = decl->getDescribedTemplateParams()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
+
+        if (top)
+            print.end_list();
+    }
+
+    void printTemplateArgs(const CXXRecordDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
         print.begin_list();
 
