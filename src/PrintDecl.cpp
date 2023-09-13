@@ -583,6 +583,36 @@ public:
         return false;
     }
 
+    // TODO: the current implementation of [printTemplateArgs] does
+    // not, yet, support nested records.
+    template<typename T>
+    void printTemplateArgs(const T *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        print.begin_list();
+
+        if (auto params = decl->getDescribedTemplateParams()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
+
+        if (top)
+            print.end_list();
+    }
+
+    void printTemplateArgs(const CXXMethodDecl *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        printTemplateArgs(decl->getParent(), print, cprint, false);
+        if (auto params = decl->getDescribedTemplateParams()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
+        if (top)
+            print.end_list();
+    }
     bool printSpecializationInfo(const FunctionDecl *decl, CoqPrinter &print,
                                  ClangPrinter &cprint) {
         auto info = decl->getTemplateSpecializationInfo();
@@ -701,47 +731,6 @@ public:
         printMethod(decl, print, cprint);
         print.end_ctor();
         return true;
-    }
-
-    void printTemplateArgs(const CXXRecordDecl *decl, CoqPrinter &print,
-                           ClangPrinter &cprint, bool top = true) {
-        print.begin_list();
-        if (auto params = decl->getDescribedTemplateParams()) {
-            for (auto decl : params->asArray()) {
-                cprint.printDecl(decl, print);
-                print.cons();
-            }
-        }
-        if (top)
-            print.end_list();
-    }
-
-    void printTemplateArgs(const CXXMethodDecl *decl, CoqPrinter &print,
-                           ClangPrinter &cprint, bool top = true) {
-        printTemplateArgs(decl->getParent(), print, cprint, false);
-
-        if (auto params = decl->getDescribedTemplateParams()) {
-            for (auto decl : params->asArray()) {
-                cprint.printDecl(decl, print);
-                print.cons();
-            }
-        }
-
-        if (top)
-            print.end_list();
-    }
-
-    void printTemplateArgs(const FunctionDecl *decl, CoqPrinter &print,
-                           ClangPrinter &cprint, bool top = true) {
-        print.begin_list();
-        if (auto params = decl->getDescribedTemplateParams()) {
-            for (auto decl : params->asArray()) {
-                cprint.printDecl(decl, print);
-                print.cons();
-            }
-        }
-        if (top)
-            print.end_list();
     }
 
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
