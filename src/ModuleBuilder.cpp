@@ -132,27 +132,39 @@ public:
         }
     }
 
+    void VisitDeclContext(const DeclContext *dc, Flags flags) {
+        // find any static functions or fields
+        for (auto i : dc->decls()) {
+            Visit(i, flags);
+        }
+    }
+
     void VisitCXXRecordDecl(const CXXRecordDecl *decl, Flags flags) {
         if (decl->isImplicit()) {
             return;
         }
-        if (!flags.in_specialization &&
-            isa<ClassTemplateSpecializationDecl>(decl)) {
-            return;
-        }
-
-        // find any static functions or fields
-        for (auto i : decl->decls()) {
-            Visit(i, flags);
-        }
-
         VisitTagDecl(decl, flags);
+        VisitDeclContext(decl, flags);
+    }
+
+    void VisitClassTemplateDecl(const ClassTemplateDecl *decl, Flags flags) {
+        // Everything under this declaration is templated by the
+        // class template parameters, so we don't need to visit
+        // anything under this declaration.
+        if (templates_) {
+            this->Visit(decl->getTemplatedDecl(), flags.set_template());
+        }
+
+        for (auto i : decl->specializations()) {
+            this->Visit(i, flags.set_specialization());
+        }
     }
 
     void VisitCXXMethodDecl(const CXXMethodDecl *decl, Flags flags) {
         if (decl->isDeleted())
             return;
 
+        // this goes to [VisitFunctionDecl]
         this->ConstDeclVisitorArgs::VisitCXXMethodDecl(decl, flags);
     }
 
@@ -168,8 +180,10 @@ public:
                 this->specs_.add_specification(decl, c, *context_);
             }
 
-            if (go(decl, flags, true) >= Filter::What::DEFINITION) {
-                // search for static local variables
+            auto what = go(decl, flags, true);
+            if (what >= Filter::What::DEFINITION) {
+                // search for definitions that need to be lifted, e.g.
+                // static local variables, classes, functions, etc.
                 for (auto i : decl->decls()) {
                     if (auto d = dyn_cast<VarDecl>(i)) {
                         if (d->isStaticLocal()) {
@@ -191,7 +205,6 @@ public:
         if (templates_ || !decl->isTemplated()) {
             go(decl, flags);
         }
-
     }
 
     void VisitFieldDecl(const FieldDecl *, Flags) {
@@ -213,9 +226,7 @@ public:
     void VisitNamespaceDecl(const NamespaceDecl *decl, Flags flags) {
         assert(flags.none());
 
-        for (auto d : decl->decls()) {
-            this->Visit(d, flags);
-        }
+        VisitDeclContext(decl, flags);
     }
 
     void VisitEnumDecl(const EnumDecl *decl, Flags flags) {
@@ -231,38 +242,14 @@ public:
     void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, Flags flags) {
         assert(flags.none());
 
-        for (auto i : decl->decls()) {
-            this->Visit(i, flags);
-        }
-    }
-
-    void VisitCXXConstructorDecl(const CXXConstructorDecl *decl, Flags flags) {
-        if (decl->isDeleted())
-            return;
-
-        this->ConstDeclVisitorArgs::VisitCXXConstructorDecl(decl, flags);
-    }
-
-    void VisitCXXDestructorDecl(const CXXDestructorDecl *decl, Flags flags) {
-        if (decl->isDeleted())
-            return;
-
-        this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl, flags);
+        VisitDeclContext(decl, flags);
     }
 
     void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
                                    Flags flags) {
-        if (templates_)
-            go(decl, flags.set_template());
-
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
-    void VisitClassTemplateDecl(const ClassTemplateDecl *decl, Flags flags) {
-        if (templates_)
+        if (templates_) {
             this->Visit(decl->getTemplatedDecl(), flags.set_template());
+        }
 
         for (auto i : decl->specializations()) {
             this->Visit(i, flags.set_specialization());

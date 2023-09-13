@@ -156,9 +156,10 @@ Definition Dfunction (name : obj_name) (f : Func) : translation_unitK :=
   fun syms tys k =>
   k (<[ name := Ofunction f ]> syms) tys.
 
-Definition Dmethod (name : obj_name) (f : Method) : translation_unitK :=
+Definition Dmethod (static : bool) (name : obj_name) (f : Method) : translation_unitK :=
   fun syms tys k =>
-  k (<[ name := Omethod f ]> syms) tys.
+    let add := if static then Ofunction $ static_method f else Omethod f in
+      k (<[ name := add ]> syms) tys.
 
 Definition Dconstructor (name : obj_name) (f : Ctor) : translation_unitK :=
   fun syms tys k =>

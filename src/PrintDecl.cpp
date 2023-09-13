@@ -307,7 +307,7 @@ public:
         }
     }
 
-    bool printFields(const CXXRecordDecl *decl, const ASTRecordLayout &layout,
+    bool printFields(const CXXRecordDecl *decl, const ASTRecordLayout *layout,
                      CoqPrinter &print, ClangPrinter &cprint) {
         auto i = 0;
         print.list(decl->fields(), [&](auto print, auto field) {
@@ -327,7 +327,8 @@ public:
             printFieldInitializer(field, print, cprint);
             print.output() << fmt::nbsp;
             print.ctor("Build_LayoutInfo", false)
-                << layout.getFieldOffset(i++) << fmt::rparen << fmt::rparen;
+                << (layout ? layout->getFieldOffset(i++) : 0) << fmt::rparen
+                << fmt::rparen;
         });
         return true;
     }
@@ -335,9 +336,8 @@ public:
     bool VisitUnionDecl(const CXXRecordDecl *decl, CoqPrinter &print,
                         ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Union);
-
-        const auto &layout = ctxt.getASTRecordLayout(decl);
-        print.ctor("Dunion");
+        if (not templatePreamble("union", false, decl, print, cprint))
+            return false;
 
         cprint.printTypeName(decl, print);
         print.output() << fmt::nbsp;
@@ -346,6 +346,10 @@ public:
             print.end_ctor();
             return true;
         }
+
+        const auto layout = decl->isDependentContext() ?
+                                nullptr :
+                                &ctxt.getASTRecordLayout(decl);
 
         print.some();
 
@@ -373,9 +377,13 @@ public:
             print.none();
         }
 
-        print.output() << fmt::line << layout.getSize().getQuantity()
-                       << fmt::nbsp << layout.getAlignment().getQuantity()
-                       << fmt::nbsp;
+        if (layout) {
+            print.output() << fmt::line << layout->getSize().getQuantity()
+                           << fmt::nbsp << layout->getAlignment().getQuantity()
+                           << fmt::nbsp;
+        } else {
+            print.output() << fmt::line << 0 << fmt::nbsp << 0 << fmt::nbsp;
+        }
 
         print.end_ctor();
         print.end_ctor();
@@ -387,8 +395,13 @@ public:
                          ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Class ||
                decl->getTagKind() == TagTypeKind::TTK_Struct);
-        auto &layout = ctxt.getASTRecordLayout(decl);
-        print.ctor("Dstruct");
+        if (not templatePreamble("struct", false, decl, print, cprint))
+            return false;
+
+        const auto layout = decl->isDependentContext() ?
+                                nullptr :
+                                &ctxt.getASTRecordLayout(decl);
+
         cprint.printTypeName(decl, print);
         print.output() << fmt::nbsp;
         if (!decl->isCompleteDefinition()) {
@@ -401,8 +414,8 @@ public:
         print.ctor("Build_Struct");
 
         // print the base classes
-        print.list(decl->bases(), [&cprint, &layout, &decl](auto print,
-                                                            auto base) {
+        print.list(decl->bases(), [&cprint, layout, &decl](auto print,
+                                                           auto base) {
             if (base.isVirtual()) {
                 logging::unsupported()
                     << "virtual base classes not supported"
@@ -417,14 +430,19 @@ public:
                 if (not base.isVirtual()) {
                     print.output()
                         << ", Build_LayoutInfo "
-                        << layout.getBaseClassOffset(rec).getQuantity() << ")";
+                        << (layout ?
+                                layout->getBaseClassOffset(rec).getQuantity() :
+                                0)
+                        << ")";
                 } else {
                     print.output() << ", Build_LayoutInfo 0)";
                 }
             } else {
                 using namespace logging;
                 fatal() << "Error: base class of '" << decl->getNameAsString()
-                        << "' is not a RecordType at "
+                        << "' ("
+                        << base.getType().getTypePtr()->getTypeClassName()
+                        << ") is not a RecordType at "
                         << cprint.sourceRange(decl->getSourceRange()) << "\n";
                 die();
             }
@@ -497,11 +515,19 @@ public:
             print.output() << "Unspecified";
         }
 
-        // size
-        print.output() << fmt::nbsp << layout.getSize().getQuantity();
+        if (layout) {
+            // size
+            print.output() << fmt::nbsp << layout->getSize().getQuantity();
 
-        // alignment
-        print.output() << fmt::nbsp << layout.getAlignment().getQuantity();
+            // alignment
+            print.output() << fmt::nbsp << layout->getAlignment().getQuantity();
+        } else {
+            // size
+            print.output() << fmt::nbsp << 0;
+
+            // alignment
+            print.output() << fmt::nbsp << 0;
+        }
 
         print.end_ctor();
         print.end_ctor();
@@ -536,8 +562,68 @@ public:
         return false;
     }
 
-    bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
-                           ClangPrinter &cprint, const ASTContext &) {
+    // TODO: the current implementation of [printTemplateArgs] does
+    // not, yet, support nested records.
+    template<typename T>
+    void printTemplateArgs(const T *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        print.begin_list();
+
+        if (auto params = decl->getDescribedTemplateParams()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
+
+        if (top)
+            print.end_list();
+    }
+
+    void printTemplateArgs(const CXXMethodDecl *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        printTemplateArgs(decl->getParent(), print, cprint, false);
+        if (auto params = decl->getDescribedTemplateParams()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
+        if (top)
+            print.end_list();
+    }
+
+    template<typename D>
+    bool templatePreamble(const char *what, bool cons, const D *decl,
+                          CoqPrinter &print, ClangPrinter &cprint) {
+        auto mctor = [what, &print](bool t) {
+            print.output() << fmt::line;
+            auto cont = t ? "_template" : "";
+            return print.output()
+                   << fmt::lparen << "D" << what << cont << fmt::nbsp;
+        };
+        if (decl->isTemplated()) {
+            if (not print.templates())
+                return false;
+            if (cons)
+                print.cons();
+            mctor(true);
+            if (decl->isTemplated()) {
+                printTemplateArgs(decl, print, cprint);
+                print.output() << fmt::nbsp;
+            }
+        } else {
+            if (print.templates())
+                return false;
+            if (cons)
+                print.cons();
+            mctor(false);
+        }
+        return true;
+    }
+
+    bool printSpecializationInfo(const FunctionDecl *decl, CoqPrinter &print,
+                                 ClangPrinter &cprint) {
         auto info = decl->getTemplateSpecializationInfo();
         if (print.templates() && info) {
             switch (info->getTemplateSpecializationKind()) {
@@ -560,7 +646,7 @@ public:
                 auto function = tdecl->getTemplatedDecl();
                 assert(function && "FunctionTemplateDecl without function");
 
-                print.ctor("Dfunction");
+                print.ctor("Dinstantiation");
                 cprint.printObjName(decl, print);
                 print.output() << fmt::nbsp;
                 cprint.printObjName(function, print);
@@ -599,37 +685,44 @@ public:
                 break;
             }
             }
-        } else {
-            print.ctor("Dfunction");
-            cprint.printObjName(decl, print);
-            print.output() << fmt::nbsp;
-            printFunction(decl, print, cprint);
-            print.end_ctor();
-            return true;
         }
+        return false;
+    }
+
+    bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, const ASTContext &) {
+        bool emit = printSpecializationInfo(decl, print, cprint);
+        if (not templatePreamble("function", emit, decl, print, cprint)) {
+            return emit;
+        }
+
+        cprint.printObjName(decl, print);
+        print.output() << fmt::nbsp;
+        printFunction(decl, print, cprint);
+        print.end_ctor();
+        return true;
     }
 
     bool VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &) {
-        if (decl->isStatic()) {
-            print.ctor("Dfunction");
-            cprint.printObjName(decl, print);
-            printFunction(decl, print, cprint);
-            print.end_ctor();
-        } else {
-            print.ctor("Dmethod");
-            cprint.printObjName(decl, print);
-            printMethod(decl, print, cprint);
-            print.end_ctor();
-        }
+        if (not templatePreamble("method", false, decl, print, cprint))
+            return false;
+        print.output() << fmt::BOOL(decl->isStatic()) << fmt::nbsp;
+
+        cprint.printObjName(decl, print);
+        printMethod(decl, print, cprint);
+        print.end_ctor();
         return true;
     }
 
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
                                  CoqPrinter &print, ClangPrinter &cprint,
                                  const ASTContext &) {
-        print.ctor("Dconstructor");
+        if (not templatePreamble("constructor", false, decl, print, cprint))
+            return false;
+
         cprint.printObjName(decl, print);
+        print.output() << fmt::nbsp;
         print.ctor("Build_Ctor");
         cprint.printTypeName(decl->getParent(), print);
         print.output() << fmt::line;
@@ -738,7 +831,8 @@ public:
     bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &ctxt) {
-        print.ctor("Ddestructor");
+        if (not templatePreamble("destructor", false, decl, print, cprint))
+            return false;
         cprint.printObjName(decl, print);
         printDestructor(decl, print, cprint);
         print.end_ctor();
@@ -887,20 +981,12 @@ public:
                                    const ASTContext &ctxt) {
         assert(print.templates() && "FunctionTemplateDecl");
 
-        auto params = decl->getTemplateParameters();
-        assert(params && "FunctionTemplateDecl without parameters");
+        //auto params = decl->getTemplateParameters();
+        //assert(params && "FunctionTemplateDecl without parameters");
         auto function = decl->getTemplatedDecl();
         assert(function && "FunctionTemplateDecl without function");
 
-        print.ctor("Dfunction_template");
-        cprint.printObjName(function, print);
-        print.output() << fmt::nbsp;
-        print.list(params->asArray(), [&cprint](auto print, auto *decl) {
-            cprint.printDecl(decl, print);
-        }) << fmt::nbsp;
-        printFunction(function, print, cprint);
-        print.end_ctor();
-        return true;
+        return this->Visit(function, print, cprint, ctxt);
     }
 
     bool VisitClassTemplateDecl(const ClassTemplateDecl *decl,
@@ -908,7 +994,7 @@ public:
                                 const ASTContext &ctxt) {
         assert(print.templates() && "unexpected class template");
 
-        if (false)
+        if (true)
             return this->Visit(decl->getTemplatedDecl(), print, cprint, ctxt);
         else {
             using namespace logging;
