@@ -1038,17 +1038,6 @@ public:
         assert(function && "FunctionTemplateDecl without function");
 
         return this->Visit(function, print, cprint, ctxt);
-#if 0
-        print.ctor("Dfunction_template");
-        cprint.printObjName(function, print);
-        print.output() << fmt::nbsp;
-        print.list(params->asArray(), [&cprint](auto print, auto *decl) {
-            cprint.printDecl(decl, print);
-        }) << fmt::nbsp;
-        printFunction(function, print, cprint);
-        print.end_ctor();
-        return true;
-#endif
     }
 
     bool VisitClassTemplateDecl(const ClassTemplateDecl *decl,
