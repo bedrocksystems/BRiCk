@@ -336,23 +336,8 @@ public:
     bool VisitUnionDecl(const CXXRecordDecl *decl, CoqPrinter &print,
                         ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Union);
-
-        const auto layout = decl->isDependentContext() ?
-                                nullptr :
-                                &ctxt.getASTRecordLayout(decl);
-        if (decl->isTemplated()) {
-            if (not print.templates())
-                return false;
-            print.ctor("Dunion_template");
-            if (decl->isTemplated()) {
-                print.output() << fmt::nbsp;
-                printTemplateArgs(decl, print, cprint);
-            }
-        } else {
-            if (print.templates())
-                return false;
-            print.ctor("Dunion");
-        }
+        if (not templatePreamble("union", false, decl, print, cprint))
+            return false;
 
         cprint.printTypeName(decl, print);
         print.output() << fmt::nbsp;
@@ -361,6 +346,10 @@ public:
             print.end_ctor();
             return true;
         }
+
+        const auto layout = decl->isDependentContext() ?
+                                nullptr :
+                                &ctxt.getASTRecordLayout(decl);
 
         print.some();
 
@@ -406,19 +395,9 @@ public:
                          ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Class ||
                decl->getTagKind() == TagTypeKind::TTK_Struct);
-        if (decl->isTemplated()) {
-            if (not print.templates())
-                return false;
-            print.ctor("Dstruct_template");
-            if (decl->isTemplated()) {
-                print.output() << fmt::nbsp;
-                printTemplateArgs(decl, print, cprint);
-            }
-        } else {
-            if (print.templates())
-                return false;
-            print.ctor("Dstruct");
-        }
+        if (not templatePreamble("struct", false, decl, print, cprint))
+            return false;
+
         const auto layout = decl->isDependentContext() ?
                                 nullptr :
                                 &ctxt.getASTRecordLayout(decl);
@@ -613,6 +592,36 @@ public:
         if (top)
             print.end_list();
     }
+
+    template<typename D>
+    bool templatePreamble(const char *what, bool cons, const D *decl,
+                          CoqPrinter &print, ClangPrinter &cprint) {
+        auto mctor = [what, &print](bool t) {
+            print.output() << fmt::line;
+            auto cont = t ? "_template" : "";
+            return print.output()
+                   << fmt::lparen << "D" << what << cont << fmt::nbsp;
+        };
+        if (decl->isTemplated()) {
+            if (not print.templates())
+                return false;
+            if (cons)
+                print.cons();
+            mctor(true);
+            if (decl->isTemplated()) {
+                printTemplateArgs(decl, print, cprint);
+                print.output() << fmt::nbsp;
+            }
+        } else {
+            if (print.templates())
+                return false;
+            if (cons)
+                print.cons();
+            mctor(false);
+        }
+        return true;
+    }
+
     bool printSpecializationInfo(const FunctionDecl *decl, CoqPrinter &print,
                                  ClangPrinter &cprint) {
         auto info = decl->getTemplateSpecializationInfo();
@@ -683,23 +692,8 @@ public:
     bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, const ASTContext &) {
         bool emit = printSpecializationInfo(decl, print, cprint);
-        if (decl->isTemplated()) {
-            if (not print.templates())
-                return emit;
-            if (emit)
-                print.cons();
-            print.ctor("Dfunction_template");
-            if (decl->isTemplated()) {
-                print.output() << fmt::nbsp;
-                printTemplateArgs(decl, print, cprint);
-                print.output() << fmt::nbsp;
-            }
-        } else {
-            if (print.templates())
-                return emit;
-            if (emit)
-                print.cons();
-            print.ctor("Dfunction");
+        if (not templatePreamble("function", emit, decl, print, cprint)) {
+            return emit;
         }
 
         cprint.printObjName(decl, print);
@@ -711,20 +705,8 @@ public:
 
     bool VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &) {
-        if (decl->isTemplated()) {
-            if (not print.templates())
-                return false;
-            print.ctor("Dmethod_template");
-            if (decl->isTemplated()) {
-                print.output() << fmt::nbsp;
-                printTemplateArgs(decl, print, cprint);
-                print.output() << fmt::nbsp;
-            }
-        } else {
-            if (print.templates())
-                return false;
-            print.ctor("Dmethod");
-        }
+        if (not templatePreamble("method", false, decl, print, cprint))
+            return false;
         print.output() << fmt::BOOL(decl->isStatic()) << fmt::nbsp;
 
         cprint.printObjName(decl, print);
@@ -736,19 +718,8 @@ public:
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
                                  CoqPrinter &print, ClangPrinter &cprint,
                                  const ASTContext &) {
-        if (decl->isTemplated()) {
-            if (not print.templates())
-                return false;
-            print.ctor("Dconstructor_template") << fmt::nbsp;
-            if (decl->isTemplated()) {
-                printTemplateArgs(decl, print, cprint);
-            }
-            print.output() << fmt::nbsp;
-        } else {
-            if (print.templates())
-                return false;
-            print.ctor("Dconstructor");
-        }
+        if (not templatePreamble("constructor", false, decl, print, cprint))
+            return false;
 
         cprint.printObjName(decl, print);
         print.output() << fmt::nbsp;
@@ -860,19 +831,8 @@ public:
     bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &ctxt) {
-        if (decl->isTemplated()) {
-            if (not print.templates())
-                return false;
-            print.ctor("Ddestructor_template") << fmt::nbsp;
-            if (decl->isTemplated()) {
-                printTemplateArgs(decl, print, cprint);
-            }
-            print.output() << fmt::nbsp;
-        } else {
-            if (print.templates())
-                return false;
-            print.ctor("Ddestructor");
-        }
+        if (not templatePreamble("destructor", false, decl, print, cprint))
+            return false;
         cprint.printObjName(decl, print);
         printDestructor(decl, print, cprint);
         print.end_ctor();
