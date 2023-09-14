@@ -630,6 +630,17 @@ Section FromToBytes.
       lia.
     Qed.
 
+    Lemma _Z_from_bytes_unsigned_le'_bound bytes idx b :
+      (256 ^ (length bytes + Z.of_nat idx)%Z - 1 <= b)%Z ->
+      (0 ≤ _Z_from_bytes_unsigned_le' idx bytes ≤ b)%Z.
+    Proof.
+      pose proof (_Z_from_bytes_unsigned_le'_bounds bytes idx
+                    (256 ^ (length bytes + Z.of_nat idx)%Z)%Z
+                    ltac:(lia))
+        as Hbound'.
+      lia.
+    Qed.
+
     Lemma _Z_from_bytes_unsigned_le_bounds bytes b :
       (256 ^ length bytes <= b)%Z ->
       (0 <= _Z_from_bytes_unsigned_le bytes < b)%Z.
@@ -637,6 +648,17 @@ Section FromToBytes.
       move => H.
       apply _Z_from_bytes_unsigned_le'_bounds.
       by rewrite Z.add_0_r.
+    Qed.
+
+    Lemma _Z_from_bytes_unsigned_le_bound bytes b :
+      (256 ^ length bytes - 1 <= b)%Z ->
+      (0 <= _Z_from_bytes_unsigned_le bytes <= b)%Z.
+    Proof.
+      pose proof (_Z_from_bytes_unsigned_le_bounds bytes
+                    (256 ^ (length bytes))
+                    ltac:(lia))
+        as Hbound'.
+      lia.
     Qed.
 
   End FromBytesFacts_internal.
