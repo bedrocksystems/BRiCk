@@ -60,7 +60,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     sout = sout.substr(4, sout.length() - 4);
     print.output() << "\"_Z" << sout << "\"";
 }
-#else  /* CLANG_NAMES */
+#else /* CLANG_NAMES */
 #ifdef STRUCTURED_NAMES
 namespace {
 unsigned
