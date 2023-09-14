@@ -129,7 +129,7 @@ public:
 
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
                                    CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Tvar");
+        print.ctor("Tvar", false);
         print.str(type->getDecl()->getNameAsString());
         print.end_ctor();
     }

@@ -257,7 +257,7 @@ public:
                                    const ASTContext &) {
         assert(print.templates() && "TemplateTypeParmDecl");
 
-        print.ctor("TypeParam");
+        print.ctor("TypeParam", false);
         print.str(param->getName());
         print.end_ctor();
         return true;
@@ -764,17 +764,17 @@ public:
             for (auto init : decl->inits()) {
                 print.ctor("Build_Initializer");
                 if (init->isMemberInitializer()) {
-                    print.ctor("InitField")
+                    print.ctor("InitField", false)
                         << "\"" << init->getMember()->getNameAsString() << "\"";
                     print.end_ctor();
                 } else if (init->isBaseInitializer()) {
-                    print.ctor("InitBase");
+                    print.ctor("InitBase", false);
                     cprint.printTypeName(
                         init->getBaseClass()->getAsCXXRecordDecl(), print);
                     print.end_ctor();
                 } else if (init->isIndirectMemberInitializer()) {
                     auto im = init->getIndirectMember();
-                    print.ctor("InitIndirect");
+                    print.ctor("InitIndirect", false);
 
                     __attribute__((unused)) bool completed = false;
                     print.begin_list();
