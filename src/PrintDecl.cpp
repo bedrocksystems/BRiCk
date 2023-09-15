@@ -702,6 +702,73 @@ public:
         }
         return false;
     }
+    bool printSpecializationInfo(const CXXMethodDecl *decl, CoqPrinter &print,
+                                 ClangPrinter &cprint) {
+        if (not print.templates() || decl->isDependentContext())
+            return false;
+        auto info = decl->getMemberSpecializationInfo();
+        auto parent = decl->getParent();
+        auto from = decl->getInstantiatedFromMemberFunction();
+        if (not from) {
+            // if ther is no [from], then Clang might not have generated a body,
+            // so th definition will not be useful anyways.
+            return false;
+        }
+        if (auto tparent = dyn_cast<ClassTemplateSpecializationDecl>(parent)) {
+            switch (info->getTemplateSpecializationKind()) {
+            case TemplateSpecializationKind::TSK_Undeclared:
+                return false;
+
+            case TemplateSpecializationKind::TSK_ImplicitInstantiation:
+            case TemplateSpecializationKind::TSK_ExplicitSpecialization:
+            case TemplateSpecializationKind::
+                TSK_ExplicitInstantiationDeclaration:
+            case TemplateSpecializationKind::
+                TSK_ExplicitInstantiationDefinition: {
+                auto &targs = tparent->getTemplateArgs();
+
+                print.ctor("Dinstantiation");
+                cprint.printObjName(decl, print);
+                print.output() << fmt::nbsp;
+                cprint.printObjName(from, print);
+                print.output() << fmt::nbsp;
+                print.list(targs.asArray(), [&cprint, &info](auto print,
+                                                             auto &arg) {
+                    switch (arg.getKind()) {
+
+                    case TemplateArgument::Type:
+                        print.ctor("TypeArg");
+                        cprint.printQualType(arg.getAsType(), print);
+                        print.end_ctor();
+                        break;
+
+                    default:
+                        using namespace logging;
+                        fatal()
+                            << cprint.sourceRange(
+                                   info->getPointOfInstantiation())
+                            << ": "
+                            << "error: unsupported template argument kind: "
+                            << templateArgumentKindName(arg.getKind()) << "\n";
+                        die();
+                    }
+                });
+                print.end_ctor();
+                return true;
+            }
+            default: {
+                using namespace logging;
+                fatal() << cprint.sourceRange(info->getPointOfInstantiation())
+                        << ": "
+                        << "error: unsupported template specialization kind: "
+                        << info->getTemplateSpecializationKind() << "\n";
+                die();
+                break;
+            }
+            }
+        }
+        return false;
+    }
 
     bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, const ASTContext &) {
@@ -719,8 +786,9 @@ public:
 
     bool VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &) {
+        bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("method", false, decl, print, cprint))
-            return false;
+            return emit;
         print.output() << fmt::BOOL(decl->isStatic()) << fmt::nbsp;
 
         cprint.printObjName(decl, print);
@@ -732,8 +800,9 @@ public:
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
                                  CoqPrinter &print, ClangPrinter &cprint,
                                  const ASTContext &) {
+        bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("constructor", false, decl, print, cprint))
-            return false;
+            return emit;
 
         cprint.printObjName(decl, print);
         print.output() << fmt::nbsp;
@@ -845,8 +914,9 @@ public:
     bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &ctxt) {
+        bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("destructor", false, decl, print, cprint))
-            return false;
+            return emit;
         cprint.printObjName(decl, print);
         printDestructor(decl, print, cprint);
         print.end_ctor();
