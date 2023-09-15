@@ -156,12 +156,22 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
 }
 
 void
+printInstantiatableRecordName(const CXXRecordDecl *decl, CoqPrinter &print,
+                              ClangPrinter &cprint) {
+    if (print.templates()) {
+        cprint.printType(decl->getTypeForDecl(), print);
+    } else {
+        cprint.printTypeName(decl, print);
+    }
+}
+
+void
 printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
             ClangPrinter &cprint) {
     print.ctor("Build_Method");
     cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::line;
-    cprint.printTypeName(decl->getParent(), print);
+    printInstantiatableRecordName(decl->getParent(), print, cprint);
     print.output() << fmt::line;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
     print.output() << fmt::nbsp;
@@ -195,7 +205,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 ClangPrinter &cprint) {
     auto record = decl->getParent();
     print.ctor("Build_Dtor");
-    cprint.printTypeName(record, print);
+    printInstantiatableRecordName(record, print, cprint);
     print.output() << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
@@ -414,8 +424,8 @@ public:
         print.ctor("Build_Struct");
 
         // print the base classes
-        print.list(decl->bases(), [&cprint, layout, &decl](auto print,
-                                                           auto base) {
+        print.list(decl->bases(), [&cprint, layout,
+                                   &decl](auto print, CXXBaseSpecifier base) {
             if (base.isVirtual()) {
                 logging::unsupported()
                     << "virtual base classes not supported"
@@ -423,28 +433,38 @@ public:
                     << ")\n";
             }
 
-            auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
-            if (rec) {
+            auto type = base.getType().getTypePtr();
+            if (print.templates()) {
                 print.output() << "(";
-                cprint.printTypeName(rec, print);
-                if (not base.isVirtual()) {
-                    print.output()
-                        << ", Build_LayoutInfo "
-                        << (layout ?
-                                layout->getBaseClassOffset(rec).getQuantity() :
-                                0)
-                        << ")";
-                } else {
-                    print.output() << ", Build_LayoutInfo 0)";
-                }
+                cprint.printType(type, print);
+                print.output() << ", Build_LayoutInfo 0)";
             } else {
-                using namespace logging;
-                fatal() << "Error: base class of '" << decl->getNameAsString()
+                if (auto rec = type->getAsCXXRecordDecl()) {
+                    assert(rec &&
+                           "non-templated classes must have Record bases.");
+                    print.output() << "(";
+                    cprint.printTypeName(rec, print);
+                    if (not base.isVirtual()) {
+                        print.output()
+                            << ", Build_LayoutInfo "
+                            << (layout ? layout->getBaseClassOffset(rec)
+                                             .getQuantity() :
+                                         0)
+                            << ")";
+                    } else {
+                        print.output() << ", Build_LayoutInfo 0)";
+                    }
+
+                } else {
+                    using namespace logging;
+                    fatal()
+                        << "Error: base class of '" << decl->getNameAsString()
                         << "' ("
                         << base.getType().getTypePtr()->getTypeClassName()
                         << ") is not a RecordType at "
                         << cprint.sourceRange(decl->getSourceRange()) << "\n";
-                die();
+                    die();
+                }
             }
         });
 
@@ -807,7 +827,7 @@ public:
         cprint.printObjName(decl, print);
         print.output() << fmt::nbsp;
         print.ctor("Build_Ctor");
-        cprint.printTypeName(decl->getParent(), print);
+        printInstantiatableRecordName(decl->getParent(), print, cprint);
         print.output() << fmt::line;
 
         print.list(decl->parameters(), [&cprint](auto print, auto i) {

@@ -385,7 +385,7 @@ public:
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
                                     CoqPrinter& print, ClangPrinter& cprint) {
         if (type->getDecl()) {
-            print.ctor("Tnamed", false);
+            print.ctor("Tvar", false);
             cprint.printTypeName(type->getDecl(), print);
             print.end_ctor();
         } else {

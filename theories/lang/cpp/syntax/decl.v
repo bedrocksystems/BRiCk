@@ -8,6 +8,7 @@ From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
 #[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
 #[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
+#[local] Notation EqDecision3 T := (∀ (A : Set), EqDecision A -> EqDecision2 (T A)) (only parsing).
 #[local] Tactic Notation "solve_decision" := intros; solve_decision.
 
 (** ** Type Declarations *)
@@ -56,8 +57,8 @@ Variant LayoutType : Set := POD | Standard | Unspecified.
 Proof. solve_decision. Defined.
 
 
-Record Struct' {type Expr : Set} : Set := Build_Struct
-{ s_bases : list (globname * LayoutInfo)
+Record Struct' {classname type Expr : Set} : Set := Build_Struct
+{ s_bases : list (classname * LayoutInfo)
   (* ^ base classes *)
 ; s_fields : list (Member' type Expr)
   (* ^ fields with type, initializer, and layout information *)
@@ -85,23 +86,23 @@ Record Struct' {type Expr : Set} : Set := Build_Struct
 ; s_alignment : N
   (* ^ alignment of the structure *)
 }.
-#[global] Arguments Struct' _ _ : clear implicits, assert.
-#[global] Arguments Build_Struct {_ _} &.
-#[global] Instance: EqDecision2 Struct'.
+#[global] Arguments Struct' _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Struct {_ _ _} &.
+#[global] Instance: EqDecision3 Struct'.
 Proof. solve_decision. Defined.
-Notation Struct := (Struct' type Expr).
+Notation Struct := (Struct' globname type Expr).
 
-Definition has_vtable {type Expr} (s : Struct' type Expr) : bool :=
+Definition has_vtable {classname type Expr} (s : Struct' classname type Expr) : bool :=
   match s.(s_virtuals) with
   | nil => false
   | _ :: _ => true
   end.
-#[global] Arguments has_vtable _ _ & _ : assert.
+#[global] Arguments has_vtable _ _ _ & _ : assert.
 
 (* [has_virtual_dtor s] returns true if the destructor is virtual. *)
-Definition has_virtual_dtor {type Expr} (s : Struct' type Expr) : bool :=
+Definition has_virtual_dtor {classname type Expr} (s : Struct' classname type Expr) : bool :=
   List.existsb (fun '(a,_) => bool_decide (a = s.(s_dtor))) s.(s_virtuals).
-#[global] Arguments has_virtual_dtor _ _ & _ : assert.
+#[global] Arguments has_virtual_dtor _ _ _ & _ : assert.
 
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
 #[global] Instance: EqDecision Ctor_type.
@@ -139,22 +140,23 @@ Notation Func := (Func' decltype Expr).
 
 (** *** Methods *)
 
-Record Method' {type Expr : Set} : Set := Build_Method
+Record Method' {classname type Expr : Set} : Set := Build_Method
 { m_return  : type
-; m_class   : globname
+; m_class   : classname
 ; m_this_qual : type_qualifiers
 ; m_params  : list (ident * type)
 ; m_cc      : calling_conv
 ; m_arity   : function_arity
 ; m_body    : option (OrDefault (Stmt' type Expr))
 }.
-#[global] Arguments Method' _ _ : clear implicits, assert.
-#[global] Arguments Build_Method {_ _} &.
-#[global] Instance: EqDecision2 Method'.
+#[global] Arguments Method' _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Method {_ _ _} &.
+#[global] Instance: EqDecision3 Method'.
 Proof. solve_decision. Defined.
-Notation Method := (Method' decltype Expr).
+Notation Method := (Method' globname decltype Expr).
 
-Definition static_method {type Expr : Set} (m : @Method' type Expr) : @Func' type Expr :=
+Definition static_method {classname type Expr : Set} (m : Method' classname type Expr)
+  : Func' type Expr :=
   {| f_return := m.(m_return)
    ; f_params := m.(m_params)
    ; f_cc := m.(m_cc)
@@ -168,62 +170,51 @@ Definition static_method {type Expr : Set} (m : @Method' type Expr) : @Func' typ
 
 (** *** Constructors *)
 
-Variant InitPath : Set :=
-| InitBase (_ : globname)
+Variant InitPath' {classname : Set} : Set :=
+| InitBase (_ : classname)
 | InitField (_ : ident)
-| InitIndirect (anon_path : list (ident * globname)) (_ : ident)
+| InitIndirect (anon_path : list (ident * classname)) (_ : ident)
 | InitThis.
-#[global] Instance: EqDecision InitPath.
+#[global] Arguments InitPath' _ : clear implicits, assert.
+#[global] Instance: EqDecision1 InitPath'.
 Proof. solve_decision. Defined.
+#[global] Notation InitPath := (InitPath' globname).
 
-Record Initializer' {type Expr : Set} : Set := Build_Initializer
-  { init_path : InitPath
+Record Initializer' {classname type Expr : Set} : Set := Build_Initializer
+  { init_path : InitPath' classname
   ; init_type : type
   ; init_init : Expr }.
-#[global] Arguments Initializer' _ _ : clear implicits, assert.
-#[global] Arguments Build_Initializer {_ _} &.
-#[global] Instance: EqDecision2 Initializer'.
+#[global] Arguments Initializer' _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Initializer {_ _ _} &.
+#[global] Instance: EqDecision3 Initializer'.
 Proof. solve_decision. Defined.
-Notation Initializer := (Initializer' decltype Expr).
+Notation Initializer := (Initializer' globname decltype Expr).
 
-Record Ctor' {type Expr : Set} : Set := Build_Ctor
-{ c_class  : globname
+Record Ctor' {classname type Expr : Set} : Set := Build_Ctor
+{ c_class  : classname
 ; c_params : list (ident * type)
 ; c_cc     : calling_conv
 ; c_arity  : function_arity
-; c_body   : option (OrDefault (list (Initializer' type Expr) * Stmt' type Expr))
+; c_body   : option (OrDefault (list (Initializer' classname type Expr) * Stmt' type Expr))
 }.
-#[global] Arguments Ctor' _ _ : clear implicits, assert.
-#[global] Arguments Build_Ctor {_ _} &.
-#[global] Instance: EqDecision2 Ctor'.
+#[global] Arguments Ctor' _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Ctor {_ _ _} &.
+#[global] Instance: EqDecision3 Ctor'.
 Proof. solve_decision. Defined.
-Notation Ctor := (Ctor' decltype Expr).
+Notation Ctor := (Ctor' globname decltype Expr).
 
 (** *** Destructors *)
 
-Record Dtor' {type Expr : Set} : Set := Build_Dtor
-{ d_class  : globname
+Record Dtor' {classname type Expr : Set} : Set := Build_Dtor
+{ d_class  : classname
 ; d_cc     : calling_conv
 ; d_body   : option (OrDefault (Stmt' type Expr))
 }.
-#[global] Arguments Dtor' _ _ : clear implicits, assert.
-#[global] Arguments Build_Dtor {_ _} &.
-#[global] Instance: EqDecision2 Dtor'.
+#[global] Arguments Dtor' _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Dtor {_ _ _} &.
+#[global] Instance: EqDecision3 Dtor'.
 Proof. solve_decision. Defined.
-Notation Dtor := (Dtor' decltype Expr).
-
-
-
-(* Definition ctor_name (type : Ctor_type) (cls : globname) : obj_name := *)
-(*   match cls with *)
-(*   | String _ (String _ s) => *)
-(*     "_ZN" ++ s ++ "C" ++ (match type with *)
-(*                           | Ct_Complete => "1" *)
-(*                           | Ct_Base => "2" *)
-(*                           | Ct_Comdat => "5" *)
-(*                           end) ++ "Ev" *)
-(*   | _ => "" *)
-(*   end. *)
+Notation Dtor := (Dtor' globname decltype Expr).
 
 Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
 #[global] Instance: EqDecision Dtor_type.

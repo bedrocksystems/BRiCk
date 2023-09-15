@@ -12,24 +12,26 @@ Export decl.
 
 #[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
 #[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
+#[local] Notation EqDecision3 T := (∀ (A : Set), EqDecision A -> EqDecision2 (T A)) (only parsing).
+
 #[local] Tactic Notation "solve_decision" := intros; solve_decision.
 
 (* Values in Object files. These can be externed. *)
-Variant ObjValue' {type Expr : Set} : Set :=
+Variant ObjValue' {classname type Expr : Set} : Set :=
 | Ovar         (_ : type) (_ : option Expr)
 | Ofunction    (_ : Func' type Expr)
-| Omethod      (_ : Method' type Expr)
-| Oconstructor (_ : Ctor' type Expr)
-| Odestructor  (_ : Dtor' type Expr).
-#[global] Arguments ObjValue' _ _ : clear implicits, assert.
-#[global] Arguments Ovar _ _ &.
-#[global] Arguments Ofunction _ _ &.
-#[global] Arguments Omethod _ _ &.
-#[global] Arguments Oconstructor _ _ &.
-#[global] Arguments Odestructor _ _ &.
-#[global] Instance: EqDecision2 ObjValue'.
+| Omethod      (_ : Method' classname type Expr)
+| Oconstructor (_ : Ctor' classname type Expr)
+| Odestructor  (_ : Dtor' classname type Expr).
+#[global] Arguments ObjValue' _ _ _ : clear implicits, assert.
+#[global] Arguments Ovar _ _ _ &.
+#[global] Arguments Ofunction _ _ _ &.
+#[global] Arguments Omethod _ _ _ &.
+#[global] Arguments Oconstructor _ _ _ &.
+#[global] Arguments Odestructor _ _ _ &.
+#[global] Instance: EqDecision3 ObjValue'.
 Proof. solve_decision. Defined.
-Notation ObjValue := (ObjValue' type Expr).
+Notation ObjValue := (ObjValue' globname type Expr).
 
 (**
 TODO: [Tmember_func], [type_of_value] seem misplaced
@@ -49,22 +51,22 @@ Definition type_of_value (o : ObjValue) : type :=
     Tmember_func (Tnamed d.(d_class)) $ Tfunction (cc:=d.(d_cc)) Tvoid nil
   end.
 
-Variant GlobDecl' {type Expr : Set} : Set :=
+Variant GlobDecl' {classname type Expr : Set} : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
 | Gunion    (_ : Union' type Expr) (* union body *)
-| Gstruct   (_ : Struct' type Expr) (* struct body *)
+| Gstruct   (_ : Struct' classname type Expr) (* struct body *)
 | Genum     (_ : type) (_ : list ident) (* *)
 | Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
 | Gtypedef  (_ : type).
-#[global] Arguments GlobDecl' _ _ : clear implicits, assert.
-#[global] Arguments Gunion _ _ &.
-#[global] Arguments Gstruct _ _ &.
-#[global] Arguments Genum _ _ &.
-#[global] Arguments Gconstant _ _ &.
-#[global] Arguments Gtypedef _ _ &.
-#[global] Instance: EqDecision2 GlobDecl'.
+#[global] Arguments GlobDecl' _ _ _ : clear implicits, assert.
+#[global] Arguments Gunion _ _ _ &.
+#[global] Arguments Gstruct _ _ _ &.
+#[global] Arguments Genum _ _ _ &.
+#[global] Arguments Gconstant _ _ _ &.
+#[global] Arguments Gtypedef _ _ _ &.
+#[global] Instance: EqDecision3 GlobDecl'.
 Proof. solve_decision. Defined.
-Notation GlobDecl := (GlobDecl' type Expr).
+Notation GlobDecl := (GlobDecl' globname type Expr).
 
 Definition symbol_table : Type := IM.t ObjValue.
 

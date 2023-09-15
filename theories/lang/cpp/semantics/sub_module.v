@@ -177,8 +177,8 @@ Lemma type_table_le_equiv te1 te2 : type_table_le te1 te2 <-> type_table_le_alt 
 Proof.
   apply iff_forall => i; unfold option_relation.
   (* XXX TC inference produces different results here. Hacky fix. *)
-  unfold globname, ident, type_table.
-  repeat case_match; naive_solver.
+  unfold type_table, globname, ident.
+  repeat case_match; try naive_solver.
 Qed.
 
 #[global] Instance: PreOrder type_table_le.
@@ -308,9 +308,9 @@ Section ObjValue_ler.
     destruct a, b => //=; destruct c => //=; intros;
     repeat lazymatch goal with
            | H : Func' _ _ |- _ => destruct H; simpl in *
-           | H : Method' _ _ |- _ => destruct H; simpl in *
-           | H : Ctor' _ _ |- _ => destruct H; simpl in *
-           | H : Dtor' _ _ |- _ => destruct H; simpl in *
+           | H : Method' _ _ _ |- _ => destruct H; simpl in *
+           | H : Ctor' _ _ _ |- _ => destruct H; simpl in *
+           | H : Dtor' _ _ _ |- _ => destruct H; simpl in *
            | H : false = true |- _ => inversion H
            | H : true = false |- _ => inversion H
            | H : bool_decide _ = true |- _ => apply bool_decide_eq_true_1 in H; subst
@@ -583,11 +583,11 @@ Proof. move=> /types_compat Hsub Hct. exact: complete_type_respects_sub_table. Q
 
 
 (* [class_compatible a b c] states that translation units [a] and [b] have
- * the same definitions for the class [cls] (including all transitive
- * base classes)
- *
- * this is necessary, e.g. when code in translation unit [a] wants to call
- * via a virtual table that was constructed in translation unit [b]
+   the same definitions for the class [cls] (including all transitive
+   base classes)
+
+   this is necessary, e.g. when code in translation unit [a] wants to call
+   via a virtual table that was constructed in translation unit [b]
  *)
 Inductive class_compatible (a b : translation_unit) (cls : globname) : Prop :=
 | Class_compat {st}
