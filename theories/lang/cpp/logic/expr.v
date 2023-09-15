@@ -1436,7 +1436,7 @@ Module Type Expr.
        See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
        frontend desugars all of these to initialize exactly one element.
      *)
-    Definition union_inits (u : translation_unit.Union) (es : list Expr)
+    Definition union_inits (u : decl.Union) (es : list Expr)
       : option (list Initializer) :=
       match u.(u_fields) , es with
       | m :: _ , e :: nil =>

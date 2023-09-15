@@ -148,6 +148,7 @@ theories/lang/cpp/syntax/expr.v
 theories/lang/cpp/syntax/expr_notations.v
 theories/lang/cpp/syntax/stmt.v
 theories/lang/cpp/syntax/stmt_notations.v
+theories/lang/cpp/syntax/decl.v
 theories/lang/cpp/syntax/translation_unit.v
 theories/lang/cpp/syntax/typing.v
 theories/lang/cpp/ast.v

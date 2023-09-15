@@ -607,7 +607,7 @@ Section with_cpp.
     |-- wp_struct_initializer_list tu s ρ cls p inits Q -* wp_struct_initializer_list tu s ρ cls p inits Q'.
   Proof.
     rewrite /wp_struct_initializer_list. case_match.
-    { do 3!(case_match; auto). iIntros "?".
+    { repeat (case_match; auto). iIntros "?".
       iApply wp_init_frame; [done|]. iIntros (?).
       by iApply interp_frame_strong. }
     { iIntros "?".
@@ -620,7 +620,7 @@ Section with_cpp.
 End with_cpp.
 
 Definition wp_union_initializer_list `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
-    (u : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
+    (u : decl.Union) (ρ : region) (cls : globname) (this : ptr)
     (inits : list Initializer) (Q : epred) : mpred :=
   match inits with
   | [] => Q
