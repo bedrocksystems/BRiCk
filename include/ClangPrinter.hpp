@@ -26,6 +26,7 @@ class SourceRange;
 class CompilerInstance;
 class Sema;
 class TypeDecl;
+class RecordDecl;
 }
 
 class CoqPrinter;
@@ -52,6 +53,9 @@ public:
     void printObjName(const clang::ValueDecl* decl, CoqPrinter& print,
                       bool raw = false);
     void printTypeName(const clang::TypeDecl* decl, CoqPrinter& print) const;
+
+    void printInstantiatableRecordName(const clang::RecordDecl* decl,
+                                       CoqPrinter& print);
 
     void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print) const;
 

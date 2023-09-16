@@ -333,11 +333,6 @@ Proof.
   abstract (by intros []).
 Defined.
 
-Variant OffsetInfo : Set :=
-  | Oo_Field (_ : field).
-#[global] Instance: EqDecision OffsetInfo.
-Proof. solve_decision. Defined.
-
 Module operator_impl.
   Variant t {type : Set} : Set :=
     | Func (fn_name : obj_name) (fn_type : type)
@@ -402,7 +397,7 @@ Inductive Expr : Set :=
 | Esubscript (_ : Expr) (_ : Expr) (_ : exprtype)
 | Esizeof (_ : decltype + Expr) (_ : exprtype)
 | Ealignof (_ : decltype + Expr) (_ : exprtype)
-| Eoffsetof (_ : OffsetInfo) (_ : exprtype)
+| Eoffsetof (_ : globname) (_ : ident) (_ : exprtype)
 | Econstructor (_ : obj_name) (_ : list Expr) (_ : exprtype)
 | Eimplicit (_ : Expr)
 | Eimplicit_init (_ : exprtype)

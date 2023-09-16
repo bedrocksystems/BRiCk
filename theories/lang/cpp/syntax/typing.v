@@ -120,7 +120,7 @@ Fixpoint type_of (e : Expr) : exprtype :=
   | Esubscript _ _ t
   | Esizeof _ t
   | Ealignof _ t
-  | Eoffsetof _ t
+  | Eoffsetof _ _ t
   | Econstructor _ _ t => t
   | Eimplicit e => type_of e
   | Eif _ _ _ _ t
@@ -279,7 +279,7 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
     end
   | Esizeof _ _ => Prvalue
   | Ealignof _ _ => Prvalue
-  | Eoffsetof _ _ => Prvalue
+  | Eoffsetof _ _ _ => Prvalue
   | Econstructor _ _ _ => Prvalue (* init *)
   | Eimplicit e => valcat_of e
   | Eif _ e1 e2 vc _ => vc

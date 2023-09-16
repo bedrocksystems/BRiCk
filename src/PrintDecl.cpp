@@ -156,22 +156,12 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
 }
 
 void
-printInstantiatableRecordName(const CXXRecordDecl *decl, CoqPrinter &print,
-                              ClangPrinter &cprint) {
-    if (print.templates()) {
-        cprint.printType(decl->getTypeForDecl(), print);
-    } else {
-        cprint.printTypeName(decl, print);
-    }
-}
-
-void
 printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
             ClangPrinter &cprint) {
     print.ctor("Build_Method");
     cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::line;
-    printInstantiatableRecordName(decl->getParent(), print, cprint);
+    cprint.printInstantiatableRecordName(decl->getParent(), print);
     print.output() << fmt::line;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
     print.output() << fmt::nbsp;
@@ -205,7 +195,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 ClangPrinter &cprint) {
     auto record = decl->getParent();
     print.ctor("Build_Dtor");
-    printInstantiatableRecordName(record, print, cprint);
+    cprint.printInstantiatableRecordName(record, print);
     print.output() << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
@@ -827,7 +817,7 @@ public:
         cprint.printObjName(decl, print);
         print.output() << fmt::nbsp;
         print.ctor("Build_Ctor");
-        printInstantiatableRecordName(decl->getParent(), print, cprint);
+        cprint.printInstantiatableRecordName(decl->getParent(), print);
         print.output() << fmt::line;
 
         print.list(decl->parameters(), [&cprint](auto print, auto i) {

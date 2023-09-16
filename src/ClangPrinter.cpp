@@ -455,6 +455,16 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
 }
 
 void
+ClangPrinter::printInstantiatableRecordName(const RecordDecl *decl,
+                                            CoqPrinter &print) {
+    if (print.templates()) {
+        printType(decl->getTypeForDecl(), print);
+    } else {
+        printTypeName(decl, print);
+    }
+}
+
+void
 ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
     if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
         print.ctor("Build_field", false);

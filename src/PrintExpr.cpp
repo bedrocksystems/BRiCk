@@ -495,6 +495,9 @@ public:
         return print.output() << "OO" << #Name;
 #include "clang/Basic/OperatorKinds.def"
 #undef OVERLOADED_OPERATOR
+        default:
+            logging::fatal() << "Unknown operator: " << oo << "\n";
+            logging::die();
         }
     }
 
@@ -1106,9 +1109,10 @@ public:
         auto comm = expr->getComponent(0);
         switch (comm.getKind()) {
         case OffsetOfNode::Kind::Field:
-            print.ctor("Oo_Field");
-            cprint.printField(comm.getField(), print);
-            print.end_ctor();
+            cprint.printInstantiatableRecordName(comm.getField()->getParent(),
+                                                 print);
+            print.output() << fmt::nbsp;
+            print.str(comm.getField()->getName()) << fmt::nbsp;
             break;
 
         default:

@@ -236,7 +236,7 @@ Section TestExprNotations.
   #[local] Definition Ecast_elide_2 (cast : Cast) (vc : ValCat) := Ecast cast (Eint 314 ty) vc ty.
   Print Ecast_elide_1. Print Ecast_elide_2.
 
-  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) (Build_field "foo" "bar") false ty.
+  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) "bar" false ty.
   Print Emember_1.
 
   #[local] Definition Emember_call_nil_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e []%list ty.
@@ -278,7 +278,7 @@ Section TestExprNotations.
   #[local] Definition Ealignof_Expr_3 : Expr := Ealignof (inr (Evar (Lname "foo") ty)) ty.
   Print Ealignof_Expr_1. Print Ealignof_Expr_2. Print Ealignof_Expr_3.
 
-  #[local] Definition Eoffsetof_1 : Expr := Eoffsetof (Oo_Field (Build_field "Foo" "bar")) ty.
+  #[local] Definition Eoffsetof_1 : Expr := Eoffsetof "foo" "bar" ty.
   Print Eoffsetof_1.
 
   #[local] Definition Econstructor_nil : Expr := Econstructor "Foo" []%list ty.
