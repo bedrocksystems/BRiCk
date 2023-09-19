@@ -80,7 +80,7 @@ formalizations of their memory object models (see <span class="inlinecode"><span
 </div>
 
 <div class="doc">
-<a id="lab131"></a><h2 class="section">Allocation IDs. We use them to model pointer provenance, following</h2>
+<a id="lab138"></a><h2 class="section">Allocation IDs. We use them to model pointer provenance, following</h2>
 
 Cerberus. 
 </div>
@@ -133,7 +133,7 @@ Cerberus.
 </div>
 
 <div class="doc">
-<a id="lab132"></a><h1 class="section">Pointers.</h1>
+<a id="lab139"></a><h1 class="section">Pointers.</h1>
 
 
 <div class="paragraph"> </div>
@@ -241,7 +241,7 @@ Cerberus.
 </div>
 
 <div class="doc">
-<a id="lab133"></a><h1 class="section">Pointer offsets.</h1>
+<a id="lab140"></a><h1 class="section">Pointer offsets.</h1>
 
       Offsets represent paths between objects and subobjects.
 
@@ -357,7 +357,7 @@ An invalid pointer, included as a sentinel value. Other pointers might
 </div>
 
 <div class="doc">
-<a id="lab134"></a><h2 class="section">Concrete pointer offsets.</h2>
+<a id="lab141"></a><h2 class="section">Concrete pointer offsets.</h2>
 
 
 <div class="paragraph"> </div>
@@ -520,7 +520,7 @@ Pointers into the same array with the same address have the same index.
 &nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="PTRS.eval_o_field" class="idref" href="#PTRS.eval_o_field"><span class="id" title="axiom">eval_o_field</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a id="55b134b38a7198382c602a077460cfcc" class="idref" href="#55b134b38a7198382c602a077460cfcc"><span class="id" title="binder">σ</span></a> <a id="f:100" class="idref" href="#f:100"><span class="id" title="binder">f</span></a> <a id="n:101" class="idref" href="#n:101"><span class="id" title="binder">n</span></a> <a id="cls:102" class="idref" href="#cls:102"><span class="id" title="binder">cls</span></a> <a id="st:103" class="idref" href="#st:103"><span class="id" title="binder">st</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#f:100"><span class="id" title="variable">f</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">{|</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#f_name"><span class="id" title="projection">f_name</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#n:101"><span class="id" title="variable">n</span></a> ; <a class="idref" href="bedrock.lang.cpp.syntax.names.html#f_type"><span class="id" title="projection">f_type</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#cls:102"><span class="id" title="variable">cls</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">|}</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.genv.html#glob_def"><span class="id" title="definition">glob_def</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#55b134b38a7198382c602a077460cfcc"><span class="id" title="variable">σ</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#cls:102"><span class="id" title="variable">cls</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Gstruct"><span class="id" title="constructor">Gstruct</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#st:103"><span class="id" title="variable">st</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#st:103"><span class="id" title="variable">st</span></a>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#s_layout"><span class="id" title="projection">s_layout</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#POD"><span class="id" title="constructor">POD</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#f031fe1957c4a4a8e217aa46af2b4e25"><span class="id" title="notation">\/</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#st:103"><span class="id" title="variable">st</span></a>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#s_layout"><span class="id" title="projection">s_layout</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Standard"><span class="id" title="constructor">Standard</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#st:103"><span class="id" title="variable">st</span></a>.(<a class="idref" href="bedrock.lang.cpp.syntax.decl.html#s_layout"><span class="id" title="projection">s_layout</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.decl.html#POD"><span class="id" title="constructor">POD</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#f031fe1957c4a4a8e217aa46af2b4e25"><span class="id" title="notation">\/</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#st:103"><span class="id" title="variable">st</span></a>.(<a class="idref" href="bedrock.lang.cpp.syntax.decl.html#s_layout"><span class="id" title="projection">s_layout</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.decl.html#Standard"><span class="id" title="constructor">Standard</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS.eval_offset"><span class="id" title="axiom">eval_offset</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#55b134b38a7198382c602a077460cfcc"><span class="id" title="variable">σ</span></a> (<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS.o_field"><span class="id" title="axiom">o_field</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#55b134b38a7198382c602a077460cfcc"><span class="id" title="variable">σ</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#f:100"><span class="id" title="variable">f</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.types.html#offset_of"><span class="id" title="definition">offset_of</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#55b134b38a7198382c602a077460cfcc"><span class="id" title="variable">σ</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.names.html#f_type"><span class="id" title="projection">f_type</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#f:100"><span class="id" title="variable">f</span></a>) (<a class="idref" href="bedrock.lang.cpp.syntax.names.html#f_name"><span class="id" title="projection">f_name</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#f:100"><span class="id" title="variable">f</span></a>).<br/>
 
 <br/>
@@ -563,7 +563,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab135"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.offset"><span class="id" title="definition">offset</span></a></span> Congruence</h2>
+<a id="lab142"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.offset"><span class="id" title="definition">offset</span></a></span> Congruence</h2>
 
 
 <div class="paragraph"> </div>
@@ -599,7 +599,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab136"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.ptr"><span class="id" title="definition">ptr</span></a></span> Congruence</h2>
+<a id="lab143"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.ptr"><span class="id" title="definition">ptr</span></a></span> Congruence</h2>
 
 
 <div class="paragraph"> </div>
@@ -657,7 +657,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab137"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_address"><span class="id" title="definition">same_address</span></a></span> lemmas</h2>
+<a id="lab144"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_address"><span class="id" title="definition">same_address</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">
@@ -695,7 +695,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab138"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.same_address_bool"><span class="id" title="definition">same_address_bool</span></a></span> lemmas</h2>
+<a id="lab145"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.same_address_bool"><span class="id" title="definition">same_address_bool</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">
@@ -727,7 +727,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab139"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_alloc"><span class="id" title="definition">same_alloc</span></a></span> lemmas</h2>
+<a id="lab146"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_alloc"><span class="id" title="definition">same_alloc</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">

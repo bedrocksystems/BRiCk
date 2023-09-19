@@ -328,7 +328,7 @@ existentials.<br/>
 </div>
 
 <div class="doc">
-<a id="lab176"></a><h1 class="section">Regions</h1>
+<a id="lab183"></a><h1 class="section">Regions</h1>
 
     To model the stack frame in separation logic, we use a notion of regions
     that are threaded through the semantics.
@@ -470,7 +470,7 @@ existentials.<br/>
 </div>
 
 <div class="doc">
-<a id="lab177"></a><h3 class="section">Indeterminately sequenced computations</h3>
+<a id="lab184"></a><h3 class="section">Indeterminately sequenced computations</h3>
 
       Note that <span class="inlinecode"><span class="id" title="var">FreeTemps.t</span></span> is sequenced in reverse order of construction
       to encode the stack discipline guaranteed by C++.
@@ -622,7 +622,7 @@ existentials.<br/>
 </div>
 
 <div class="doc">
-<a id="lab178"></a><h3 class="section">sequencing of monadic compuations</h3>
+<a id="lab185"></a><h3 class="section">sequencing of monadic compuations</h3>
 
 </div>
 <div class="code">
@@ -672,7 +672,7 @@ existentials.<br/>
 </div>
 
 <div class="doc">
-<a id="lab179"></a><h3 class="section">interleaving of monadic values</h3>
+<a id="lab186"></a><h3 class="section">interleaving of monadic values</h3>
 
 
 <div class="paragraph"> </div>
@@ -745,7 +745,7 @@ lifting <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.w
 </div>
 
 <div class="doc">
-<a id="lab180"></a><h3 class="section">evaluation by a scheme</h3>
+<a id="lab187"></a><h3 class="section">evaluation by a scheme</h3>
 
 <div class="paragraph"> </div>
 
@@ -934,7 +934,7 @@ lvalues
 </div>
 
 <div class="doc">
-<a id="lab181"></a><h1 class="section">prvalue</h1>
+<a id="lab188"></a><h1 class="section">prvalue</h1>
 
 </div>
 <div class="code">
@@ -1200,7 +1200,7 @@ C++ evaluation semantics guarantees that all expressions of type <span class="in
 </div>
 
 <div class="doc">
-<a id="lab182"></a><h2 class="section">boolean operands</h2>
+<a id="lab189"></a><h2 class="section">boolean operands</h2>
 
 <div class="paragraph"> </div>
 
@@ -1220,7 +1220,7 @@ C++ evaluation semantics guarantees that all expressions of type <span class="in
 </div>
 
 <div class="doc">
-<a id="lab183"></a><h1 class="section">xvalues</h1>
+<a id="lab190"></a><h1 class="section">xvalues</h1>
 
 </div>
 <div class="code">
@@ -1476,7 +1476,7 @@ Discarded values.
 </div>
 
 <div class="doc">
-<a id="lab184"></a><h1 class="section">Statements</h1>
+<a id="lab191"></a><h1 class="section">Statements</h1>
 
 </div>
 <div class="code">
@@ -1687,7 +1687,7 @@ Discarded values.
 <div class="code">
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="WPE.mspec" class="idref" href="#WPE.mspec"><span class="id" title="definition">mspec</span></a> (<a id="tt:726" class="idref" href="#tt:726"><span class="id" title="binder">tt</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#type_table"><span class="id" title="definition">type_table</span></a>) (<a id="this_type:727" class="idref" href="#this_type:727"><span class="id" title="binder">this_type</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#exprtype"><span class="id" title="definition">exprtype</span></a>) (<a id="fun_type:728" class="idref" href="#fun_type:728"><span class="id" title="binder">fun_type</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#functype"><span class="id" title="definition">functype</span></a>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;: <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#epred"><span class="id" title="definition">epred</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.17.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> :=<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_fptr"><span class="id" title="axiom">wp_fptr</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#tt:726"><span class="id" title="variable">tt</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Tmember_func"><span class="id" title="definition">Tmember_func</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#this_type:727"><span class="id" title="variable">this_type</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#fun_type:728"><span class="id" title="variable">fun_type</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_fptr"><span class="id" title="axiom">wp_fptr</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#tt:726"><span class="id" title="variable">tt</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.decl.html#Tmember_func"><span class="id" title="definition">Tmember_func</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#this_type:727"><span class="id" title="variable">this_type</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#fun_type:728"><span class="id" title="variable">fun_type</span></a>).<br/>
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="WPE.mspec_frame_fupd_strong" class="idref" href="#WPE.mspec_frame_fupd_strong"><span class="id" title="lemma">mspec_frame_fupd_strong</span></a> <a id="tt1:729" class="idref" href="#tt1:729"><span class="id" title="binder">tt1</span></a> <a id="tt2:730" class="idref" href="#tt2:730"><span class="id" title="binder">tt2</span></a> <a id="t:731" class="idref" href="#t:731"><span class="id" title="binder">t</span></a> <a id="t0:732" class="idref" href="#t0:732"><span class="id" title="binder">t0</span></a> <a id="v:733" class="idref" href="#v:733"><span class="id" title="binder">v</span></a> <a id="l:734" class="idref" href="#l:734"><span class="id" title="binder">l</span></a> <a id="Q1:735" class="idref" href="#Q1:735"><span class="id" title="binder">Q1</span></a> <a id="Q2:736" class="idref" href="#Q2:736"><span class="id" title="binder">Q2</span></a> :<br/>

@@ -434,11 +434,11 @@ TODO: add an identity inductive type (<span class="inlinecode"><span class="id" 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 
 <br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="fcb7383662f14dd88593f11763e7c502" class="idref" href="#fcb7383662f14dd88593f11763e7c502"><span class="id" title="notation">&quot;</span></a>'offsetof(' fld ')'"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Eoffsetof"><span class="id" title="constructor">Eoffsetof</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Oo_Field"><span class="id" title="constructor">Oo_Field</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.names.html#Build_field"><span class="id" title="constructor">Build_field</span></a> <span class="id" title="var">_</span> <span class="id" title="var">fld</span>%<span class="id" title="var">bs</span>)) <span class="id" title="var">_</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="6e0d114ea226163b230d0d85e0f7b27c" class="idref" href="#6e0d114ea226163b230d0d85e0f7b27c"><span class="id" title="notation">&quot;</span></a>'offsetof(' cls , fld ')'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Eoffsetof"><span class="id" title="constructor">Eoffsetof</span></a> <span class="id" title="var">cls</span>%<span class="id" title="var">bs</span> <span class="id" title="var">fld</span>%<span class="id" title="var">bs</span> <span class="id" title="var">_</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">CPP_expr</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">fld</span> <span class="id" title="keyword">constr</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' offsetof( fld ) ']'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' offsetof( cls , fld ) ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 
 <br/>
