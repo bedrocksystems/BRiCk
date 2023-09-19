@@ -77,20 +77,20 @@ Definition derivationsR' `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (q
 [this |-> derivationsR tu include_base cls path q] is all of the
 object identities of the [this] object (of type [cls]) where the most
 derived class is reached from [cls] using [path]. For example,
-consider the
-following
-```c++
+consider the following:
+<<
 class A {};
 class B : public A {};
 class C : public B {};
-```
+>>
 here, [derivationsR true "::B" ["::C"] q] produces:
 [[
 derivationR "::B" ["::C","::B"] q **
 _base "::B" "::A" |-> derivationR "::A" ["::C","::B","::A"] q
 ]]
 
-while [derivationsR true "::C" [] q] produces all the identities for A, B and C:
+while [derivationsR true "::C" [] q] produces all the identities for
+<<A>>, <<B>> and <<C>>:
 [[
 derivationR "::C" ["::C"] q **
 _base "::C" "::B" |-> derivationR true "::B" ["::C"] q
