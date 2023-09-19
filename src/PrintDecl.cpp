@@ -589,6 +589,11 @@ public:
             print.end_list();
     }
 
+    /* While this is a verbatim copy of the above, introducing a [template]
+       here gives flexibility for C++ to use this implementation for
+       [CXXDestructorDecl] and [CXXConstructorDecl] which is incorrect.
+       We are relying on those dispatching to [CXXMethodDecl].
+     */
     void printTemplateArgs(const CXXRecordDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
         print.begin_list();
