@@ -161,7 +161,7 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     print.ctor("Build_Method");
     cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::line;
-    cprint.printTypeName(decl->getParent(), print);
+    cprint.printInstantiatableRecordName(decl->getParent(), print);
     print.output() << fmt::line;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
     print.output() << fmt::nbsp;
@@ -195,7 +195,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 ClangPrinter &cprint) {
     auto record = decl->getParent();
     print.ctor("Build_Dtor");
-    cprint.printTypeName(record, print);
+    cprint.printInstantiatableRecordName(record, print);
     print.output() << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
@@ -257,7 +257,7 @@ public:
                                    const ASTContext &) {
         assert(print.templates() && "TemplateTypeParmDecl");
 
-        print.ctor("TypeParam");
+        print.ctor("TypeParam", false);
         print.str(param->getName());
         print.end_ctor();
         return true;
@@ -414,8 +414,8 @@ public:
         print.ctor("Build_Struct");
 
         // print the base classes
-        print.list(decl->bases(), [&cprint, layout, &decl](auto print,
-                                                           auto base) {
+        print.list(decl->bases(), [&cprint, layout,
+                                   &decl](auto print, CXXBaseSpecifier base) {
             if (base.isVirtual()) {
                 logging::unsupported()
                     << "virtual base classes not supported"
@@ -423,28 +423,38 @@ public:
                     << ")\n";
             }
 
-            auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
-            if (rec) {
+            auto type = base.getType().getTypePtr();
+            if (print.templates()) {
                 print.output() << "(";
-                cprint.printTypeName(rec, print);
-                if (not base.isVirtual()) {
-                    print.output()
-                        << ", Build_LayoutInfo "
-                        << (layout ?
-                                layout->getBaseClassOffset(rec).getQuantity() :
-                                0)
-                        << ")";
-                } else {
-                    print.output() << ", Build_LayoutInfo 0)";
-                }
+                cprint.printType(type, print);
+                print.output() << ", Build_LayoutInfo 0)";
             } else {
-                using namespace logging;
-                fatal() << "Error: base class of '" << decl->getNameAsString()
+                if (auto rec = type->getAsCXXRecordDecl()) {
+                    assert(rec &&
+                           "non-templated classes must have Record bases.");
+                    print.output() << "(";
+                    cprint.printTypeName(rec, print);
+                    if (not base.isVirtual()) {
+                        print.output()
+                            << ", Build_LayoutInfo "
+                            << (layout ? layout->getBaseClassOffset(rec)
+                                             .getQuantity() :
+                                         0)
+                            << ")";
+                    } else {
+                        print.output() << ", Build_LayoutInfo 0)";
+                    }
+
+                } else {
+                    using namespace logging;
+                    fatal()
+                        << "Error: base class of '" << decl->getNameAsString()
                         << "' ("
                         << base.getType().getTypePtr()->getTypeClassName()
                         << ") is not a RecordType at "
                         << cprint.sourceRange(decl->getSourceRange()) << "\n";
-                die();
+                    die();
+                }
             }
         });
 
@@ -564,8 +574,27 @@ public:
 
     // TODO: the current implementation of [printTemplateArgs] does
     // not, yet, support nested records.
-    template<typename T>
-    void printTemplateArgs(const T *decl, CoqPrinter &print,
+    void printTemplateArgs(const FunctionDecl *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        print.begin_list();
+
+        if (auto params = decl->getDescribedTemplateParams()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
+
+        if (top)
+            print.end_list();
+    }
+
+    /* While this is a verbatim copy of the above, introducing a [template]
+       here gives flexibility for C++ to use this implementation for
+       [CXXDestructorDecl] and [CXXConstructorDecl] which is incorrect.
+       We are relying on those dispatching to [CXXMethodDecl].
+     */
+    void printTemplateArgs(const CXXRecordDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
         print.begin_list();
 
@@ -688,6 +717,73 @@ public:
         }
         return false;
     }
+    bool printSpecializationInfo(const CXXMethodDecl *decl, CoqPrinter &print,
+                                 ClangPrinter &cprint) {
+        if (not print.templates() || decl->isDependentContext())
+            return false;
+        auto info = decl->getMemberSpecializationInfo();
+        auto parent = decl->getParent();
+        auto from = decl->getInstantiatedFromMemberFunction();
+        if (not from) {
+            // if ther is no [from], then Clang might not have generated a body,
+            // so th definition will not be useful anyways.
+            return false;
+        }
+        if (auto tparent = dyn_cast<ClassTemplateSpecializationDecl>(parent)) {
+            switch (info->getTemplateSpecializationKind()) {
+            case TemplateSpecializationKind::TSK_Undeclared:
+                return false;
+
+            case TemplateSpecializationKind::TSK_ImplicitInstantiation:
+            case TemplateSpecializationKind::TSK_ExplicitSpecialization:
+            case TemplateSpecializationKind::
+                TSK_ExplicitInstantiationDeclaration:
+            case TemplateSpecializationKind::
+                TSK_ExplicitInstantiationDefinition: {
+                auto &targs = tparent->getTemplateArgs();
+
+                print.ctor("Dinstantiation");
+                cprint.printObjName(decl, print);
+                print.output() << fmt::nbsp;
+                cprint.printObjName(from, print);
+                print.output() << fmt::nbsp;
+                print.list(targs.asArray(), [&cprint, &info](auto print,
+                                                             auto &arg) {
+                    switch (arg.getKind()) {
+
+                    case TemplateArgument::Type:
+                        print.ctor("TypeArg");
+                        cprint.printQualType(arg.getAsType(), print);
+                        print.end_ctor();
+                        break;
+
+                    default:
+                        using namespace logging;
+                        fatal()
+                            << cprint.sourceRange(
+                                   info->getPointOfInstantiation())
+                            << ": "
+                            << "error: unsupported template argument kind: "
+                            << templateArgumentKindName(arg.getKind()) << "\n";
+                        die();
+                    }
+                });
+                print.end_ctor();
+                return true;
+            }
+            default: {
+                using namespace logging;
+                fatal() << cprint.sourceRange(info->getPointOfInstantiation())
+                        << ": "
+                        << "error: unsupported template specialization kind: "
+                        << info->getTemplateSpecializationKind() << "\n";
+                die();
+                break;
+            }
+            }
+        }
+        return false;
+    }
 
     bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, const ASTContext &) {
@@ -705,8 +801,9 @@ public:
 
     bool VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &) {
+        bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("method", false, decl, print, cprint))
-            return false;
+            return emit;
         print.output() << fmt::BOOL(decl->isStatic()) << fmt::nbsp;
 
         cprint.printObjName(decl, print);
@@ -718,13 +815,14 @@ public:
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
                                  CoqPrinter &print, ClangPrinter &cprint,
                                  const ASTContext &) {
+        bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("constructor", false, decl, print, cprint))
-            return false;
+            return emit;
 
         cprint.printObjName(decl, print);
         print.output() << fmt::nbsp;
         print.ctor("Build_Ctor");
-        cprint.printTypeName(decl->getParent(), print);
+        cprint.printInstantiatableRecordName(decl->getParent(), print);
         print.output() << fmt::line;
 
         print.list(decl->parameters(), [&cprint](auto print, auto i) {
@@ -750,17 +848,17 @@ public:
             for (auto init : decl->inits()) {
                 print.ctor("Build_Initializer");
                 if (init->isMemberInitializer()) {
-                    print.ctor("InitField")
+                    print.ctor("InitField", false)
                         << "\"" << init->getMember()->getNameAsString() << "\"";
                     print.end_ctor();
                 } else if (init->isBaseInitializer()) {
-                    print.ctor("InitBase");
+                    print.ctor("InitBase", false);
                     cprint.printTypeName(
                         init->getBaseClass()->getAsCXXRecordDecl(), print);
                     print.end_ctor();
                 } else if (init->isIndirectMemberInitializer()) {
                     auto im = init->getIndirectMember();
-                    print.ctor("InitIndirect");
+                    print.ctor("InitIndirect", false);
 
                     __attribute__((unused)) bool completed = false;
                     print.begin_list();
@@ -831,8 +929,9 @@ public:
     bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &ctxt) {
+        bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("destructor", false, decl, print, cprint))
-            return false;
+            return emit;
         cprint.printObjName(decl, print);
         printDestructor(decl, print, cprint);
         print.end_ctor();

@@ -1,268 +1,41 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import stdpp.fin_maps.
 From bedrock.prelude Require Import base avl.
-From bedrock.lang.cpp.syntax Require Import names expr stmt types.
+From bedrock.lang.cpp.syntax Require Import names expr stmt types decl.
+Export decl.
 
 #[local] Set Primitive Projections.
 
 #[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
 #[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
+#[local] Notation EqDecision3 T := (∀ (A : Set), EqDecision A -> EqDecision2 (T A)) (only parsing).
+
 #[local] Tactic Notation "solve_decision" := intros; solve_decision.
 
-(** Record an offset in _bits_. *)
-Record LayoutInfo : Set :=
-{ li_offset : Z }.
-#[global] Instance: EqDecision LayoutInfo.
-Proof. solve_decision. Defined.
-
-Variant InitPath : Set :=
-| InitBase (_ : globname)
-| InitField (_ : ident)
-| InitIndirect (anon_path : list (ident * globname)) (_ : ident)
-| InitThis.
-#[global] Instance: EqDecision InitPath.
-Proof. solve_decision. Defined.
-
-Record Initializer' {type Expr : Set} : Set := Build_Initializer
-  { init_path : InitPath
-  ; init_type : type
-  ; init_init : Expr }.
-#[global] Arguments Initializer' _ _ : clear implicits, assert.
-#[global] Arguments Build_Initializer {_ _} &.
-#[global] Instance: EqDecision2 Initializer'.
-Proof. solve_decision. Defined.
-Notation Initializer := (Initializer' decltype Expr).
-
-Record Ctor' {type Expr : Set} : Set := Build_Ctor
-{ c_class  : globname
-; c_params : list (ident * type)
-; c_cc     : calling_conv
-; c_arity  : function_arity
-; c_body   : option (OrDefault (list (Initializer' type Expr) * Stmt' type Expr))
-}.
-#[global] Arguments Ctor' _ _ : clear implicits, assert.
-#[global] Arguments Build_Ctor {_ _} &.
-#[global] Instance: EqDecision2 Ctor'.
-Proof. solve_decision. Defined.
-Notation Ctor := (Ctor' decltype Expr).
-
-Record Dtor' {type Expr : Set} : Set := Build_Dtor
-{ d_class  : globname
-; d_cc     : calling_conv
-; d_body   : option (OrDefault (Stmt' type Expr))
-}.
-#[global] Arguments Dtor' _ _ : clear implicits, assert.
-#[global] Arguments Build_Dtor {_ _} &.
-#[global] Instance: EqDecision2 Dtor'.
-Proof. solve_decision. Defined.
-Notation Dtor := (Dtor' decltype Expr).
-
-Variant FunctionBody' {type Expr : Set} : Set :=
-| Impl (_ : Stmt' type Expr)
-| Builtin (_ : BuiltinFn)
-.
-#[global] Arguments FunctionBody' _ _ : clear implicits, assert.
-#[global] Arguments Impl _ _ &.
-#[global] Instance: EqDecision2 FunctionBody'.
-Proof. solve_decision. Defined.
-Notation FunctionBody := (FunctionBody' decltype Expr).
-
-Record Func' {type Expr : Set} : Set := Build_Func
-{ f_return : type
-; f_params : list (ident * type)
-; f_cc     : calling_conv
-; f_arity  : function_arity
-; f_body   : option (FunctionBody' type Expr)
-}.
-#[global] Arguments Func' _ _ : clear implicits, assert.
-#[global] Arguments Build_Func {_ _} &.
-#[global] Instance: EqDecision2 Func'.
-Proof. solve_decision. Defined.
-#[global] Instance Func_inhabited {type Expr : Set} `{!Inhabited type} :
-  Inhabited (Func' type Expr).
-Proof. solve_inhabited. Qed.
-Notation Func := (Func' decltype Expr).
-
-Record Method' {type Expr : Set} : Set := Build_Method
-{ m_return  : type
-; m_class   : globname
-; m_this_qual : type_qualifiers
-; m_params  : list (ident * type)
-; m_cc      : calling_conv
-; m_arity   : function_arity
-; m_body    : option (OrDefault (Stmt' type Expr))
-}.
-#[global] Arguments Method' _ _ : clear implicits, assert.
-#[global] Arguments Build_Method {_ _} &.
-#[global] Instance: EqDecision2 Method'.
-Proof. solve_decision. Defined.
-Notation Method := (Method' decltype Expr).
-
-Definition static_method {type Expr : Set} (m : @Method' type Expr) : @Func' type Expr :=
-  {| f_return := m.(m_return)
-   ; f_params := m.(m_params)
-   ; f_cc := m.(m_cc)
-   ; f_arity := m.(m_arity)
-   ; f_body := match m.(m_body) with
-               | Some (UserDefined body) => Some (Impl body)
-               | _ => None
-               end |}.
-
-Record Member' {type Expr : Set} : Set := mkMember
-{ mem_name : ident
-; mem_type : type
-; mem_mutable : bool
-; mem_init : option Expr
-; mem_layout : LayoutInfo }.
-#[global] Arguments Member' _ _ : clear implicits, assert.
-#[global] Arguments mkMember {_ _} &.
-#[global] Instance: EqDecision2 Member'.
-Proof. solve_decision. Defined.
-Notation Member := (Member' type Expr).
-
-Record Union' {type Expr : Set} : Set := Build_Union
-{ u_fields : list (Member' type Expr)
-  (* ^ fields with type, initializer, and layout information *)
-; u_dtor : obj_name
-  (* ^ the name of the destructor *)
-; u_trivially_destructible : bool
-  (* ^ whether objects of the union type are trivially destructible. *)
-; u_delete : option obj_name
-  (* ^ name of [operator delete], if it exists *)
-; u_size : N
-  (* ^ size of the union (including padding) *)
-; u_alignment : N
-  (* ^ alignment of the union *)
-}.
-#[global] Arguments Union' _ _ : clear implicits, assert.
-#[global] Arguments Build_Union {_ _} &.
-#[global] Instance: EqDecision2 Union'.
-Proof. solve_decision. Defined.
-Notation Union := (Union' type Expr).
-
-
-Variant LayoutType : Set := POD | Standard | Unspecified.
-#[global] Instance: EqDecision LayoutType.
-Proof. solve_decision. Defined.
-
-
-Record Struct' {type Expr : Set} : Set := Build_Struct
-{ s_bases : list (globname * LayoutInfo)
-  (* ^ base classes *)
-; s_fields : list (Member' type Expr)
-  (* ^ fields with type, initializer, and layout information *)
-; s_virtuals : list (obj_name * option obj_name)
-  (* ^ function_name -> symbol *)
-; s_overrides : list (obj_name * obj_name)
-  (* ^ k |-> v ~ update k with v *)
-; s_dtor : obj_name
-  (* ^ the name of the destructor.
-     NOTE at the C++ abstract machine level, there is only
-          one destructor, but implementations (and name mangling)
-          use multiple destructors in cases of classes with [virtual]
-          inheritence.
-   *)
-; s_trivially_destructible : bool
-  (* ^ this is actually computable, and we could compute it *)
-; s_delete : option obj_name
-  (* ^ the name of a [delete] member function in case virtual dispatch is used to destroy an
-     object of this type. *)
-; s_layout : LayoutType
-  (* ^ the type of layout semantics *)
-(* The remaining fields are implementation-dependent. They might be mandated by the per-platform ABI. *)
-; s_size : N
-  (* ^ size of the structure (including padding) *)
-; s_alignment : N
-  (* ^ alignment of the structure *)
-}.
-#[global] Arguments Struct' _ _ : clear implicits, assert.
-#[global] Arguments Build_Struct {_ _} &.
-#[global] Instance: EqDecision2 Struct'.
-Proof. solve_decision. Defined.
-Notation Struct := (Struct' type Expr).
-
-Definition has_vtable {type Expr} (s : Struct' type Expr) : bool :=
-  match s.(s_virtuals) with
-  | nil => false
-  | _ :: _ => true
-  end.
-#[global] Arguments has_vtable _ _ & _ : assert.
-
-(* [has_virtual_dtor s] returns true if the destructor is virtual. *)
-Definition has_virtual_dtor {type Expr} (s : Struct' type Expr) : bool :=
-  List.existsb (fun '(a,_) => bool_decide (a = s.(s_dtor))) s.(s_virtuals).
-#[global] Arguments has_virtual_dtor _ _ & _ : assert.
-
-Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
-#[global] Instance: EqDecision Ctor_type.
-Proof. solve_decision. Defined.
-
-
-(* Definition ctor_name (type : Ctor_type) (cls : globname) : obj_name := *)
-(*   match cls with *)
-(*   | String _ (String _ s) => *)
-(*     "_ZN" ++ s ++ "C" ++ (match type with *)
-(*                           | Ct_Complete => "1" *)
-(*                           | Ct_Base => "2" *)
-(*                           | Ct_Comdat => "5" *)
-(*                           end) ++ "Ev" *)
-(*   | _ => "" *)
-(*   end. *)
-
-Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
-#[global] Instance: EqDecision Dtor_type.
-Proof. solve_decision. Defined.
-
-Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
-  match cls with
-  | BS.String _ (BS.String _ s) =>
-    ("_ZN" ++ s ++ "D" ++ ("0" (*match type with
-                          | Dt_Deleting => "0"
-                          | Dt_Complete => "1"
-                          | Dt_Base => "2"
-                          | Dt_Comdat => "5"
-                          end *)) ++ "Ev")
-  | _ => ""
-  end%bs.
-
 (* Values in Object files. These can be externed. *)
-Variant ObjValue' {type Expr : Set} : Set :=
+Variant ObjValue' {classname type Expr : Set} : Set :=
 | Ovar         (_ : type) (_ : option Expr)
 | Ofunction    (_ : Func' type Expr)
-| Omethod      (_ : Method' type Expr)
-| Oconstructor (_ : Ctor' type Expr)
-| Odestructor  (_ : Dtor' type Expr).
-#[global] Arguments ObjValue' _ _ : clear implicits, assert.
-#[global] Arguments Ovar _ _ &.
-#[global] Arguments Ofunction _ _ &.
-#[global] Arguments Omethod _ _ &.
-#[global] Arguments Oconstructor _ _ &.
-#[global] Arguments Odestructor _ _ &.
-#[global] Instance: EqDecision2 ObjValue'.
+| Omethod      (_ : Method' classname type Expr)
+| Oconstructor (_ : Ctor' classname type Expr)
+| Odestructor  (_ : Dtor' classname type Expr).
+#[global] Arguments ObjValue' _ _ _ : clear implicits, assert.
+#[global] Arguments Ovar _ _ _ &.
+#[global] Arguments Ofunction _ _ _ &.
+#[global] Arguments Omethod _ _ _ &.
+#[global] Arguments Oconstructor _ _ _ &.
+#[global] Arguments Odestructor _ _ _ &.
+#[global] Instance: EqDecision3 ObjValue'.
 Proof. solve_decision. Defined.
-Notation ObjValue := (ObjValue' type Expr).
+Notation ObjValue := (ObjValue' globname type Expr).
 
 (**
 TODO: [Tmember_func], [type_of_value] seem misplaced
 *)
-
-(* [Tmember_func ty fty] constructs the function type for a
-     member function that takes a [this] parameter of [ty]
-
-   TODO technically the [this] parameter is [const], but we are not
-        treating [const] correctly right now, so we make it non-const
-        in the type. The C++ typesystem prevents us from attempting to
-        modify the value of [this] since it is not an Lvalue.
- *)
-Definition Tmember_func (ty : exprtype) (fty : functype) : functype :=
-  match fty with
-  | @Tfunction cc ar ret args => Tfunction (cc:=cc) (ar:=ar) ret (Tptr ty :: args)
-  | _ => fty
-  end.
 
 (** [type_of_value o] returns the type of the given [ObjValue] *)
 Definition type_of_value (o : ObjValue) : type :=
@@ -278,22 +51,22 @@ Definition type_of_value (o : ObjValue) : type :=
     Tmember_func (Tnamed d.(d_class)) $ Tfunction (cc:=d.(d_cc)) Tvoid nil
   end.
 
-Variant GlobDecl' {type Expr : Set} : Set :=
+Variant GlobDecl' {classname type Expr : Set} : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
 | Gunion    (_ : Union' type Expr) (* union body *)
-| Gstruct   (_ : Struct' type Expr) (* struct body *)
+| Gstruct   (_ : Struct' classname type Expr) (* struct body *)
 | Genum     (_ : type) (_ : list ident) (* *)
 | Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
 | Gtypedef  (_ : type).
-#[global] Arguments GlobDecl' _ _ : clear implicits, assert.
-#[global] Arguments Gunion _ _ &.
-#[global] Arguments Gstruct _ _ &.
-#[global] Arguments Genum _ _ &.
-#[global] Arguments Gconstant _ _ &.
-#[global] Arguments Gtypedef _ _ &.
-#[global] Instance: EqDecision2 GlobDecl'.
+#[global] Arguments GlobDecl' _ _ _ : clear implicits, assert.
+#[global] Arguments Gunion _ _ _ &.
+#[global] Arguments Gstruct _ _ _ &.
+#[global] Arguments Genum _ _ _ &.
+#[global] Arguments Gconstant _ _ _ &.
+#[global] Arguments Gtypedef _ _ _ &.
+#[global] Instance: EqDecision3 GlobDecl'.
 Proof. solve_decision. Defined.
-Notation GlobDecl := (GlobDecl' type Expr).
+Notation GlobDecl := (GlobDecl' globname type Expr).
 
 Definition symbol_table : Type := IM.t ObjValue.
 

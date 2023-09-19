@@ -60,7 +60,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     sout = sout.substr(4, sout.length() - 4);
     print.output() << "\"_Z" << sout << "\"";
 }
-#else  /* CLANG_NAMES */
+#else /* CLANG_NAMES */
 #ifdef STRUCTURED_NAMES
 namespace {
 unsigned
@@ -451,6 +451,16 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
     } else {
         assert(false);
         //fatal("unknown value category");
+    }
+}
+
+void
+ClangPrinter::printInstantiatableRecordName(const RecordDecl *decl,
+                                            CoqPrinter &print) {
+    if (print.templates()) {
+        printType(decl->getTypeForDecl(), print);
+    } else {
+        printTypeName(decl, print);
     }
 }
 

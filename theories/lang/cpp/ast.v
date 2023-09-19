@@ -10,6 +10,7 @@ From bedrock.lang.cpp.syntax Require Export
      stmt
      types
      typing
+     decl
      translation_unit.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.

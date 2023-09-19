@@ -83,7 +83,7 @@ Section with_Σ.
 
   (** [union_def R cls st q] is the ownership of the union where [R ty q] is
       owned for each field and base class *)
-  Definition union_def (R : type -> cQp.t -> Rep) (cls : globname) (st : translation_unit.Union) (q : cQp.t) : Rep :=
+  Definition union_def (R : type -> cQp.t -> Rep) (cls : globname) (st : decl.Union) (q : cQp.t) : Rep :=
     unionR cls q None \\//
     ([\/ list] idx |-> m ∈ st.(u_fields),
       let f := _field {| f_name := m.(mem_name) ; f_type := cls |} in

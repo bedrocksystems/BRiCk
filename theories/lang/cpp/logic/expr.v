@@ -172,13 +172,12 @@ Module Type Expr.
      * - where [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
     Axiom wp_lval_member : forall ty a m mut Q,
-        match valcat_of a with
-        | Prvalue => False
-        | Lvalue =>
+        match valcat_of a , drop_qualifiers (type_of a) with
+        | Lvalue , Tnamed nm =>
           letI* base, free := wp_lval a in
-          letI* p := read_decl (base ,, _field m) ty in
+          letI* p := read_decl (base ,, _field {| f_type := nm ; f_name := m |}) ty in
           Q p free
-        | Xvalue => False
+        | _ , _ => False
           (* NOTE If the object is a temporary, then the field access will also be a
              temporary. Being conservative is sensible in our semantic style.
           *)
@@ -189,15 +188,14 @@ Module Type Expr.
      * - [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
     Axiom wp_xval_member : forall ty a m mut Q,
-        match valcat_of a with
-        | Prvalue => False
+        match valcat_of a , drop_qualifiers (type_of a) with
+        | Xvalue , Tnamed nm =>
+          letI* base, free := wp_xval a in
+          letI* p := read_decl (base ,, _field {| f_type := nm ; f_name := m |}) ty in
+          Q p free
+        | _ , _ => False
           (* This does not occur because our AST explicitly contains [Cl2r] casts.
            *)
-        | Xvalue =>
-          letI* base, free := wp_xval a in
-          letI* p := read_decl (base ,, _field m) ty in
-          Q p free
-       | _ => False
         end%I
       |-- wp_xval (Emember a m mut ty) Q.
 
@@ -1438,7 +1436,7 @@ Module Type Expr.
        See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
        frontend desugars all of these to initialize exactly one element.
      *)
-    Definition union_inits (u : translation_unit.Union) (es : list Expr)
+    Definition union_inits (u : decl.Union) (es : list Expr)
       : option (list Initializer) :=
       match u.(u_fields) , es with
       | m :: _ , e :: nil =>

@@ -354,11 +354,11 @@ Module ExprNotations.
          , format "'[' alignof(expr:  e ) ']'"
          , only printing).
 
-  Notation "'offsetof(' fld ')'"
-      := (Eoffsetof (Oo_Field (Build_field _ fld%bs)) _)
+  Notation "'offsetof(' cls , fld ')'"
+      := (Eoffsetof cls%bs fld%bs _)
          ( in custom CPP_expr at level 200
          , fld constr
-         , format "'[' offsetof( fld ) ']'"
+         , format "'[' offsetof( cls , fld ) ']'"
          , only printing).
 
   Notation "'#' cls ()"

@@ -129,7 +129,7 @@ public:
 
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
                                    CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Tvar");
+        print.ctor("Tvar", false);
         print.str(type->getDecl()->getNameAsString());
         print.end_ctor();
     }
@@ -385,7 +385,7 @@ public:
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
                                     CoqPrinter& print, ClangPrinter& cprint) {
         if (type->getDecl()) {
-            print.ctor("Tnamed", false);
+            print.ctor("Tvar", false);
             cprint.printTypeName(type->getDecl(), print);
             print.end_ctor();
         } else {

@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export bedrock.prelude.base.
+Require bedrock.prelude.option.
 Require Export bedrock.lang.cpp.ast.
 
 (** * Derived forms used by cpp2v *)
@@ -123,6 +124,22 @@ Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
 
 Definition Ebuiltin (nm : obj_name) (ty : type) : Expr :=
   Ecast Cbuiltin2fun (Evar (Gname nm) ty) Prvalue (Tptr ty).
+
+Definition Emember (arrow : bool) (e : Expr) (f : ident + obj_name) (mut : bool) (ty : decltype) : _ :=
+  option.get_some $
+    let e :=
+      if arrow then
+        match drop_qualifiers $ type_of e with
+        | Tptr t => Some (Ederef e t)
+        | _ => None
+        end
+      else
+        Some e
+    in
+    (fun e => match f with
+           | inr nm => Ecomma e (Evar (Gname nm) ty)
+           | inl f => Emember e f mut ty
+           end) <$> e.
 
 (** ** Statements *)
 

@@ -229,3 +229,34 @@ End add_opt.
 
 Lemma option_list_nil {A} (x : option A) : option_list x = [] -> x = None.
 Proof. case: x => //=. Qed.
+
+(** *** Forcing
+
+    The functions [force_some] and [get_some] ascribe a precise
+    type to the function that extracts a value from an [option].
+    Because of the complex types, these should only be used for
+    convenience wrappers that are meant to be written by user terms.
+
+    Example.
+    Suppose that you have a complex data structure [T] that
+    can be easily represented via a [string]. You might implement
+    [parse : string -> option T], and then provide a convenience wrapper
+    [mk : forall s : string, force_some (parse s)]. This allows users to
+    write [mk "foo,bar,baz"] and they will get a type error if
+    ["foo,bar,baz"] does not parse.
+    This use case fits within the functionality of [String Notation]
+    but this setup is a bit more general allowing parsing and checking
+    invariants on other user-written data.
+ *)
+
+Definition force_some {T : Set} (o : option T) : Set :=
+  match o with
+  | Some _ => T
+  | None => unit
+  end.
+
+Definition get_some {T : Set} (o : option T) : force_some o :=
+  match o as o return force_some o with
+  | Some t => t
+  | None => tt
+  end.

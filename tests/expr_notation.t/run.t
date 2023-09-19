@@ -355,7 +355,7 @@
   
   Arguments Ecast_elide_2 cast vc
   Ecast_elide_2 uses section variable ty.
-  Emember_1 = {e: $"foo"."bar"}
+  Emember_1 = Emember ({e: $"foo"}) "bar" false ty
        : Expr
   
   Emember_1 uses section variable ty.
@@ -447,7 +447,7 @@
        : Expr
   
   Ealignof_Expr_3 uses section variable ty.
-  Eoffsetof_1 = {e: offsetof("bar")}
+  Eoffsetof_1 = {e: offsetof({?: "foo"},"bar")}
        : Expr
   
   Eoffsetof_1 uses section variable ty.
