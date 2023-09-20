@@ -1003,15 +1003,15 @@ Section FromToBytes.
         by apply _Z_from_signed_to_unsigned_bytes_le.
     Qed.
 
-    Lemma _Z_from_bytes_Big_Unsigned_bound_internal:
+    Lemma _Z_from_bytes_Unsigned_bound_internal (endianness : endian) :
       forall lst,
-        (0 <= _Z_from_bytes_def Big Unsigned (rev lst) < 256 ^ (length $ rev lst))%Z.
+        (0 <= _Z_from_bytes_def endianness Unsigned (rev lst) < 256 ^ (length $ rev lst))%Z.
     Proof.
       rewrite/_Z_from_bytes_def.
       rewrite/_Z_from_bytes_le.
       move => lst.
       apply _Z_from_bytes_unsigned_le_bounds.
-      by rewrite !rev_length.
+      case_match; by rewrite !rev_length.
     Qed.
   End FromToFacts_internal.
 
@@ -1091,21 +1091,21 @@ Section FromToBytes.
       forall endianness sgn (cnt: nat),
         _Z_from_bytes endianness sgn (repeat 0%N cnt) = 0%Z.
     Proof. move=> *; rewrite _Z_from_bytes_eq; apply _Z_from_bytes_def_0s. Qed.
-    Lemma _Z_to_bytes_Big_Unsigned_bound:
+    Lemma _Z_from_bytes_Unsigned_bound (endianness : endian) :
       forall lst,
-        (0 <= _Z_from_bytes Big Unsigned lst < 256 ^ (length lst))%Z.
+        (0 <= _Z_from_bytes endianness Unsigned lst < 256 ^ (length lst))%Z.
     Proof.
       move => lst.
       rewrite -[lst]rev_involutive.
       rewrite _Z_from_bytes_eq.
-      exact: _Z_from_bytes_Big_Unsigned_bound_internal.
+      exact: _Z_from_bytes_Unsigned_bound_internal.
     Qed.
-    Lemma _Z_to_bytes_Big_Unsigned_boundN:
+    Lemma _Z_from_bytes_Unsigned_boundN (endianness : endian) :
       forall lst,
-        (0 <= _Z_from_bytes Big Unsigned lst < 256 ^ (lengthN lst))%Z.
+        (0 <= _Z_from_bytes endianness Unsigned lst < 256 ^ (lengthN lst))%Z.
     Proof.
       move=> *; rewrite/lengthN length_lengthN Nat2N.id nat_N_Z.
-      exact: _Z_to_bytes_Big_Unsigned_bound.
+      exact: _Z_from_bytes_Unsigned_bound.
     Qed.
   End FromBytesFacts_external.
 
