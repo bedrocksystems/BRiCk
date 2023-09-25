@@ -160,9 +160,9 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
             ClangPrinter &cprint) {
     print.ctor("Build_Method");
     cprint.printQualType(decl->getReturnType(), print);
-    print.output() << fmt::line;
+    print.output() << fmt::nbsp;
     cprint.printInstantiatableRecordName(decl->getParent(), print);
-    print.output() << fmt::line;
+    print.output() << fmt::nbsp;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
     print.output() << fmt::nbsp;
 
