@@ -596,7 +596,12 @@ public:
      */
     void printTemplateArgs(const CXXRecordDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
-        print.begin_list();
+        if (auto parent_record =
+                dyn_cast<CXXRecordDecl>(decl->getLexicalParent())) {
+            printTemplateArgs(parent_record, print, cprint, false);
+        } else {
+            print.begin_list();
+        }
 
         if (auto params = decl->getDescribedTemplateParams()) {
             for (auto decl : params->asArray()) {
