@@ -747,8 +747,6 @@ public:
         print.boolean(expr->isArrow()) << fmt::nbsp;
 
         auto base = expr->getBase();
-        auto md = dyn_cast<FieldDecl>(expr->getMemberDecl());
-        assert(md && "MemberDecl expected to be a FieldDecl");
         cprint.printExpr(base, print, li);
         print.output() << fmt::nbsp;
         if (auto fd = dyn_cast<FieldDecl>(member)) {
