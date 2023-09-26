@@ -160,9 +160,9 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
             ClangPrinter &cprint) {
     print.ctor("Build_Method");
     cprint.printQualType(decl->getReturnType(), print);
-    print.output() << fmt::line;
+    print.output() << fmt::nbsp;
     cprint.printInstantiatableRecordName(decl->getParent(), print);
-    print.output() << fmt::line;
+    print.output() << fmt::nbsp;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
     print.output() << fmt::nbsp;
 
@@ -596,7 +596,12 @@ public:
      */
     void printTemplateArgs(const CXXRecordDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
-        print.begin_list();
+        if (auto parent_record =
+                dyn_cast<CXXRecordDecl>(decl->getLexicalParent())) {
+            printTemplateArgs(parent_record, print, cprint, false);
+        } else {
+            print.begin_list();
+        }
 
         if (auto params = decl->getDescribedTemplateParams()) {
             for (auto decl : params->asArray()) {
