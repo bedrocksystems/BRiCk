@@ -37,7 +37,7 @@ public:
 
 public:
     // Implementation of `clang::ASTConsumer`
-    virtual void HandleTranslationUnit(clang::ASTContext &Context) {
+    virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
         toCoqModule(&Context, Context.getTranslationUnitDecl());
     }
 
@@ -54,7 +54,7 @@ public:
     // Implementation of clang::ASTMutationListener
     virtual void
     AddedCXXTemplateSpecialization(const ClassTemplateDecl *TD,
-                                   const ClassTemplateSpecializationDecl *D) {
+                                   const ClassTemplateSpecializationDecl *D) override {
         // TODO [const_cast] is a code-smell.
         // The implementation calls this method from a non-`const` method.
         // it is not clear why this method should take a
