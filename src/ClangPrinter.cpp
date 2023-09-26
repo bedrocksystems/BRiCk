@@ -114,6 +114,46 @@ ClangPrinter::printInstantiatableRecordName(const RecordDecl *decl,
 }
 
 void
+ClangPrinter::printNameForAnonTemplateParam(unsigned depth, unsigned index,
+                                            CoqPrinter &print) {
+    for (auto d = decl_; d; d = d->getLexicalParent()) {
+        if (auto psd = dyn_cast<ClassTemplatePartialSpecializationDecl>(d)) {
+            for (auto i : psd->getTemplateParameters()->asArray()) {
+                if (auto tpd = dyn_cast<TemplateTypeParmDecl>(i)) {
+                    if (tpd->getDepth() != depth)
+                        break;
+                    if (tpd->getIndex() == index) {
+                        print.str(tpd->getName());
+                        return;
+                    }
+                }
+            }
+        } else if (auto fd = dyn_cast<FunctionDecl>(d)) {
+            if (auto x = fd->getDescribedTemplateParams())
+                for (auto i : x->asArray()) {
+                    if (auto tpd = dyn_cast<TemplateTypeParmDecl>(i)) {
+                        if (tpd->getDepth() != depth)
+                            break;
+                        if (tpd->getIndex() == index) {
+                            print.str(tpd->getName());
+                            return;
+                        }
+                    }
+                }
+        }
+    }
+    logging::debug() << "Could not find variable declaration " << depth << " "
+                     << index << " in " << decl_;
+
+    if (decl_) {
+#if CLANG_VERSION_MAJOR > 15
+        decl_->dumpAsDecl();
+#endif
+    }
+    print.str("??TODO??");
+}
+
+void
 ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
     if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
         print.ctor("Build_field", false);

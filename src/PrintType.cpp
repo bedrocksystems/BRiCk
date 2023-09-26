@@ -130,7 +130,12 @@ public:
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
                                    CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tvar", false);
-        print.str(type->getDecl()->getNameAsString());
+        if (auto ident = type->getIdentifier()) {
+            print.str(ident->getName());
+        } else {
+            cprint.printNameForAnonTemplateParam(type->getDepth(),
+                                                 type->getIndex(), print);
+        }
         print.end_ctor();
     }
 

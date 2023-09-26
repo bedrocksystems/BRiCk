@@ -27,6 +27,7 @@ class CompilerInstance;
 class Sema;
 class TypeDecl;
 class RecordDecl;
+class DeclContext;
 }
 
 class CoqPrinter;
@@ -36,6 +37,13 @@ bool is_dependent(const clang::Expr*);
 
 class ClangPrinter {
 public:
+    ClangPrinter withDecl(const clang::DeclContext* d) const {
+        return {*this, d};
+    }
+
+    void printNameForAnonTemplateParam(unsigned depth, unsigned index,
+                                       CoqPrinter& print);
+
     bool printDecl(const clang::Decl* d, CoqPrinter& print);
 
     bool printLocalDecl(const clang::Decl* d, CoqPrinter& print);
@@ -90,7 +98,12 @@ public:
     }
 
 private:
+    ClangPrinter(const ClangPrinter& from, const clang::DeclContext* decl)
+        : compiler_(from.compiler_), context_(from.context_),
+          mangleContext_(from.mangleContext_), decl_{decl} {}
+
     clang::CompilerInstance* compiler_;
     clang::ASTContext* context_;
     clang::MangleContext* mangleContext_;
+    const clang::DeclContext* decl_{nullptr};
 };

@@ -547,7 +547,8 @@ public:
     }
 
     bool VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print,
-                            ClangPrinter &cprint, const ASTContext &ctxt) {
+                            ClangPrinter &cprinter, const ASTContext &ctxt) {
+        auto cprint = cprinter.withDecl(decl);
         if (!decl->isCompleteDefinition()) {
             print.ctor("Dtype");
             cprint.printTypeName(decl, print);
@@ -831,7 +832,8 @@ public:
     }
 
     bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
-                           ClangPrinter &cprint, const ASTContext &) {
+                           ClangPrinter &cprinter, const ASTContext &) {
+        auto cprint = cprinter.withDecl(decl);
         bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("function", emit, decl, print, cprint)) {
             return emit;
@@ -845,10 +847,12 @@ public:
     }
 
     bool VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
-                            ClangPrinter &cprint, const ASTContext &) {
+                            ClangPrinter &cprinter, const ASTContext &) {
+        auto cprint = cprinter.withDecl(decl);
         bool emit = printSpecializationInfo(decl, print, cprint);
-        if (not templatePreamble("method", false, decl, print, cprint))
+        if (not templatePreamble("method", false, decl, print, cprint)) {
             return emit;
+        }
         print.output() << fmt::BOOL(decl->isStatic()) << fmt::nbsp;
 
         cprint.printObjName(decl, print);
@@ -858,8 +862,9 @@ public:
     }
 
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
-                                 CoqPrinter &print, ClangPrinter &cprint,
+                                 CoqPrinter &print, ClangPrinter &cprinter,
                                  const ASTContext &) {
+        auto cprint = cprinter.withDecl(decl);
         bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("constructor", false, decl, print, cprint))
             return emit;
@@ -972,8 +977,9 @@ public:
     }
 
     bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
-                                CoqPrinter &print, ClangPrinter &cprint,
+                                CoqPrinter &print, ClangPrinter &cprinter,
                                 const ASTContext &ctxt) {
+        auto cprint = cprinter.withDecl(decl);
         bool emit = printSpecializationInfo(decl, print, cprint);
         if (not templatePreamble("destructor", false, decl, print, cprint))
             return emit;
