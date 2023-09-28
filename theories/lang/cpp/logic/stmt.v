@@ -177,6 +177,18 @@ Module Type Stmt.
       wp_decls ρ ds Q |-- (|={top}=> wp_decls ρ ds Q).
     Proof. by iIntros "$". Qed.
 
+    Lemma wp_decls_fupd ρ ds (Q : region -> FreeTemps -> epred) :
+      wp_decls ρ ds (funI ρ free => |={top}=> Q ρ free) |--
+      wp_decls ρ ds Q.
+    Proof.
+      rewrite wp_decls_eq /=.
+      elim: ds ρ Q => [|d ds IH] ρ Q /=.
+      - by iIntros "H"; iMod "H".
+      - iIntros ">H !> !>".
+        iApply (wp_decl_frame with "[] H").
+        iIntros (??). iApply IH.
+    Qed.
+
     (** * Blocks *)
 
     Fixpoint wp_block_def (ρ : region) (ss : list Stmt) (Q : Kpred) : mpred :=
