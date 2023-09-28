@@ -173,14 +173,9 @@ Module Type Stmt.
       - by iIntros "H"; iMod "H"; iMod "H"; iIntros "!>".
     Qed.
 
-    Lemma wp_decls_fupd ρ ds (Q : region -> FreeTemps -> epred) :
+    Lemma wp_decls_fupd_old_silly ρ ds (Q : region -> FreeTemps -> epred) :
       wp_decls ρ ds Q |-- (|={top}=> wp_decls ρ ds Q).
-    Proof.
-      rewrite wp_decls_eq.
-      induction ds.
-      - by iIntros "H"; iMod "H".
-      - by iIntros "H !>".
-    Qed.
+    Proof. by iIntros "$". Qed.
 
     (** * Blocks *)
 
