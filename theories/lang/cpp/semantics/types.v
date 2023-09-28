@@ -5,6 +5,7 @@
  *)
 From elpi Require Import locker.
 From bedrock.prelude Require Import base.
+From bedrock.prelude Require Export option.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types typing.
 From bedrock.lang.cpp.semantics Require Import genv.
 
@@ -34,9 +35,6 @@ Definition GlobDecl_align_of (g : GlobDecl) : option N :=
     end
   | _ => None
   end.
-Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
-| Rleq_None {x} : Roption_leq R None x
-| Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
 
 
 #[global] Instance proper_GlobDecl_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
