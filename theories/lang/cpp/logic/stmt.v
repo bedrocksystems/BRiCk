@@ -164,23 +164,29 @@ Module Type Stmt.
         iIntros (??). iApply IHds. iIntros (??) "X". by iApply "a".
     Qed.
 
+    Lemma wp_decls_shift ρ ds (Q : region -> FreeTemps -> epred) :
+      (|={top}=> wp_decls ρ ds (funI ρ free => |={top}=> Q ρ free)) |--
+      wp_decls ρ ds Q.
+    Proof.
+      rewrite wp_decls_eq /=.
+      elim: ds ρ Q => [|d ds IH] ρ Q /=.
+      - by iIntros ">>H".
+      - iIntros ">>H !> !>".
+        iApply (wp_decl_frame with "[] H").
+        iIntros (??) "H". iApply IH. by iModIntro.
+    Qed.
+
     Lemma fupd_wp_decls ρ ds (Q : region -> FreeTemps -> epred) :
       (|={top}=> wp_decls ρ ds Q) |-- wp_decls ρ ds Q.
     Proof.
-      rewrite wp_decls_eq.
-      induction ds.
-      - by iIntros "H"; iMod "H".
-      - by iIntros "H"; iMod "H"; iMod "H"; iIntros "!>".
+      rewrite -{2}wp_decls_shift; f_equiv.
+      iApply wp_decls_frame. by iIntros "* $".
     Qed.
 
     Lemma wp_decls_fupd ρ ds (Q : region -> FreeTemps -> epred) :
-      wp_decls ρ ds Q |-- (|={top}=> wp_decls ρ ds Q).
-    Proof.
-      rewrite wp_decls_eq.
-      induction ds.
-      - by iIntros "H"; iMod "H".
-      - by iIntros "H !>".
-    Qed.
+      wp_decls ρ ds (funI ρ free => |={top}=> Q ρ free) |--
+      wp_decls ρ ds Q.
+    Proof. iIntros "H". iApply wp_decls_shift. by iModIntro. Qed.
 
     (** * Blocks *)
 

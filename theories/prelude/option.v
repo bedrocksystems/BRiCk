@@ -127,6 +127,54 @@ End on_props.
 End on_props.
 #[global] Typeclasses Opaque on.
 
+Variant Roption_leq {A} (R : relation A) : relation (option A) :=
+| Rleq_None {x} : Roption_leq R None x
+| Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
+
+Section Roption_leq.
+  Context {A : Type}.
+  Implicit Type (R : relation A) (ox oy : option A) (x y : A).
+
+  #[local] Hint Constructors Roption_leq : core.
+
+  Lemma Roption_leq_option_relation {R ox oy} :
+    Roption_leq R ox oy <-> option_relation R (const False) (const True) ox oy.
+  Proof. destruct ox, oy; simpl; split; try inversion 1; naive_solver. Qed.
+
+  Lemma Roption_leq_Some_l_inv {R x oy} :
+    Roption_leq R (Some x) oy <-> ∃ y, oy = Some y ∧ R x y.
+  Proof. split; inversion 1; naive_solver. Qed.
+  Lemma Roption_leq_None_inv {R oy} :
+    Roption_leq R None oy <-> True.
+  Proof. split; inversion 1; naive_solver. Qed.
+
+  Lemma Roption_leq_inv_l_Some_eq {R ox oy} :
+    Roption_leq R ox oy <-> forall x, ox = Some x -> exists y, oy = Some y /\ R x y.
+  Proof. split. by inversion_clear 1; naive_solver. by destruct ox; naive_solver. Qed.
+
+  Lemma Roption_leq_inv_l_Some {R ox oy} :
+    Roption_leq R ox oy <->
+    match ox with
+    | None => True
+    | Some x => exists y, oy = Some y /\ R x y
+    end.
+  Proof. rewrite Roption_leq_inv_l_Some_eq; destruct ox; naive_solver. Qed.
+
+  Lemma Roption_leq_equiv R {ox oy} :
+    Roption_leq R ox oy <->
+    match ox, oy with
+    | None, _ => True
+    | Some x, None => False
+    | Some x, Some y => R x y
+    end.
+  Proof. split. by inversion_clear 1. by destruct ox, oy; naive_solver. Qed.
+
+  Lemma Roption_leq_eq_equiv {R ox oy} :
+    Roption_leq eq ox oy <-> forall a, ox = Some a -> oy = Some a.
+  Proof. rewrite Roption_leq_equiv; by destruct ox, oy; naive_solver. Qed.
+
+End Roption_leq.
+
 mlock Definition some_Forall2 {A} (R : relation A) (oa1 oa2 : option A) :=
   is_Some oa1 ∧ is_Some oa2 ∧ option_Forall2 R oa1 oa2.
 #[global] Arguments some_Forall2 {A} _ _ _ : assert.
