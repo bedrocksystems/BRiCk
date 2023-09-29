@@ -226,17 +226,64 @@ Module Type Stmt.
       iApply Kfree_frame. iApply "X".
     Qed.
 
-    Lemma fupd_wp_block ρ body Q :
-      (|={top}=> wp_block ρ body Q) |-- wp_block ρ body Q.
+    Lemma wp_block_shift ρ ds (Q : Kpred) :
+      (|={top}=> wp_block ρ ds (|={top}=> Q)) |--
+      wp_block ρ ds Q.
     Proof.
-      induction body.
-      - by rewrite wp_block_eq /=; iIntros "H"; iMod "H".
-      - rewrite wp_block_eq /= -wp_block_eq.
-        iIntros "H"; case: a.
-        all: try by iIntros; iMod "H"; iMod "H";
-          iIntros "!> !>".
-        by iIntros; iApply fupd_wp_decls; iMod "H".
+      elim: ds ρ Q => [|d ds IH] ρ Q /=; rewrite wp_block_eq /=.
+      - iIntros ">>H !> !> /=". by iMod "H" as ">$".
+      - rewrite -wp_block_eq.
+        iAssert (
+        (|={⊤}=> |={⊤}▷=> wp ρ d (Kseq (wp_block ρ ds) (|={⊤}=> Q))) -∗
+        |={⊤}▷=> wp ρ d (Kseq (wp_block ρ ds) Q))%I as "W". {
+          iIntros ">>H !> !> !>". iMod "H". iApply (wp_frame with "[] H"). done.
+          iIntros (?) "H".
+          (* Kseq *)
+          admit.
+          (* destruct rt => /=. *)
+          (* Kseq
+          Kseq_shift
+          iApply (Kseq_frame with "[] [] H"). *)
+        }
+      destruct d. all: try by iExact "W".
+      iIntros "{W} H".
+      iApply wp_decls_shift.
+      iMod "H"; iModIntro.
+      iApply (wp_decls_frame with "[] H").
+      iIntros (??) ">H !> !> !> !>". iApply IH.
+      iMod "H"; iModIntro.
+      iApply (wp_block_frame with "[] H").
+      iIntros (rt) "H !> /=". rewrite monPred_at_fupd.
+      iApply (interp_shift with "H").
+    Admitted.
+
+    (*
+      iApply (interp_frame with "[] H").
+
+      rewrite monPred_at_fupd. eauto.
+      with "H").
+      iIntros ([]) "H /=".
+      rewrite /Kfree/Kat_exit/KP/= /monPred_at /monPred_fupd/=.
+      Kpred
+      iApply interp_shift.
+      interp
+
+
+      iApply IH.
     Qed.
+    *)
+
+    Lemma fupd_wp_block ρ ds Q :
+      (|={top}=> wp_block ρ ds Q) |-- wp_block ρ ds Q.
+    Proof.
+      rewrite -{2}wp_block_shift; f_equiv.
+      iApply wp_block_frame. by iIntros "* $".
+    Qed.
+
+    Lemma wp_block_fupd ρ ds Q :
+      wp_block ρ ds (|={top}=> Q) |--
+      wp_block ρ ds Q.
+    Proof. iIntros "H". iApply wp_block_shift. by iModIntro. Qed.
 
     (* proof mode *)
     #[global] Instance elim_modal_fupd_wp_block p P ρ body Q :
