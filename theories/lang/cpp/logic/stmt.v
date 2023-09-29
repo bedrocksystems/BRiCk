@@ -203,38 +203,27 @@ Module Type Stmt.
     Definition wp_block := wp_block_aux.(unseal).
     Definition wp_block_eq : @wp_block = _ := wp_block_aux.(seal_eq).
 
-    Lemma wp_block_frame : forall body ρ (Q Q' : Kpred),
+    Lemma wp_block_frame : forall ss ρ (Q Q' : Kpred),
         (Forall rt, Q rt -* Q' rt)
-        |-- wp_block ρ body Q -* wp_block ρ body Q'.
+        |-- wp_block ρ ss Q -* wp_block ρ ss Q'.
     Proof.
-      clear.
-      induction body; simpl; intros.
-      - rewrite wp_block_eq/wp_block_def.
+      induction ss as [|s ss]; simpl; intros. {
+        rewrite wp_block_eq/wp_block_def.
         by iIntros "Hcnt HQ"; iMod "HQ"; iApply "Hcnt".
-      - assert
-          (Forall rt, Q rt -* Q' rt |--
-                        (Forall ds, wp_decls ρ ds (fun ρ' free => |={⊤}▷=> wp_block ρ' body (Kfree free Q)) -*
-                                    wp_decls ρ ds (fun ρ' free => |={⊤}▷=> wp_block ρ' body (Kfree free Q'))) //\\
-                        (|> |={⊤}=> wp ρ a (Kseq (wp_block ρ body) Q) -*
-                            |={⊤}=> wp ρ a (Kseq (wp_block ρ body) Q'))).
-        { iIntros "X"; iSplit.
-          - iIntros (ds).
-            iApply wp_decls_frame. iIntros (??) "x".
-            iMod "x". iIntros "!> !>". iMod "x". iIntros "!>".
-            iRevert "x"; iApply IHbody.
-            iIntros (?); iApply Kfree_frame; iApply "X".
-          - iIntros "!> !> x !>". iRevert "x"; iApply wp_frame; first by reflexivity.
-            iIntros (rt); destruct rt =>/=; eauto.
-            by iApply IHbody. }
-        iIntros "X".
-        iDestruct (H with "X") as "X".
-        rewrite wp_block_eq /= -wp_block_eq.
-        destruct a; try by
-          iIntros "H"; iMod "H"; iIntros "!>";
-          iDestruct "X" as "[_ X]";
-          iIntros "!>"; iMod "X"; iMod "H"; iApply "X".
-
-        iDestruct "X" as "[X _]"; iApply "X".
+      }
+      iIntros "X".
+      assert ((Forall rt, Q rt -* Q' rt) |--
+        (|={⊤}▷=> wp ρ s (Kseq (wp_block ρ ss) Q)) -*
+        (|={⊤}▷=> wp ρ s (Kseq (wp_block ρ ss) Q'))) as Himpl.
+      { iIntros "X >H !> !>". iMod "H"; iModIntro. iRevert "H"; iApply wp_frame; first by reflexivity.
+        iIntros (rt); destruct rt => //=.
+        by iApply IHss. }
+      rewrite wp_block_eq /= -wp_block_eq.
+      destruct s; try by iApply (Himpl with "X").
+      iApply wp_decls_frame.
+      iIntros (??) ">H !> !>". iMod "H"; iModIntro.
+      iApply (IHss with "[X] H"); iIntros (?).
+      iApply Kfree_frame. iApply "X".
     Qed.
 
     Lemma fupd_wp_block ρ body Q :
