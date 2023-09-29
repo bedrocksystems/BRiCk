@@ -203,12 +203,25 @@ Module Type Stmt.
     Definition wp_block := wp_block_aux.(unseal).
     Definition wp_block_eq : @wp_block = _ := wp_block_aux.(seal_eq).
 
+    (* Show [wp_block] satisfies the fixpoint equation. *)
+    Lemma wp_block_unfold (ρ : region) (ss : list Stmt) (Q : Kpred) :
+      wp_block ρ ss Q =
+      (match ss with
+      | nil => |={top}=> |> |={top}=> Q Normal
+      | Sdecl ds :: ss =>
+          wp_decls ρ ds (funI ρ free =>
+                           |={top}=> |> |={top}=> wp_block ρ ss (Kfree free Q))
+      | s :: ss =>
+        |={top}=> |> |={top}=> wp ρ s (Kseq (wp_block ρ ss) (|={top}=> Q))
+      end)%I.
+    Proof. rewrite !wp_block_eq; by destruct ss. Qed.
+
     Lemma wp_block_frame : forall ss ρ (Q Q' : Kpred),
         (Forall rt, Q rt -* Q' rt)
         |-- wp_block ρ ss Q -* wp_block ρ ss Q'.
     Proof.
       induction ss as [|s ss]; simpl; intros. {
-        rewrite wp_block_eq/wp_block_def.
+        rewrite !wp_block_unfold.
         by iIntros "Hcnt HQ"; iMod "HQ"; iApply "Hcnt".
       }
       assert ((Forall rt, Q rt -* Q' rt) |--
@@ -222,7 +235,7 @@ Module Type Stmt.
         }
         iIntros (rt); destruct rt => //=.
         by iApply IHss. }
-      rewrite wp_block_eq /= -wp_block_eq.
+      rewrite !wp_block_unfold.
       iIntros "X"; destruct s; try by iApply (Himpl with "X").
       iApply wp_decls_frame.
       iIntros (??) ">H !> !>". iMod "H"; iModIntro.
@@ -234,7 +247,7 @@ Module Type Stmt.
       (|={top}=> wp_block ρ ds (|={top}=> Q)) |--
       wp_block ρ ds Q.
     Proof.
-      elim: ds ρ Q => [|d ds IH] ρ Q /=; rewrite wp_block_eq /= -?wp_block_eq.
+      elim: ds ρ Q => [|d ds IH] ρ Q /=; rewrite !wp_block_unfold /=.
       - iIntros ">>H !> !> /=". by iMod "H" as ">$".
       - iAssert (
         (|={⊤}=> |={⊤}▷=> wp ρ d (Kseq (wp_block ρ ds) (|={⊤}=> |={⊤}=> Q))) -∗
