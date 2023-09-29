@@ -255,7 +255,7 @@ Module Type Stmt.
           iIntros ">>H !> !> !>". iMod "H". iApply (wp_frame with "[] H"). done.
           iIntros (?) "H".
           iApply (Kseq_frame with "[] [] H").
-          { iIntros "!> %% W". iApply (wp_block_frame with "W"). }
+          { iApply wp_block_frame. }
           iIntros (?) "H". by rewrite fupd_idemp.
       }
       destruct d; try by iExact "W".
