@@ -151,6 +151,9 @@ Section derived_laws.
   Lemma entails_curry (P1 P2 Q : PROP) : (P1 ∗ P2 ⊢ Q) ↔ (P1 ⊢ P2 -∗ Q).
   Proof. split; eauto using wand_elim_l', wand_intro_r. Qed.
 
+  Lemma exist_unit (P : () -> PROP) : (∃ x : (), P x) ⊣⊢ P ().
+  Proof. iSplit. iDestruct 1 as ([]) "$". by iIntros "?"; iExists (). Qed.
+
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
   Proof. iIntros. iExists v; eauto. Qed.
