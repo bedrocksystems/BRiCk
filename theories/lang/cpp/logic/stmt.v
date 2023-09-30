@@ -197,57 +197,86 @@ Module Type Stmt.
           wp_decls ρ ds (funI ρ free =>
                            |={top}=> |> |={top}=> wp_block_def ρ ss (Kfree free Q))
       | s :: ss =>
-        |={top}=> |> |={top}=> wp ρ s (Kseq (wp_block_def ρ ss) Q)
+        |={top}=> |> |={top}=> wp ρ s (Kseq (wp_block_def ρ ss) (|={top}=> Q))
       end.
     Definition wp_block_aux : seal (@wp_block_def). Proof. by eexists. Qed.
     Definition wp_block := wp_block_aux.(unseal).
     Definition wp_block_eq : @wp_block = _ := wp_block_aux.(seal_eq).
 
-    Lemma wp_block_frame : forall body ρ (Q Q' : Kpred),
+    (* Show [wp_block] satisfies the fixpoint equation. *)
+    Lemma wp_block_unfold (ρ : region) (ss : list Stmt) (Q : Kpred) :
+      wp_block ρ ss Q =
+      (match ss with
+      | nil => |={top}=> |> |={top}=> Q Normal
+      | Sdecl ds :: ss =>
+          wp_decls ρ ds (funI ρ free =>
+                           |={top}=> |> |={top}=> wp_block ρ ss (Kfree free Q))
+      | s :: ss =>
+        |={top}=> |> |={top}=> wp ρ s (Kseq (wp_block ρ ss) (|={top}=> Q))
+      end)%I.
+    Proof. rewrite !wp_block_eq; by destruct ss. Qed.
+
+    Lemma wp_block_frame : forall ss ρ (Q Q' : Kpred),
         (Forall rt, Q rt -* Q' rt)
-        |-- wp_block ρ body Q -* wp_block ρ body Q'.
+        |-- wp_block ρ ss Q -* wp_block ρ ss Q'.
     Proof.
-      clear.
-      induction body; simpl; intros.
-      - rewrite wp_block_eq/wp_block_def.
+      induction ss as [|s ss]; simpl; intros. {
+        rewrite !wp_block_unfold.
         by iIntros "Hcnt HQ"; iMod "HQ"; iApply "Hcnt".
-      - assert
-          (Forall rt, Q rt -* Q' rt |--
-                        (Forall ds, wp_decls ρ ds (fun ρ' free => |={⊤}▷=> wp_block ρ' body (Kfree free Q)) -*
-                                    wp_decls ρ ds (fun ρ' free => |={⊤}▷=> wp_block ρ' body (Kfree free Q'))) //\\
-                        (|> |={⊤}=> wp ρ a (Kseq (wp_block ρ body) Q) -*
-                            |={⊤}=> wp ρ a (Kseq (wp_block ρ body) Q'))).
-        { iIntros "X"; iSplit.
-          - iIntros (ds).
-            iApply wp_decls_frame. iIntros (??) "x".
-            iMod "x". iIntros "!> !>". iMod "x". iIntros "!>".
-            iRevert "x"; iApply IHbody.
-            iIntros (?); iApply Kfree_frame; iApply "X".
-          - iIntros "!> !> x !>". iRevert "x"; iApply wp_frame; first by reflexivity.
-            iIntros (rt); destruct rt =>/=; eauto.
-            by iApply IHbody. }
-        iIntros "X".
-        iDestruct (H with "X") as "X".
-        rewrite wp_block_eq /= -wp_block_eq.
-        destruct a; try by
-          iIntros "H"; iMod "H"; iIntros "!>";
-          iDestruct "X" as "[_ X]";
-          iIntros "!>"; iMod "X"; iMod "H"; iApply "X".
-
-        iDestruct "X" as "[X _]"; iApply "X".
+      }
+      assert ((Forall rt, Q rt -* Q' rt) |--
+        (|={⊤}▷=> wp ρ s (Kseq (wp_block ρ ss) (|={⊤}=> Q))) -*
+        (|={⊤}▷=> wp ρ s (Kseq (wp_block ρ ss) (|={⊤}=> Q')))) as Himpl.
+      { iIntros "X >H !> !>". iMod "H"; iModIntro.
+        iApply (wp_frame with "[X] H"); first by reflexivity.
+        iAssert (Forall rt, (|={⊤}=> Q) rt -* (|={⊤}=> Q') rt)%I with "[X]" as "X". {
+          setoid_rewrite monPred_at_fupd.
+          iIntros (?) ">H !>". by iApply "X".
+        }
+        iIntros (rt); destruct rt => //=.
+        by iApply IHss. }
+      rewrite !wp_block_unfold.
+      iIntros "X"; destruct s; try by iApply (Himpl with "X").
+      iApply wp_decls_frame.
+      iIntros (??) ">H !> !>". iMod "H"; iModIntro.
+      iApply (IHss with "[X] H"); iIntros (?).
+      iApply Kfree_frame. iApply "X".
     Qed.
 
-    Lemma fupd_wp_block ρ body Q :
-      (|={top}=> wp_block ρ body Q) |-- wp_block ρ body Q.
+    Lemma wp_block_shift ρ ds (Q : Kpred) :
+      (|={top}=> wp_block ρ ds (|={top}=> Q)) |--
+      wp_block ρ ds Q.
     Proof.
-      induction body.
-      - by rewrite wp_block_eq /=; iIntros "H"; iMod "H".
-      - rewrite wp_block_eq /= -wp_block_eq.
-        iIntros "H"; case: a.
-        all: try by iIntros; iMod "H"; iMod "H";
-          iIntros "!> !>".
-        by iIntros; iApply fupd_wp_decls; iMod "H".
+      elim: ds ρ Q => [|d ds IH] ρ Q /=; rewrite !wp_block_unfold /=.
+      - iIntros ">>H !> !> /=". by iMod "H" as ">$".
+      - iAssert (
+        (|={⊤}=> |={⊤}▷=> wp ρ d (Kseq (wp_block ρ ds) (|={⊤}=> |={⊤}=> Q))) -∗
+        |={⊤}▷=> wp ρ d (Kseq (wp_block ρ ds) (|={⊤}=> Q)))%I as "W". {
+          iIntros ">>H !> !> !>". iMod "H". iApply (wp_frame with "[] H"). done.
+          iIntros (?) "H".
+          iApply (Kseq_frame with "[] [] H").
+          { iApply wp_block_frame. }
+          iIntros (?) "H". by rewrite fupd_idemp.
+      }
+      destruct d; try by iExact "W".
+      iIntros "{W} H". iApply wp_decls_shift. iMod "H"; iModIntro.
+      iApply (wp_decls_frame with "[] H"); iIntros (??) ">H !> !> !> !>".
+      iApply IH. iMod "H"; iModIntro.
+      iApply (wp_block_frame with "[] H"); iIntros (rt) "H !> /=".
+      rewrite monPred_at_fupd. iApply (interp_shift with "H").
     Qed.
+
+    Lemma fupd_wp_block ρ ds Q :
+      (|={top}=> wp_block ρ ds Q) |-- wp_block ρ ds Q.
+    Proof.
+      rewrite -{2}wp_block_shift; f_equiv.
+      iApply wp_block_frame. by iIntros "* $".
+    Qed.
+
+    Lemma wp_block_fupd ρ ds Q :
+      wp_block ρ ds (|={top}=> Q) |--
+      wp_block ρ ds Q.
+    Proof. iIntros "H". iApply wp_block_shift. by iModIntro. Qed.
 
     (* proof mode *)
     #[global] Instance elim_modal_fupd_wp_block p P ρ body Q :

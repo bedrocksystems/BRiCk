@@ -36,6 +36,35 @@ Section big_op.
   End list.
 End big_op.
 
+Section big_andL.
+  Context {PROP : bi} {A : Type}.
+
+  Lemma big_andL_frame (xs : list A) (Q Q' : nat → A → PROP) :
+    (∀ i v, Q i v -* Q' i v) ⊢
+    ([∧list] i ↦ x ∈ xs, Q i x) -∗ ([∧list] i ↦ x ∈ xs, Q' i x).
+  Proof.
+    iIntros "W L". iInduction xs as [|x xs] "IH" forall (Q Q'); simpl; first done.
+    iApply (bi.and_parallel with "L"); iSplit; first by eauto.
+    iApply "IH". iIntros (??). by iApply "W".
+  Qed.
+
+  Lemma bupd_big_andL `{BiBUpd PROP} (xs : list A) (P : nat → A → PROP) :
+    (|==> [∧ list] i ↦ x ∈ xs, P i x) ⊢
+    [∧ list] i ↦ x ∈ xs, |==> P i x.
+  Proof.
+    iIntros "Q". iInduction xs as [|x xs] "IH" forall (P); simpl; first done.
+    rewrite bupd_and; iApply (bi.and_parallel with "Q"); eauto.
+  Qed.
+
+  Lemma fupd_big_andL `{BiFUpd PROP} {E1 E2} (xs : list A) (P : nat → A → PROP) :
+    (|={E1, E2}=> [∧ list] i ↦ x ∈ xs, P i x) ⊢
+    [∧ list] i ↦ x ∈ xs, |={E1, E2}=> P i x.
+  Proof.
+    iIntros "Q". iInduction xs as [|x xs] "IH" forall (P); simpl; first done.
+    rewrite fupd_and; iApply (bi.and_parallel with "Q"); eauto.
+  Qed.
+End big_andL.
+
 Section big_sepL.
   Context {PROP : bi} {A : Type}.
   Implicit Types xs : list A.

@@ -179,12 +179,12 @@ Section Kseq.
   Context `{Σ : cpp_logic}.
 
   Lemma Kseq_frame (Q1 Q2 : Kpred -> mpred) (k1 k2 : Kpred) (rt : ReturnType) :
-    (<affine> Forall k1 k2 : Kpred, (Forall rt : ReturnType, k1 rt -* k2 rt) -* Q1 k1 -* Q2 k2) |--
+    ((Forall rt : ReturnType, k1 rt -* k2 rt) -* Q1 k1 -* Q2 k2) |--
     (Forall rt : ReturnType, k1 rt -* k2 rt) -*
     Kseq Q1 k1 rt -* Kseq Q2 k2 rt.
   Proof.
     iIntros "HQ Hk". destruct rt; cbn; try iExact "Hk".
-    rewrite bi.affinely_elim. by iApply "HQ".
+    by iApply "HQ".
   Qed.
 End Kseq.
 
