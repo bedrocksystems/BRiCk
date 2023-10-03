@@ -254,6 +254,28 @@ Section with_Σ.
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   [p; succmemord; expected_p; failmemord; Vint desired; weak] Q.
 
+  Axiom wp_atom_compare_exchange_n_cst_bool :
+    forall p expected_p expected_v desired weak succmemord failmemord Q,
+    let ty := Tbool in
+      [| weak = Vbool false |] **
+      [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
+      (* local pre-cond : placeholder for the expected value *)
+      |> _eqv expected_p |-> primR ty (cQp.mut 1) (Vbool expected_v) **
+      AU1 <<∀ v, (* atomic pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty (cQp.mut 1) (Vbool v) >> @M,∅
+          <<∃ (b : bool) (v' : bool), (* atomic post-cond: latest value is v' *)
+              _eqv p |-> primR ty (cQp.mut 1) (Vbool v') **
+              (* - success case: p has value desired and expected_p unchanged, or
+                 - failed case: p is unchanged, expected_p stores the value read
+                  v, which is the latest one due to failmemord being SC. Also,
+                  as a strong CMPXCHG we know that the values are different. *)
+              [|    b = true  /\ v' = desired /\ v =  expected_v
+                 \/ b = false /\ v' = v       /\ v <> expected_v |],
+            COMM (* post-cond *)
+                _eqv expected_p |-> primR ty (cQp.mut 1) (Vbool v) -* Q (Vbool b) >>
+      |-- wp_atom' AO__atomic_compare_exchange_n ty
+                  [p; succmemord; expected_p; failmemord; Vbool desired; weak] Q.
+
   (* An SC weak compare exchange. This rule combines the postcondition for both
     success and failure case. Since a weak CMPXCHG can fail spuriously, we do
     not know that the values are different when it fails.
@@ -282,6 +304,28 @@ Section with_Σ.
                 _eqv expected_p |-> primR ty (cQp.mut 1) (Vint v) -* Q (Vbool b) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   [p; succmemord; expected_p; failmemord; Vint desired; weak] Q.
+
+  (* TODO: unify with Tnum case *)
+  Axiom wp_atom_compare_exchange_n_cst_weak_bool :
+    forall p expected_p expected_v desired weak succmemord failmemord Q,
+      let ty := Tbool in
+      [| weak = Vbool true |] **
+      [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
+      (* local pre-cond : placeholder for the expected value *)
+      |> _eqv expected_p |-> primR ty (cQp.mut 1) (Vbool expected_v) **
+      AU1 <<∀ v, (* atomic pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty (cQp.mut 1) (Vbool v) >> @M,∅
+          <<∃ (b : bool) v', (* atomic post-cond: latest value is v' *)
+              _eqv p |-> primR ty (cQp.mut 1) (Vbool v') **
+            (* - success case: p has value desired and expected_p unchanged, or
+               - failed case: p is unchanged, expected_p stores the value read
+                v. As a weak CMPXCHG we DO NOT know that the values are different. *)
+              [|    b = true  /\ v' = desired /\ v =  expected_v
+                 \/ b = false /\ v' = v |],
+            COMM (* post-cond *)
+                _eqv expected_p |-> primR ty (cQp.mut 1) (Vbool v) -* Q (Vbool b) >>
+      |-- wp_atom' AO__atomic_compare_exchange_n ty
+                  [p; succmemord; expected_p; failmemord; Vbool desired; weak] Q.
 
   (* TODO: support for pointers, see cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_cst :
