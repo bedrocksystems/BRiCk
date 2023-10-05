@@ -46,8 +46,8 @@ Lemma TCElemOf_iff {A} (x : A) (l : list A) : TCElemOf x l ↔ x ∈ l.
 Proof. split; induction 1; by constructor. Qed.
 
 Lemma iff_forall T P Q :
-  (forall i: T, P i <-> Q i) ->
-  (forall i: T, P i) <-> (forall i: T, Q i).
+  (forall i : T, P i <-> Q i) ->
+  (forall i : T, P i) <-> (forall i : T, Q i).
 Proof. naive_solver. Qed.
 
 #[global] Instance reflexive_proper A :
@@ -72,7 +72,7 @@ Qed.
 Proof. by intros r1 r2 Heq; split => -[]; [rewrite Heq|rewrite -Heq]. Qed.
 
 (** Not an instance, because of the risk of loops. *)
-Lemma flip_assoc {A} {R : relation A} `{!Symmetric R} `{!Assoc R f}: Assoc R (flip f).
+Lemma flip_assoc {A} {R : relation A} `{!Symmetric R} `{!Assoc R f} : Assoc R (flip f).
 Proof. intros ???. symmetry. apply: (assoc f). Qed.
 
 Section flip_app.
