@@ -441,6 +441,13 @@ Section lemmas.
     by iApply commit_acc_commit1_acc.
   Qed.
 
+  Lemma atomic_commit_mask b Eo Ed α β Φ :
+    atomic_commit b Eo (Eo∖Ed) α β Φ ⊣⊢ ∀ E, ⌜Eo ⊆ E⌝ → atomic_commit b E (E∖Ed) α β Φ.
+  Proof.
+    rewrite atomic_commit_eq /atomic_commit_def.
+    by apply commit_acc_mask.
+  Qed.
+
   Lemma atomic_commit_mask_weaken b Eo1 Eo2 Ei α β Φ :
     Eo1 ⊆ Eo2 →
     atomic_commit b Eo1 Ei α β Φ -∗ atomic_commit b Eo2 Ei α β Φ.
