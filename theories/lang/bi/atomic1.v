@@ -328,20 +328,6 @@ Section lemmas.
     by iApply atomic_acc_atomic1_acc.
   Qed.
 
-  Lemma atomic_update_mask Eo Ed α β Φ :
-    atomic_update Eo (Eo∖Ed) α β Φ ⊣⊢ ∀ E, ⌜Eo ⊆ E⌝ → atomic_update E (E∖Ed) α β Φ.
-  Proof.
-    iSplit; last first.
-    { iIntros "AU". iApply ("AU" with "[% //]"). }
-    rewrite atomic.atomic_update_unseal {2}/atomic.atomic_update_def /=.
-    iIntros "AU" (E HE).
-    iApply (greatest_fixpoint_coiter _ (λ _, atomic.atomic_update_def Eo (Eo ∖ Ed) α β Φ)); last done.
-    iIntros "!>" ([]).
-    rewrite {1}/atomic.atomic_update_def fixpoint.greatest_fixpoint_unfold.
-    rewrite /atomic_update_pre atomic_acc_mask.
-    iIntros "AAC". by iApply "AAC".
-  Qed.
-
   Lemma atomic1_update_mask Eo Ed α β Φ :
     atomic1_update Eo (Eo∖Ed) α β Φ ⊣⊢ ∀ E, ⌜Eo ⊆ E⌝ → atomic1_update E (E∖Ed) α β Φ.
   Proof.
