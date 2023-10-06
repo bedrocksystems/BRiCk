@@ -6,58 +6,58 @@
   
   *** [stmt2 :=
                {s: $"hello";
-                   continue; 
-                   break; 
+                   continue;
+                   break;
                    $"world";
                    if ($"world") {
-                     continue; 
+                     continue;
                    } else {
-                     break; 
+                     break;
                    }
                    // end block} : Stmt]
   
   *** [stmt3 :=
                {s: if (mut int32 $"x" = #0; $"x") {
-                     continue; 
-                     continue; 
-                     continue; 
-                     continue; 
+                     continue;
+                     continue;
+                     continue;
+                     continue;
                      // end block
                    } else {
-                     break; 
+                     break;
                    }
                    if (mut int32 $"x" = #0; $"x") {
                      // end block
                    } else {
-                     break; 
+                     break;
                    }
-                   return $"x"; 
+                   return $"x";
                    $"x";
-                   return; 
+                   return;
                    // end block} : Stmt]
   
   *** [stmt4 :=
                {s: if (mut int32 $"x" = #0; $"x") {
-                     continue; 
+                     continue;
                    } else {
-                     continue; 
-                     continue; 
-                     continue; 
-                     continue; 
+                     continue;
+                     continue;
+                     continue;
+                     continue;
                      // end block
                    }
-                   return $"x"; 
-                   return; 
+                   return $"x";
+                   return;
                    // end block} : Stmt]
   
   *** [stmt5 :=
                {s: if (mut int32 $"x" = #0; $"x") {
-                     continue; 
+                     continue;
                    } else {
-                     continue; 
+                     continue;
                    }
-                   return $"x"; 
-                   return; 
+                   return $"x";
+                   return;
                    // end block} : Stmt]
   
   *** [stmt6 :=
@@ -65,7 +65,7 @@
                      $"x"++;
                      // end block
                    } else {
-                     continue; 
+                     continue;
                    }
                    // end block} : Stmt]
   
@@ -107,26 +107,26 @@
   
   *** [stmt11 :=
                 {s: if (mut int32 $"x" = #0; $"x") {
-                      continue; 
+                      continue;
                     } else {
-                      continue; 
-                      continue; 
-                      continue; 
-                      continue; 
+                      continue;
+                      continue;
+                      continue;
+                      continue;
                       // end block
                     }
-                    return $"x"; 
-                    return; 
+                    return $"x";
+                    return;
                     // end block} : Stmt]
   
   *** [stmt12 :=
                 {s: if (mut int32 $"x" = #0; $"x") {
-                      continue; 
+                      continue;
                     } else {
-                      continue; 
+                      continue;
                     }
-                    return $"x"; 
-                    return; 
+                    return $"x";
+                    return;
                     // end block} : Stmt]
   
   *** [stmt13 :=
@@ -134,7 +134,7 @@
                       $"x"++;
                       // end block
                     } else {
-                      continue; 
+                      continue;
                     }
                     // end block} : Stmt]
   

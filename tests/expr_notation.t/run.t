@@ -355,7 +355,7 @@
   
   Arguments Ecast_elide_2 cast vc
   Ecast_elide_2 uses section variable ty.
-  Emember_1 = Emember ({e: $"foo"}) "bar" false ty
+  Emember_1 = Emember {e: $"foo"} "bar" false ty
        : Expr
   
   Emember_1 uses section variable ty.

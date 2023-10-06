@@ -2,12 +2,12 @@
   $ dune build test.vo
   Sseq_nil = {s: // end block}
        : Stmt
-  Sseq_singleton = {s: return; 
+  Sseq_singleton = {s: return;
                        // end block}
        : Stmt
-  Sseq_cons = {s: return; 
+  Sseq_cons = {s: return;
                   {?: s};
-                  return nullptr; 
+                  return nullptr;
                   // end block}
        : Stmt
   
@@ -28,57 +28,57 @@
   
   Sdecl_cons uses section variable ty.
   Sif_no_decl = {s: if ($"is_true") {
-                      return; 
+                      return;
                     } else {
-                      break; 
+                      break;
                     }}
        : Stmt
   
   Sif_no_decl uses section variable ty.
   Sif_decl_no_init =
   {s: if ({?: ty} $"foo"; $"foo") {
-        return; 
+        return;
       } else {
-        break; 
+        break;
       }}
        : Stmt
   
   Sif_decl_no_init uses section variable ty.
   Sif_decl_init =
   {s: if ({?: ty} $"foo" = #314; $"foo") {
-        return; 
+        return;
       } else {
-        break; 
+        break;
       }}
        : Stmt
   
   Sif_decl_init uses section variable ty.
   Swhile_no_decl = {s: while ($"is_true") {
-                         continue; 
+                         continue;
                        }}
        : Stmt
   
   Swhile_no_decl uses section variable ty.
   Swhile_decl_no_init =
   {s: while ({?: ty} $"foo"; $"foo") {
-        continue; 
+        continue;
       }}
        : Stmt
   
   Swhile_decl_no_init uses section variable ty.
   Swhile_decl_init =
   {s: while ({?: ty} $"foo" = #314; $"foo") {
-        continue; 
+        continue;
       }}
        : Stmt
   
   Swhile_decl_init uses section variable ty.
   Swhile_decl_init_multiline =
   {s: while ({?: ty} $"foo" = #314; $"foo") {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -91,16 +91,16 @@
        : Stmt
   Sfor_no_init_no_cond_no_incr_singleton =
   {s: for (;;) {
-        return; 
+        return;
         // end block
       }}
        : Stmt
   Sfor_no_init_no_cond_no_incr_multiline =
   {s: for (;;) {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -115,7 +115,7 @@
   Sfor_no_init_no_cond_incr_empty uses section variable ty.
   Sfor_no_init_no_cond_incr_singleton =
   {s: for (;; ++$"bar") {
-        return; 
+        return;
         // end block
       }}
        : Stmt
@@ -123,10 +123,10 @@
   Sfor_no_init_no_cond_incr_singleton uses section variable ty.
   Sfor_no_init_no_cond_incr_multiline =
   {s: for (;; ++$"bar") {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -141,7 +141,7 @@
   Sfor_no_init_cond_no_incr_empty uses section variable ty.
   Sfor_no_init_cond_no_incr_singleton =
   {s: for (; $"foo";) {
-        return; 
+        return;
         // end block
       }}
        : Stmt
@@ -149,10 +149,10 @@
   Sfor_no_init_cond_no_incr_singleton uses section variable ty.
   Sfor_no_init_cond_no_incr_multiline =
   {s: for (; $"foo";) {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -169,7 +169,7 @@
   Sfor_init_no_cond_no_incr_singleton =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314;;) {
-        return; 
+        return;
         // end block
       }}
        : Stmt
@@ -178,10 +178,10 @@
   Sfor_init_no_cond_no_incr_multiline =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314;;) {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -198,7 +198,7 @@
   Sfor_init_cond_no_incr_singleton =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314; $"foo";) {
-        return; 
+        return;
         // end block
       }}
        : Stmt
@@ -207,10 +207,10 @@
   Sfor_init_cond_no_incr_multiline =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314; $"foo";) {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -227,7 +227,7 @@
   Sfor_init_no_cond_incr_singleton =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314;; ++$"bar") {
-        return; 
+        return;
         // end block
       }}
        : Stmt
@@ -236,10 +236,10 @@
   Sfor_init_no_cond_incr_multiline =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314;; ++$"bar") {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -254,7 +254,7 @@
   Sfor_no_init_cond_incr_empty uses section variable ty.
   Sfor_no_init_cond_incr_singleton =
   {s: for (; $"foo"; ++$"bar") {
-        return; 
+        return;
         // end block
       }}
        : Stmt
@@ -262,10 +262,10 @@
   Sfor_no_init_cond_incr_singleton uses section variable ty.
   Sfor_no_init_cond_incr_multiline =
   {s: for (; $"foo"; ++$"bar") {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -282,7 +282,7 @@
   Sfor_init_cond_incr_singleton =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314; $"foo"; ++$"bar") {
-        return; 
+        return;
         // end block
       }}
        : Stmt
@@ -291,10 +291,10 @@
   Sfor_init_cond_incr_multiline =
   {s: for ({?: ty} $"foo";
            {?: ty} $"bar" = #314; $"foo"; ++$"bar") {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return nullptr; 
+        return nullptr;
         // end block
       }}
        : Stmt
@@ -305,34 +305,34 @@
                   } while(#false);}
        : Stmt
   Sdo_singleton = {s: do {
-                        continue; 
+                        continue;
                         // end block
                       } while(#true);}
        : Stmt
   Sdo_multiline =
   {s: do {
-        continue; 
-        break; 
+        continue;
+        break;
         {?: s};
-        return #217; 
+        return #217;
         // end block
       } while(#true);}
        : Stmt
   
   Sdo_multiline uses section variables ty s.
-  {s: break; }
+  {s: break;}
        : Stmt' ?type ?Expr
   where
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
-  {s: continue; }
+  {s: continue;}
        : Stmt' ?type ?Expr
   where
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
-  Sreturn_None = {s: return; }
+  Sreturn_None = {s: return;}
        : Stmt
-  Sreturn_Some = {s: return #314; }
+  Sreturn_Some = {s: return #314;}
        : Stmt
   
   Sreturn_Some uses section variable ty.
@@ -342,11 +342,11 @@
        : Stmt
   
   Sexpr_complex uses section variable ty.
-  Sattr_nil = {s: continue; }
+  Sattr_nil = {s: continue;}
        : Stmt
-  Sattr_cons = {s: [["foo", "bar", "baz"]] break; }
+  Sattr_cons = {s: [["foo", "bar", "baz"]] break;}
        : Stmt
-  {s: <LABEL: "FOO_BAR"> return; }
+  {s: <LABEL: "FOO_BAR"> return;}
        : Stmt' ?type ?Expr
   where
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
@@ -356,7 +356,7 @@
   where
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
-  {s: <LABEL: "FOO_BAR"> continue; 
+  {s: <LABEL: "FOO_BAR"> continue;
       goto "FOO_BAR";
       // end block}
        : Stmt' ?type ?Expr
