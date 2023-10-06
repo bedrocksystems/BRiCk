@@ -79,4 +79,12 @@ void test() {
   CHECK_VALCAT(static_cast<int*const&&>(x));
   CHECK_VALCAT(static_cast<int*const&>(x));
   CHECK_VALCAT(static_cast<int*const>(x));
+
+  int y;
+  CHECK_VALCAT(++static_cast<int&>(y));
+  CHECK_VALCAT(--static_cast<int&>(y));
+  CHECK_VALCAT(static_cast<int&>(y)++);
+  CHECK_VALCAT(static_cast<int&>(y)--);
+
+
 }

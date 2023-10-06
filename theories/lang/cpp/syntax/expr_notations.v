@@ -32,7 +32,7 @@ Module Export ExprNotationsInterface.
   (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{e:' e '}'"
       := e
-         ( at level 200
+         ( at level 0
          , e custom CPP_expr at level 200
          , format "'[hv' {e:  e } ']'"
          , only printing)

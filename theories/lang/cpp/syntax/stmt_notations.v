@@ -30,7 +30,7 @@ Module Export StmtNotationsInterface.
   (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{s:' s '}'"
       := (s)
-         ( at level 200
+         ( at level 0
          , s custom CPP_stmt at level 200
          , format "'[hv' {s:  s } ']'"
          , only printing)
@@ -216,25 +216,25 @@ Module StmtNotations.
   Notation "'break;'"
       := (Sbreak)
          ( in custom CPP_stmt at level 0
-         , format "'[' break;  ']'"
+         , format "'[' break; ']'"
          , only printing).
 
   Notation "'continue;'"
       := (Scontinue)
          ( in custom CPP_stmt at level 0
-         , format "'[' continue;  ']'"
+         , format "'[' continue; ']'"
          , only printing).
 
   Notation "'return;'"
       := (Sreturn None)
          ( in custom CPP_stmt at level 0
-         , format "'[' return;  ']'"
+         , format "'[' return; ']'"
          , only printing).
   Notation "'return' e ;"
       := (Sreturn (Some e))
          ( in custom CPP_stmt at level 0
          , e custom CPP_expr at level 200
-         , format "'[' return  e ;  ']'"
+         , format "'[' return  e ; ']'"
          , only printing).
 
   Notation "e ;"
