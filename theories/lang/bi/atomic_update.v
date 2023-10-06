@@ -25,8 +25,7 @@ Set Default Proof Using "Type".
 
 (** * Small improvements to atomic updates *)
 (** We add a few TC instances that are missing from
-[iris.bi.lib.atomic] and are not automatically inferred. We also
-improve the [iAuIntro] tactic. *)
+[iris.bi.lib.atomic] and are not automatically inferred. *)
 
 Section atomic.
   Context `{BiFUpd PROP} {TA TB : tele}.
