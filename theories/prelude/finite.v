@@ -701,8 +701,8 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
   [to_bits] and [of_bits] implement a bitset encoding of [t] into N, given
   the encoding [to_bit : BT.t -> N].
 
-  Conjecture: [to_bits] and [from_bits] should be partial inverses if [to_bit]
-  and [from_bit] are.
+  [to_of_bits] and [of_to_bits] show they're inverses, assuming
+  [Inj eq eq BT.to_bit].
   *)
   Definition of_bits (mask : N) : t := list_to_set $ BT.to_list mask.
 
@@ -761,12 +761,8 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
 
   (** Use [to_bits_union_singleton]. *)
   #[local] Lemma to_bits_union_singleton' x xs (Hni : x ∉ xs) :
-    to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
-  Proof.
-    rewrite to_bits_singleton !to_bits_is_comm /to_bits_comm -foldr_cons -fmap_cons.
-    apply foldr_permutation_proper'; [apply _ ..|].
-    f_equiv. exact: elements_union_singleton.
-  Qed.
+    to_bits ({[x]} ∪ xs) = N.lor (BT.to_bitmask x) (to_bits xs).
+  Proof. by rewrite !to_bits_is_comm /to_bits_comm elements_union_singleton. Qed.
 
   Lemma setbit_in_idemp x xs
     (Hin : x ∈ xs) :
@@ -781,17 +777,17 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     destruct Hin as [->|Hin]; first last.
     { rewrite IHys //. apply: right_absorb_L. }
     clear IHys Hni.
-    suff ->: Refine (N.testbit (to_bits {[y]}) i = true) by [].
-    subst i. apply testbit_singleton.
+    suff ->: N.testbit (BT.to_bitmask y) i = true by [].
+    rewrite -Hdec -!to_bits_singleton. apply testbit_singleton.
   Qed.
 
+  (** The right-hand side matches [to_bits_comm]'s definition. *)
   Lemma to_bits_union_singleton x xs :
-    to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
+    to_bits ({[x]} ∪ xs) = N.lor (BT.to_bitmask x) (to_bits xs).
   Proof.
     destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton'.
     rewrite subseteq_union_1_L; [|set_solver].
-    rewrite to_bits_singleton -BT.setbit_is_alt.
-    by rewrite setbit_in_idemp.
+    by rewrite -BT.setbit_is_alt setbit_in_idemp.
   Qed.
 
   Lemma to_bits_union xs ys :
@@ -851,7 +847,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     Proof.
       induction rs as [|x xs Hni IHxs] using set_ind_L.
       { by rewrite to_bits_empty of_bits_0. }
-      rewrite to_bits_union_singleton // to_bits_singleton -BT.setbit_is_alt.
+      rewrite to_bits_union_singleton -BT.setbit_is_alt.
       by rewrite of_bits_setbit IHxs.
     Qed.
 
@@ -908,7 +904,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     induction rs as [|r rs Hni IHrs] using set_ind_L. {
       rewrite to_bits_empty N.bits_0 bool_decide_eq_false_2 //.
       set_solver. }
-    rewrite to_bits_union_singleton N.lor_spec (comm_L orb) to_bits_singleton.
+    rewrite to_bits_union_singleton N.lor_spec (comm_L orb).
     rewrite {}IHrs.
     case: (bool_decide_reflect (∃ r, _ ∧ r ∈ rs)) => Hdec /=. {
       rewrite bool_decide_eq_true_2 //. set_solver.
