@@ -277,7 +277,7 @@ Section finite.
     decode_N n = Some x → n < card_N A.
   Proof. rewrite /card_N decode_N_nat => /finite_decode_nat_lt. lia. Qed.
 
-  Lemma encode_N_lt_card x : encode_N x < card_N A.
+  Lemma encode_N_lt_card_N x : encode_N x < card_N A.
   Proof. rewrite encode_N_nat. apply N_of_nat_lt_mono, encode_lt_card. Qed.
 
   Lemma encode_decode_N (i : N) :
@@ -682,7 +682,7 @@ Module Type simple_finite_bitmask_type_mixin (Import F : finite_type).
     rewrite /to_list /to_list_aux /filter /mbind.
     elim: enum => [//|x xs IH]; cbn; rewrite {}IH.
     set c := testbit _ _; suff -> : c = true by []; rewrite {}/c.
-    apply N.ones_spec_iff, encode_N_lt_card.
+    apply N.ones_spec_iff, encode_N_lt_card_N.
   Qed.
 End simple_finite_bitmask_type_mixin.
 
