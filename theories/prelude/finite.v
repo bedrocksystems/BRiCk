@@ -480,8 +480,12 @@ Module Type finite_type_mixin (Import F : finite_type).
 
   Lemma of_to_N x : of_N (to_N x) = Some x.
   Proof. apply decode_encode_N. Qed.
+
   Lemma to_of_N n x : of_N n = Some x → to_N x = n.
   Proof. apply decode_N_Some_encode_N. Qed.
+
+  Lemma to_N_lt_card_N x : to_N x < card_N t.
+  Proof. exact /encode_N_lt_card_N. Qed.
 End finite_type_mixin.
 
 Module Type finite_type_intf := finite_type <+ finite_type_mixin.
@@ -503,8 +507,12 @@ Module Type bitmask_type_simple_mixin (Import F : finite_type) (Import FM : fini
 
   Lemma of_to_bit x : of_bit (to_bit x) = Some x.
   Proof. apply of_to_N. Qed.
+
   Lemma to_of_bit n x : of_bit n = Some x → to_bit x = n.
   Proof. apply to_of_N. Qed.
+
+  Lemma to_bit_lt_card_N x : to_bit x < card_N t.
+  Proof. exact /to_N_lt_card_N. Qed.
 End bitmask_type_simple_mixin.
 
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
@@ -988,6 +996,26 @@ Module Type simple_finite_bits_aux (BT : simple_finite_bitmask_type_intf).
     split; intros (r & Heq & Hin); exists r; subst.
     { split; [|done]. exact: BT.of_to_bit. }
     by rewrite (BT.to_of_bit _ _ Heq).
+  Qed.
+
+  Lemma N_testbit_to_bits_high_false i X :
+    card_N BT.t ≤ i →
+    N.testbit (to_bits X) i = false.
+  Proof.
+    intros Hi. induction X as [|x X _] using set_ind_L; first done.
+    rewrite to_bits_union_singleton -BT.setbit_is_alt /BT.setbit.
+    rewrite (N.setbit_neq _ (BT.to_bit x) i) -?{}IHX //.
+    apply /N.lt_neq /(N.lt_le_trans _ (card_N BT.t)) /Hi.
+    exact /BT.to_bit_lt_card_N.
+  Qed.
+
+  Lemma to_bits_mod_pow2 X m :
+    card_N BT.t ≤ m →
+    to_bits X `mod` 2 ^ m = to_bits X.
+  Proof.
+    intros Hm. apply N_ext_iff => i.
+    case: (N.lt_ge_cases i m) => Hi; first by rewrite N.mod_pow2_bits_low.
+    rewrite !N.mod_pow2_bits_high // N_testbit_to_bits_high_false //; lia.
   Qed.
 
   Lemma N_testbit_mask_top_of_bit i :
