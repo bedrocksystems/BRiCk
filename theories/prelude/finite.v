@@ -631,32 +631,48 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
   Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
 
+  Lemma testbit_setbit (x y : t) (mask : N) :
+    testbit (setbit x mask) y =
+    bool_decide (to_bit x = to_bit y) || testbit mask y.
+  Proof. by rewrite /testbit /setbit N_setbit_bool_decide. Qed.
+
+  Lemma testbit_to_bitmask (x z : t) :
+    testbit (to_bitmask x) z = bool_decide (to_bit x = to_bit z).
+  Proof. by rewrite -setbit_0 testbit_setbit testbit_0 right_id_L. Qed.
+
+  Lemma testbit_to_bitmask_eq (x : t) : testbit (to_bitmask x) x = true.
+  Proof.
+    Succeed by rewrite testbit_to_bitmask bool_decide_eq_true.
+    apply N.pow2_bits_true.
+  Qed.
+
   Section to_bit_inj.
     Context`{Hinj : !Inj eq eq to_bit}.
     #[local] Set Default Proof Using "Hinj".
 
-    Lemma testbit_setbit (x y : t) (mask : N) :
+    Lemma testbit_setbit_inj (x y : t) (mask : N) :
       testbit (setbit x mask) y =
       bool_decide (x = y) || testbit mask y.
     Proof.
-      rewrite /testbit /setbit N_setbit_bool_decide. f_equiv.
-      apply bool_decide_ext, (inj_iff _).
+      rewrite testbit_setbit. f_equal.
+      by rewrite (bool_decide_ext _ _ (inj_iff to_bit _ _)).
     Qed.
 
-    #[global] Instance set_unfold_testbit_setbit (x y : t) (mask : N) P Q :
+    (* We currently offer no [testbit_setbit] instance for the non-Inj case. *)
+    #[global] Instance set_unfold_testbit_setbit_inj (x y : t) (mask : N) P Q :
       SetUnfold (x = y) P →
       SetUnfold (testbit mask y) Q →
       SetUnfold (testbit (setbit x mask) y) (P ∨ Q).
-    Proof. constructor. rewrite testbit_setbit. set_solver. Qed.
+    Proof. constructor. rewrite testbit_setbit_inj. set_solver. Qed.
 
-    Lemma testbit_to_bitmask (x z : t) :
+    Lemma testbit_to_bitmask_inj (x z : t) :
       testbit (to_bitmask x) z = bool_decide (x = z).
-    Proof. by rewrite -setbit_0 testbit_setbit testbit_0 right_id. Qed.
+    Proof. by rewrite testbit_to_bitmask (bool_decide_ext _ _ (inj_iff to_bit _ _)). Qed.
 
-    #[global] Instance set_unfold_testbit_to_bitmask (x z : t) P :
+    #[global] Instance set_unfold_testbit_to_bitmask_inj (x z : t) P :
       SetUnfold (x = z) P →
       SetUnfold (testbit (to_bitmask x) z) P.
-    Proof. constructor. rewrite testbit_to_bitmask. set_solver. Qed.
+    Proof. constructor. rewrite testbit_to_bitmask_inj. set_solver. Qed.
 
     Lemma filter_setbit' (x y z : t) (mask : N) :
       y ∈ filter (setbit x mask) z ↔ y ∈ filter (to_bitmask x) z ∨ y ∈ filter mask z.
@@ -740,9 +756,6 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
   Lemma to_bits_singleton x : to_bits {[x]} = BT.to_bitmask x.
   Proof. by rewrite /to_bits set_fold_singleton BT.setbit_0. Qed.
 
-  Lemma testbit_singleton (x : BT.t) : BT.testbit (to_bits {[ x ]}) x = true.
-  Proof. rewrite to_bits_singleton. apply N.pow2_bits_true. Qed.
-
   Module Import internal.
     Definition to_bits_alt (rs : t) : N := set_fold (λ b n, BT.setbit_alt b n) 0 rs.
     Lemma to_bits_is_alt rs : to_bits rs = to_bits_alt rs.
@@ -786,7 +799,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     { rewrite IHys //. apply: right_absorb_L. }
     clear IHys Hni.
     suff ->: N.testbit (BT.to_bitmask y) i = true by [].
-    rewrite -Hdec -!to_bits_singleton. apply testbit_singleton.
+    rewrite -Hdec. apply BT.testbit_to_bitmask_eq.
   Qed.
 
   (** The right-hand side matches [to_bits_comm]'s definition. *)
