@@ -780,8 +780,8 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     *)
   End internal.
 
-  (** Use [to_bits_union_singleton]. *)
-  #[local] Lemma to_bits_union_singleton' x xs (Hni : x ∉ xs) :
+  (** Internal; [to_bits_union_singleton] is strictly stronger. *)
+  #[local] Lemma to_bits_union_singleton_aux x xs (Hni : x ∉ xs) :
     to_bits ({[x]} ∪ xs) = N.lor (BT.to_bitmask x) (to_bits xs).
   Proof. by rewrite !to_bits_is_comm /to_bits_comm elements_union_singleton. Qed.
 
@@ -793,7 +793,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     rewrite N_setbit_bool_decide.
     case_bool_decide as Hdec; last reflexivity. rewrite -{}Hdec /=.
     induction xs as [|y ys Hni IHys] using set_ind_L; first by set_solver.
-    rewrite to_bits_union_singleton' // N.lor_spec orb_true_iff.
+    rewrite to_bits_union_singleton_aux // N.lor_spec orb_true_iff.
     move: Hin => /elem_of_union [{IHys} /elem_of_singleton -> | Hin]; [left|right].
     { apply BT.testbit_to_bitmask_eq. }
     { exact: IHys. }
@@ -803,7 +803,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
   Lemma to_bits_union_singleton x xs :
     to_bits ({[x]} ∪ xs) = N.lor (BT.to_bitmask x) (to_bits xs).
   Proof.
-    destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton'.
+    destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton_aux.
     rewrite subseteq_union_1_L; [|set_solver].
     by rewrite -BT.setbit_is_alt setbit_in_idemp.
   Qed.
