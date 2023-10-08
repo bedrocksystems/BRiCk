@@ -789,17 +789,14 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     (Hin : x ∈ xs) :
     BT.setbit x (to_bits xs) = to_bits xs.
   Proof.
-    apply N.bits_inj_iff => i.
+    apply /symmetry /N.bits_inj_iff => i.
     rewrite N_setbit_bool_decide.
-    case_bool_decide as Hdec => //=. symmetry.
+    case_bool_decide as Hdec; last reflexivity. rewrite -{}Hdec /=.
     induction xs as [|y ys Hni IHys] using set_ind_L; first by set_solver.
-    set_unfold in Hin.
-    rewrite to_bits_union_singleton' // N.lor_spec.
-    destruct Hin as [->|Hin]; first last.
-    { rewrite IHys //. apply: right_absorb_L. }
-    clear IHys Hni.
-    suff ->: N.testbit (BT.to_bitmask y) i = true by [].
-    rewrite -Hdec. apply BT.testbit_to_bitmask_eq.
+    rewrite to_bits_union_singleton' // N.lor_spec orb_true_iff.
+    move: Hin => /elem_of_union [{IHys} /elem_of_singleton -> | Hin]; [left|right].
+    { apply BT.testbit_to_bitmask_eq. }
+    { exact: IHys. }
   Qed.
 
   (** The right-hand side matches [to_bits_comm]'s definition. *)
