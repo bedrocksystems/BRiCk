@@ -480,8 +480,12 @@ Module Type finite_type_mixin (Import F : finite_type).
 
   Lemma of_to_N x : of_N (to_N x) = Some x.
   Proof. apply decode_encode_N. Qed.
+
   Lemma to_of_N n x : of_N n = Some x → to_N x = n.
   Proof. apply decode_N_Some_encode_N. Qed.
+
+  Lemma to_N_lt_card_N x : to_N x < card_N t.
+  Proof. exact /encode_N_lt_card_N. Qed.
 End finite_type_mixin.
 
 Module Type finite_type_intf := finite_type <+ finite_type_mixin.
@@ -503,8 +507,12 @@ Module Type bitmask_type_simple_mixin (Import F : finite_type) (Import FM : fini
 
   Lemma of_to_bit x : of_bit (to_bit x) = Some x.
   Proof. apply of_to_N. Qed.
+
   Lemma to_of_bit n x : of_bit n = Some x → to_bit x = n.
   Proof. apply to_of_N. Qed.
+
+  Lemma to_bit_lt_card_N x : to_bit x < card_N t.
+  Proof. exact /to_N_lt_card_N. Qed.
 End bitmask_type_simple_mixin.
 
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
@@ -623,32 +631,48 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
   Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
 
+  Lemma testbit_setbit (x y : t) (mask : N) :
+    testbit (setbit x mask) y =
+    bool_decide (to_bit x = to_bit y) || testbit mask y.
+  Proof. by rewrite /testbit /setbit N_setbit_bool_decide. Qed.
+
+  Lemma testbit_to_bitmask (x z : t) :
+    testbit (to_bitmask x) z = bool_decide (to_bit x = to_bit z).
+  Proof. by rewrite -setbit_0 testbit_setbit testbit_0 right_id_L. Qed.
+
+  Lemma testbit_to_bitmask_eq (x : t) : testbit (to_bitmask x) x = true.
+  Proof.
+    Succeed by rewrite testbit_to_bitmask bool_decide_eq_true.
+    apply N.pow2_bits_true.
+  Qed.
+
   Section to_bit_inj.
     Context`{Hinj : !Inj eq eq to_bit}.
     #[local] Set Default Proof Using "Hinj".
 
-    Lemma testbit_setbit (x y : t) (mask : N) :
+    Lemma testbit_setbit_inj (x y : t) (mask : N) :
       testbit (setbit x mask) y =
       bool_decide (x = y) || testbit mask y.
     Proof.
-      rewrite /testbit /setbit N_setbit_bool_decide. f_equiv.
-      apply bool_decide_ext, (inj_iff _).
+      rewrite testbit_setbit. f_equal.
+      by rewrite (bool_decide_ext _ _ (inj_iff to_bit _ _)).
     Qed.
 
-    #[global] Instance set_unfold_testbit_setbit (x y : t) (mask : N) P Q :
+    (* We currently offer no [testbit_setbit] instance for the non-Inj case. *)
+    #[global] Instance set_unfold_testbit_setbit_inj (x y : t) (mask : N) P Q :
       SetUnfold (x = y) P →
       SetUnfold (testbit mask y) Q →
       SetUnfold (testbit (setbit x mask) y) (P ∨ Q).
-    Proof. constructor. rewrite testbit_setbit. set_solver. Qed.
+    Proof. constructor. rewrite testbit_setbit_inj. set_solver. Qed.
 
-    Lemma testbit_to_bitmask (x z : t) :
+    Lemma testbit_to_bitmask_inj (x z : t) :
       testbit (to_bitmask x) z = bool_decide (x = z).
-    Proof. by rewrite -setbit_0 testbit_setbit testbit_0 right_id. Qed.
+    Proof. by rewrite testbit_to_bitmask (bool_decide_ext _ _ (inj_iff to_bit _ _)). Qed.
 
-    #[global] Instance set_unfold_testbit_to_bitmask (x z : t) P :
+    #[global] Instance set_unfold_testbit_to_bitmask_inj (x z : t) P :
       SetUnfold (x = z) P →
       SetUnfold (testbit (to_bitmask x) z) P.
-    Proof. constructor. rewrite testbit_to_bitmask. set_solver. Qed.
+    Proof. constructor. rewrite testbit_to_bitmask_inj. set_solver. Qed.
 
     Lemma filter_setbit' (x y z : t) (mask : N) :
       y ∈ filter (setbit x mask) z ↔ y ∈ filter (to_bitmask x) z ∨ y ∈ filter mask z.
@@ -701,8 +725,8 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
   [to_bits] and [of_bits] implement a bitset encoding of [t] into N, given
   the encoding [to_bit : BT.t -> N].
 
-  Conjecture: [to_bits] and [from_bits] should be partial inverses if [to_bit]
-  and [from_bit] are.
+  [to_of_bits] and [of_to_bits] show they're inverses, assuming
+  [Inj eq eq BT.to_bit].
   *)
   Definition of_bits (mask : N) : t := list_to_set $ BT.to_list mask.
 
@@ -732,9 +756,6 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
   Lemma to_bits_singleton x : to_bits {[x]} = BT.to_bitmask x.
   Proof. by rewrite /to_bits set_fold_singleton BT.setbit_0. Qed.
 
-  Lemma testbit_singleton (x : BT.t) : BT.testbit (to_bits {[ x ]}) x = true.
-  Proof. rewrite to_bits_singleton. apply N.pow2_bits_true. Qed.
-
   Module Import internal.
     Definition to_bits_alt (rs : t) : N := set_fold (λ b n, BT.setbit_alt b n) 0 rs.
     Lemma to_bits_is_alt rs : to_bits rs = to_bits_alt rs.
@@ -759,39 +780,32 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     *)
   End internal.
 
-  (** Use [to_bits_union_singleton]. *)
-  #[local] Lemma to_bits_union_singleton' x xs (Hni : x ∉ xs) :
-    to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
-  Proof.
-    rewrite to_bits_singleton !to_bits_is_comm /to_bits_comm -foldr_cons -fmap_cons.
-    apply foldr_permutation_proper'; [apply _ ..|].
-    f_equiv. exact: elements_union_singleton.
-  Qed.
+  (** Internal; [to_bits_union_singleton] is strictly stronger. *)
+  #[local] Lemma to_bits_union_singleton_aux x xs (Hni : x ∉ xs) :
+    to_bits ({[x]} ∪ xs) = N.lor (BT.to_bitmask x) (to_bits xs).
+  Proof. by rewrite !to_bits_is_comm /to_bits_comm elements_union_singleton. Qed.
 
   Lemma setbit_in_idemp x xs
     (Hin : x ∈ xs) :
     BT.setbit x (to_bits xs) = to_bits xs.
   Proof.
-    apply N.bits_inj_iff => i.
+    apply /symmetry /N.bits_inj_iff => i.
     rewrite N_setbit_bool_decide.
-    case_bool_decide as Hdec => //=. symmetry.
+    case_bool_decide as Hdec; last reflexivity. rewrite -{}Hdec /=.
     induction xs as [|y ys Hni IHys] using set_ind_L; first by set_solver.
-    set_unfold in Hin.
-    rewrite to_bits_union_singleton' // N.lor_spec.
-    destruct Hin as [->|Hin]; first last.
-    { rewrite IHys //. apply: right_absorb_L. }
-    clear IHys Hni.
-    suff ->: Refine (N.testbit (to_bits {[y]}) i = true) by [].
-    subst i. apply testbit_singleton.
+    rewrite to_bits_union_singleton_aux // N.lor_spec orb_true_iff.
+    move: Hin => /elem_of_union [{IHys} /elem_of_singleton -> | Hin]; [left|right].
+    { apply BT.testbit_to_bitmask_eq. }
+    { exact: IHys. }
   Qed.
 
+  (** The right-hand side matches [to_bits_comm]'s definition. *)
   Lemma to_bits_union_singleton x xs :
-    to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
+    to_bits ({[x]} ∪ xs) = N.lor (BT.to_bitmask x) (to_bits xs).
   Proof.
-    destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton'.
+    destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton_aux.
     rewrite subseteq_union_1_L; [|set_solver].
-    rewrite to_bits_singleton -BT.setbit_is_alt.
-    by rewrite setbit_in_idemp.
+    by rewrite -BT.setbit_is_alt setbit_in_idemp.
   Qed.
 
   Lemma to_bits_union xs ys :
@@ -851,7 +865,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     Proof.
       induction rs as [|x xs Hni IHxs] using set_ind_L.
       { by rewrite to_bits_empty of_bits_0. }
-      rewrite to_bits_union_singleton // to_bits_singleton -BT.setbit_is_alt.
+      rewrite to_bits_union_singleton -BT.setbit_is_alt.
       by rewrite of_bits_setbit IHxs.
     Qed.
 
@@ -908,7 +922,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     induction rs as [|r rs Hni IHrs] using set_ind_L. {
       rewrite to_bits_empty N.bits_0 bool_decide_eq_false_2 //.
       set_solver. }
-    rewrite to_bits_union_singleton N.lor_spec (comm_L orb) to_bits_singleton.
+    rewrite to_bits_union_singleton N.lor_spec (comm_L orb).
     rewrite {}IHrs.
     case: (bool_decide_reflect (∃ r, _ ∧ r ∈ rs)) => Hdec /=. {
       rewrite bool_decide_eq_true_2 //. set_solver.
@@ -992,6 +1006,26 @@ Module Type simple_finite_bits_aux (BT : simple_finite_bitmask_type_intf).
     split; intros (r & Heq & Hin); exists r; subst.
     { split; [|done]. exact: BT.of_to_bit. }
     by rewrite (BT.to_of_bit _ _ Heq).
+  Qed.
+
+  Lemma N_testbit_to_bits_high_false i X :
+    card_N BT.t ≤ i →
+    N.testbit (to_bits X) i = false.
+  Proof.
+    intros Hi. induction X as [|x X _] using set_ind_L; first done.
+    rewrite to_bits_union_singleton -BT.setbit_is_alt /BT.setbit.
+    rewrite (N.setbit_neq _ (BT.to_bit x) i) -?{}IHX //.
+    apply /N.lt_neq /(N.lt_le_trans _ (card_N BT.t)) /Hi.
+    exact /BT.to_bit_lt_card_N.
+  Qed.
+
+  Lemma to_bits_mod_pow2 X m :
+    card_N BT.t ≤ m →
+    to_bits X `mod` 2 ^ m = to_bits X.
+  Proof.
+    intros Hm. apply N_ext_iff => i.
+    case: (N.lt_ge_cases i m) => Hi; first by rewrite N.mod_pow2_bits_low.
+    rewrite !N.mod_pow2_bits_high // N_testbit_to_bits_high_false //; lia.
   Qed.
 
   Lemma N_testbit_mask_top_of_bit i :
