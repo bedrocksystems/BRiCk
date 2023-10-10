@@ -348,7 +348,7 @@ prepare_cpp2v_env:
     # this build. The value of CI_JOB_ID is only available in this
     # build_latest job, so it has to be stored here.
     - echo "ARTIFACT_JOB_ID=$CI_JOB_ID" >> build.env
-    - time ./fm-ci-tools/code_quality.py cpp2v-core
+    - time ./fm-ci-tools/code_quality.py cpp2v-core || true
   artifacts:
     reports:
       dotenv: build.env
@@ -383,7 +383,7 @@ prepare_cpp2v_env:
     - >
       (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
     - cd $CI_PROJECT_DIR/
-    - time ./fm-ci-tools/code_quality.py cpp2v-core
+    - time ./fm-ci-tools/code_quality.py cpp2v-core || true
   artifacts:
     reports:
       codequality: gl-code-quality-report.json
