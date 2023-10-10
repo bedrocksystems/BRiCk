@@ -58,12 +58,6 @@ opam install coq coq-cpp2v coq-cpp2v-bin
 # install cpp2v binary
 ```
 
-If you want to build the documentation locally, do:
-```
-git submodule init
-git submodule update
-```
-
 ## Examples
 See the examples in the `tests` directory.
 More examples will be added as the feature set evolves.
