@@ -4,9 +4,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import ssreflect.
-From stdpp Require Import base decidable finite countable.
-
 From bedrock.prelude Require Import prelude finite.
 
 (**
