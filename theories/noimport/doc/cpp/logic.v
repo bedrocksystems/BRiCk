@@ -206,10 +206,11 @@ of [pr] "minus" the resources in [pl].
 Example wand1 : mpred := pl -* pr.
 
 (**
-The main reasoning rule for this construct is the following, which says that once you separately get the missing piece, you get the whole thing back.:
+The main reasoning rule for this construct is the following, which says that once you separately get the missing piece, you get the whole thing back: [∀ P Q : mpredI, P ∗ (P -∗ Q) ⊢ Q], which corresponds to [bi.wand_elim_r mpredI].
 *)
 
-Check @bi.wand_elim_r mpredI.
+(*Check @bi.wand_elim_r mpredI.*)
+
 
 
 (**  * Pure Assertions
