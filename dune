@@ -56,7 +56,7 @@
     (source_tree ../cmake) (source_tree ../include) (source_tree ../doc)
     (source_tree ../llvm-include)
     (env_var PATH) (env_var LLVM_DIR) (env_var CLANG_DIR) (env_var BUILD_TYPE))
-  (action (run make -j 7 -C .. cpp2v)))
+  (action (chdir .. (run make -j 7 cpp2v))))
  ; The install rule is also necessary to _use_ cpp2v in other actions
  (install
   (section bin)
