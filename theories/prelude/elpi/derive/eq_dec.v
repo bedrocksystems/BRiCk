@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Export decidable.
+From stdpp Require Import decidable.
 
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
