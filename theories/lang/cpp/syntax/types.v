@@ -3,11 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude Require Import base bool.
-Require Export bedrock.lang.cpp.arith.types.
-Require Import bedrock.lang.cpp.syntax.names.
 
 From bedrock.prelude.elpi Require Import derive.
+From bedrock.prelude Require Import base bool list.
+Require Export bedrock.lang.cpp.arith.types.
+Require Import bedrock.lang.cpp.syntax.names.
 
 Set Primitive Projections.
 
@@ -1231,8 +1231,8 @@ Section normalize_type_idempotent.
         rewrite /qual_norm/= ?normalize_type_idempotent//.
       - f_equal.
         rewrite map_map /qual_norm /merge_tq/=;
-          erewrite map_ext_Forall; eauto; eapply Forall_impl;
-          [|eassumption]; intros * HForall; simpl in HForall; apply HForall.
+          erewrite map_ext_Forall; first done; eapply Forall_impl;
+          [eassumption|]; intros * HForall; simpl in HForall; apply HForall.
       - by rewrite IHty !assoc_L.
     }
     { (* _qual_norm_involutive *)
