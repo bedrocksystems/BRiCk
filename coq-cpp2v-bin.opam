@@ -14,7 +14,7 @@ authors: [
 homepage: "https://github.com/bedrocksystems/cpp2v"
 bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
 depends: [
-  "dune" {>= "3.6"}
+  "dune" {>= "3.8"}
   "conf-clang"
   "odoc" {with-doc}
 ]
