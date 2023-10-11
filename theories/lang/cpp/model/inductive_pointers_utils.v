@@ -12,7 +12,7 @@ From bedrock.lang.cpp.semantics Require Import values.
 Module address_sums.
   Definition offset_vaddr : Z -> vaddr -> option vaddr := λ z pa,
     let sum : Z := (Z.of_N pa + z)%Z in
-    guard (0 ≤ sum)%Z; Some (Z.to_N sum).
+    guard (0 ≤ sum)%Z;; Some (Z.to_N sum).
 
   Lemma offset_vaddr_eq z pa :
     let sum := (Z.of_N pa + z)%Z in
@@ -23,7 +23,7 @@ Module address_sums.
   Lemma offset_vaddr_eq' {z pa} :
     offset_vaddr z pa <> None ->
     offset_vaddr z pa = Some (Z.to_N (Z.of_N pa + z)).
-  Proof. rewrite /offset_vaddr/= => /=. case_option_guard; naive_solver. Qed.
+  Proof. rewrite /offset_vaddr/= => /=. case_guard; naive_solver. Qed.
 
   Lemma offset_vaddr_0 pa :
     offset_vaddr 0 pa = Some pa.
@@ -34,7 +34,7 @@ Module address_sums.
     offset_vaddr o pa ≫= offset_vaddr o' = offset_vaddr (o + o') pa.
   Proof.
     rewrite /offset_vaddr => Hval.
-    by case_option_guard; rewrite /= Z.add_assoc ?Z2N.id.
+    by case_guard; rewrite /= Z.add_assoc ?Z2N.id.
   Qed.
 End address_sums.
 

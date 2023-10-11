@@ -909,7 +909,7 @@ Section with_cpp.
       rewrite o_sub_0; last by econstructor.
       rewrite _offsetR_id. eauto. }
     { iIntros "[_ X]".
-      simpl. destruct (Pos.to_nat p) eqn:?; first lia.
+      unfold N.to_nat. destruct (Pos.to_nat p) eqn:?; first lia.
       simpl. iDestruct "X" as "[X _]".
       rewrite o_sub_0; last by econstructor. rewrite _offsetR_id.
       iApply (observe with "X"). }

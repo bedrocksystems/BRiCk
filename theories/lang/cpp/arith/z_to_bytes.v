@@ -948,11 +948,9 @@ Section FromToBytes.
       rewrite to_unsigned_bits_id.
       { by apply: _Z_to_from_bytes_unsigned_le_roundtrip. }
       apply: _Z_from_bytes_unsigned_le_bounds.
-      set bits := (match N.of_nat _ with 0%N => _ | N.pos _ => _ end).
       rewrite -(Z.pow_mul_r 2 8).
       2: done.
       2: lia.
-      rewrite/bits.
       apply: Z.eq_le_incl.
       f_equal.
       rewrite -nat_N_Z.

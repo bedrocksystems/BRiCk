@@ -292,7 +292,8 @@ Section fractional.
     CFractional (fun q => F (cQp.frac q)).
   Proof.
     intros HF q1 q2. do !rewrite [F _]as_fractional.
-    rewrite Qp.mul_add_distr_r. by rewrite (@fractional).
+    rewrite Qp.mul_add_distr_r.
+    move: (HF 1%Qp) => [] _ //.
   Qed.
 
   #[global] Instance fractional_cfractional_mul_l (F G : Qp -> PROP) (p : Qp) :
@@ -300,7 +301,8 @@ Section fractional.
     CFractional (fun q => F (cQp.frac q)).
   Proof.
     intros HF q1 q2. do !rewrite [F _]as_fractional.
-    rewrite Qp.mul_add_distr_l. by rewrite (@fractional).
+    rewrite Qp.mul_add_distr_l.
+    move: (HF 1%Qp) => [] _ //.
   Qed.
 
   (** *** Lifting [CFractional] things into [Fractional] when using [cQp.mk] *)

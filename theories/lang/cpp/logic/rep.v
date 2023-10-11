@@ -29,6 +29,10 @@ Section with_cpp.
 
   Implicit Type (R : Rep).
 
+  (* Keeps proofs simple with recent Iris. *)
+  #[local] Existing Instance as_fractional_fractional.
+  #[local] Hint Mode AsFractional - - - - : typeclass_instances.
+
   #[global] Instance as_Rep_ne n :
     Proper (pointwise_relation _ (dist n) ==> dist n) as_Rep.
   Proof. intros R1 R2 HR. constructor=>p. apply HR. Qed.
@@ -328,7 +332,7 @@ Section with_cpp.
   #[global] Instance _offsetR_as_fractional o (R : Rep) (r : Qp → Rep) q
       `{!AsFractional R r q} :
     AsFractional (o |-> R) (λ q, o |-> r q) q.
-  Proof. constructor. by rewrite -as_fractional. apply _. Qed.
+  Proof. constructor; [by erewrite as_fractional | apply _]. Qed.
 
   #[global] Instance _offsetR_cfractional {R : cQp.t -> Rep} o :
     CFractional R ->
@@ -524,7 +528,7 @@ Section with_cpp.
   #[global] Instance _at_as_fractional R (r : Qp → Rep) q p
       `{!AsFractional R r q} :
     AsFractional (p |-> R) (λ q, p |-> r q) q.
-  Proof. constructor. by rewrite -as_fractional. apply _. Qed.
+  Proof. constructor; [by erewrite as_fractional | apply _]. Qed.
 
   #[global] Instance _at_cfractional {R : cQp.t -> Rep} p :
     CFractional R ->

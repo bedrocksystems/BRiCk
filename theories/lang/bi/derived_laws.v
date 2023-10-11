@@ -289,7 +289,9 @@ Section derived_laws.
   Lemma intuitionistically_if_forall b {A} (Φ : A → PROP) :
     □?b (∀ x : A, Φ x) ⊢ ∀ x : A, □?b Φ x.
   Proof.
-    destruct b; [|done]. apply intuitionistically_forall.
+    destruct b; simpl.
+    - iApply intuitionistically_forall.
+    - iIntros "$".
   Qed.
   Lemma forall_intuitionistically_if_bot `{!BiPersistentlyForall PROP}
       b {A} (Φ : A → PROP) (R : relation A) (bot : A) :
@@ -333,7 +335,7 @@ Section derived_laws.
 
   Lemma bupd_pure `{!BiBUpd PROP, !BiPlainly PROP, !BiBUpdPlainly PROP} (P : Prop) :
     (|==> ⌜P⌝) ⊣⊢@{PROP} ⌜P⌝.
-  Proof. apply (anti_symm _). exact: bupd_plain. apply bupd_intro. Qed.
+  Proof. apply (anti_symm _); first exact: bupd_elim. apply bupd_intro. Qed.
 End derived_laws.
 
 Section only_provable_derived_laws.

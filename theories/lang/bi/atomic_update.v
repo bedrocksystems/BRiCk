@@ -68,7 +68,7 @@ Section atomic.
     ) (atomic_acc (PROP:=PROP) Eo Ei).
   Proof.
     intros α1 α2 Hα P1 P2 HP β1 β2 Hβ Φ1 Φ2 HΦ. rewrite/atomic_acc.
-    repeat f_equiv; by rewrite ?Hα ?HP.
+    repeat f_equiv; by rewrite ?Hα ?Hβ ?HP.
   Qed.
 
   Global Instance aacc_flip_mono' Eo Ei :

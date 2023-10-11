@@ -181,7 +181,7 @@ Module PTRS_IMPL <: PTRS_INTF.
     intros Hrc; induction Hrc; eauto.
     inversion IHHrc; eauto 2; last have ?: z0 = 0 by [lia]; subst.
     (* Show that [o_sub_merge_canon] isn't applicable. *)
-    all: by efeed pose proof roff_canon_o_sub_wf.
+    all: by opose proof* roff_canon_o_sub_wf.
   Qed.
 
   Theorem canon_wf' src dst : roff_canon src dst -> raw_offset_collapse src = dst.

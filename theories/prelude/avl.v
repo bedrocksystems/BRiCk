@@ -22,7 +22,8 @@ Module IM := FMapAVL.Make OT_bs.
 
 #[global] Instance IMR_merge : Merge IM.Raw.t := IM.Raw.map2.
 
-#[global] Instance IMR_maptolist A : FinMapToList bs A (IM.Raw.t A) := IM.Raw.elements (elt := A).
+#[global] Instance IMR_mapfold A : MapFold bs A (IM.Raw.t A) := fun _ f a m =>
+   IM.Raw.fold f m a.
 
 #[global] Instance IMR_singleton {V} : SingletonM bs V (IM.Raw.t V) :=
   fun k v => <[ k := v ]> ∅.
@@ -47,7 +48,8 @@ Module IM := FMapAVL.Make OT_bs.
 
 #[global] Instance IM_merge : Merge IM.t := IM.map2.
 
-#[global] Instance IM_maptolist A : FinMapToList bs A (IM.t A) := IM.elements (elt := A).
+#[global] Instance IM_mapfold A : MapFold bs A (IM.t A) := fun _ f a m =>
+  IM.fold f m a.
 
 #[global] Instance IM_singleton {V} : SingletonM bs V (IM.t V) :=
   fun k v => <[ k := v ]> ∅.
@@ -186,3 +188,28 @@ Definition map_canon {e} (b : IM.t e) : IM.t e :=
   | true => fun x => {| IM.this := IM.this b; IM.is_bst := x I |}
   | false => fun _ => b
   end (@check_canon_ok _ b.(IM.this)).
+
+Lemma fold_left_cons {A B : Type} (l1 l2 : list (A * B)) :
+  fold_left (fun acc e => (e.1, e.2) :: acc) l1 l2 = rev l1 ++ l2.
+Proof. clear.
+  revert l2; induction l1 as [|e l IH] => l2 /=; first done.
+  rewrite IH -app_assoc /=. do 2 f_equal. by destruct e.
+Qed.
+
+Lemma map_to_list_elements {A : Set} (k : bs) (v : A) (m : avl.IM.t A) :
+  m !! k = Some v ->
+  exists xs ys, map_to_list m = xs ++ (k, v) :: ys.
+Proof.
+  rewrite /lookup/map_to_list/map_fold/avl.IM_mapfold.
+  rewrite avl.IM.fold_1 fold_left_cons app_nil_r.
+  move => H.
+  apply avl.IM.find_2 in H.
+  apply avl.IM.elements_1 in H.
+  eapply SetoidList.InA_alt in H.
+  destruct H as [? [H1 H2]].
+  do 2 red in H1; simpl in H1. destruct H1; subst.
+  eapply in_split in H2.
+  destruct H2 as [l1 [l2 ->]].
+  exists (rev l2), (rev l1).
+  rewrite rev_app_distr /= -app_assoc. by destruct x.
+Qed.

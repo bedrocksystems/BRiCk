@@ -129,19 +129,9 @@ Section with_cpp.
     denoteModule m |-- denoteSymbol m n o.
   Proof.
     rewrite denoteModule_eq/denoteModule_def.
-    intros; iIntros "[M _]".
-    rewrite /lookup /symbol_lookup /= /lookup in H.
-    rewrite /map_to_list /avl.IM_maptolist.
-    assert (exists xs ys, avl.IM.elements (symbols m) = xs ++ (n, o) :: ys) as [ ? [ ? -> ] ].
-    { apply avl.IM.find_2 in H.
-      apply avl.IM.elements_1 in H.
-      eapply SetoidList.InA_alt in H.
-      destruct H as [ ? [ ? H ]].
-      do 2 red in H0; simpl in H0. destruct H0; subst.
-      eapply in_split in H.
-      destruct x; apply H. }
-    rewrite big_opL_app.
-    rewrite big_opL_cons.
+    iIntros (Hlookup) "[M _]".
+    move: (avl.map_to_list_elements _ _ _ Hlookup) => [l1][l2] ->.
+    rewrite big_opL_app big_opL_cons.
     by iDestruct "M" as "[_ [M _]]".
   Qed.
 
