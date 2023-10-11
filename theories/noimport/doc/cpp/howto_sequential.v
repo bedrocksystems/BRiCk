@@ -57,13 +57,13 @@ To extract the [begin] and [size] of a [Range] like
 [range_ex], one can use projections corresponding to the fields:
  *)
 
-Compute range_ex.(begin).
+(**Compute range_ex.(begin).*)
 (**
      = 10
      : Z
 *)
 
-Compute range_ex.(size).
+(**Compute range_ex.(size).*)
 (**
      = 3
      : Z
@@ -286,10 +286,10 @@ Fixpoint count (t : tree Z) : Z :=
   | node d l r => 1 + count l + count r
   end.
 
-Compute count leaf.
+(**Compute count leaf.*)
 (**     = 0
         : Z *)
-Compute count ex_tree.
+(**Compute count ex_tree.*)
 (**     = 3
         : Z *)
 

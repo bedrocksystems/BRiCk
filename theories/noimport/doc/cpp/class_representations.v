@@ -83,8 +83,8 @@ represented, we define a Gallina record to denote the mathematical model of what
   | ABool (_: bool) (* a value of type [bool] *).
 
   (** this has both integers and booleans *)
-  Check AnInt 3 : M.
-  Check ABool true : M.
+  (*Check AnInt 3 : M.*)
+  (*Check ABool true : M.*)
 
   (** these are tagged in Coq, i.e. we can pattern match on a value of
       type [M] to determine which case it is.
