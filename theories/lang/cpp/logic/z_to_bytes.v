@@ -35,46 +35,17 @@ Section with_σ.
     destruct sz=> /=; lia.
   Qed.
 
-  Lemma _Z_from_bytes_le_has_type_prop :
-    forall (bytes : list N) (sz : int_type) (sgn : signed),
-      lengthN bytes = bytesN sz ->
-      has_type_prop (_Z_from_bytes_le sgn bytes) (Tnum sz sgn).
+  Lemma _Z_from_bytes_le_has_type_prop (bytes : list N) (sz : int_type) (sgn : signed) :
+    lengthN bytes = bytesN sz ->
+    has_type_prop (_Z_from_bytes_le sgn bytes) (Tnum sz sgn).
   Proof.
-    intros * Hlength; unfold _Z_from_bytes_le; case_match; subst;
-      last by apply _Z_from_bytes_unsigned_le_has_type_prop.
-    rewrite /lengthN/bytesN in Hlength; apply Nat2N.inj in Hlength.
+    move => Hlength. rewrite /_Z_from_bytes_le.
+    case_match; subst; last by apply _Z_from_bytes_unsigned_le_has_type_prop.
+    rewrite /lengthN /bytesN in Hlength; apply Nat2N.inj in Hlength; rewrite Hlength.
     unfold operator.to_signed_bits.
-    rewrite bool_decide_false; cbn; last by (rewrite Hlength; destruct sz=> //=).
-    assert ((sz = W8 /\
-             exists b1,
-               bytes = [b1]) \/
-            (sz = W16 /\
-             exists b1 b2,
-               bytes = [b1; b2]) \/
-            (sz = W32 /\
-             exists b1 b2 b3 b4,
-               bytes = [b1; b2; b3; b4]) \/
-            (sz = W64 /\
-             exists b1 b2 b3 b4 b5 b6 b7 b8,
-               bytes = [b1; b2; b3; b4; b5; b6; b7; b8]) \/
-            (sz = W128 /\
-             exists b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16,
-               bytes = [b1; b2; b3; b4; b5; b6; b7; b8; b9; b10; b11; b12; b13; b14; b15; b16]))
-      as [[-> Hbytes] | [[-> Hbytes] | [[-> Hbytes] | [[-> Hbytes] | [-> Hbytes]]]]]. 1: {
-      destruct sz; cbn in Hlength; repeat (destruct bytes as [| ? bytes]; try discriminate);
-        [ do 0 right; left
-        | do 1 right; left
-        | do 2 right; left
-        | do 3 right; left
-        | do 4 right];
-        split; eauto.
-      - do 8 eexists; eauto.
-      - do 16 eexists; eauto.
-    }
-    all: repeat (match goal with
-                 | H : exists _, _ |- _ =>
-                     destruct H as [? H]
-                 end); subst; cbn.
+    rewrite bool_decide_false; last by destruct sz.
+    destruct sz => /=.
+    all: repeat (destruct bytes as [|? bytes]; simpl in Hlength; try lia; clear Hlength).
     all: case_bool_decide; rewrite -has_int_type /bound/=;
       try match goal with
       | |- context[Z.modulo ?a ?b] => pose proof (Z.mod_pos_bound a b ltac:(lia)); lia
