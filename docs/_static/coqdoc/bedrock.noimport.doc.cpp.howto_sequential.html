@@ -138,25 +138,19 @@ An example <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.synt
 To extract the <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#begin"><span class="id" title="projection">begin</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.size"><span class="id" title="abbreviation">size</span></a></span> of a <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a></span> like
 <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#range_ex"><span class="id" title="definition">range_ex</span></a></span>, one can use projections corresponding to the fields:
  
-</div>
-<div class="code">
+<div class="paragraph"> </div>
 
-<br/>
-<span class="id" title="keyword">Compute</span> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#range_ex"><span class="id" title="definition">range_ex</span></a>.(<a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#begin"><span class="id" title="projection">begin</span></a>).<br/>
-</div>
+Compute range_ex.(begin).
+<div class="paragraph"> </div>
 
-<div class="doc">
      = 10
      : Z
 
-</div>
-<div class="code">
+<div class="paragraph"> </div>
 
-<br/>
-<span class="id" title="keyword">Compute</span> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#range_ex"><span class="id" title="definition">range_ex</span></a>.(<a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#size"><span class="id" title="projection">size</span></a>).<br/>
-</div>
+Compute range_ex.(size).
+<div class="paragraph"> </div>
 
-<div class="doc">
      = 3
      : Z
  
@@ -522,19 +516,12 @@ representation predicate of unsigned integers.
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 
 <br/>
-<span class="id" title="keyword">Compute</span> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#count"><span class="id" title="definition">count</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#leaf"><span class="id" title="constructor">leaf</span></a>.<br/>
+<span class="comment">(**Compute&nbsp;count&nbsp;leaf.*)</span><br/>
 </div>
 
 <div class="doc">
     = 0
-        : Z 
-</div>
-<div class="code">
-<span class="id" title="keyword">Compute</span> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#count"><span class="id" title="definition">count</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#ex_tree"><span class="id" title="definition">ex_tree</span></a>.<br/>
-</div>
-
-<div class="doc">
-    = 3
+        : Z Compute count ex_tree.     = 3
         : Z 
 <div class="paragraph"> </div>
 
