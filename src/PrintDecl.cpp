@@ -266,9 +266,10 @@ public:
     bool VisitTypedefNameDecl(const TypedefNameDecl *type, CoqPrinter &print,
                               ClangPrinter &cprint, const ASTContext &) {
         if (PRINT_TYPEDEF) {
-            print.ctor("Dtypedef") << "\"";
+            if (not templatePreamble("typedef", false, type, print, cprint))
+                return false;
             cprint.printTypeName(type, print);
-            print.output() << "\"" << fmt::nbsp;
+            print.output() << fmt::nbsp;
             cprint.printQualType(type->getUnderlyingType(), print);
             print.end_ctor();
             return true;
@@ -576,8 +577,7 @@ public:
     // not, yet, support nested records.
     void printTemplateArgs(const FunctionDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
-        print.begin_list();
-
+        printTemplateArgs(decl->getLexicalDeclContext(), print, cprint, false);
         if (auto params = decl->getDescribedTemplateParams()) {
             for (auto decl : params->asArray()) {
                 cprint.printDecl(decl, print);
@@ -596,12 +596,7 @@ public:
      */
     void printTemplateArgs(const CXXRecordDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
-        if (auto parent_record =
-                dyn_cast<CXXRecordDecl>(decl->getLexicalParent())) {
-            printTemplateArgs(parent_record, print, cprint, false);
-        } else {
-            print.begin_list();
-        }
+        printTemplateArgs(decl->getLexicalParent(), print, cprint, false);
 
         if (auto params = decl->getDescribedTemplateParams()) {
             for (auto decl : params->asArray()) {
@@ -609,14 +604,41 @@ public:
                 print.cons();
             }
         }
+        if (top)
+            print.end_list();
+    }
 
+    void printTemplateArgs(const CXXMethodDecl *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        printTemplateArgs(decl->getLexicalParent(), print, cprint, false);
+        if (auto params = decl->getDescribedTemplateParams()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
+        if (top)
+            print.end_list();
+    }
+
+    void printTemplateArgs(const TypeAliasTemplateDecl *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        printTemplateArgs(decl->getTemplatedDecl()->getLexicalDeclContext(),
+                          print, cprint, false);
+        if (auto params = decl->getTemplateParameters()) {
+            for (auto decl : params->asArray()) {
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
+        }
         if (top)
             print.end_list();
     }
 
-    void printTemplateArgs(const CXXMethodDecl *decl, CoqPrinter &print,
+    void printTemplateArgs(const TypedefNameDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, bool top = true) {
-        printTemplateArgs(decl->getParent(), print, cprint, false);
+        printTemplateArgs(decl->getUnderlyingDecl()->getLexicalDeclContext(),
+                          print, cprint, false);
         if (auto params = decl->getDescribedTemplateParams()) {
             for (auto decl : params->asArray()) {
                 cprint.printDecl(decl, print);
@@ -625,6 +647,24 @@ public:
         }
         if (top)
             print.end_list();
+    }
+
+    void printTemplateArgs(const DeclContext *decl, CoqPrinter &print,
+                           ClangPrinter &cprint, bool top = true) {
+        if (not decl or isa<TranslationUnitDecl>(decl)) {
+            print.begin_list();
+        } else if (auto md = dyn_cast<CXXMethodDecl>(decl)) {
+            printTemplateArgs(md, print, cprint, top);
+        } else if (auto rd = dyn_cast<CXXRecordDecl>(decl)) {
+            printTemplateArgs(rd, print, cprint, top);
+        } else if (auto fd = dyn_cast<FunctionDecl>(decl)) {
+            printTemplateArgs(fd, print, cprint, top);
+        } else if (isa<NamespaceDecl>(decl)) {
+            print.begin_list();
+        } else {
+            logging::unsupported()
+                << "unsupported context " << decl->getDeclKindName() << "\n";
+        }
     }
 
     template<typename D>
