@@ -222,7 +222,7 @@ class PrintDecl :
     public ConstDeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
                                 const ASTContext &> {
 private:
-    PrintDecl() {}
+    PrintDecl() = default;
 
 public:
     static PrintDecl printer;
