@@ -273,20 +273,37 @@ Module Endian.
       exact: _Z_to_bytes_has_type_prop.
     Qed.
 
-    Lemma raw_bytes_of_val_raw_int_byte (z : Z) :
-      has_type_prop z Tu16 ->
-      raw_bytes_of_val σ Tu16 (to_big_end W16 z) (map raw_int_byte (_Z_to_bytes 2 Big Unsigned z)).
+    Lemma raw_bytes_of_val_to_end_raw_int_byte (endianness : endian) (sz : bitsize) (z : Z) :
+      has_type_prop z (Tnum sz Unsigned) ->
+      raw_bytes_of_val σ (Tnum sz Unsigned) (to_end endianness sz z)
+        (map raw_int_byte (_Z_to_bytes (bytesNat sz) endianness Unsigned z)).
     Proof.
       rewrite raw_byte_of_int_eq.
-      exists (_Z_to_bytes 2 Big Unsigned z).
+      exists (_Z_to_bytes (bytesNat sz) endianness Unsigned z).
       intuition.
       2: by rewrite _Z_to_bytes_length //.
-      have -> : to_big_end W16 z = to_end Big W16 z.
-      { reflexivity. }
       apply: decodes_uint_to_end.
       { rewrite _Z_to_bytes_length; reflexivity. }
-      apply: (decodes_Z_to_bytes_Unsigned W16); try reflexivity.
+      apply: (decodes_Z_to_bytes_Unsigned sz); try reflexivity.
       assumption.
+    Qed.
+
+    Lemma raw_bytes_of_val_to_big_end_raw_int_byte (sz : bitsize) (z : Z) :
+      has_type_prop z (Tnum sz Unsigned) ->
+      raw_bytes_of_val σ (Tnum sz Unsigned) (to_big_end sz z)
+        (map raw_int_byte (_Z_to_bytes (bytesNat sz) Big Unsigned z)).
+    Proof.
+      intros H; apply (raw_bytes_of_val_to_end_raw_int_byte Big) in H.
+      by rewrite /to_end/= in H.
+    Qed.
+
+    Lemma raw_bytes_of_val_to_little_end_raw_int_byte (sz : bitsize) (z : Z) :
+      has_type_prop z (Tnum sz Unsigned) ->
+      raw_bytes_of_val σ (Tnum sz Unsigned) (to_little_end sz z)
+        (map raw_int_byte (_Z_to_bytes (bytesNat sz) Little Unsigned z)).
+    Proof.
+      intros H; apply (raw_bytes_of_val_to_end_raw_int_byte Little) in H.
+      by rewrite /to_end/= in H.
     Qed.
   End with_Σ.
 End Endian.
