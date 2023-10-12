@@ -1,0 +1,23 @@
+opam-version: "2.0"
+synopsis: "Generation of lenses for record datatypes"
+maintainer: "gregory@bedrocksystems.com"
+authors: [
+  "Gregory Malecha <gregory@bedrocksystems.com>"
+]
+homepage: "https://github.com/bedrocksystems/coq-lens"
+dev-repo: "git://github.com/bedrocksystems/coq-lens.git"
+bug-reports: "https://github.com/bedrocksystems/coq-lens/issues"
+build: [
+  [make "-j%{jobs}%"]
+]
+install: [
+  [make "install"]
+]
+depends: [
+  "coq" {>= "8.16" & < "8.17~"}
+  "coq-metacoq-template" {= "1.1+8.16"}
+]
+tags: [
+  "logpath:Lens"
+  "date: 2020-11-18"
+]
