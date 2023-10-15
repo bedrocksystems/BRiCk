@@ -4,5 +4,6 @@
   %{bin:coqc}
   %{bin:coqdep}
   (package coq-lens)
+  (package coq-lens-tc)
   (package coq-lens-elpi)
   setup-project.sh))

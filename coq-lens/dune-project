@@ -14,8 +14,15 @@
  (name coq-lens)
  (synopsis "Generation of lenses for record datatypes")
  (depends
+  (coq (and (>= 8.13.0) (< 8.19~)))))
+
+(package
+ (name coq-lens-tc)
+ (synopsis "Generation of lenses for record datatypes")
+ (depends
+  coq-lens
   (coq (and (>= 8.17.0) (< 8.18~)))
-  (coq-metacoq-template (= 1.1+8.16))))
+  (coq-metacoq-template (= 1.2+8.17))))
 
 (package
  (name coq-lens-elpi)
