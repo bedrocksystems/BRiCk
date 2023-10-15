@@ -1,2 +1,4 @@
 -Q lens Lens
 -Q lens-elpi Lens.Elpi
+-Q tests/elpi.t tests.elpi
+-Q tests/mc.t tests.mc
