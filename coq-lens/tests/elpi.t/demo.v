@@ -35,3 +35,23 @@ Proof. reflexivity. Qed.
 
 Goal {| foo := 3 ; bar := true |} & _bar .= false = {| foo := 3 ; bar := false |}.
 Proof. reflexivity. Qed.
+
+Set Printing All.
+
+(* Test for https://github.com/LPCIC/coq-elpi/pull/521 *)
+Lemma prim_proj_fold_test r :
+  foo r = 0 ->
+  view _foo r = foo r.
+Proof.
+  simpl.
+  intros Hpr.
+  Show.
+  rewrite Hpr.
+  Show.
+(* Expected:
+  reflexivity.
+Qed.
+*)
+(* Bug: *)
+  Fail reflexivity.
+Abort.

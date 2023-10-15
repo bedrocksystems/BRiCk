@@ -10,3 +10,15 @@
   _bar is not universe polymorphic
   _bar is transparent
   Expands to: Constant test.demo._bar
+  1 goal
+    
+    r : Foo
+    Hpr : foo r = 0
+    ============================
+    foo r = foo r
+  1 goal
+    
+    r : Foo
+    Hpr : foo r = 0
+    ============================
+    0 = 0

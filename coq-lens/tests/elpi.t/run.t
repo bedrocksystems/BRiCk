@@ -10,6 +10,18 @@
   _bar is not universe polymorphic
   _bar is transparent
   Expands to: Constant test.demo._bar
+  1 goal
+    
+    r : Foo
+    Hpr : @eq nat (foo r) O
+    ============================
+    @eq nat (foo r) (foo r)
+  1 goal
+    
+    r : Foo
+    Hpr : @eq nat (foo r) O
+    ============================
+    @eq nat (foo r) O
   $ dune build test.vo 2>&1 | grep -v 'Derivation.*took'
   Derivation lens on indt «State»
   Module
