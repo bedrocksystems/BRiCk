@@ -5,7 +5,7 @@
  *)
 Require Import ssreflect.
 
-From stdpp Require Export countable.
+From stdpp Require Import countable.
 
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.

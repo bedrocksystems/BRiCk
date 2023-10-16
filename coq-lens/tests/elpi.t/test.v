@@ -1,0 +1,68 @@
+(*
+ * Copyright (c) 2023 BedRock Systems, Inc.
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
+ *)
+
+
+From elpi Require Import elpi.
+From elpi.apps Require Import derive.
+Require Import stdpp.numbers.
+Require Import Lens.Elpi.Elpi.
+
+(* #[verbose,only(lens)] derive Record State : Set := MkState
+  { value : N
+  }.
+Print State._value. *)
+
+Module no_prim_projs.
+  #[projections(primitive=no)]
+  Record State : Set := MkState
+    { value : N
+    }.
+
+  #[verbose,only(lens)] derive State.
+(* State__value *)
+End no_prim_projs.
+
+Print no_prim_projs.
+
+Module prim_projs.
+  #[projections(primitive=yes)]
+  Record State : Set := MkState
+    { value : N
+    }.
+
+  #[verbose,only(lens)] derive State.
+(* State__value *)
+End prim_projs.
+
+Print prim_projs.
+
+derive Inductive tickle A := stop | more : A -> tickle-> tickle.
+derive Record State : Set := MkState
+  { value' : N
+  }.
+Module Import bar.
+  #[verbose] derive Record State : Set := MkState
+    { value : N
+    }.
+  Record State2 : Set := MkState2
+    { value : N
+    }.
+End bar.
+
+(* #[only(lens)] derive State. *)
+Print Module bar.
+Print Module bar.State.
+Print bar.State.value.
+Print Module State.
+Import State(State).
+Print Module State.
+Print State.value.
+
+(* lens.Lens
+Print lens. *)
+(* #[verbose,only(lens)] derive] State. *)
+(* derive[lens] State. *)
+
