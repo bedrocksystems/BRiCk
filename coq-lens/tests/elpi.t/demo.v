@@ -48,10 +48,5 @@ Proof.
   Show.
   rewrite Hpr.
   Show.
-(* Expected:
   reflexivity.
 Qed.
-*)
-(* Bug: *)
-  Fail reflexivity.
-Abort.

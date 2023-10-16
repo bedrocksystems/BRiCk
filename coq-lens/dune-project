@@ -1,5 +1,5 @@
-(lang dune 3.6)
-(using coq 0.6)
+(lang dune 3.8)
+(using coq 0.8)
 (name coq-lens)
 
 (generate_opam_files)
@@ -21,12 +21,13 @@
  (synopsis "Generation of lenses for record datatypes")
  (depends
   coq-lens
-  (coq (and (>= 8.17.0) (< 8.18~)))
-  (coq-metacoq-template (= 1.2+8.17))))
+  (coq (and (>= 8.18.0) (< 8.19~)))
+  (coq-metacoq-template (= 1.2.1+8.18))))
 
 (package
  (name coq-lens-elpi)
  (synopsis "Generation of lenses for record datatypes, Elpi backend")
  (depends
   coq-lens
-  coq-elpi))
+  (coq (and (>= 8.18.0) (< 8.19~)))
+  (coq-elpi (= 1.19.3)))) ; We stick to a public version on the package.

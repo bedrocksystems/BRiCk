@@ -1,10 +1,12 @@
 From Coq.Classes Require Import DecidableClass.
 From Coq.Lists Require Import List.
 From Coq.Strings Require Import String.
+
 (* Avoid [From MetaCoq.Template Require Import utils All.]
 to work around https://github.com/MetaCoq/metacoq/issues/580 *)
-From MetaCoq.Template Require Import utils monad_utils.
+From MetaCoq.Utils Require Import monad_utils MCUtils.
 From MetaCoq.Template Require Import Ast Loader TemplateMonad.
+
 From Lens Require Import Lens.
 
 Import MCMonadNotation.
@@ -22,6 +24,9 @@ Fixpoint countTo (n : nat) : list nat :=
   | 0 => nil
   | S m => countTo m ++ (m :: nil)
   end.
+
+(* Fix upstream scoping bug; upstream just opens [Local Open Scope bs.] *)
+Bind Scope bs_scope with String.t.
 
 Definition lensName (ls : String.string) (i : ident) : ident :=
   String.of_string (ls ++ String.to_string i).
