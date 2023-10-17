@@ -65,10 +65,10 @@ Section monpred_instances.
   Proof.
     unseal_monpred.
     - setoid_rewrite <-(@embed_pure iPropI).
+      setoid_rewrite <-embed_affinely.
       setoid_rewrite <-(@embed_sep iPropI).
       setoid_rewrite <-embed_exist.
       by rewrite -embed_bupd -own_updateP.
-    - by rewrite -embed_bupd -own_update.
     - setoid_rewrite <-(@embed_pure iPropI).
       setoid_rewrite <-embed_affinely.
       setoid_rewrite <-(@embed_sep iPropI).

@@ -101,8 +101,7 @@ Arguments HasOwnValid _ {_} _{_}.
 
 (* own_update and own_alloc *)
 Class HasOwnUpd `{!BiBUpd PROP} `{!HasOwn PROP A} : Type := {
-  own_updateP P γ (a : A) : a ~~>: P → own γ a ==∗ ∃ a', ⌜P a'⌝ ∗ own γ a';
-  own_update γ (a a' : A) : a ~~> a' -> own γ a ==∗ own γ a' ;
+  own_updateP P γ (a : A) : a ~~>: P → own γ a ==∗ ∃ a', <affine> ⌜P a'⌝ ∗ own γ a';
   own_alloc_strong_dep (f : gname → A) (P : gname → Prop) :
     pred_infinite P → (∀ γ, P γ → ✓ (f γ)) → ⊢ |==> ∃ γ, <affine> ⌜P γ⌝ ∗ own γ (f γ)
 }.
@@ -193,12 +192,21 @@ Section own_valid.
 End own_valid.
 
 Import iris.bi.derived_laws.bi.
+From iris.proofmode Require Import proofmode.
 
 Section update.
   Context `{!BiBUpd PROP} `{!HasOwn PROP A} `{!HasOwnUpd PROP A}.
   Implicit Type (a : A).
 
   (* Duplicates from base_logic.lib.own. *)
+  Lemma own_update γ a a' : a ~~> a' → own γ a ⊢ |==> own γ a'.
+  Proof.
+    intros. iIntros "?".
+    iMod (own_updateP (a' =.) with "[$]") as (a'') "[-> $]".
+    { by apply cmra_update_updateP. }
+    done.
+  Qed.
+
   Lemma own_alloc_cofinite_dep (f : gname → A) (G : gset gname) :
     (∀ γ, γ ∉ G → ✓ (f γ)) → ⊢ |==> ∃ γ, <affine> ⌜γ ∉ G⌝ ∗ own γ (f γ).
   Proof.
