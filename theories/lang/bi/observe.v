@@ -533,6 +533,17 @@ Section observable_theory.
     iDestruct (observe False with "O") as "#$".
   Qed.
 
+  (**
+  This is not invertible. _If_ instead we had
+  [observable_sep_inv P Q : observable P ∗ observable Q ⊢ observable (P ∗ Q)]
+  owning one [fracR] ghost variable would entail a contradiction:
+  <<
+  observable (own γ 1) ⊢ (* by persistence *)
+  observable (own γ 1) ** observable (own γ 1) |-/- (* [observable_sep_inv] *)
+  observable (own γ 1 ** own γ 1) |-- (* [own_valid_2] + validity of fractions *)
+  False
+  >>
+  *)
   Lemma observable_sep P Q : observable (P ∗ Q) ⊢ observable P ∗ observable Q.
   Proof.
     rewrite observable.unlock.
