@@ -16,7 +16,7 @@ defined elsewhere. *)
 (** [Observe Q P] means we can observe [Q] (persistently) given [P].
 Such observations do not consume [P]. *)
 Class Observe {PROP : bi} (Q P : PROP) := observe : P ⊢ <pers> Q.
-#[global] Instance: Params (@observe) 4 := {}.
+#[global] Instance: Params (@observe) 1 := {}.
 Arguments observe {_} (_ _)%I {_} : assert.
 Arguments Observe {_} (_ _)%I : simpl never, assert.
 #[global] Hint Mode Observe + ! ! : typeclass_instances.
@@ -24,7 +24,7 @@ Arguments Observe {_} (_ _)%I : simpl never, assert.
 (** [Observe Q P1 P2] means we can observe [Q] (persistently) given
 [P1 ** P2]. Such observations do not consume the [P_i]. *)
 Class Observe2 {PROP : bi} (Q P1 P2 : PROP) := observe_2 : P1 ⊢ P2 -∗ <pers> Q.
-#[global] Instance: Params (@observe_2) 5 := {}.
+#[global] Instance: Params (@observe_2) 1 := {}.
 Arguments observe_2 {_} (_ _ _)%I {_} : assert.
 Arguments Observe2 {_} (_ _ _)%I : simpl never, assert.
 #[global] Hint Mode Observe2 + ! ! ! : typeclass_instances.
@@ -496,6 +496,7 @@ But after observing [observable P], framing [P] always preserves provability. *)
 mlock Definition observable {PROP : bi} (P : PROP) : PROP :=
   □ (∀ Q : PROP, [| Observe Q P |] -∗ Q).
 #[global] Arguments observable {_} _ : assert.
+#[global] Instance: Params (@observable) 1 := {}.
 
 Section observable_theory.
   Context {PROP : bi}.
@@ -533,11 +534,44 @@ Section observable_theory.
     iDestruct (observe False with "O") as "#$".
   Qed.
 
+  (**
+  This is not invertible. _If_ instead we had
+  [observable_sep_inv P Q : observable P ∗ observable Q ⊢ observable (P ∗ Q)]
+  owning one [fracR] ghost variable would entail a contradiction:
+  <<
+  observable (own γ 1) ⊢ (* by persistence *)
+  observable (own γ 1) ** observable (own γ 1) |-/- (* [observable_sep_inv] *)
+  observable (own γ 1 ** own γ 1) |-- (* [own_valid_2] + validity of fractions *)
+  False
+  >>
+  *)
   Lemma observable_sep P Q : observable (P ∗ Q) ⊢ observable P ∗ observable Q.
   Proof.
     rewrite observable.unlock.
     iIntros "#PQ".
     iSplit; iModIntro; iIntros (R) "%O"; iApply "PQ"; iPureIntro; apply _.
+  Qed.
+
+  #[global] Instance observable_mono :
+    Proper ((⊢) ==> (⊢)) (observable (PROP := PROP)).
+  Proof.
+    (* TODO AUTO: fails *)
+    (* rewrite observable.unlock; solve_proper. *)
+    intros ???.
+    rewrite observable.unlock; do 5 f_equiv.
+    (* TODO AUTO: [f_equiv] uses [Observe_trans] :-( *)
+    exact: Observe_mono.
+  Qed.
+
+  #[global] Instance observable_flip_mono :
+    Proper (flip (⊢) ==> flip (⊢)) (observable (PROP := PROP)).
+  Proof. solve_proper. Qed.
+
+  #[global] Instance observable_proper :
+    Proper ((⊣⊢) ==> (⊣⊢)) (observable (PROP := PROP)).
+  Proof.
+    intros ?? HE%bi.equiv_entails.
+    apply (anti_symm (⊢)); apply observable_mono, HE.
   Qed.
 
 End observable_theory.
