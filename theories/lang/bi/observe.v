@@ -496,6 +496,7 @@ But after observing [observable P], framing [P] always preserves provability. *)
 mlock Definition observable {PROP : bi} (P : PROP) : PROP :=
   □ (∀ Q : PROP, [| Observe Q P |] -∗ Q).
 #[global] Arguments observable {_} _ : assert.
+#[global] Instance: Params (@observable) 1 := {}.
 
 Section observable_theory.
   Context {PROP : bi}.
@@ -549,6 +550,28 @@ Section observable_theory.
     rewrite observable.unlock.
     iIntros "#PQ".
     iSplit; iModIntro; iIntros (R) "%O"; iApply "PQ"; iPureIntro; apply _.
+  Qed.
+
+  #[global] Instance observable_mono :
+    Proper ((⊢) ==> (⊢)) (observable (PROP := PROP)).
+  Proof.
+    (* TODO AUTO: fails *)
+    (* rewrite observable.unlock; solve_proper. *)
+    intros ???.
+    rewrite observable.unlock; do 5 f_equiv.
+    (* TODO AUTO: [f_equiv] uses [Observe_trans] :-( *)
+    exact: Observe_mono.
+  Qed.
+
+  #[global] Instance observable_flip_mono :
+    Proper (flip (⊢) ==> flip (⊢)) (observable (PROP := PROP)).
+  Proof. solve_proper. Qed.
+
+  #[global] Instance observable_proper :
+    Proper ((⊣⊢) ==> (⊣⊢)) (observable (PROP := PROP)).
+  Proof.
+    intros ?? HE%bi.equiv_entails.
+    apply (anti_symm (⊢)); apply observable_mono, HE.
   Qed.
 
 End observable_theory.
