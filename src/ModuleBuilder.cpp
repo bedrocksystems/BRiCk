@@ -202,6 +202,14 @@ public:
     }
 
     void VisitVarDecl(const VarDecl *decl, Flags flags) {
+        if (decl->getDefinition()) {
+            if (decl->getDefinition() != decl)
+                return;
+        } else {
+            if (!decl->isCanonicalDecl())
+                return;
+        }
+
         if (templates_ || !decl->isTemplated()) {
             go(decl, flags);
         }
