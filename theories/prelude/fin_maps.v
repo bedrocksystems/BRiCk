@@ -36,18 +36,6 @@ Section fin_maps.
   Lemma map_positive_r m1 m2 : m1 ∪ m2 = ∅ → m2 = ∅.
   Proof. by intros [_ ?]%map_positive. Qed.
 
-  (* Inspired by stdpp's size_union *)
-  Lemma map_size_union m1 m2 (Hdisj : m1 ##ₘ m2) : size (m1 ∪ m2) = size m1 + size m2.
-  Proof.
-    unfold size, map_size. rewrite <- app_length.
-    apply Permutation_length, NoDup_Permutation.
-    - apply NoDup_map_to_list.
-    - apply NoDup_app; repeat split; try apply NoDup_map_to_list.
-      intros []. rewrite !elem_of_map_to_list. intros ??.
-      by eapply map_disjoint_spec in Hdisj.
-    - intros []. by rewrite ->elem_of_app, !elem_of_map_to_list, lookup_union_Some.
-  Qed.
-
   (* Remaining lemmas use ssreflect.
   TODO: avoid if upstreaming to stdpp. *)
   Lemma map_union_difference (m1 m2 : M A) :
