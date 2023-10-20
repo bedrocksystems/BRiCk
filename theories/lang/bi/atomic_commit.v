@@ -450,7 +450,7 @@ Section lemmas.
 
   Lemma atomic_commit_mask_weaken b Eo1 Eo2 Ei α β Φ :
     Eo1 ⊆ Eo2 →
-    atomic_commit b Eo1 Ei α β Φ -∗ atomic_commit b Eo2 Ei α β Φ.
+    atomic_commit b Eo1 Ei α β Φ ⊢ atomic_commit b Eo2 Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def.
     iIntros (Heo) "HAU". by iApply commit_acc_mask_weaken.
@@ -458,7 +458,7 @@ Section lemmas.
 
   (** The elimination form: a commit accessor *)
   Lemma atomic_commit_elim b Eo Ei α β Φ :
-    atomic_commit b Eo Ei α β Φ -∗ commit_acc b Eo Ei α β Φ.
+    atomic_commit b Eo Ei α β Φ ⊢ commit_acc b Eo Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def. done.
   Qed.

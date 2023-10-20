@@ -111,7 +111,7 @@ Section with_cpp.
   Qed.
 
   Lemma elab_impl (Q P : WpSpec mpredI val val) ret ts ar :
-    spec_impl Q P |-- spec_impl (cpp_spec ret ts (ar:=ar) Q) (cpp_spec ret ts (ar:=ar) P).
+    spec_impl Q P -∗ spec_impl (cpp_spec ret ts (ar:=ar) Q) (cpp_spec ret ts (ar:=ar) P).
   Proof.
     rewrite /spec_impl/wp_specD/cpp_spec.
     assert (forall ps xs Ps Qs,
@@ -177,7 +177,7 @@ Section with_cpp.
   (* Variant of [elab_impl] allowing for fancy updates; neither statement implies the other.
   TODO: maybe the proof could be merged with [elab_impl]'s, by using a _conditional_ fancy update `|={ E }=>?b` and abstracting over `b`. *)
   Lemma elab_impl_fupd (Q P : WpSpec mpredI val val) ret ts ar :
-    wpspec_wand_fupd Q P |--
+    wpspec_wand_fupd Q P -∗
     wpspec_wand_fupd (cpp_spec ret ts (ar:=ar) Q) (cpp_spec ret ts (ar:=ar) P).
   Proof.
     rewrite /wpspec_wand_fupd/wp_specD/cpp_spec/=.
