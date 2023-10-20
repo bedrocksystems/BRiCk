@@ -101,7 +101,7 @@ Arguments HasOwnValid _ {_} _{_}.
 
 (* own_update and own_alloc *)
 Class HasOwnUpd `{!BiBUpd PROP} `{!HasOwn PROP A} : Type := {
-  own_updateP P γ (a : A) : a ~~>: P → own γ a ==∗ ∃ a', <affine> ⌜P a'⌝ ∗ own γ a';
+  own_updateP P γ (a : A) : a ~~>: P → own γ a ⊢ |==> ∃ a', <affine> ⌜P a'⌝ ∗ own γ a';
   own_alloc_strong_dep (f : gname → A) (P : gname → Prop) :
     pred_infinite P → (∀ γ, P γ → ✓ (f γ)) → ⊢ |==> ∃ γ, <affine> ⌜P γ⌝ ∗ own γ (f γ)
 }.
@@ -179,10 +179,10 @@ Section own_valid.
   Implicit Type (a : A) (P : PROP).
 
   (* Duplicates from base_logic.lib.own *)
-  Lemma own_valid_2 γ a1 a2 : own γ a1 -∗ own γ a2 -∗ ✓ (a1 ⋅ a2).
+  Lemma own_valid_2 γ a1 a2 : own γ a1 ⊢ own γ a2 -∗ ✓ (a1 ⋅ a2).
   Proof. apply wand_intro_r. by rewrite -own_op own_valid. Qed.
   Lemma own_valid_3 γ a1 a2 a3 :
-    own γ a1 -∗ own γ a2 -∗ own γ a3 -∗ ✓ (a1 ⋅ a2 ⋅ a3).
+    own γ a1 ⊢ own γ a2 -∗ own γ a3 -∗ ✓ (a1 ⋅ a2 ⋅ a3).
   Proof. do 2 apply wand_intro_r. by rewrite -!own_op own_valid. Qed.
   Lemma own_valid_r γ a : own γ a ⊢ own γ a ∗ ✓ a.
   Proof. apply: bi.persistent_entails_r. apply own_valid. Qed.
@@ -234,10 +234,10 @@ Section update.
   Proof. intros Ha. eapply own_alloc_dep with (f := λ _, a); eauto. Qed.
 
   Lemma own_update_2 γ a1 a2 a' :
-    a1 ⋅ a2 ~~> a' → own γ a1 -∗ own γ a2 ==∗ own γ a'.
+    a1 ⋅ a2 ~~> a' → own γ a1 ⊢ own γ a2 ==∗ own γ a'.
   Proof. intros. apply wand_intro_r. rewrite -own_op. by apply own_update. Qed.
   Lemma own_update_3 γ a1 a2 a3 a' :
-    a1 ⋅ a2 ⋅ a3 ~~> a' → own γ a1 -∗ own γ a2 -∗ own γ a3 ==∗ own γ a'.
+    a1 ⋅ a2 ⋅ a3 ~~> a' → own γ a1 ⊢ own γ a2 -∗ own γ a3 ==∗ own γ a'.
   Proof. intros. do 2 apply wand_intro_r. rewrite -!own_op. by apply own_update. Qed.
 End update.
 

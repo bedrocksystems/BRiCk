@@ -287,7 +287,7 @@ Section derived_laws.
   Qed.
 
   Lemma intuitionistically_if_forall b {A} (Φ : A → PROP) :
-    □?b (∀ x : A, Φ x) -∗ ∀ x : A, □?b Φ x.
+    □?b (∀ x : A, Φ x) ⊢ ∀ x : A, □?b Φ x.
   Proof.
     destruct b; [|done]. apply intuitionistically_forall.
   Qed.

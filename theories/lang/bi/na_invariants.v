@@ -114,7 +114,7 @@ Section proofs.
   Lemma na_alloc : ⊢ |==> ∃ p, na_own p ⊤.
   Proof. by apply own_alloc. Qed.
 
-  Lemma na_own_disjoint p E1 E2 : na_own p E1 -∗ na_own p E2 -∗ ⌜E1 ## E2⌝.
+  Lemma na_own_disjoint p E1 E2 : na_own p E1 ⊢ na_own p E2 -∗ ⌜E1 ## E2⌝.
   Proof.
     apply wand_intro_r.
     rewrite /na_own -own_op own_valid -coPset_disj_valid_op. by iIntros ([? _]).

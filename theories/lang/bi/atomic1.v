@@ -380,8 +380,8 @@ Section lemmas.
 
   Lemma aupd1_intro P Q α β Eo Ei Φ :
     Affine P → Persistent P →
-    (P ∗ Q -∗ atomic1_acc Eo Ei α Q β Φ) →
-    P ∗ Q -∗ atomic1_update Eo Ei α β Φ.
+    (P ∗ Q ⊢ atomic1_acc Eo Ei α Q β Φ) →
+    P ∗ Q ⊢ atomic1_update Eo Ei α β Φ.
   Proof.
     rewrite atomic1_update_eq {1}/atomic1_update_def /=.
     iIntros (?? HAU) "[#HP HQ]".
