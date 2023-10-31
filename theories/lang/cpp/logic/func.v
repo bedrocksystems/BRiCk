@@ -131,11 +131,10 @@ End derivationsR.
 
 (* conveniences for the common pattern *)
 Notation init_derivationR cls path q := (derivationR cls%bs (path%bs ++ [cls%bs]) q).
-Notation init_derivationsR cls path q := (derivationsR cls%bs (path%bs ++ [cls%bs]) q).
 
 (**
 [wp_init_identity this tu cls Q] updates the identities of [this] by
-updating the [identity] of all base classes (transitively) and
+updating the [derivationR] of all base classes (transitively) and
 producing the new identity for "this".
 *)
 Definition wp_init_identity `{Σ : cpp_logic, σ : genv} (p : ptr) (tu : translation_unit)
