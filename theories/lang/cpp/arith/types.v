@@ -62,6 +62,10 @@ Definition bytesN (s : bitsize) : N :=
 Definition bytesZ (s : bitsize) : Z :=
   Z.of_N (bytesN s).
 
+#[global] Arguments N.of_nat !_ /.
+#[global] Arguments bytesN !_ /.
+#[global] Arguments bytesZ !_ /.
+
 Bind Scope N_scope with bitsize.
 
 Lemma of_size_gt_O w :

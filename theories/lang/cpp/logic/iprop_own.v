@@ -122,8 +122,9 @@ Section iprop_instances.
   Lemma uPred_cmra_valid_bi_cmra_valid (a : A) :
     (uPred_cmra_valid a) ⊣⊢@{iPropI} bi_cmra_valid a.
   Proof.
-    constructor => n x ? /=.
-    by rewrite si_cmra_valid_eq upred.uPred_cmra_valid_unseal si_embed_eq.
+    (* FIXME: this rewrite used to be taken care of by simpl (or /=). *)
+    assert (bi_cmra_valid a = si_embed (si_cmra_valid a)) as -> by by lazy.
+    by rewrite /= si_cmra_valid_eq upred.uPred_cmra_valid_unseal si_embed_eq.
   Qed.
 
   #[global] Instance has_own_valid_iprop : HasOwnValid iPropI A.

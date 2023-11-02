@@ -885,7 +885,7 @@ Module Type finite_bits_aux (BT : finite_bitmask_type_intf).
     x ∩ of_bits mask.
   Definition masked_opt (mask : N) (x : t) : option t :=
     let res := masked mask x in
-    guard (res <> ∅); Some res.
+    guard (res <> ∅);; Some res.
 
   Lemma masked_0 rights : masked 0 rights = ∅.
   Proof. by rewrite /masked of_bits_0 right_absorb_L. Qed.

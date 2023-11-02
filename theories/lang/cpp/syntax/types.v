@@ -165,9 +165,11 @@ Module char_type.
     | C16 => 2
     | C32 => 4
     end.
+  #[global] Arguments bytesN !_ /.
 
   Definition bitsN (t : t) : N :=
     8 * bytesN t.
+  #[global] Arguments bitsN !_ /.
 
 End char_type.
 Notation char_type := char_type.t.
@@ -197,7 +199,7 @@ Module int_type.
     (bytesN a <= bytesN b)%N.
 
   #[global] Instance t_le_dec : RelDecision t_le :=
-    fun a b => N_le_dec (bytesN a) (bytesN b).
+    fun a b => N.le_dec (bytesN a) (bytesN b).
 
   (* [max] on the rank. *)
   Definition t_max (a b : bitsize) : bitsize :=

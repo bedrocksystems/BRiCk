@@ -33,7 +33,7 @@ Section with_cpp.
     let p := p_base ,, o_sub σ ty (-i) in
     bad_valid_ptr_sub ⊢ valid_ptr p_base -∗ (valid_ptr p -∗ False) -∗ False.
   Proof.
-    iIntros "H #V NV". iApply "NV".
+    iIntros (p) "H #V NV". iApply "NV".
     iApply ("H" $! (p_base ,, o_sub σ ty (-i)) i ty with "[//]").
     by rewrite o_sub_sub Z.add_opp_diag_l o_sub_0 ?offset_ptr_id.
   Qed.

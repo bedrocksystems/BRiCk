@@ -25,7 +25,8 @@ Proof. by destruct 1. Qed.
 This coercion enables the application of view lemmas to boolean
 expressions.
 *)
-#[nonuniform] Coercion elimT : reflect >-> Funclass.
+#[warning="-uniform-inheritance"]
+Coercion elimT : reflect >-> Funclass.
 
 (** Setoid rewriting along [<->] *)
 Lemma rwP {P b} : reflect P b -> P <-> b.

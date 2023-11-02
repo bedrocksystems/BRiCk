@@ -6,7 +6,7 @@ authors: ["Gregory Malecha <gregory@bedrocksystems.com>"]
 homepage: "https://github.com/bedrocksystems/cpp2v"
 bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
 depends: [
-  "dune" {>= "3.6"}
+  "dune" {>= "3.8"}
   "coq" {>= "8.13.0" & < "8.19~"}
   "odoc" {with-doc}
 ]

@@ -44,7 +44,7 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Definition ptr_alloc_id : ptr -> option alloc_id := fmap fst.
   Definition ptr_vaddr : ptr -> option vaddr := λ p,
     '(_, va) ← p;
-    guard 0 ≤ va;
+    guard (0 ≤ va);;
     Some (Z.to_N va).
 
   Lemma ptr_alloc_id_nullptr : ptr_alloc_id nullptr = Some null_alloc_id.

@@ -134,7 +134,7 @@ Module cstring.
       set f := fun x => byte_of_ascii _.
       have ->: forall l, map f l = l.
       { by induction l => //=; rewrite /f /= IHl ascii_N_embedding byte_of_ascii_of_byte. }
-        by rewrite take_app BS.print_parse_inv.
+        by rewrite take_app_length BS.print_parse_inv.
     Qed.
 
     Lemma to_from_zstring {σ : genv}
@@ -376,7 +376,7 @@ Module cstring.
         in H by (rewrite from_to_zstring//).
       rewrite Hzstring in H.
       unfold from_zstring in H.
-      rewrite app_length/= Nat.add_sub take_app in H.
+      rewrite app_length/= Nat.add_sub take_app_length in H.
       rewrite BS.parse_print_inv in H.
       rewrite map_map in H.
       match goal with

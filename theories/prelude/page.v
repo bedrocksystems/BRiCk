@@ -71,7 +71,7 @@ Definition masked (perm_mask : N) (a : attrs.t) : attrs.t :=
 
 Definition masked_opt (perm_mask : N) (a : attrs.t) : option attrs.t :=
   let res := masked perm_mask a in
-  guard (nonnull res); Some res.
+  guard (nonnull res);; Some res.
 
 Definition opte_mask (perm_mask : N) (opte : opteT) : opteT :=
   '(pa, pte) ← opte;

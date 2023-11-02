@@ -1,5 +1,5 @@
-(lang dune 3.6)
-(using coq 0.6)
+(lang dune 3.8)
+(using coq 0.8)
 (name coq-cpp2v)
 
 (generate_opam_files)
@@ -18,11 +18,11 @@
  (name coq-cpp2v)
  (synopsis "Frontend and program logic for C++")
  (depends
-  (coq (and (>= 8.17.0) (< 8.18~)))
+  (coq (and (>= 8.18.0) (< 8.19~)))
   (coq-ext-lib (= 0.11.8))
-  (coq-iris (= dev.2023-04-06.0.09fa9322))
-  (elpi (= 1.16.9))
-  (coq-elpi (= 1.17.1))))
+  (coq-iris (= dev.2023-10-17.0.b990ffb7))
+  (elpi (= 1.17.3)) ; We stick to a public version on the package.
+  (coq-elpi (= 1.19.3))))
 
 (package
  (name coq-cpp2v-bin)

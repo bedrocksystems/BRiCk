@@ -2,4 +2,5 @@
 (coq.theory
  (name bedrock.prelude)
  (package coq-cpp2v)
+ (theories iris stdpp elpi)
 )

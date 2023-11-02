@@ -21,7 +21,7 @@
     r : Foo
     Hpr : @eq nat (foo r) O
     ============================
-    @eq nat (foo r) O
+    @eq nat O O
   $ dune build test.vo 2>&1 | grep -v 'Derivation.*took'
   Derivation lens on indt «State»
   Module

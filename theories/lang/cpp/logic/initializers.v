@@ -153,6 +153,7 @@ Section default_initialize.
     (∀ p Q Q', (Forall f, Q f -* Q' f) |-- di p Q -* di' p Q')
     (only parsing).
 
+  #[clearbody]
   Let default_initialize_array_frame' di di' tu tu' ty sz Q Q' (p : ptr) :
     FRAME di di' ->
     sub_module tu tu' ->
@@ -165,8 +166,9 @@ Section default_initialize.
     - iIntros "X a b". iApply "X". by iApply "a".
     - iIntros "F". iApply IHty.
       iIntros (?). iApply interp_frame_strong; [done|]. iApply (IHl with "F").
-  Qed.
+  Defined.
 
+  #[clearbody]
   Let default_initialize_array_shift' di tu ty sz p Q :
     FRAME di di ->
     (∀ p Q, (|={top}=> di p (fun f => |={top}=> Q f)) |-- di p Q) ->
@@ -178,7 +180,7 @@ Section default_initialize.
     { iIntros ">HQ V". by iMod ("HQ" with "V"). }
     { iIntros "wp". iApply Hshift. iApply (Hframe with "[] wp"). iIntros (f) "wp !>".
       iApply (interp_frame with "[] wp"). rewrite -IHl. by iIntros "? !>". }
-  Qed.
+  Defined.
 
   (**
   TODO this should be generalized to different [σ] but, in that case

@@ -386,7 +386,7 @@ Section lemmas.
     ) (commit_acc (PROP:=PROP) b Eo Ei).
   Proof.
     intros α1 α2 Hα β1 β2 Hβ Φ1 Φ2 HΦ. rewrite/commit_acc.
-    repeat f_equiv; by rewrite ?Hα.
+    repeat f_equiv; by rewrite ?Hα ?Hβ.
   Qed.
 
   Global Instance commit_acc_flip_mono' b Eo Ei :

@@ -60,13 +60,13 @@ Section with_ct.
   Proof.
     rewrite /_WF /_WF_alt elem_of_list_In; setoid_rewrite <-has_type_prop_char'; split. {
       move=> [] zs' [] -> [].
-      rewrite last_app /= app_length Nat.add_sub take_app Forall_app Forall_singleton.
+      rewrite last_app /= app_length Nat.add_sub take_app_length Forall_app Forall_singleton.
       naive_solver.
     }
     move=> [] Hl [] Hin Hall; exists (take (length zs - 1) zs).
     destruct zs as [|z zs] using rev_ind => //= {IHzs}.
     move: Hl Hin Hall;
-      rewrite last_app app_length /=. rewrite Nat.add_sub take_app.
+      rewrite last_app app_length /=. rewrite Nat.add_sub take_app_length.
       rewrite Forall_app Forall_singleton.
     intros [= ->]; intros; split_and! => //.
     lia.

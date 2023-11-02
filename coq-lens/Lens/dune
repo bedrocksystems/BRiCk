@@ -1,4 +1,3 @@
-(include_subdirs qualified)
 (coq.theory
  (name Lens)
  (package coq-lens))

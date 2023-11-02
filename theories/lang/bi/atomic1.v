@@ -319,7 +319,7 @@ Section lemmas.
 
   (* AU implies AU1 *)
   Lemma atomic_update_atomic1_update Eo Ei α β Φ :
-    atomic_update Eo Ei α β Φ -∗ atomic1_update Eo Ei α β Φ.
+    atomic_update Eo Ei α β Φ ⊢ atomic1_update Eo Ei α β Φ.
   Proof.
     rewrite atomic.atomic_update_unseal atomic1_update_eq /atomic1_update_def /=.
     iIntros "HAU".
@@ -344,7 +344,7 @@ Section lemmas.
 
   Lemma atomic1_update_mask_weaken Eo1 Eo2 Ei α β Φ :
     Eo1 ⊆ Eo2 →
-    atomic1_update Eo1 Ei α β Φ -∗ atomic1_update Eo2 Ei α β Φ.
+    atomic1_update Eo1 Ei α β Φ ⊢ atomic1_update Eo2 Ei α β Φ.
   Proof.
     rewrite atomic1_update_eq {2}/atomic1_update_def /=.
     iIntros (Heo) "HAU".
@@ -355,7 +355,7 @@ Section lemmas.
 
   (** The elimination form: an atomic accessor *)
   Lemma aupd1_aacc Eo Ei α β Φ :
-    atomic1_update Eo Ei α β Φ -∗
+    atomic1_update Eo Ei α β Φ ⊢
     atomic1_acc Eo Ei α (atomic1_update Eo Ei α β Φ) β Φ.
   Proof using Type*.
     rewrite atomic1_update_eq {1}/atomic1_update_def /=. iIntros "HUpd".
@@ -442,7 +442,7 @@ Section lemmas.
         α P β Φ
         (α' : TA' → PROP) P' (β' Φ' : TA' → TB' → PROP) :
     E1' ⊆ E1 →
-    atomic1_acc E1' E2 α P β Φ -∗
+    atomic1_acc E1' E2 α P β Φ ⊢
     (∀.. x, α x -∗ atomic1_acc E2 E3 α' (α x ∗ (P ={E1}=∗ P')) β'
             (λ.. x' y', (α x ∗ (P ={E1}=∗ Φ' x' y'))
                     ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y'))) -∗
@@ -475,7 +475,7 @@ Section lemmas.
         α β Φ
         (α' : TA' → PROP) P' (β' Φ' : TA' → TB' → PROP) :
     E1' ⊆ E1 →
-    atomic1_update E1' E2 α β Φ -∗
+    atomic1_update E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic1_acc E2 E3 α' (α x ∗ (atomic1_update E1' E2 α β Φ ={E1}=∗ P')) β'
             (λ.. x' y', (α x ∗ (atomic1_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))
                     ∨ ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y'))) -∗
@@ -489,7 +489,7 @@ Section lemmas.
         α β Φ
         (α' : TA' → PROP) P' (β' Φ' : TA' → TB' → PROP) :
     E1' ⊆ E1 →
-    atomic1_update E1' E2 α β Φ -∗
+    atomic1_update E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic1_acc E2 E3 α' (α x ∗ (atomic1_update E1' E2 α β Φ ={E1}=∗ P')) β'
             (λ.. x' y', ∃.. y, β x y ∗ (Φ x y ={E1}=∗ Φ' x' y'))) -∗
     atomic1_acc E1 E3 α' P' β' Φ'.
@@ -505,7 +505,7 @@ Section lemmas.
         α β Φ
         (α' : TA' → PROP) P' (β' Φ' : TA' → TB' → PROP) :
     E1' ⊆ E1 →
-    atomic1_update E1' E2 α β Φ -∗
+    atomic1_update E1' E2 α β Φ ⊢
     (∀.. x, α x -∗ atomic1_acc E2 E3 α' (α x ∗ (atomic1_update E1' E2 α β Φ ={E1}=∗ P')) β'
             (λ.. x' y', α x ∗ (atomic1_update E1' E2 α β Φ ={E1}=∗ Φ' x' y'))) -∗
     atomic1_acc E1 E3 α' P' β' Φ'.
@@ -545,7 +545,7 @@ End lemmas.
     ) (atomic1_acc (PROP:=PROP) Eo Ei).
   Proof.
     intros α1 α2 Hα P1 P2 HP β1 β2 Hβ Φ1 Φ2 HΦ. rewrite/atomic1_acc.
-    repeat f_equiv; by rewrite ?Hα ?HP.
+    repeat f_equiv; by rewrite ?Hα ?Hβ ?HP.
   Qed.
 
   Global Instance aacc1_flip_mono' Eo Ei :

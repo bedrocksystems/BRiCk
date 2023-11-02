@@ -1,5 +1,4 @@
-(include_subdirs qualified)
 (coq.theory
  (name Lens.Elpi)
- (theories Lens)
+ (theories Lens elpi)
  (package coq-lens-elpi))

@@ -38,12 +38,12 @@ Qed.
 
 Lemma list_equiv_reflexive_strong {A} `{!Equiv A} (l k : list A) :
   Forall (fun x => x ≡ x) l -> l ≡ l.
-Proof. rewrite equiv_Forall2. apply Forall_Forall2_diag. Qed.
+Proof. rewrite list_equiv_Forall2. apply Forall_Forall2_diag. Qed.
 
 Lemma list_equiv_symmetric_strong {A} `{!Equiv A} (l k : list A) :
   Forall (fun x => ∀ y, x ≡ y -> y ≡ x) l -> l ≡ k -> k ≡ l.
 Proof.
-  rewrite !equiv_Forall2. apply Forall2_symmetric_strong.
+  rewrite !list_equiv_Forall2. apply Forall2_symmetric_strong.
 Qed.
 
 (** ** Type-level list quantifier *)
@@ -456,7 +456,7 @@ Qed.
 Lemma map_fmap : @map = @fmap _ _.
 Proof. done. Qed.
 #[global] Instance map_inj A B (f : A -> B) : Inj eq eq f -> Inj eq eq (map f).
-Proof. rewrite map_fmap. apply fmap_inj. Qed.
+Proof. rewrite map_fmap. apply list_fmap_eq_inj. Qed.
 
 (** ** Basic theory about the [ap]/[<*>] combinator for lists. *)
 #[universes(polymorphic)]
@@ -528,23 +528,29 @@ Qed.
 The applicative functor laws follow easily.
 
 In stating them, we ignore our conventions to prefer singleton lists
-over [mret] and to prefer [f <$> _] over [[f] <*> _]. We use let
-bindings rather than clutter the environment with lemmas that ignore
-those conventions.
+over [mret] and to prefer [f <$> _] over [[f] <*> _]. We use a module
+type to avoid cluttering the environment with lemmas ignoring those
+conventions.
 *)
-#[universes(polymorphic)]
-Section applicative.
-  Let list_ap_id {A} (xs : list A) : mret id <*> xs = xs.
+Module Type TEST.
+  #[universes(polymorphic)]
+  Lemma list_ap_id {A} (xs : list A) : mret id <*> xs = xs.
   Proof. by rewrite list_ap_singleton_l list_fmap_id. Qed.
-  Let list_ap_compose {A B C} (gs : list (B -> C)) (fs : list (A -> B)) (xs : list A) :
+
+  #[universes(polymorphic)]
+  Lemma list_ap_compose {A B C} (gs : list (B -> C)) (fs : list (A -> B)) (xs : list A) :
     mret compose <*> gs <*> fs <*> xs = gs <*> (fs <*> xs).
   Proof. by rewrite list_ap_singleton_l list_ap_compose. Qed.
-  Let list_ap_morphism {A B} (f : A -> B) (x : A) : mret f <*> mret x =@{list B} mret (f x).
+
+  #[universes(polymorphic)]
+  Lemma list_ap_morphism {A B} (f : A -> B) (x : A) : mret f <*> mret x =@{list B} mret (f x).
   Proof. done. Qed.
-  Let list_ap_interchange {A B} (fs : list (A -> B)) (x : A) :
+
+  #[universes(polymorphic)]
+  Lemma list_ap_interchange {A B} (fs : list (A -> B)) (x : A) :
     fs <*> mret x = mret (.$ x) <*> fs.
   Proof. by rewrite list_ap_singleton_r list_ap_singleton_l. Qed.
-End applicative.
+End TEST.
 
 (** Theory supporting [NoDup_fmap_ap] and (conjectured) n-ary variants. *)
 #[universes(polymorphic)]

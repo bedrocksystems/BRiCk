@@ -145,11 +145,11 @@ Section arrR.
   #[global] Instance arrR_proper ty : Proper ((≡) ==> (≡)) (arrR ty).
   Proof.
     intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
-    have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), equiv_Forall2.
+    have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), list_equiv_Forall2.
     f_equiv. f_equiv. by rewrite Hlen. f_equiv.
     apply big_sepL_gen_proper; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_proper, bi.sep_proper; first done.
-    apply equiv_Forall2 in Hl.
+    apply list_equiv_Forall2 in Hl.
     exact: Forall2_lookup_lr.
   Qed.
 

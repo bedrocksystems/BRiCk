@@ -1,4 +1,3 @@
--Q lens Lens
--Q lens-elpi Lens.Elpi
+-Q Lens Lens
 -Q tests/elpi.t tests.elpi
 -Q tests/mc.t tests.mc

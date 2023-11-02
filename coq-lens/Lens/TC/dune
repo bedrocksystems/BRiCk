@@ -1,5 +1,4 @@
-(include_subdirs qualified)
 (coq.theory
  (name Lens.TC)
- (theories Lens)
+ (theories Lens Ltac2 Equations MetaCoq)
  (package coq-lens-tc))
