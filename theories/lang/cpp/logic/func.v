@@ -11,6 +11,7 @@ Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.logic.entailsN.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.rep_proofmode.
 
 From bedrock.lang.cpp.logic Require Import
   pred path_pred heap_pred wp builtins cptr const
@@ -52,7 +53,7 @@ End svalid_members.
 
 (** ** Aggregate identity *)
 (**
-Part of [all_identities path cls], but indexed by fuel [f].
+Part of [derivationsR path cls], but indexed by fuel [f].
 
 TODO: Replace this with a version that is built by well-founded
 recursion.
@@ -127,6 +128,93 @@ Section derivationsR.
     derivationsR tu q include_base cls path
     |-- derivationsR tu' q include_base cls path.
   Proof. apply derivationsR'_sub_module. Qed.
+
+  (* [supports_with_fuel tu cls f] states that [f] is sufficient fuel to cover
+     the entire class heirarchy of [cls] within the translation unit [tu].
+
+     This is the pure part of [derivationsR] *)
+  Inductive supports_with_fuel (tu : translation_unit) (cls : globname) : nat -> Prop :=
+  | supports_S {f st}
+      (_ : tu !! cls = Some (Gstruct st))
+      (_ : List.Forall (fun b => supports_with_fuel tu b.1 f) st.(s_bases))
+    : supports_with_fuel tu cls (S f).
+
+  Lemma supports_big_op (PROP : bi) tu cls st f :
+    (tu !! cls = Some (Gstruct st)) ->
+    ([∗list] b ∈ st.(s_bases) , [| supports_with_fuel tu b.1 f |]) |-@{PROP} [| supports_with_fuel tu cls (S f) |].
+  Proof.
+    intros.
+    iPureIntro. intros.
+    econstructor; eauto.
+    apply List.Forall_forall. intros.
+    apply elem_of_list_In in H1.
+    apply elem_of_list_lookup_1 in H1.
+    destruct H1.
+    eapply H0; eauto.
+  Qed.
+
+  Lemma derivationsR'_ok tu tu' (sub : sub_module tu tu') :
+    forall f f' mdc (p : ptr) cls include_base q,
+    f <= f' ->
+        p |-> derivationsR' tu q f include_base cls mdc
+    |-- p |-> derivationsR' tu' q f' include_base cls mdc ** [| supports_with_fuel tu cls f |].
+  Proof.
+    induction f; rewrite /derivationsR' /=; intros; try iIntros "[]".
+    destruct f'; try lia.
+    case_match; try by iIntros "[]".
+    case_match; try by iIntros "[]".
+    erewrite sub_module_preserves_gstruct; eauto.
+    subst. rewrite !_at_sep.
+    rewrite -!bi.sep_assoc.
+    iIntros "[X Y]". iSplitL "X".
+    { case_match; try rewrite _at_emp; eauto. }
+    rewrite -supports_big_op; eauto.
+    rewrite !_at_big_sepL.
+    rewrite -big_sepL_sep.
+    iRevert "Y".
+    iApply big_sepL_mono.
+    intros.
+    rewrite !_at_offsetR.
+    rewrite (IHf f'); last lia.
+    eauto.
+  Qed.
+
+  Lemma derivationsR_ok tu tu' (sub : sub_module tu tu') :
+    forall mdc (p : ptr) cls include_base q,
+        p |-> derivationsR tu include_base cls mdc q
+    |-- p |-> derivationsR tu' include_base cls mdc q ** [| supports_with_fuel tu cls (avl.IM.cardinal (types $ genv_tu σ)) |].
+  Proof. intros; by apply derivationsR'_ok; eauto. Qed.
+
+  Lemma derivationsR'_ok_supports tu tu' (sub : sub_module tu tu') :
+    forall cls f, supports_with_fuel tu cls f ->
+             forall f' mdc (p : ptr) include_base q, f <= f' ->
+        p |-> derivationsR' tu q f include_base cls mdc
+    -|- p |-> derivationsR' tu' q f' include_base cls mdc.
+  Proof.
+    refine (fix rec cls f X {struct X} :=
+              match X with
+              | supports_S _ _ _ _ => _
+              end); simpl; intros.
+    destruct f'; try lia. simpl.
+    rewrite e.
+    erewrite sub_module_preserves_gstruct; eauto.
+    rewrite !_at_sep !_at_big_sepL. f_equiv.
+    induction f0; simpl; eauto.
+    rewrite IHf0 !_at_offsetR. f_equiv.
+    iApply rec; eauto. lia.
+  Qed.
+
+  Lemma derivationsR_ok_supports tu tu' (sub : sub_module tu tu') :
+    forall cls, supports_with_fuel tu cls (avl.IM.cardinal (types (genv_tu σ))) ->
+             forall mdc (p : ptr) include_base q,
+        p |-> derivationsR tu include_base cls mdc q
+    -|- p |-> derivationsR tu' include_base cls mdc q.
+  Proof.
+    intros.
+    rewrite /derivationsR.
+    eapply derivationsR'_ok_supports; eauto.
+  Qed.
+
 End derivationsR.
 
 (* conveniences for the common pattern *)
@@ -146,14 +234,17 @@ Section wp_init_identity.
   Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (p : ptr) (Q : mpred).
 
-  Lemma wp_init_identity_frame p tu cls Q Q' :
-    (**
-    NOTE: Due to the negative occurrence of [derivationsR], we would
-    have to do a bit more work to weaken by [sub_module tu tu'].
-    *)
-    Q' -* Q |-- wp_init_identity p tu cls Q' -* wp_init_identity p tu cls Q.
+  Lemma wp_init_identity_frame p tu tu' cls Q Q' :
+    sub_module tu tu' ->
+    Q' -* Q |-- wp_init_identity p tu cls Q' -* wp_init_identity p tu' cls Q.
   Proof.
-    iIntros "HQ ($ & HR) ?". iApply "HQ". by iApply "HR".
+    rewrite /wp_init_identity.
+    iIntros (sub) "Q [X Y]".
+    iDestruct (derivationsR_ok with "X") as "[X %]"; eauto.
+    iFrame.
+    iIntros "X". iApply "Q".
+    iApply "Y".
+    iApply derivationsR_ok_supports; eauto.
   Qed.
 End wp_init_identity.
 
@@ -172,14 +263,17 @@ Section with_cpp.
   Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (p : ptr) (Q : mpred).
 
-  Lemma wp_revert_identity_frame p tu cls Q Q' :
-    (**
-    NOTE: Due to the negative occurrence of [derivationsR], we would
-    have to do a bit more work to weaken by [sub_module tu tu'].
-    *)
-    Q' -* Q |-- wp_revert_identity p tu cls Q' -* wp_revert_identity p tu cls Q.
+  Lemma wp_revert_identity_frame p tu tu' cls Q Q' :
+    sub_module tu tu' ->
+    Q' -* Q |-- wp_revert_identity p tu cls Q' -* wp_revert_identity p tu' cls Q.
   Proof.
-    iIntros "HQ ($ & HR) ?". iApply "HQ". by iApply "HR".
+    rewrite /wp_revert_identity.
+    iIntros (sub) "Q [X Y]".
+    iDestruct (derivationsR_ok with "X") as "[X %]"; eauto.
+    iFrame.
+    iIntros "X". iApply "Q".
+    iApply "Y".
+    iApply derivationsR_ok_supports; eauto.
   Qed.
 
   (** sanity chect that initialization and revert are inverses *)
@@ -612,7 +706,7 @@ Section with_cpp.
     { iIntros "?".
       iApply wand_frame.
       iApply wpi_bases_frame; [done|].
-      iApply wp_init_identity_frame.
+      iApply wp_init_identity_frame => //.
       iApply wpi_members_frame; [done|].
       by iApply wand_frame. }
   Qed.
@@ -950,7 +1044,7 @@ Section wp_dtor.
     all: iApply Kreturn_void_frame.
     all: iIntros "($ & wp)"; iRevert "wp".
     2,4: iApply wpd_members_frame; [done|].
-    2,3: iApply wp_revert_identity_frame.
+    2,3: iApply wp_revert_identity_frame =>//.
     2,3: iApply wpd_bases_frame; [done|].
     all: iIntros "HR R"; iMod ("HR" with "R") as "HR"; iIntros "!> !> % R".
     all: iApply "HQ".
@@ -973,7 +1067,7 @@ Section wp_dtor.
     all: iApply Kreturn_void_frame.
     all: iIntros "($ & wp)"; iRevert "wp".
     2,4: iApply wpd_members_frame; [done|].
-    2,3: iApply wp_revert_identity_frame.
+    2,3: iApply wp_revert_identity_frame =>//.
     2,3: iApply wpd_bases_frame; [done|].
     all: iIntros "HR R !>"; iSpecialize ("HR" with "R"); iIntros "!> % R".
     all: iApply ("HR" with "R").
