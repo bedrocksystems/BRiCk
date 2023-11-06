@@ -105,6 +105,22 @@ Section _at_instances.
   Lemma test_after l R : |-- l |-> (R -* R).
   Proof. iIntros "R". Abort.
 
+  (** Feed the introduction pattern ["[]"] *)
+  Lemma test_before (p : ptr) : p |-> False |-- False.
+  Proof. Fail iIntros "[]". Abort.
+
+  #[global] Instance _at_from_assumption pers (p : ptr) (R : Rep) (Q : Prop) :
+    FromAssumption pers R (bi_pure Q) ->
+    FromAssumption pers (p |-> R) (bi_pure Q).
+  Proof.
+    rewrite /FromAssumption.
+    destruct pers; simpl;
+      [ rewrite -_at_intuitionistically | ]; move => ->; by rewrite _at_pure.
+  Qed.
+
+  Lemma test_after (p : ptr) : p |-> False |-- False.
+  Proof. iIntros "[]". Succeed Qed. Abort.
+
   (** Feed the introduction pattern ["[H1 H2]"]. *)
   Lemma test_before l R1 R2 : l |-> (R1 //\\ R2) |-- l |-> R1.
   Proof. Fail by iIntros "[$ _]". Abort.
@@ -414,6 +430,22 @@ Section _offsetR_instances.
   Proof. iIntros "H R1". iApply ("H" with "R1"). Abort.
   Lemma test_after o R : |-- o |-> (R -* R).
   Proof. iIntros "R". Abort.
+
+  (** Feed the introduction pattern ["[]"] *)
+  Lemma test_before (o : offset) : o |-> False |-- False.
+  Proof. Fail iIntros "[]". Abort.
+
+  #[global] Instance _offsetR_from_assumption pers (o : offset) (R : Rep) (Q : Prop) :
+    FromAssumption pers R (bi_pure Q) ->
+    FromAssumption pers (o |-> R) (bi_pure Q).
+  Proof.
+    rewrite /FromAssumption.
+    destruct pers; simpl;
+      [ rewrite -_offsetR_intuitionistically | ]; move => ->; by rewrite _offsetR_pure.
+  Qed.
+
+  Lemma test_after (o : offset) : o |-> False |-- False.
+  Proof. iIntros "[]". Succeed Qed. Abort.
 
   (** Feed the introduction pattern ["[H1 H2]"]. *)
   Lemma test_before o R1 R2 : o |-> (R1 //\\ R2) |-- o |-> R1.
@@ -764,5 +796,23 @@ Section pureR_instances.
 
   Lemma test_after {P : Prop} (p : ptr) : |-- p |-> pureR (bi_pure P).
   Proof. iIntros. iPureIntro. Abort.
+
+  (** Feed the introduction pattern ["[]"] *)
+  Lemma test_before (o : offset) : o |-> pureR False |-- False.
+  Proof. Fail iIntros "[]". Abort.
+
+  #[global] Instance pureR_from_assumption pers P (Q : Prop) :
+    FromAssumption pers P (bi_pure Q) ->
+    FromAssumption pers (pureR P) (bi_pure Q).
+  Proof.
+    rewrite /FromAssumption.
+    destruct pers; simpl;
+      [ rewrite -pureR_intuitionistically | ]; move => ->; eauto.
+  Qed.
+
+  Lemma test_after (o : offset) : o |-> pureR False |-- False.
+  Proof. iIntros "[]". Succeed Qed. Abort.
+
+
 
 End pureR_instances.
