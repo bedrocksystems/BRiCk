@@ -315,6 +315,18 @@ Section lists.
     (x1, x2) ∈ zip xs ys → x1 ∈ xs ∧ x2 ∈ ys.
   Proof. intros. eauto using elem_of_zip_l, elem_of_zip_r. Qed.
 
+  Lemma zip_lookup_Some x y xs ys i :
+    xs !! i = Some x
+    -> ys !! i = Some y
+    -> zip xs ys !! i = Some (x, y).
+  Proof.
+    move: ys i; induction xs; first done.
+    move=>ys; induction ys; first done.
+    move=>i; case:(Nat.zero_or_succ i).
+    - by move=>->/=[->][->].
+    - by move=>[i'->] /=; apply: IHxs.
+  Qed.
+
   (** Properties of [Forall] *)
 
   (** Strengthens [mapM_fmap_Some_inv] by weakening the second premiss *)
