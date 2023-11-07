@@ -87,6 +87,10 @@ Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
 Proof. by rewrite /lengthN fmap_length. Qed.
 
+Lemma list_lookupN_fmap {A B} (f : A -> B) (l : list A) (i : N) :
+  (f <$> l) !! i = f <$> (l !! i).
+Proof. by rewrite -[i]N2Nat.id /lookupN/list_lookupN list_lookup_fmap. Qed.
+
 Lemma length_lengthN {A} (xs : list A) :
   length xs = N.to_nat (lengthN xs).
 Proof. by rewrite /lengthN Nat2N.id. Qed.
@@ -323,6 +327,15 @@ Section listN.
      @lengthN_app, @lengthN_map,
      @lengthN_dropN, @lengthN_takeN,
      @lengthN_rotateN, @lengthN_replicateN).
+
+  Lemma lengthN_zip {B} xs (ys : list B) :
+    lengthN (zip xs ys) = (lengthN xs) `min` (lengthN ys).
+  Proof.
+    move: ys; induction xs; first
+      by move=>?; rewrite /= !lengthN_nil N.min_0_l.
+    move=>ys; move: xs IHxs; induction ys; first done.
+    by rewrite /lengthN=>xs IH; rewrite //= !Nat2N.inj_succ -N.succ_min_distr IH.
+  Qed.
 
   Lemma resizeN_spec l n x :
     resizeN n x l = takeN n l ++ replicateN (n - lengthN l) x.
@@ -859,6 +872,12 @@ Section listN.
     split; last by move ->; rewrite /= N2Nat.id.
     rewrite !fmap_Some. intros (x' & ? & ->). by rewrite Nat2N.id.
   Qed.
+
+  Lemma zip_lookupN_Some {B} x (y : B) xs (ys : list B) i :
+    xs !! i = Some x
+    -> ys !! i = Some y
+    -> zip xs ys !! i = Some (x, y).
+  Proof. by move=>??; apply: zip_lookup_Some. Qed.
 
   Lemma insertN_seqN (i j k : N) :
     <[ k := (i + k)%N ]> (seqN i j) = seqN i j.
