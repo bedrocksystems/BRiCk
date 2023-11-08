@@ -92,6 +92,11 @@ Record Struct' {classname type Expr : Set} : Set := Build_Struct
 Proof. solve_decision. Defined.
 Notation Struct := (Struct' globname type Expr).
 
+(** [has_vtable s] determines whether [s] has any <<virtual>> methods
+    (or bases). Having a vtable is *not* a transitive property.
+    A class that only inherits <<virtual>> methods does not have a
+    vtable.
+ *)
 Definition has_vtable {classname type Expr} (s : Struct' classname type Expr) : bool :=
   match s.(s_virtuals) with
   | nil => false

@@ -70,25 +70,10 @@ Definition setup_args (ts : list decltype) (ar : function_arity) (es : list Expr
   > destruction of each parameter occurs within the context of the
   > calling function.
 
-  In the BRiCk semantics, we specify this to be at the end of the full
-  expression. This preserves the C++ constructor-destructor stack
-  discipline, e.g.
-
-  <<
-    foo( (C{}, D{}), (C{}, D{}) )
-  >>
-
-  following the stack-discipline for destruction ordering, this would
-  require either: << ~D(); ~C(); ~D(); ~C() >> while destroying arguments
-  early would result in << ~D(); ~D(); ~C(); ~C() >>. The order of
-  argument evaluation is left unspecified, so the objects being destroyed
-  is left unspecified in the traces above.
-
-  NOTE: The Itanium ABI <https://refspecs.linuxbase.org/cxxabi-1.83.html#call>
-  weakens this by allowing trivially destructible objects to be destroyed
-  early.
-
-  This is a bug that must be fixed.
+  In the BRiCk semantics, we follow the Itanium ABI which destroys
+  trivially destructible objects immediately and otherwise destroys
+  objects at the end of the full expression. See
+  <https://refspecs.linuxbase.org/cxxabi-1.83.html#call>.
  *)
 
 Section with_resolve.

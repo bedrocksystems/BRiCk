@@ -321,16 +321,18 @@ Module Type CPP_LOGIC
 
     (** [mdc_path σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object that can be reached
-        using the *path* [mdc].
+        using the *path* [mdc]. The ownership [mdc_path] is only exposed to
+        the program for an object of class <<C>> if <<C>> has <<virtual>>
+        methods (or base classes, which are not currently supported).
         - if [mdc = []] then this object mdc_path is not initialized yet,
           e.g. because its base classes are still being constructed.
         - otherwise, [mdc] is the *path* from the most derived class to this
           object. For example, suppose you have:
-          ```c++
+          <<
           struct A { virtual int f() { return 0; } };
           struct B : public A { virtual int f() { return 1; } };
           struct C : public A { };
-          struct D : public B, public C {};
+          struct D : public B, public C { };
 
           int doA(A* a) { return a->f(); }
           int test() {
@@ -338,14 +340,12 @@ Module Type CPP_LOGIC
               return doA(static_cast<B*>(&d)) /* = 1 */
                    + doA(static_cast<C*>(&d)) /* = 0 */;
           }
-          ```
+          >>
           for a fully constructed object of type `D` (at pointer [d]), you would
           have:
           [[
-          mdc_path "::D" ["::D"]           1  d **
           mdc_path "::B" ["::D","::B"]      1 (d ., _base "::B") **
           mdc_path "::A" ["::D","::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
-          mdc_path "::C" ["::D","::C"]      1 (d ,, _base "::C") **
           mdc_path "::A" ["::D","::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
           ]]
           in the partially constructed state, where "::D" has not yet been constructed
@@ -353,16 +353,14 @@ Module Type CPP_LOGIC
           [[
           mdc_path "::B" ["::B"]      1 (d ., _base "::B") **
           mdc_path "::A" ["::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
-          mdc_path "::C" ["::C"]      1 (d ,, _base "::C") **
           mdc_path "::A" ["::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
           ]]
-          note that you do not get [mdc_path "::D" [] 1 d] at this point, you
-          get [mdc_path "::D" ["::D"] 1 d] when you update all the other identities
-          (but not atomically)
+          Note that you do not get [mdc_path "::D" [] 1 d] at this point, you
+          get [mdc_path "::D" ["::D"] 1 d] when you update all the other paths
+          (but not atomically).
 
-        [mdc_path] is primarily used to dispatch virtual function calls.
-
-        compilers can use the ownership here to represent dynamic dispatch
+        [mdc_path] is primarily used to dispatch <<virtual>> function calls.
+        Compilers can use the ownership here to represent dynamic dispatch
         tables.
      *)
     Parameter mdc_path : forall {σ : genv}

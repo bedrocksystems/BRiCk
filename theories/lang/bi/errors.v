@@ -5,6 +5,7 @@
  *)
 
 Require Import elpi.apps.locker.
+Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.observe.
 Import ChargeNotation.
@@ -33,6 +34,15 @@ Section Errors.
 
   Lemma ERROR_False t : ERROR t -|- False.
   Proof. by rewrite unlock. Qed.
+
+  Example destruct_ERROR t : ERROR t |-- False.
+  Proof. Fail iIntros "[]". Abort.
+
+  #[global] Instance ERROR_from_assumption pers t : KnownLFromAssumption pers (ERROR t) False.
+  Proof. do 2 red. rewrite ERROR_elim. destruct pers; simpl; eauto. Qed.
+
+  Example destruct_ERROR t : ERROR t |-- False.
+  Proof. iIntros "[]". Succeed Qed. Abort.
 
   #[global] Instance ERROR_sep t : LeftAbsorb equiv (ERROR t) bi_sep.
   Proof. rewrite unlock. apply _. Qed.
@@ -67,6 +77,15 @@ Section Errors.
   Lemma UNSUPPORTED_False t : UNSUPPORTED t -|- False.
   Proof. by rewrite unlock. Qed.
 
+  Example destruct_UNSUPPORTED t : UNSUPPORTED t |-- False.
+  Proof. Fail iIntros "[]". Abort.
+
+  #[global] Instance UNSUPPORTED_from_assumption pers t : KnownLFromAssumption pers (UNSUPPORTED t) False.
+  Proof. do 2 red. rewrite UNSUPPORTED_elim. destruct pers; simpl; eauto. Qed.
+
+  Example destruct_UNSUPPORTED t : UNSUPPORTED t |-- False.
+  Proof. iIntros "[]". Succeed Qed. Abort.
+
   #[global] Instance UNSUPPORTED_sep t : LeftAbsorb equiv (UNSUPPORTED t) bi_sep.
   Proof. rewrite unlock. apply _. Qed.
   #[global] Instance sep_UNSUPPORTED t : RightAbsorb equiv (UNSUPPORTED t) bi_sep.
@@ -99,6 +118,15 @@ Section Errors.
 
   Lemma UNREACHABLE_False t : UNREACHABLE t -|- False.
   Proof. by rewrite unlock. Qed.
+
+  Example destruct_UNREACHABLE t : UNREACHABLE t |-- False.
+  Proof. Fail iIntros "[]". Abort.
+
+  #[global] Instance UNREACHABLE_from_assumption pers t : KnownLFromAssumption pers (UNREACHABLE t) False.
+  Proof. do 2 red. rewrite UNREACHABLE_elim. destruct pers; simpl; eauto. Qed.
+
+  Example destruct_UNREACHABLE t : UNREACHABLE t |-- False.
+  Proof. iIntros "[]". Succeed Qed. Abort.
 
   #[global] Instance UNREACHABLE_sep t : LeftAbsorb equiv (UNREACHABLE t) bi_sep.
   Proof. rewrite unlock. apply _. Qed.
