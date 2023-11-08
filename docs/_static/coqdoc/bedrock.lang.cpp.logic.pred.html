@@ -502,7 +502,9 @@ We consider <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.mod
 <div class="doc">
 <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> <span class="inlinecode">σ</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.this"><span class="id" title="variable">this</span></a></span> <span class="inlinecode"><span class="id" title="var">mdc</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> state that <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> is a pointer to a (live)
         object of type <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.this"><span class="id" title="variable">this</span></a></span> that is part of an object that can be reached
-        using the *path* <span class="inlinecode"><span class="id" title="var">mdc</span></span>.
+        using the *path* <span class="inlinecode"><span class="id" title="var">mdc</span></span>. The ownership <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> is only exposed to
+        the program for an object of class <code>C</code> if <code>C</code> has <code>virtual</code>
+        methods (or base classes, which are not currently supported).
 <ul class="doclist">
 <li> if <span class="inlinecode"><span class="id" title="var">mdc</span></span> <span class="inlinecode">=</span> <span class="inlinecode">[]</span> then this object mdc_path is not initialized yet,
           e.g. because its base classes are still being constructed.
@@ -510,11 +512,11 @@ We consider <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.mod
 </li>
 <li> otherwise, <span class="inlinecode"><span class="id" title="var">mdc</span></span> is the *path* from the most derived class to this
           object. For example, suppose you have:
-          ```c++
-          struct A { virtual int f() { return 0; } };
+          <code>
+</code>          struct A { virtual int f() { return 0; } };
           struct B : public A { virtual int f() { return 1; } };
           struct C : public A { };
-          struct D : public B, public C {};
+          struct D : public B, public C { };
 
 <div class="paragraph"> </div>
 
@@ -524,14 +526,12 @@ We consider <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.mod
               return doA(static_cast&lt;B*&gt;(&amp;d)) /* = 1 */
                    + doA(static_cast&lt;C*&gt;(&amp;d)) /* = 0 */;
           }
-          ```
+          &gt;&gt;
           for a fully constructed object of type `D` (at pointer <span class="inlinecode"><span class="id" title="var">d</span></span>), you would
           have:
           <br/>
-<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::D" ["::D"]           1  <span class="id" title="var">d</span> **<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::B" ["::D","::B"]      1 (<span class="id" title="var">d</span> ., <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::B") **<br/>
+<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::B" ["::D","::B"]      1 (<span class="id" title="var">d</span> ., <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::B") **<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::A" ["::D","::B","::A"] 1 (<span class="id" title="var">d</span> ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::B" ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::A") **<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::C" ["::D","::C"]      1 (<span class="id" title="var">d</span> ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::C") **<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::A" ["::D","::C","::A"] 1 (<span class="id" title="var">d</span> ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::C" ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::A")
 <div class="paragraph"> </div>
 
@@ -540,24 +540,20 @@ We consider <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.mod
           <br/>
 <span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::B" ["::B"]      1 (<span class="id" title="var">d</span> ., <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::B") **<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::A" ["::B","::A"] 1 (<span class="id" title="var">d</span> ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::B" ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::A") **<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::C" ["::C"]      1 (<span class="id" title="var">d</span> ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::C") **<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a> "::A" ["::C","::A"] 1 (<span class="id" title="var">d</span> ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::C" ,, <a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a> "::A")
 <div class="paragraph"> </div>
 
-</span>          note that you do not get <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> <span class="inlinecode">&quot;::<a class="idref" href="bedrock.prelude.elpi.derive.html#BitsetTest.D"><span class="id" title="constructor">D</span></a>&quot;</span> <span class="inlinecode">[]</span> <span class="inlinecode">1</span> <span class="inlinecode"><span class="id" title="var">d</span></span> at this point, you
-          get <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> <span class="inlinecode">&quot;::<a class="idref" href="bedrock.prelude.elpi.derive.html#BitsetTest.D"><span class="id" title="constructor">D</span></a>&quot;</span> <span class="inlinecode">[&quot;::<a class="idref" href="bedrock.prelude.elpi.derive.html#BitsetTest.D"><span class="id" title="constructor">D</span></a>&quot;]</span> <span class="inlinecode">1</span> <span class="inlinecode"><span class="id" title="var">d</span></span> when you update all the other identities
-          (but not atomically)
+</span>          Note that you do not get <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> <span class="inlinecode">&quot;::<a class="idref" href="bedrock.prelude.elpi.derive.html#BitsetTest.D"><span class="id" title="constructor">D</span></a>&quot;</span> <span class="inlinecode">[]</span> <span class="inlinecode">1</span> <span class="inlinecode"><span class="id" title="var">d</span></span> at this point, you
+          get <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> <span class="inlinecode">&quot;::<a class="idref" href="bedrock.prelude.elpi.derive.html#BitsetTest.D"><span class="id" title="constructor">D</span></a>&quot;</span> <span class="inlinecode">[&quot;::<a class="idref" href="bedrock.prelude.elpi.derive.html#BitsetTest.D"><span class="id" title="constructor">D</span></a>&quot;]</span> <span class="inlinecode">1</span> <span class="inlinecode"><span class="id" title="var">d</span></span> when you update all the other paths
+          (but not atomically).
 
 </li>
 </ul>
 
 <div class="paragraph"> </div>
 
-        <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> is primarily used to dispatch virtual function calls.
-
-<div class="paragraph"> </div>
-
-        compilers can use the ownership here to represent dynamic dispatch
+        <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.mdc_path"><span class="id" title="definition">mdc_path</span></a></span> is primarily used to dispatch <code>virtual</code> function calls.
+        Compilers can use the ownership here to represent dynamic dispatch
         tables.
      
 </div>
