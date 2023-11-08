@@ -130,7 +130,7 @@ Section derivationsR.
   Proof. apply derivationsR'_sub_module. Qed.
 
   (* [supports_with_fuel tu cls f] states that [f] is sufficient fuel to cover
-     the entire class heirarchy of [cls] within the translation unit [tu].
+     the entire class hierarchy of [cls] within the translation unit [tu].
 
      This is the pure part of [derivationsR] *)
   Inductive supports_with_fuel (tu : translation_unit) (cls : globname) : nat -> Prop :=
