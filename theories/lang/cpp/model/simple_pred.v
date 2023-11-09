@@ -1190,19 +1190,13 @@ Module SimpleCPP.
       Context {σ : genv}.
 
       #[global] Instance has_type_knowledge : Knowledge2 has_type.
-      Proof.
-        intros v ty; rewrite /has_type; split; last apply _.
-        apply: bi.sep_persistent.
-        destruct v; try case_match; try apply _.
-      Qed.
+      Proof. solve_knowledge. Qed.
 
       #[global] Instance has_type_timeless : Timeless2 has_type.
       Proof.
-        intros v ty; rewrite /has_type.
-        apply: bi.sep_timeless.
         (* TODO AUTO: this gives a measureable speedup :-( *)
         have ?: Refine (Timeless (PROP := mpred) emp) by apply _.
-        destruct v; try case_match; try apply _.
+        apply _.
       Qed.
 
       Lemma has_type_has_type_prop v ty :
