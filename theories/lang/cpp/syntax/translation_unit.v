@@ -137,6 +137,8 @@ Section with_type_table.
   | complete_bool : complete_basic_type Tbool
   | complete_void : complete_basic_type Tvoid
   | complete_nullptr : complete_basic_type Tnullptr
+  | complete_char c : complete_basic_type (Tchar_ c)
+
   (* t can in turn be a pointer type *)
   | complete_ptr {t} : complete_pointee_type t -> complete_basic_type (Tptr t)
 
@@ -212,14 +214,14 @@ Section with_type_table.
       (_ : complete_pointee_type (Tnamed n))
       (_ : complete_pointee_type t)
     : complete_type (Tmember_pointer n t)
-  | complete_function {cc ret args} :
+  | complete_function {cc ar ret args} :
     (*
     We could probably omit this constructor, and consider function types as not
     complete; "complete function types" do not exist in the standard, and
     [complete_symbol_table] does not use the concept.
      *)
-    complete_pointee_type (Tfunction (cc:=cc) ret args) ->
-    complete_type (Tfunction (cc:=cc) ret args)
+    complete_pointee_type (Tfunction (cc:=cc) (ar:=ar) ret args) ->
+    complete_type (Tfunction (cc:=cc) (ar:=ar) ret args)
   | complete_basic t :
     complete_basic_type t ->
     complete_type t
