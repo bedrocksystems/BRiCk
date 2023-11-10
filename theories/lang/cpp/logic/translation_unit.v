@@ -17,7 +17,7 @@ Import ChargeNotation.
 
 
 Section with_cpp.
-  Context `{Σ : cpp_logic} {resolve:genv}.
+  Context `{Σ : cpp_logic} {σ : genv}.
 
   Definition init_validR (ty : type) : Rep :=
     if zero_sized_array ty then
@@ -35,22 +35,22 @@ Section with_cpp.
         | Ofunction f =>
           match f.(f_body) with
           | None => svalidR
-          | Some body => as_Rep (code_at resolve tu f)
+          | Some body => as_Rep (code_at tu f)
           end
         | Omethod m =>
           match m.(m_body) with
           | None => svalidR
-          | Some body => as_Rep (method_at resolve tu m)
+          | Some body => as_Rep (method_at tu m)
           end
         | Oconstructor c =>
           match c.(c_body) with
           | None => svalidR
-          | Some body => as_Rep (ctor_at resolve tu c)
+          | Some body => as_Rep (ctor_at tu c)
           end
         | Odestructor d =>
           match d.(d_body) with
           | None => svalidR
-          | Some body => as_Rep (dtor_at resolve tu d)
+          | Some body => as_Rep (dtor_at tu d)
           end
         end.
 
@@ -101,13 +101,13 @@ Section with_cpp.
 *)
       (* ^^ todo(gmm): static initialization is not yet supported *)
         | Ovar t None =>
-          uninitR (resolve:=resolve) t (cQp.m 1)
+          uninitR t (cQp.m 1)
         | _ => emp
         end.
 
   Definition denoteModule_def (tu : translation_unit) : mpred :=
     ([∗list] sv ∈ map_to_list tu.(symbols), denoteSymbol tu sv.1 sv.2) **
-    [| module_le tu resolve.(genv_tu) |].
+    [| module_le tu σ.(genv_tu) |].
   Definition denoteModule_aux : seal (@denoteModule_def). Proof. by eexists. Qed.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
@@ -153,12 +153,12 @@ Section with_cpp.
     by iApply denoteSymbol_valid.
   Qed.
 
-  #[global] Instance denoteModule_models_observe tu : Observe [| tu ⊧ resolve |] (denoteModule tu).
+  #[global] Instance denoteModule_models_observe tu : Observe [| tu ⊧ σ |] (denoteModule tu).
   Proof.
     apply observe_intro_only_provable.
     rewrite denoteModule_eq/denoteModule_def.
     iIntros "[_ %]". iPureIntro. constructor.
-    destruct (module_le_spec tu (genv_tu resolve)); eauto.
+    destruct (module_le_spec tu (genv_tu σ)); eauto.
     destruct H.
   Qed.
 

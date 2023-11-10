@@ -388,13 +388,18 @@ Module Type CPP_LOGIC
     Parameter method_at : genv -> translation_unit -> Method -> ptr -> mpred.
     Parameter ctor_at : genv -> translation_unit -> Ctor -> ptr -> mpred.
     Parameter dtor_at : genv -> translation_unit -> Dtor -> ptr -> mpred.
+    #[global] Arguments code_at {σ} tu _ _.
+    #[global] Arguments method_at {σ} tu _ _.
+    #[global] Arguments ctor_at {σ} tu _ _.
+    #[global] Arguments dtor_at {σ} tu _ _.
+
 
     Section with_genv.
       Context {σ : genv} (tu : translation_unit).
-      #[local] Notation code_at := (code_at σ tu) (only parsing).
-      #[local] Notation method_at := (method_at σ tu) (only parsing).
-      #[local] Notation ctor_at := (ctor_at σ tu) (only parsing).
-      #[local] Notation dtor_at := (dtor_at σ tu) (only parsing).
+      #[local] Notation code_at := (@code_at σ tu) (only parsing).
+      #[local] Notation method_at := (@method_at σ tu) (only parsing).
+      #[local] Notation ctor_at := (@ctor_at σ tu) (only parsing).
+      #[local] Notation dtor_at := (@dtor_at σ tu) (only parsing).
 
       Axiom code_at_persistent : forall f p, Persistent (code_at f p).
       Axiom code_at_affine : forall f p, Affine (code_at f p).
@@ -865,13 +870,13 @@ Declare Module Export VALID_PTR : VALID_PTR_AXIOMS PTRS_INTF_AXIOM VALUES_INTF_A
 Section valid_ptr_code.
   Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
 
-  Lemma code_at_valid   : forall f p,   code_at _ tu f p |-- valid_ptr p.
+  Lemma code_at_valid   : forall f p,   code_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite code_at_strict_valid; apply strict_valid_valid. Qed.
-  Lemma method_at_valid : forall f p, method_at _ tu f p |-- valid_ptr p.
+  Lemma method_at_valid : forall f p, method_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite method_at_strict_valid; apply strict_valid_valid. Qed.
-  Lemma ctor_at_valid   : forall f p,   ctor_at _ tu f p |-- valid_ptr p.
+  Lemma ctor_at_valid   : forall f p,   ctor_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite ctor_at_strict_valid; apply strict_valid_valid. Qed.
-  Lemma dtor_at_valid   : forall f p,   dtor_at _ tu f p |-- valid_ptr p.
+  Lemma dtor_at_valid   : forall f p,   dtor_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite dtor_at_strict_valid; apply strict_valid_valid. Qed.
 End valid_ptr_code.
 
