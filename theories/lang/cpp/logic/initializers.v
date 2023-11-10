@@ -36,16 +36,6 @@ Note that the frontend inserts constructor calls to default initialize
 objects, so [Tnamed] types can *not* be default initialized.
 *)
 
-(** BEGIN UPSTREAM *)
-Lemma qual_norm_map {T U} (f : T -> U) g ty :
-  f (qual_norm g ty) = qual_norm (fun cv t => f (g cv t)) ty.
-Proof.
-  unfold qual_norm.
-  generalize QM.
-  induction ty; simpl; intros; eauto.
-Qed.
-(** END UPSTREAM *)
-
 (** ** Default initilalization *)
 (**
 [default_initialize_array (default_initialize tu ty) tu ty len p Q]
@@ -96,7 +86,8 @@ and [default_initialize] corresponds to [default-initialization] as
 described above.
 *)
 
-#[local] Definition default_initialize_body `{Σ : cpp_logic, σ : genv}
+#[local]
+Definition default_initialize_body `{Σ : cpp_logic, σ : genv}
     (u : bool) (default_initialize : exprtype -> ptr -> (FreeTemps -> epred) -> mpred)
     (tu : translation_unit)
     (ty : exprtype) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
@@ -767,9 +758,6 @@ Section wp_initialize.
     apply wp_initialize_unqualified_elim_aggregate.
     by rewrite decompose_type_equiv.
   Qed.
-
-  Definition is_volatile : type -> bool :=
-    qual_norm (fun cv _ => q_volatile cv).
 
   Lemma wp_initialize_intro_aggregate tu ρ ty addr init Q :
     is_aggregate_type ty ->

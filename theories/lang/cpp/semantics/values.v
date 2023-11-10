@@ -44,9 +44,11 @@ Module Type RAW_BYTES.
       The following might help but will likely require other
       axioms which reflect boundedness or round-trip properties.
 
+    [[
     Parameter of_raw_byte : raw_byte -> N.
     Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
     #[global] Existing Instance inj_of_raw_byte.
+    ]]
   *)
 End RAW_BYTES.
 

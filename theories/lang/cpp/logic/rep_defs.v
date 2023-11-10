@@ -13,7 +13,7 @@ From bedrock.lang.bi Require Import prelude monpred.
 From bedrock.lang.cpp Require Import semantics.values logic.mpred.
 
 Import ChargeNotation.
-Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
+Implicit Types (σ : genv) (p : ptr) (o : offset).
 
 (** Representation predicates are implicitly indexed by a location, and should be used to
   * assert properties of the heap
@@ -40,9 +40,6 @@ Section defs.
 
   Definition as_Rep (P : ptr -> mpred) : Rep := MonPred P _.
 
-  (** Values
-   * These `Rep` predicates wrap `ptsto` facts
-   *)
   (* todo(gmm): make opaque *)
   Definition pureR (P : mpred) : Rep :=
     as_Rep (fun _ => P).

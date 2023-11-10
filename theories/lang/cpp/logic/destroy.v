@@ -142,7 +142,7 @@ Ltac wp_destroy_prim_unfold :=
   end.
 
 Section prim.
-  Context `{Σ : cpp_logic thread_info, σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (Q : epred).
 
   Lemma wp_destroy_prim_intro tu cv ty (this : ptr) Q :
@@ -156,14 +156,18 @@ Section prim.
     |-- wp_destroy_prim tu cv ty p Q.
   Proof.
     rewrite -is_value_type_erase_qualifiers=>?.
-    by rewrite anyR_tptstoR_val// _at_exists -wp_destroy_prim_intro.
+    rewrite anyR_tptstoR_val// _at_exists -wp_destroy_prim_intro.
+    rewrite -erase_qualifiers_decompose_type.
+    rewrite erase_qualifiers_idemp.
+    rewrite decompose_type_erase_qualifiers/=. eauto.
   Qed.
 
   Lemma anyR_wp_destroy_prim_ref tu cv ty (p : ptr) Q :
     p |-> anyR (Tref $ erase_qualifiers ty) (cQp.mk (q_const cv) 1) ** Q
     |-- wp_destroy_prim tu cv (Tref ty) p Q.
   Proof.
-    by rewrite anyR_tptstoR_ref _at_exists -wp_destroy_prim_intro.
+    rewrite anyR_tptstoR_ref _at_exists -wp_destroy_prim_intro.
+    rewrite erase_qualifiers_idemp/=. eauto.
   Qed.
 
   Lemma wp_destroy_prim_elim tu cv ty this Q :
@@ -889,6 +893,7 @@ Section val_array.
   Proof.
     cbn. intros. rewrite -wp_destroy_val_intro_val//.
     rewrite anyR_tptstoR_val ?is_value_type_erase_qualifiers//.
+    rewrite decompose_type_erase_qualifiers/=erase_qualifiers_idemp.
     by rewrite _at_exists.
   Qed.
   Lemma anyR_destroy_val_val tu ty (this : ptr) Q :
@@ -923,7 +928,8 @@ Section val_array.
     |-- wp_destroy_val tu cv ty this Q.
   Proof.
     cbn. intros. rewrite -wp_destroy_val_intro_ref//.
-    by rewrite anyR_tptstoR_ref// _at_exists.
+    rewrite anyR_tptstoR_ref// _at_exists.
+    rewrite erase_qualifiers_idemp. eauto.
   Qed.
   Lemma anyR_destroy_val_ref tu ty (this : ptr) Q :
     is_reference_type ty ->

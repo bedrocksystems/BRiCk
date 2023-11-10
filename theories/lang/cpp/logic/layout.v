@@ -19,8 +19,7 @@ Require Import bedrock.lang.bi.linearity.
 Section with_Σ.
   Context `{Σ : cpp_logic} {σ : genv}.
 
-
-  (** Convert a `struct` to its raw representation.
+  (** Convert a <<struct>> to its raw representation.
    Justified by the concept of object representation.
    https://eel.is/c++draft/basic.types.general#def:representation,object
    *)
@@ -45,25 +44,9 @@ Section with_Σ.
   Axiom implicit_destruct_nullptr : Reduce (implicit_destruct_ty Tnullptr).
   Axiom implicit_destruct_ptr : forall ty, Reduce (implicit_destruct_ty (Tptr ty)).
   Axiom implicit_destruct_member_pointer : forall cls ty, Reduce (implicit_destruct_ty (Tmember_pointer cls ty)).
-
-  (** [mut_type m q] is the ownership [cQp.t] and the type used for a [Member] *)
-  Definition mut_type (m : Member) (q : cQp.t) : cQp.t * type :=
-    let '(cv, ty) := decompose_type m.(mem_type) in
-    let q := if q_const cv && negb m.(mem_mutable) then cQp.c q else q in
-    (q, erase_qualifiers ty).
-
-  (** [struct_def R cls st q] is the ownership of the class where [R ty q] is
-      owned for each field and base class *)
-  Definition struct_def (R : type -> cQp.t -> Rep) (cls : globname) (st : Struct) (q : cQp.t) : Rep :=
-    ([** list] base ∈ st.(s_bases),
-       let '(gn,_) := base in
-       _base cls gn |-> R (Tnamed gn) q) **
-    ([** list] fld ∈ st.(s_fields),
-      let f := {| f_name := fld.(mem_name) ; f_type := cls |} in
-      let qt := mut_type fld q in
-      _field f |-> R qt.2 qt.1) **
-    (if has_vtable st then derivationR cls nil q else emp) **
-    structR cls q.
+  (** ^^ TODO: the above axioms need to be lowered or proven. They are not provable
+      now because we can not decompose [tptsto ty q Vundef] (which is what we
+      get from [anyR]). *)
 
   (** implicit destruction of an aggregate *)
   Axiom implicit_destruct_struct
@@ -72,24 +55,8 @@ Section with_Σ.
       st.(s_trivially_destructible) ->
       cQp.frac q = 1%Qp ->
           type_ptrR (Tnamed cls)
-      |-- (Reduce (struct_def tblockR cls st q)) -*
+      |-- (Reduce (struct_defR tblockR cls st q)) -*
           |={↑pred_ns}=> tblockR (Tnamed cls) q.
-
-  (** decompose a struct into its constituent fields and base classes. *)
-  Axiom anyR_struct : forall cls st q,
-    glob_def σ cls = Some (Gstruct st) ->
-        anyR (Tnamed cls) q
-    -|- Reduce (struct_def anyR cls st q).
-
-  (** [union_def R cls st q] is the ownership of the union where [R ty q] is
-      owned for each field and base class *)
-  Definition union_def (R : type -> cQp.t -> Rep) (cls : globname) (st : decl.Union) (q : cQp.t) : Rep :=
-    unionR cls q None \\//
-    ([\/ list] idx |-> m ∈ st.(u_fields),
-      let f := _field {| f_name := m.(mem_name) ; f_type := cls |} in
-      let qt := mut_type m q in
-      f |-> R qt.2 qt.1 **
-      unionR cls q (Some idx)).
 
   (** implicit destruction of a union. *)
   Axiom implicit_destruct_union : forall (cls : globname) un q,
@@ -97,7 +64,7 @@ Section with_Σ.
       un.(u_trivially_destructible) ->
       cQp.frac q = 1%Qp ->
           type_ptrR (Tnamed cls)
-      |-- (Reduce (union_def tblockR cls un q)) -* |={↑pred_ns}=> tblockR (Tnamed cls) q.
+      |-- (Reduce (union_defR tblockR cls un q)) -* |={↑pred_ns}=> tblockR (Tnamed cls) q.
 
 (*
   (* the following rule would allow you to change the active entity in a union
@@ -124,46 +91,6 @@ Section with_Σ.
           |={↑pred_ns}=> f |-> tblockR (erase_qualifiers it.(mem_type)) (cQp.mut 1) **
                unionR cls (cQp.mut 1) (Some idx).
 *)
-
-  (** decompose a union into the classical disjunction of the alternatives
-   *)
-  Axiom anyR_union : forall (cls : globname) un q,
-    glob_def σ cls = Some (Gunion un) ->
-        anyR (Tnamed cls) q
-    -|- Reduce (union_def anyR cls un q).
-
-  (** Proof requires the generalization of [anyR] to support aggregates (and arrays) *)
-  Lemma anyR_array_0 t q :
-    anyR (Tarray t 0) q -|- validR ** [| is_Some (size_of σ t) |].
-  Proof. Admitted.
-
-  Lemma anyR_array_succ t n q :
-    anyR (Tarray t (N.succ n)) q -|-
-    type_ptrR t ** anyR t q ** .[ t ! 1 ] |-> anyR (Tarray t n) q.
-  Proof. Admitted.
-
-  (** decompose an array into individual components
-      note that one past the end of an array is a valid location, but
-      it doesn't store anything.
-
-      TODO this should move
-   *)
-  Lemma anyR_array' t n q :
-        anyR (Tarray t n) q
-    -|- arrayR t (fun _ => anyR t q) (replicateN n ()).
-  Proof.
-    induction n using N.peano_ind;
-      rewrite (replicateN_0, replicateN_S) (arrayR_nil, arrayR_cons).  {
-      apply anyR_array_0.
-    }
-    by rewrite -IHn anyR_array_succ.
-  Qed.
-
-  (* Wrapper using [repeat] instead of [replicate] for compatibility. *)
-  Lemma anyR_array t n q :
-        anyR (Tarray t n) q
-    -|- arrayR t (fun _ => anyR t q) (repeat () (N.to_nat n)).
-  Proof. by rewrite anyR_array' repeatN_replicateN. Qed.
 
   (** decompose an array into individual components
       note that one past the end of an array is a valid location, but

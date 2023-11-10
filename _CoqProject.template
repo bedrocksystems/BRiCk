@@ -191,6 +191,17 @@ theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/operator.v
 theories/lang/cpp/logic/rep.v
 theories/lang/cpp/logic/rep_defs.v
+theories/lang/cpp/logic/heap_pred/aggregate.v
+theories/lang/cpp/logic/heap_pred/any.v
+theories/lang/cpp/logic/heap_pred/block.v
+theories/lang/cpp/logic/heap_pred/everywhere.v
+theories/lang/cpp/logic/heap_pred/null.v
+theories/lang/cpp/logic/heap_pred/prelude.v
+theories/lang/cpp/logic/heap_pred/prim.v
+theories/lang/cpp/logic/heap_pred/simple.v
+theories/lang/cpp/logic/heap_pred/tptsto.v
+theories/lang/cpp/logic/heap_pred/uninit.v
+theories/lang/cpp/logic/heap_pred/valid.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/rep_proofmode.v
 theories/lang/cpp/logic/cptr.v

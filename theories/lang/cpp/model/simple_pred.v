@@ -307,21 +307,6 @@ Module SimpleCPP.
     Global Instance provides_storage_valid_obj_ptr storage_ptr obj_ptr aty :
       Observe (valid_ptr obj_ptr) (provides_storage storage_ptr obj_ptr aty) := _.
 
-    Definition is_heap_type (t : type) : bool :=
-         bool_decide (t = erase_qualifiers t)
-      && (is_value_type t || match t with
-                            | Tref _ => true
-                            | _ => false
-                            end).
-    Theorem is_heap_type_eq :
-      is_heap_type = fun t =>
-                       bool_decide (t = erase_qualifiers t)
-                    && (is_value_type t || match t with
-                                          | Tref _ => true
-                                          | _ => false
-                                          end).
-    Proof. reflexivity. Qed.
-
     Section with_genv.
       Variable σ : genv.
 

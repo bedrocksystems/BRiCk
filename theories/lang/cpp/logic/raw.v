@@ -40,6 +40,7 @@ Also, the proof of [raw_int_byte_primR] below suggest some TODOs for
 Axiom primR_to_rawsR : ∀ `{Σ : cpp_logic, σ : genv} ty q v,
   primR ty q v -|-
   Exists rs, [| raw_bytes_of_val σ ty v rs |] ** type_ptrR ty ** rawsR q rs.
+(* ^^ TODO: rewrite this in terms of [tptsto] *)
 
 Definition decodes {σ : genv} (endianness : endian) (sgn : signed) (l : list N) (z : Z) : Prop :=
   List.Forall (fun v => has_type_prop (Vn v) Tu8) l /\
@@ -55,6 +56,7 @@ use it to derive this reasoning principle.
 Axiom decode_uint_anyR : ∀ `{Σ : cpp_logic, σ : genv} q sz,
   anyR (Tnum sz Unsigned) q -|-
   anyR (Tarray Tuchar (bytesN sz)) q ** type_ptrR (Tnum sz Unsigned).
+(* ^^ should be proven *)
 
 (* JH: TODO: Determine what new axioms we should add here. *)
 Axiom raw_byte_of_int_eq : ∀ {σ : genv} sz x rs,

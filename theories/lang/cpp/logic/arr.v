@@ -10,7 +10,8 @@ From bedrock.prelude Require Import numbers.
 From bedrock.lang.bi Require Import observe fractional big_op.
 From bedrock.lang.cpp Require Import bi.cfractional.
 From bedrock.lang.cpp.semantics Require Import types genv.
-From bedrock.lang.cpp.logic Require Import pred path_pred heap_pred.
+From bedrock.lang.cpp.logic Require Import pred path_pred.
+From bedrock.lang.cpp.logic.heap_pred Require Import valid.
 From bedrock.lang.cpp.semantics Require Import values.
 
 #[local] Set Printing Coercions.	(** Readability *)

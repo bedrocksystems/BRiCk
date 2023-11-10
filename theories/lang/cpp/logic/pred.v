@@ -252,35 +252,6 @@ Module Type CPP_LOGIC
       Timeless (provides_storage storage_ptr obj_ptr ty).
     #[global] Existing Instances provides_storage_persistent provides_storage_affine provides_storage_timeless.
 
-    (** Heap types.
-    The [t : type] in this definition is a "heap type", it is *completely*
-    unqualified.
-    - Top-level <<const>> qualifiers, e.g. the <<const>> in <<int * const>>, are
-      tracked in the <<const>> bit of [cQp.t].
-    - Memory cells that are marked <<volatile>> are currently not supported and
-      will use a different ownership discipline, i.e. not using [tptsto] at all.
-    - Nested qualifiers are normalized in these definitions due to sub-typing
-      constraints.
-    - Top-level references are uniformly represented using [Tref], i.e. [Trv_ref]
-      does not occur at the toplevel.
-
-    Some examples of the above include:
-    - <<const int x = 1>>           -- [tptsto Tint (cQp.m 1) _ 1]
-    - <<const int* x = nullptr>>    -- [tptsto (Tptr Tint) (cQp.m 1) _ nullptr]
-    - <<int* const x = nullptr>>    -- [tptsto (Tptr Tint) (cQp.c 1) _ nullptr]
-    - <<volatile int x = 0>>        -- not represted using [tptsto]
-    - <<volatile int* p = nullptr>> -- [tptsto (Tptr Tint) (cQp.m 1) _ nullptr]
-    - <<int&& r = ..>>              -- [tptsto (Tref Tint) (cQp.m 1) _ _]
-     *)
-    Parameter is_heap_type : type -> bool.
-    Axiom is_heap_type_eq :
-      is_heap_type = fun t =>
-                       bool_decide (t = erase_qualifiers t)
-                    && (is_value_type t || match t with
-                                          | Tref _ => true
-                                          | _ => false
-                                          end).
-
     (** *** Typed points-to predicate.
     Fact [tptsto t q p v] asserts the following things:
     1. Pointer [p] points to value [v].
@@ -293,17 +264,17 @@ Module Type CPP_LOGIC
     [tptsto] is only used to represent memory cells that contain
     values representable as a single [val]. This includes:
     - value types (see [is_value_type]), and
-    - reference types. Note that all glvalues, i.e. x-values ([Trv_ref])
+    - reference types. Note that all gl-values, i.e. x-values ([Trv_ref])
       and l-values ([Tref]), are represented using [Tref].
     These requirements justify the axiom [tptsto_valid_type].
 
     We use this predicate both for pointers to actual memory and for pointers to
     C++ locations that are not stored in memory (as an optimization).
     *)
-    Parameter tptsto : forall {σ:genv} (t : type) (q : cQp.t) (a : ptr) (v : val), mpred.
+    Parameter tptsto : forall {σ:genv} (t : heap_type) (q : cQp.t) (a : ptr) (v : val), mpred.
 
     #[global] Declare Instance tptsto_valid_type
-      : forall {σ:genv} (t : type) (q : cQp.t) (a : ptr) (v : val),
+      : forall {σ:genv} (t : heap_type) (q : cQp.t) (a : ptr) (v : val),
         Observe [| is_heap_type t |] (tptsto t q a v).
 
     Axiom tptsto_nonnull : forall {σ} ty q a,
