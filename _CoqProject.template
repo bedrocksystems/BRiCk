@@ -240,6 +240,3 @@ theories/lang/cpp/model/simple_pointers.v
 theories/lang/cpp/model/inductive_pointers_utils.v
 theories/lang/cpp/model/inductive_pointers.v
 theories/lang/cpp/model/simple_pred.v
-
-# misc
-theories/lang/bi/bytes_at.v
