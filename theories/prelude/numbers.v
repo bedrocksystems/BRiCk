@@ -623,6 +623,15 @@ Section with_Z.
     intros Hbits. rewrite/align_up. apply align_dn_mono; first done.
     have := Z_ones_nonneg _ Hbits. lia.
   Qed.
+
+  Lemma align_dn_nonneg n bits : 0 ≤ align_dn n bits ↔ 0 ≤ n.
+  Proof. rewrite /align_dn Z.shiftl_nonneg Z.shiftr_nonneg; lia. Qed.
+
+  Lemma align_up_nonneg n bits : 0 ≤ n -> 0 ≤ bits -> 0 ≤ align_up n bits.
+  Proof.
+    intros; rewrite /align_up Z.shiftl_nonneg Z.shiftr_nonneg.
+    apply Z.add_nonneg_nonneg, Z_ones_nonneg; lia.
+  Qed.
 End with_Z.
 
 (** [Qp] *)
