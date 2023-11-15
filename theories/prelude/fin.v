@@ -27,6 +27,14 @@ Implicit Types (n : N) (p : positive).
 Module fin.
   Definition t n := dsig (λ m, m < n).
 
+  Definition mk (m : N) {n : N} (prf : m < n) : fin.t n :=
+    m ↾ bool_decide_pack _ prf.
+  #[global] Arguments mk m & {n} prf. (* [&] = infer [n] from return type. *)
+
+  (** The [lit m] notation works if both [m] and the bound [n] are ground,
+      since then [eq_refl] is a valid proof of [m < n]. *)
+  Notation lit m := (mk m eq_refl).
+
   Lemma t_0_inv : t 0 -> False.
   Proof. move=>[x /bool_decide_unpack]. lia. Qed.
 
@@ -84,16 +92,9 @@ Module fin.
 
   #[global] Hint Opaque t : typeclass_instances.
 
-  (** The [lit m] notation works if both [m] and the bound [n] are ground,
-      since then [eq_refl] is a valid proof of [m < n]. *)
-  Definition lit' (m : N) {n : N} (prf : m < n) : fin.t n :=
-    m ↾ bool_decide_pack _ prf.
-  #[global] Arguments lit' m & {n} prf. (* [&] = infer [n] from return type. *)
-  Notation lit m := (lit' m eq_refl).
-
   (** [weaken' x] notation converts [x : fin.t m] to [fin.t n] assuming [m <= n]. *)
   #[program] Definition weaken' {m n} (x : fin.t m) (prf : m <= n) : fin.t n :=
-    fin.lit' (fin.to_N x) _.
+    fin.mk (fin.to_N x) _.
   Next Obligation. move=> m n [/= x /bool_decide_unpack]. lia. Qed.
   #[global] Arguments weaken' {m} & {n} x prf. (* [&] = infer [n] from return type. *)
 
@@ -167,7 +168,7 @@ Module fin.
   Notation to_idx_fin x := (to_idx_fin' x eq_refl).
 
   #[program] Definition of_idx_fin' {m : nat} (f : fin m) {n : N} (_ : n = N.of_nat m) : fin.t n :=
-    fin.lit' (N.of_nat (fin_to_nat f)) _.
+    fin.mk (N.of_nat (fin_to_nat f)) _.
   Next Obligation. move=> m f n ->. have := fin_to_nat_lt f. lia. Qed.
   #[global] Arguments of_idx_fin' {m} f & {n} prf. (* [&] = infer [n] from return type. *)
   Notation of_idx_fin x := (of_idx_fin' x eq_refl).
@@ -189,13 +190,13 @@ Module fin.
   #[global] Arguments decode & {A _ _} f. (* [&] = infer [A] from return type. *)
 
   (* Inductive-like interface. *)
-  Definition zero {n} : fin.t (N.succ n) := lit' 0 (N.lt_0_succ _).
+  Definition zero {n} : fin.t (N.succ n) := fin.mk 0 (N.lt_0_succ _).
   (* eta-rule for [zero] *)
   Lemma is_zero {n} {Hl : bool_decide (0 < N.succ n)} : 0 ↾ Hl = zero.
   Proof. exact: t_eq. Qed.
 
   #[program] Definition succ {n} (x : fin.t n) :
-    fin.t (N.succ n) := lit' (N.succ (to_N x)) _.
+    fin.t (N.succ n) := fin.mk (N.succ (to_N x)) _.
   Next Obligation.
     intros n x.
     apply (N_succ_lt_mono_inv _ _), to_N_lt.
@@ -203,7 +204,7 @@ Module fin.
 
   (* eta-rule for [fin.succ] *)
   Lemma is_succ {x n} {Hl : bool_decide (N.succ x < N.succ n)} :
-    N.succ x ↾ Hl = fin.succ (lit' x (proj1 (N_succ_lt_mono_inv _ _) (bool_decide_unpack _ Hl))).
+    N.succ x ↾ Hl = fin.succ (fin.mk x (proj1 (N_succ_lt_mono_inv _ _) (bool_decide_unpack _ Hl))).
   Proof. exact: t_eq. Qed.
 
   (* Elimination principle. *)
