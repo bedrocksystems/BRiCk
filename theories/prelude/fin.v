@@ -217,13 +217,15 @@ Module fin.
     N.succ x ↾ Hl = fin.succ (fin.mk x (proj1 (N_succ_lt_mono_inv _ _) (bool_decide_unpack _ Hl))).
   Proof. exact: t_eq. Qed.
 
-  (** Peano-like elimination principle. *)
+  (** Peano-like elimination principle.
+  TODO: this is currently [Qed] because reduction gets stuck.
+  *)
   Lemma t_rect (P : ∀ n, fin.t n -> Type)
     (Hz : ∀ n, P (N.succ n) fin.zero)
     (Hs : ∀ n (x : fin.t n), P (N.succ n) (fin.succ x)) :
     ∀ n (x : fin.t n), P n x.
   Proof.
-    move => n [m /[dup] /bool_decide_unpack Hl Hlp].
+    apply t_sig_rect => n m Hnm. unfold mk.
     destruct n as [|n] using N.peano_rect; last clear IHn. {
       exfalso; abstract lia.
     }
@@ -231,5 +233,5 @@ Module fin.
       rewrite ->is_zero. apply Hz.
     }
     rewrite ->is_succ. apply Hs.
-  Defined.
+  Qed.
 End fin.
