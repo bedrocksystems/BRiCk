@@ -36,11 +36,11 @@ Module fin.
   Notation lit m := (mk m eq_refl).
 
   Lemma t_0_inv : t 0 -> False.
-  Proof. move=>[x /bool_decide_unpack]. lia. Qed.
+  Proof. move=> [x /bool_decide_unpack]. lia. Qed.
 
   Definition of_N (p : positive) (n : N) : t (Npos p) :=
     match decide (n < Npos p) with
-    | left prf => n ↾ bool_decide_pack _ prf
+    | left prf => mk n prf
     | right _ => 0 ↾ I
     end.
 
@@ -50,8 +50,8 @@ Module fin.
   (** Alternative to [of_N] taking any positive [m : N] instead of [p : positive]. *)
   Definition of_N' {m : N} (Hmpos : 0 < m) (n : N) : fin.t m :=
     match decide (n < m)%N with
-    | left prf => n ↾ bool_decide_pack _ prf
-    | right _ => 0%N ↾ bool_decide_pack _ Hmpos
+    | left prf => mk n prf
+    | right _ => mk 0 Hmpos
     end.
 
   Definition of_nat' {m : N} (Hmpos : 0 < m) (n : nat) : fin.t m :=
@@ -189,12 +189,22 @@ Module fin.
     decode_fin (to_idx_fin f).
   #[global] Arguments decode & {A _ _} f. (* [&] = infer [A] from return type. *)
 
-  (* Inductive-like interface. *)
+  (** Eta-rule for [fin.mk]. *)
+  Lemma is_mk {n} (m : fin.t n) :
+    m = fin.mk (fin.to_N m) (fin.to_N_lt m).
+  Proof. exact: t_eq. Qed.
+
+
+  (** * Inductive-like interface. *)
+
+  (** "Smart constructor" [fin.zero] *)
   Definition zero {n} : fin.t (N.succ n) := fin.mk 0 (N.lt_0_succ _).
-  (* eta-rule for [zero] *)
+
+  (** Eta-rule for [zero] *)
   Lemma is_zero {n} {Hl : bool_decide (0 < N.succ n)} : 0 ↾ Hl = zero.
   Proof. exact: t_eq. Qed.
 
+  (** "Smart constructor" [fin.succ] *)
   #[program] Definition succ {n} (x : fin.t n) :
     fin.t (N.succ n) := fin.mk (N.succ (to_N x)) _.
   Next Obligation.
@@ -202,22 +212,22 @@ Module fin.
     apply (N_succ_lt_mono_inv _ _), to_N_lt.
   Qed.
 
-  (* eta-rule for [fin.succ] *)
+  (** Eta-rule for [fin.succ] *)
   Lemma is_succ {x n} {Hl : bool_decide (N.succ x < N.succ n)} :
     N.succ x ↾ Hl = fin.succ (fin.mk x (proj1 (N_succ_lt_mono_inv _ _) (bool_decide_unpack _ Hl))).
   Proof. exact: t_eq. Qed.
 
-  (* Elimination principle. *)
-  Definition t_rect (P : ∀ n, fin.t n -> Type)
+  (** Peano-like elimination principle. *)
+  Lemma t_rect (P : ∀ n, fin.t n -> Type)
     (Hz : ∀ n, P (N.succ n) fin.zero)
     (Hs : ∀ n (x : fin.t n), P (N.succ n) (fin.succ x)) :
     ∀ n (x : fin.t n), P n x.
   Proof.
-    move => n [x /[dup] /bool_decide_unpack Hl Hlp].
+    move => n [m /[dup] /bool_decide_unpack Hl Hlp].
     destruct n as [|n] using N.peano_rect; last clear IHn. {
       exfalso; abstract lia.
     }
-    destruct x as [|x] using N.peano_rect; last clear IHx. {
+    destruct m as [|m] using N.peano_rect; last clear IHm. {
       rewrite ->is_zero. apply Hz.
     }
     rewrite ->is_succ. apply Hs.
