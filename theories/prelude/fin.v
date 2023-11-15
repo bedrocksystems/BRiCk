@@ -194,6 +194,18 @@ Module fin.
     m = fin.mk (fin.to_N m) (fin.to_N_lt m).
   Proof. exact: t_eq. Qed.
 
+  (**
+  Prove the natural elimination principle you would get from a sigma type.
+  However, to prove [∀ x ; fin.t n, ...], it's much simpler to use
+  <<
+  move=> [x /bool_decide_unpack].
+  >>
+  TODO: this is currently [Qed] because reduction gets stuck.
+  *)
+  Lemma t_sig_rect (P : ∀ n, fin.t n -> Type)
+    (Hp : ∀ n m (H : m < n), P n (fin.mk m H)) :
+    ∀ n (x : fin.t n), P n x.
+  Proof. intros n m. rewrite ->(is_mk m). apply Hp. Qed.
 
   (** * Inductive-like interface. *)
 
