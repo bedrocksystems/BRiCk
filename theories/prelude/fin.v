@@ -25,7 +25,7 @@ From bedrock.prelude Require Import base option list_numbers finite.
 Implicit Types (n : N) (p : positive).
 
 Module fin.
-  Definition t n := dsig (λ m, m < n).
+  Definition t n : Set := {m : N | bool_decide (m < n)}.
 
   Definition mk (m : N) {n : N} (prf : m < n) : fin.t n :=
     m ↾ bool_decide_pack _ prf.
@@ -60,7 +60,7 @@ Module fin.
   Definition to_N {n} (f : t n) : N := `f.
 
   Lemma to_N_lt {n} (f : t n) : to_N f < n.
-  Proof. apply (proj2_dsig f). Qed.
+  Proof. apply (bool_decide_unpack _ (proj2_sig f)). Qed.
 
   Definition t_eq {n} (x1 x2 : t n)
     (Heq : to_N x1 = to_N x2) : x1 = x2.
