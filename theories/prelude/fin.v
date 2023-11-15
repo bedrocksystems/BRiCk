@@ -25,15 +25,15 @@ From bedrock.prelude Require Import base option list_numbers finite.
 Implicit Types (n : N) (p : positive).
 
 Module fin.
-  Definition t n := {m : N | m < n}.
+  Definition t n := dsig (λ m, m < n).
 
   Lemma t_0_inv : t 0 -> False.
-  Proof. by inversion 1; lia. Qed.
+  Proof. move=>[x /bool_decide_unpack]. lia. Qed.
 
   Definition of_N (p : positive) (n : N) : t (Npos p) :=
     match decide (n < Npos p) with
-    | left prf => n ↾ prf
-    | right _ => 0 ↾ eq_refl
+    | left prf => n ↾ bool_decide_pack _ prf
+    | right _ => 0 ↾ I
     end.
 
   Definition of_nat (p : positive) (n : nat) : fin.t (Npos p) :=
@@ -42,8 +42,8 @@ Module fin.
   (** Alternative to [of_N] taking any positive [m : N] instead of [p : positive]. *)
   Definition of_N' {m : N} (Hmpos : 0 < m) (n : N) : fin.t m :=
     match decide (n < m)%N with
-    | left prf => n ↾ prf
-    | right _ => 0%N ↾ Hmpos
+    | left prf => n ↾ bool_decide_pack _ prf
+    | right _ => 0%N ↾ bool_decide_pack _ Hmpos
     end.
 
   Definition of_nat' {m : N} (Hmpos : 0 < m) (n : nat) : fin.t m :=
@@ -52,7 +52,7 @@ Module fin.
   Definition to_N {n} (f : t n) : N := `f.
 
   Lemma to_N_lt {n} (f : t n) : to_N f < n.
-  Proof. apply (proj2_sig f). Qed.
+  Proof. apply (proj2_dsig f). Qed.
 
   Definition t_eq {n} (x1 x2 : t n)
     (Heq : to_N x1 = to_N x2) : x1 = x2.
@@ -87,14 +87,14 @@ Module fin.
   (** The [mk m] notation works if both [m] and the bound [n] are ground,
       since then [eq_refl] is a valid proof of [m < n]. *)
   Definition mk' (m : N) {n : N} (prf : m < n) : fin.t n :=
-    m ↾ prf.
+    m ↾ bool_decide_pack _ prf.
   #[global] Arguments mk' m & {n} prf. (* [&] = infer [n] from return type. *)
   Notation mk m := (mk' m eq_refl).
 
   (** [weaken' x] notation converts [x : fin.t m] to [fin.t n] assuming [m <= n]. *)
   #[program] Definition weaken' {m n} (x : fin.t m) (prf : m <= n) : fin.t n :=
     fin.mk' (fin.to_N x) _.
-  Next Obligation. move=> m n [/= ]; lia. Qed.
+  Next Obligation. move=> m n [/= x /bool_decide_unpack]. lia. Qed.
   #[global] Arguments weaken' {m} & {n} x prf. (* [&] = infer [n] from return type. *)
 
   (* Alternative:
@@ -152,7 +152,7 @@ Module fin.
     destruct n. { by destruct t_0_inv. }
     apply elem_of_list_fmap; exists (to_N i); split.
     by rewrite of_to_N.
-    apply elem_of_seqN. case: i =>/=. lia.
+    apply elem_of_seqN. case: i => /= i /bool_decide_unpack. lia.
   Qed.
 
   #[global, refine] Instance t_finite n : Finite (t n) :=
@@ -162,7 +162,7 @@ Module fin.
   (** Conversion to and from the "indexed fin" type [fin] from the stdlib. *)
   #[program] Definition to_idx_fin' {m : N} (f : fin.t m) {n : nat} (_ : m = N.of_nat n) : fin n :=
     nat_to_fin (p := N.to_nat (fin.to_N f)) _.
-  Next Obligation. move=> m [] /=. lia. Qed.
+  Next Obligation. move=> m [f /bool_decide_unpack] /=. lia. Qed.
   #[global] Arguments to_idx_fin' {m} f & {n} prf. (* [&] = infer [n] from return type. *)
   Notation to_idx_fin x := (to_idx_fin' x eq_refl).
 
@@ -191,7 +191,7 @@ Module fin.
   (* Inductive-like interface. *)
   Definition zero {n} : fin.t (N.succ n) := mk' 0 (N.lt_0_succ _).
   (* eta-rule for [zero] *)
-  Lemma is_zero {n} {Hl : 0 < N.succ n} : 0 ↾ Hl = zero.
+  Lemma is_zero {n} {Hl : bool_decide (0 < N.succ n)} : 0 ↾ Hl = zero.
   Proof. exact: t_eq. Qed.
 
   #[program] Definition succ {n} (x : fin.t n) :
@@ -202,8 +202,8 @@ Module fin.
   Qed.
 
   (* eta-rule for [fin.succ] *)
-  Lemma is_succ {x n} {Hl : N.succ x < N.succ n} :
-    N.succ x ↾ Hl = fin.succ (mk' x (proj1 (N_succ_lt_mono_inv _ _) Hl)).
+  Lemma is_succ {x n} {Hl : bool_decide (N.succ x < N.succ n)} :
+    N.succ x ↾ Hl = fin.succ (mk' x (proj1 (N_succ_lt_mono_inv _ _) (bool_decide_unpack _ Hl))).
   Proof. exact: t_eq. Qed.
 
   (* Elimination principle. *)
@@ -212,7 +212,7 @@ Module fin.
     (Hs : ∀ n (x : fin.t n), P (N.succ n) (fin.succ x)) :
     ∀ n (x : fin.t n), P n x.
   Proof.
-    intros n [x Hl].
+    move => n [x /[dup] /bool_decide_unpack Hl Hlp].
     destruct n as [|n] using N.peano_rect; last clear IHn. {
       exfalso; abstract lia.
     }
