@@ -182,6 +182,7 @@ theories/lang/cpp/semantics/intensional.v
 theories/lang/cpp/semantics.v
 
 # Program Logic
+theories/lang/base_logic/mpred.v
 theories/lang/cpp/logic/entailsN.v
 theories/lang/cpp/logic/mpred.v
 theories/lang/cpp/logic/pred.v
