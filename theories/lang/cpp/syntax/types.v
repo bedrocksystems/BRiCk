@@ -514,20 +514,21 @@ Definition Qconst_volatile : type -> type :=
   Tqualified QCV.
 Definition Qconst : type -> type :=
   Tqualified QC.
-Definition Qmut_volatile : type -> type :=
+Definition Qvolatile : type -> type :=
   Tqualified QV.
+Notation Qmut_volatile := Qvolatile (only parsing).
 Definition Qmut : type -> type :=
   Tqualified QM.
 
 #[global] Hint Opaque
-  Qconst_volatile Qconst Qmut_volatile Qmut
+  Qconst_volatile Qconst Qvolatile Qmut
 : typeclass_instances.
 
 #[global] Instance Qconst_volatile_proper : Proper (equiv ==> equiv) Qconst_volatile.
 Proof. solve_proper. Qed.
 #[global] Instance Qconst_proper : Proper (equiv ==> equiv) Qconst.
 Proof. solve_proper. Qed.
-#[global] Instance Qmut_volatile_proper : Proper (equiv ==> equiv) Qmut_volatile.
+#[global] Instance Qvolatile_proper : Proper (equiv ==> equiv) Qvolatile.
 Proof. solve_proper. Qed.
 #[global] Instance Qmut_proper : Proper (equiv ==> equiv) Qmut.
 Proof. solve_proper. Qed.
