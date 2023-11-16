@@ -38,15 +38,6 @@ Module fin.
   Lemma t_0_inv : t 0 -> False.
   Proof. move=> [x /bool_decide_unpack]. lia. Qed.
 
-  Definition of_N (p : positive) (m : N) : t (Npos p) :=
-    match decide (m < Npos p) with
-    | left prf => mk m prf
-    | right _ => 0 ↾ I
-    end.
-
-  Definition of_nat (p : positive) (m : nat) : fin.t (Npos p) :=
-    fin.of_N p (N.of_nat m).
-
   (** Alternative to [of_N] taking any positive [m : N] instead of [p : positive]. *)
   Definition of_N' {n : N} (Hn : 0 < n) (m : N) : fin.t n :=
     match decide (m < n)%N with
@@ -57,6 +48,12 @@ Module fin.
   Definition of_nat' {n : N} (Hn : 0 < n) (m : nat) : fin.t n :=
     of_N' Hn (N.of_nat m).
 
+  Definition of_N (p : positive) (m : N) : t (Npos p) :=
+    of_N' (n := Npos p) eq_refl m.
+
+  Definition of_nat (p : positive) (m : nat) : fin.t (Npos p) :=
+    fin.of_N p (N.of_nat m).
+
   Definition to_N {n} (f : t n) : N := `f.
 
   Lemma to_N_lt {n} (f : t n) : to_N f < n.
@@ -66,17 +63,17 @@ Module fin.
     (Heq : to_N x1 = to_N x2) : x1 = x2.
   Proof. apply /sig_eq_pi /Heq. Qed.
 
-  Lemma to_of_N (p : positive) (m : N) : m < N.pos p -> to_N (of_N p m) = m.
-  Proof. rewrite /fin.of_N. by case_decide. Qed.
-
-  Lemma of_to_N {p} (x : t (N.pos p)) : of_N p (to_N x) = x.
-  Proof. apply t_eq, to_of_N, to_N_lt. Qed.
-
   Lemma to_of_N' {n} (Hn : 0 < n) (m : N) : m < n -> to_N (of_N' Hn m) = m.
   Proof. rewrite /fin.of_N' => H. by case_decide. Qed.
 
   Lemma of_to_N' {n} (Hn : 0 < n) (x : t n) : of_N' Hn (to_N x) = x.
   Proof. apply t_eq, to_of_N', to_N_lt. Qed.
+
+  Lemma to_of_N (p : positive) (m : N) : m < N.pos p -> to_N (of_N p m) = m.
+  Proof. apply to_of_N'. Qed.
+
+  Lemma of_to_N {p} (x : t (N.pos p)) : of_N p (to_N x) = x.
+  Proof. apply of_to_N'. Qed.
 
   (** Declared an instance, because it is not redudant after [t] is made opaque. *)
   #[global] Instance to_N_inj n : Inj eq eq (to_N (n := n)) := _.
