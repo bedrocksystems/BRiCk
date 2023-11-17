@@ -1493,6 +1493,12 @@ Proof. by induction ty. Qed.
 Lemma aggregate_type_non_val ty : is_aggregate_type ty -> ~~ is_value_type ty.
 Proof. by induction ty. Qed.
 
+Lemma decompose_type_erase_qualifiers ty
+  : decompose_type (erase_qualifiers ty) = (QM, erase_qualifiers ty).
+Proof.
+  induction ty; simpl; intros; eauto.
+Qed.
+
 (** ** Notation for character types *)
 Coercion Tchar_ : char_type.t >-> type.
 Notation Tchar   := (Tchar_ char_type.Cchar).
