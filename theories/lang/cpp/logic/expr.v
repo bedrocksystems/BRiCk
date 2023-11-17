@@ -1298,7 +1298,7 @@ Module Type Expr.
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-         letI* free := wp_initialize ety (base .[ ety ! idx ]) e in
+         letI* free := wp_initialize ety (base .[ erase_qualifiers ety ! idx ]) e in
          interp free $ wp_array_init ety base rest (Z.succ idx) Q
       end.
 
