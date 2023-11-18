@@ -149,7 +149,7 @@ Module fin.
   Proof.
     destruct n. { by destruct t_0_inv. }
     apply elem_of_list_fmap; exists (to_N i); split.
-    by rewrite of_to_N.
+    { by rewrite of_to_N. }
     apply elem_of_seqN. case: i => /= i /bool_decide_unpack. lia.
   Qed.
 
@@ -207,7 +207,7 @@ Module fin.
   <<
   move=> [x /bool_decide_unpack].
   >>
-  TODO: this is currently [Qed] because reduction gets stuck.
+  [Qed] because reduction gets stuck, and this seems hard to fix.
   *)
   Lemma t_sig_rect (P : ∀ n, fin.t n -> Type)
     (Hp : ∀ n m (H : m < n), P n (fin.mk m H)) :
@@ -237,7 +237,7 @@ Module fin.
   Proof. exact: t_eq. Qed.
 
   (** Peano-like elimination principle.
-  TODO: this is currently [Qed] because reduction gets stuck.
+  [Qed] because reduction gets stuck, and this seems hard to fix.
   *)
   Lemma t_rect (P : ∀ n, fin.t n -> Type)
     (Hz : ∀ n, P (N.succ n) fin.zero)
