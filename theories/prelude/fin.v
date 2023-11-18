@@ -24,6 +24,55 @@ From bedrock.prelude Require Import base option list_numbers finite.
 
 Implicit Types (n : N) (p : positive).
 
+(* XXX: New proofs of existing lemmas, to enable Qed-free `eq_refl` proofs below.
+Namespaced to avoid unintended uses outside.
+These use tactics, but very carefully to control generated proof terms, and avoid
+(say) setoid rewriting with opaque stdlib lemmas. *)
+Module Import TO_UPSTREAM_TRANSPARENT.
+  Lemma bool_decide_pack (P : Prop) {dec : Decision P} : P → bool_decide P.
+  Proof.
+    intros HP.
+    destruct (bool_decide P) eqn:Hd; first exact I.
+    eapply bool_decide_eq_false_1, HP. eassumption.
+  Defined.
+
+  Lemma f_equal_help {A B} (f g : A → B) x y : f = g → x = y → f x = g y.
+  Proof. intros -> ->; reflexivity. Defined.
+
+  Section dsig_transparent.
+    Context {A : Type} {P : A → Prop} `{!∀ x, Decision (P x)}.
+
+    Lemma dsig_eq_pi (x y : dsig P) : `x = `y ↔ x = y.
+    Proof.
+      split. 2: { intros ->. reflexivity. }
+      destruct x as [x Px], y as [y Py]; simpl in *; unfold Is_true in *.
+      intros E. destruct E.
+      apply f_equal_help; first reflexivity.
+      destruct (bool_decide (P x)), Px, Py.
+      reflexivity.
+    Defined.
+
+    #[global] Instance dsig_eq_dec `{!EqDecision A} : EqDecision (dsig P).
+    Proof.
+      refine (λ x y,
+        match decide (`x = `y) with
+        | left E => left _
+        | right NE => right _
+        end).
+      { apply dsig_eq_pi. assumption. }
+      intros E%dsig_eq_pi. apply NE, E.
+    Defined.
+
+    #[global] Program Instance countable_dsig `{Countable A} :
+      Countable (dsig P) :=
+      inj_countable proj1_sig (λ x, Hx ← guard (bool_decide (P x)); Some (x ↾ Hx)) _.
+    Next Obligation.
+      intros ?? [x Hx]; simpl.
+      by erewrite (option_guard_True_pi (bool_decide (P x))).
+    Qed.
+  End dsig_transparent.
+End TO_UPSTREAM_TRANSPARENT.
+
 Module fin.
   Definition t n : Set := {m : N | bool_decide (m < n)}.
 
@@ -149,7 +198,7 @@ Module fin.
   Proof.
     destruct n. { by destruct t_0_inv. }
     apply elem_of_list_fmap; exists (to_N i); split.
-    by rewrite of_to_N.
+    { by rewrite of_to_N. }
     apply elem_of_seqN. case: i => /= i /bool_decide_unpack. lia.
   Qed.
 
@@ -207,7 +256,7 @@ Module fin.
   <<
   move=> [x /bool_decide_unpack].
   >>
-  TODO: this is currently [Qed] because reduction gets stuck.
+  [Qed] because reduction gets stuck, and this seems hard to fix.
   *)
   Lemma t_sig_rect (P : ∀ n, fin.t n -> Type)
     (Hp : ∀ n m (H : m < n), P n (fin.mk m H)) :
@@ -237,7 +286,7 @@ Module fin.
   Proof. exact: t_eq. Qed.
 
   (** Peano-like elimination principle.
-  TODO: this is currently [Qed] because reduction gets stuck.
+  [Qed] because reduction gets stuck, and this seems hard to fix.
   *)
   Lemma t_rect (P : ∀ n, fin.t n -> Type)
     (Hz : ∀ n, P (N.succ n) fin.zero)
@@ -254,3 +303,12 @@ Module fin.
     rewrite ->is_succ. apply Hs.
   Qed.
 End fin.
+
+(* XXX *)
+Module Type Test.
+  Fact test1 : @fin.mk 0 1 eq_refl = 0 ↾ I.
+  Proof eq_refl.
+
+  Fact test2 : decide (@fin.mk 0 1 eq_refl = @fin.mk 0 1 eq_refl) = left eq_refl.
+  Proof eq_refl.
+End Test.
