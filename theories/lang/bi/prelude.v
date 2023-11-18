@@ -15,6 +15,16 @@ Proof. by rewrite /IntoPure (bi.pure_intro True emp). Qed.
 
 #[global] Hint Opaque uPred_emp : typeclass_instances.
 
+(* TODO: drop when added upstreamed by
+https://gitlab.mpi-sws.org/iris/iris/-/issues/479
+*)
+#[global] Hint Extern 200 (Persistent (match ?s with _ => _ end)) =>
+  destruct s : typeclass_instances.
+#[global] Hint Extern 200 (Affine (match ?s with _ => _ end)) =>
+  destruct s : typeclass_instances.
+#[global] Hint Extern 200 (Timeless (match ?s with _ => _ end)) =>
+  destruct s : typeclass_instances.
+
 (** * Notation for functions in the Iris scope. To upstream,
 per https://gitlab.mpi-sws.org/iris/iris/-/issues/320. *)
 Notation "'λI' x .. y , t" := (fun x => .. (fun y => t%I) ..)
