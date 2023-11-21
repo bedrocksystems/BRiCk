@@ -1323,7 +1323,7 @@ Module Type Expr.
                (Q : FreeTemps -> mpred) : mpred :=
       let len := N.of_nat (length es) in
       let Q free :=
-          base |-> type_ptrR (Tarray ety sz) -* Q free
+          base |-> type_ptrR (Tarray (erase_qualifiers ety) sz) -* Q free
       in
       match (len ?= sz)%N with
       | Lt =>
