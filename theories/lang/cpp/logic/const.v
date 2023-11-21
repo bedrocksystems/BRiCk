@@ -44,8 +44,8 @@ Section defs.
     |-- wp_const tu f t a ty Q.
 
   (*
-  TODO this needs to be extended because if it is casting [volatile],
-  then it needs to descend under [const]
+  TODO this needs to be extended because if it is casting <<volatile>>,
+  then it needs to descend under <<const>>
   *)
   #[local] Notation "|={ E }=> P" := (|={E}=> P)%I (only parsing).
   #[local] Definition wp_const_body (wp_const : cQp.t -> cQp.t -> ptr -> decltype -> epred -> mpred)
