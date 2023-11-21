@@ -16,7 +16,7 @@ From bedrock.lang.cpp.logic Require Import
      arr builtins heap_pred pred z_to_bytes.
 
 (**
-[rawR q r]: the argument pointer points to [raw_byte] [r] within the
+[rawR q r]: the argument pointer points to [r : raw_byte] within the
 C++ abstract machine.
 *)
 mlock Definition rawR `{Σ : cpp_logic, σ : genv} (q : cQp.t) (r : raw_byte) : Rep :=
