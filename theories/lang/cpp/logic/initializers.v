@@ -793,6 +793,78 @@ Section wp_initialize.
     |-- (Forall free, Q free -* Q' free) -* wp_initialize tu ρ ty obj e Q'.
   Proof. by iIntros "H Y"; iRevert "H"; iApply wp_initialize_frame. Qed.
 
+  Inductive wp_initialize_decomp_spec tu ρ ty (addr : ptr) init Q : mpred -> Prop :=
+  | WpInitScalar cv ty' : match ty' with
+                         | Tptr _
+                         | Tmember_pointer _ _
+                         | Tbool
+                         | Tnum _ _
+                         | Tchar_ _
+                         | Tenum _
+                         | Tfloat_ _
+                         | Tnullptr => True
+                         | _ => False
+                         end ->
+                         (cv, ty') = decompose_type ty ->
+                         wp_initialize_decomp_spec tu ρ ty addr init Q (
+                             letI* v, free := wp_operand tu ρ init in
+                               let qf := cQp.mk (q_const cv) 1 in
+                               addr |-> tptsto_fuzzyR (erase_qualifiers ty) qf v -* Q free
+                           )
+  | WpInitRef cv ty' : drop_qualifiers ty = Tref ty' ->
+                      wp_initialize_decomp_spec tu ρ ty addr init Q (
+                          let rty := Tref $ erase_qualifiers ty' in
+                          letI* p, free := wp_lval tu ρ init in
+                            let qf := cQp.mk (q_const cv) 1 in
+                            addr |-> primR rty qf (Vref p) -* Q free
+                        )
+  | WpInitRvRef cv ty' : drop_qualifiers ty = Trv_ref ty' ->
+                        wp_initialize_decomp_spec tu ρ ty addr init Q (
+                            let rty := Tref $ erase_qualifiers ty' in
+                            letI* p, free := wp_xval tu ρ init in
+                              let qf := cQp.mk (q_const cv) 1 in
+                              addr |-> primR rty qf (Vref p) -* Q free
+                          )
+  | WpInitVoid cv : drop_qualifiers ty = Tvoid ->
+                    wp_initialize_decomp_spec tu ρ ty addr init Q (
+                        letI* v, frees := wp_operand tu ρ init in
+                          let qf := cQp.mk (q_const cv) 1 in
+                          [| v = Vvoid |] **
+                            (addr |-> primR Tvoid qf Vvoid -* Q frees)
+                      )
+  | WpInitAggreg cv ty' : match ty' with
+                         | Tarray _ _
+                         | Tnamed _ => True
+                         | _ => False
+                         end ->
+                         (cv, ty') = decompose_type ty ->
+                         wp_initialize_decomp_spec tu ρ ty addr init Q (
+                             wp_init tu ρ (tqualified cv ty') addr init Q
+                           )
+  | WpInitFuncArch ty' : match ty' with
+                        | Tfunction _ _
+                        | Tarch _ _ => True
+                        | _ => False
+                        end ->
+                        ty' = drop_qualifiers ty ->
+                        wp_initialize_decomp_spec tu ρ ty addr init Q (
+                            UNSUPPORTED (initializing_type ty' init)
+                          )
+  .
+
+  Lemma wp_initialize_decomp_ok tu ρ ty addr e Q :
+    wp_initialize_decomp_spec tu ρ ty addr e Q (wp_initialize tu ρ ty addr e Q).
+  Proof.
+    rewrite wp_initialize_qual_norm wp_initialize_unqualified.unlock.
+    case: qual_norm_decomp_ok=>q t.
+    case Ht: t.
+    all: try by move=>? Heq; constructor; rewrite //= -Heq.
+    all: try by move=>Hdec Heq; rewrite Heq erase_drop_qualifiers;
+                     apply: (WpInitScalar _ _ _ _ _ _ _ (drop_qualifiers ty));
+                     rewrite -Heq // -Hdec //.
+    by move: (is_qualified_drop_qualifiers ty)=>/[swap] _ /[swap]<-.
+  Qed.
+
   (** [wpi] *)
 
   Lemma wpi_frame tu tu' ρ cls this e (Q Q' : epred) :
