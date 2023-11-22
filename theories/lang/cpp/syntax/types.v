@@ -785,6 +785,16 @@ Proof. by rewrite drop_qualifiers_unqual. Qed.
 Lemma unqual_drop_qualifiers ty tq ty' : drop_qualifiers ty <> Tqualified tq ty'.
 Proof. by induction ty. Qed.
 
+Variant qual_norm_decomp_spec {A} (f : type_qualifiers → type → A) t : A -> Prop :=
+| QualNormDecomp q' t' : (q', t') = decompose_type t -> qual_norm_decomp_spec f t (f q' t')
+.
+
+Lemma qual_norm_decomp_ok {A} (f : type_qualifiers → type → A) t : qual_norm_decomp_spec f t (qual_norm f t).
+Proof.
+  rewrite qual_norm_decompose_type.
+  by constructor; rewrite -?surjective_pairing -?drop_qualifiers_decompose_type.
+Qed.
+
 (** ** Erasing qualifiers *)
 (**
 [erase_qualifiers t] erases *all* qualifiers that occur everywhere in
