@@ -1251,23 +1251,18 @@ Module SimpleCPP.
       Qed.
 
       Lemma has_type_ref' p ty :
-        has_type (Vref p) (Tref ty) -|- reference_to ty p.
+        has_type (Vref p) (Tref ty) |-- reference_to ty p.
       Proof.
         rewrite /has_type/=/reference_to has_type_prop_ref.
-        iSplit.
-        { rewrite /strict_valid_if_not_empty_array.
-          iIntros "[%H [#H $]]".
-          destruct H as [? [H?]].
-          inversion H; subst. case_match; iFrame "%#∗".
-          by rewrite strict_valid_valid. }
-        { iIntros "[$ [%H [#V ?]]]".
-          iSplitR. iPureIntro. eexists; split; eauto.
-          rewrite /strict_valid_if_not_empty_array.
-          case_match; eauto. }
+        rewrite /strict_valid_if_not_empty_array.
+        iIntros "[%H [#H $]]".
+        destruct H as [? [H?]].
+        inversion H; subst. case_match; iFrame "%#∗".
+        by rewrite strict_valid_valid.
       Qed.
 
       Lemma has_type_rv_ref' p ty :
-        has_type (Vref p) (Trv_ref ty) -|- reference_to ty p.
+        has_type (Vref p) (Trv_ref ty) |-- reference_to ty p.
       Proof.
         rewrite -has_type_ref'.
         by rewrite /has_type/= has_type_prop_ref has_type_prop_rv_ref.

@@ -196,9 +196,9 @@ Module Type CPP_LOGIC
 
       (* These two definitions are needed because of [tptsto_has_type] *)
       Axiom has_type_ref' : ∀ p ty,
-        has_type (Vref p) (Tref ty) -|- reference_to ty p.
+        has_type (Vref p) (Tref ty) |-- reference_to ty p.
       Axiom has_type_rv_ref' : ∀ p ty,
-        has_type (Vref p) (Trv_ref ty) -|- reference_to ty p.
+        has_type (Vref p) (Trv_ref ty) |-- reference_to ty p.
 
       #[global] Declare Instance reference_to_knowledge : Knowledge2 reference_to.
       #[global] Declare Instance reference_to_timeless : Timeless2 reference_to.

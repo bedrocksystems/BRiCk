@@ -1601,7 +1601,7 @@ Module Type Expr.
                          NOTE that no "correct" program will ever modify this variable
                            anyways. *)
                       loop_index |-> primR Tu64 (cQp.c 1) idx -*
-                      wp_initialize tu ρ ty (targetp .[ ty ! idx ]) init
+                      wp_initialize tu ρ ty (targetp .[ erase_qualifiers ty ! idx ]) init
                               (fun free => interp free $
                                  loop_index |-> primR Tu64 (cQp.c 1) idx **
                                  rest (N.succ idx))) sz idx.
