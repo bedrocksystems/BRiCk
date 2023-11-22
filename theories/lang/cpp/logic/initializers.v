@@ -794,17 +794,7 @@ Section wp_initialize.
   Proof. by iIntros "H Y"; iRevert "H"; iApply wp_initialize_frame. Qed.
 
   Inductive wp_initialize_decomp_spec tu ρ ty (addr : ptr) init Q : mpred -> Prop :=
-  | WpInitScalar cv ty' : match ty' with
-                         | Tptr _
-                         | Tmember_pointer _ _
-                         | Tbool
-                         | Tnum _ _
-                         | Tchar_ _
-                         | Tenum _
-                         | Tfloat_ _
-                         | Tnullptr => True
-                         | _ => False
-                         end ->
+  | WpInitScalar cv ty' : scalar_type ty' ->
                          (cv, ty') = decompose_type ty ->
                          wp_initialize_decomp_spec tu ρ ty addr init Q (
                              letI* v, free := wp_operand tu ρ init in
@@ -832,19 +822,15 @@ Section wp_initialize.
                           [| v = Vvoid |] **
                             (addr |-> primR Tvoid qf Vvoid -* Q frees)
                       )
-  | WpInitAggreg cv ty' : match ty' with
-                         | Tarray _ _
-                         | Tnamed _ => True
-                         | _ => False
-                         end ->
+  | WpInitAggreg cv ty' : is_aggregate_type ty' ->
                          (cv, ty') = decompose_type ty ->
                          wp_initialize_decomp_spec tu ρ ty addr init Q (
                              wp_init tu ρ (tqualified cv ty') addr init Q
                            )
   | WpInitFuncArch ty' : match ty' with
                         | Tfunction _ _
-                        | Tarch _ _ => True
-                        | _ => False
+                        | Tarch _ _ => true
+                        | _ => false
                         end ->
                         ty' = drop_qualifiers ty ->
                         wp_initialize_decomp_spec tu ρ ty addr init Q (
@@ -858,11 +844,19 @@ Section wp_initialize.
     rewrite wp_initialize_qual_norm wp_initialize_unqualified.unlock.
     case: qual_norm_decomp_ok=>q t.
     case Ht: t.
-    all: try by move=>? Heq; constructor; rewrite //= -Heq.
-    all: try by move=>Hdec Heq; rewrite Heq erase_drop_qualifiers;
-                     apply: (WpInitScalar _ _ _ _ _ _ _ (drop_qualifiers ty));
-                     rewrite -Heq // -Hdec //.
-    by move: (is_qualified_drop_qualifiers ty)=>/[swap] _ /[swap]<-.
+    all: try by rewrite [decompose_type _]surjective_pairing=>[][Hq Hty];
+      rewrite Hty -erase_qualifiers_decompose_type;
+      econstructor; last rewrite [decompose_type _]surjective_pairing -Hq -Hty //.
+    all: try by rewrite [decompose_type _]surjective_pairing=>[][Hq Hty];
+      econstructor;
+      rewrite Hty; apply: drop_qualifiers_decompose_type.
+    all: try by rewrite [decompose_type _]surjective_pairing=>[][Hq Hty]; econstructor;
+      rewrite //= [decompose_type _]surjective_pairing -Hq -Hty //.
+    all: try by rewrite [decompose_type _]surjective_pairing=>[][Hq Hty]; econstructor;
+      rewrite //= Hty drop_qualifiers_decompose_type.
+
+    by rewrite [decompose_type _]surjective_pairing;
+      move: (is_qualified_decompose_type ty)=>/[swap][][] _ <-.
   Qed.
 
   (** [wpi] *)
