@@ -49,6 +49,7 @@ theories/prelude/avl.v
 theories/prelude/gmap.v
 theories/prelude/list.v
 theories/prelude/list_numbers.v
+theories/prelude/bitsN.v
 
 theories/prelude/axioms/funext.v
 theories/prelude/bool.v
