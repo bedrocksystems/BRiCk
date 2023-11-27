@@ -127,6 +127,7 @@ theories/lang/bi/spec/contender_token.v
 theories/lang/bi/spec/exclusive.v
 theories/lang/bi/spec/frac_splittable.v
 theories/lang/bi/spec/knowledge.v
+theories/lang/bi/spec/nary_classes.v
 
 # Specific BIs
 theories/lang/si_logic/bi.v
