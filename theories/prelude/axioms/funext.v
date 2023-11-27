@@ -14,6 +14,7 @@ Require Export Coq.Logic.FunctionalExtensionality.
 From bedrock.prelude Require Import base.
 
 Ltac funext := apply: functional_extensionality.
+Ltac funext_dep := apply: functional_extensionality_dep.
 
 Lemma funext_equiv {A B C} (f : A -> B -> C) a1 a2 :
   (f a1 = f a2) <-> ∀ b : B, f a1 b = f a2 b.
