@@ -5,6 +5,9 @@
  *)
 Require Import iris.proofmode.proofmode.
 
+Require Import bedrock.lang.bi.atomic_commit.
+Require Import bedrock.lang.bi.spec.exclusive.
+
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred destroy
@@ -95,8 +98,32 @@ Module Type Stmt.
         iIntros (??). by iApply IHds. }
     Qed.
 
-    (* An error used to say that thread safe initializers are not supported *)
-    Record thread_safe_initializer (d : VarDecl) : Prop := {}.
+    (* [static_initialized gn b] is ownership of the initialization
+       state of the global [gn].
+
+       We use atomic commits to access this state which requires the C++
+       abstract machine to have access to some state (e.g. the boolean used
+       in the implementation) to determine the current state. This is simple
+       using an [auth]/[frag] construction where the abstract machine owns
+       the [auth] and [static_initialized] is the [frag].
+     *)
+    Variant init_state : Set :=
+    | uninitialized | initializing | initialized.
+    Parameter static_initialized : forall {σ : genv}, globname -> init_state -> mpred.
+    #[global] Declare Instance init_state_timeless {σ : genv} : Timeless2 static_initialized.
+    #[global] Declare Instance init_state_uninitialized_excl {σ : genv} nm : Exclusive0 (static_initialized nm uninitialized).
+    #[global] Declare Instance init_state_initializing_excl {σ : genv} nm : Exclusive0 (static_initialized nm initializing).
+    #[global] Declare Instance init_state_initialized_pers {σ : genv} nm : Persistent (static_initialized nm initialized).
+    #[global] Declare Instance init_state_initialized_affine {σ : genv} nm : Affine (static_initialized nm initialized).
+
+    (* This instance allows proving
+       [[
+       static_initialized nm initializing ** static_initialized nm i |-- False
+       ]]
+       indirectly through [init_state_initiailized_excl]
+     *)
+    #[global] Declare Instance init_state_agree nm : Agree1 (static_initialized nm).
+
 
     Definition wp_decl (ρ : region) (d : VarDecl) (k : region -> FreeTemps -> epred) : mpred :=
       match d with
@@ -110,17 +137,44 @@ Module Type Stmt.
             *)
            wp_destructure (Rbind x common_p ρ) ds ρ (fun ρ f => interp free $ k ρ f) (FreeTemps.delete common_type common_p))
       | Dinit ts nm ty init =>
-        let do_init :=
+        let k := k ρ in (* scope does not change *)
+        let do_init k :=
             match init with
-            | None => default_initialize ty (_global nm) (k ρ)
-            | Some init => wp_initialize ρ ty (_global nm) init (k ρ)
+            | None => default_initialize ty (_global nm) k
+            | Some init => wp_initialize ρ ty (_global nm) init k
             end
         in
         if ts then
-          UNSUPPORTED (thread_safe_initializer d)
+          let Mouter := ⊤ ∖ ↑pred_ns in
+          let Minner := ∅ in
+          (* 1. atomically check the initialization state, mark it
+                [initializing] if it is currently [uninitialized].
+             2. perform initialization (non-atomically)
+             3. mark the state [initialized].
+           *)
+          AC1 << ∀ i, static_initialized nm i >> @ Mouter , Minner
+              << match i with
+                 | uninitialized => static_initialized nm initializing
+                 | initializing =>
+                     (* the C++ thread waits unless the state is either [initialized] or [uninitialized]. *)
+                     False
+                 | _ => static_initialized nm i
+                 end
+               , COMM match i with
+                      | uninitialized =>
+                          letI* free := do_init in
+                          AC1 << ∀ i, static_initialized nm i >> @ Mouter , Minner
+                              << [| i = initializing |] **
+                                 static_initialized nm initialized
+                               , COMM k free >>
+                      | _ => k FreeTemps.id
+                      end >>
         else
-          _global nm |-> tblockR ty (cQp.mut 1) ** do_init
-      end.
+          Exists i, static_initialized nm i **
+          if i is uninitialized then
+            do_init $ fun free => static_initialized nm initialized -* k free
+          else k FreeTemps.id
+      end%I.
 
     Lemma wp_decl_frame : forall ds ρ m m',
         Forall a b, m a b -* m' a b
@@ -132,10 +186,25 @@ Module Type Stmt.
         iApply wp_initialize_frame; [done|].
         iIntros (?). iApply wp_destructure_frame.
         iIntros (??); iApply interp_frame; eauto. }
-      { case_match; eauto.
-        case_match.
-        { iIntros "? [$ X]"; iRevert "X"; iApply wp_initialize_frame => //; iIntros (?); done. }
-        { iIntros "? [$ X]"; iRevert "X"; iApply default_initialize_frame => //. } }
+      { case_match.
+        { iIntros "F H".
+          iApply (atomic_commit1_ppost_wand with "H").
+          iIntros "!>" ([ | | ]); eauto.
+          case_match;
+            first [ iApply wp_initialize_frame
+                  | iApply default_initialize_frame ] => //;
+            iIntros (?) "H";
+            iApply (atomic_commit1_ppost_wand with "H");
+            iIntros "!>" (?); eauto. }
+        { iIntros "F H".
+          iDestruct "H" as (i) "H"; iExists i.
+          iDestruct "H" as "[$ H]".
+          case_match; try solve [ iApply "F"; eauto ].
+          iRevert "H".
+          case_match;
+            first [ iApply wp_initialize_frame
+                  | iApply default_initialize_frame ] => //;
+            iIntros (?) "X Y"; iApply "F"; iApply "X"; done. } }
     Qed.
 
     (* [wp_decls ρ_init ds ρ K] evalutes the declarations in [ds]
