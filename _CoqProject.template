@@ -99,6 +99,7 @@ theories/lang/bi/fractional.v
 theories/lang/bi/derived_laws.v
 theories/lang/bi/embedding.v
 theories/lang/bi/monpred.v
+theories/lang/bi/weakly_objective.v
 theories/lang/bi/invariants.v
 theories/lang/bi/own.v
 theories/lang/bi/na_invariants.v
