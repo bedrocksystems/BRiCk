@@ -62,6 +62,10 @@ theories/prelude/finite.v
 theories/prelude/fin_map_dom.v
 theories/prelude/functions.v
 
+theories/prelude/tactics/telescopes.v
+theories/prelude/tactics/proper.v
+
+
 # coq-elpi prelude
 theories/prelude/elpi/basis.v
 
