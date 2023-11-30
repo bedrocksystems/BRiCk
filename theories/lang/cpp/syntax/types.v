@@ -1356,7 +1356,7 @@ Definition is_value_type (t : type) : bool :=
   | Tmember_pointer _ _
   (**
   NOTE: In C++ the the underlying type of an enumeration must be an
-  integral type. This definition presuppposes [t] a valid enumeration.
+  integral type. This definition pre-supposes [t] a valid enumeration.
   *)
   | Tenum _ (* enum types are value types *)
   | Tvoid => true
