@@ -8,6 +8,7 @@
 
 From stdpp Require Export prelude countable.
 From bedrock.prelude Require Export stdpp_ssreflect tc_cond_type notations.
+Require bedrock.prelude.tactics.base_dbs. (* For [br_opacity]; import not required. *)
 
 #[global] Hint Opaque elem_of : typeclass_instances.
 
