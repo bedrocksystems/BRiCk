@@ -24,7 +24,7 @@ mlock Definition primR `{Σ : cpp_logic, σ : genv} (ty : type) (q : cQp.t) (v :
   TODO: In light of [has_type_drop_qualifiers], there's no need for
   [drop_qualifiers].
   *)
-  pureR (has_type v (drop_qualifiers ty)) **
+  pureR (has_type v ty) **
   tptsto_fuzzyR ty q v.
 #[global] Arguments primR {_ _ _} _ _ _ : assert.	(* mlock bug *)
 
@@ -51,7 +51,7 @@ Section with_cpp.
   Lemma _at_primR (p : ptr) ty q v :
     p |-> primR ty q v -|-
       [| ~~ is_raw v |] **
-      has_type v (drop_qualifiers ty) **
+      has_type v ty **
       p |-> tptsto_fuzzyR ty q v.
   Proof.
     by rewrite primR.unlock !_at_sep _at_only_provable _at_pureR.

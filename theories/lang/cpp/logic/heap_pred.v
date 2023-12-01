@@ -83,7 +83,7 @@ Section with_cpp.
     split'; try apply primR_tptsto_fuzzyR.
     rewrite primR.unlock. iIntros "R".
     iDestruct (observe_elim (pureR $ has_type_or_undef _ _) with "R") as "($ & #T)".
-    rewrite has_type_or_undef_unfold -has_type_drop_qualifiers.
+    rewrite has_type_or_undef_unfold.
     rewrite pureR_or pureR_only_provable. iDestruct "T" as "[$ | ->]".
     by destruct v. done.
   Qed.
