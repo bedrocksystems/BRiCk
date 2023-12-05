@@ -45,13 +45,13 @@ Module Type DFRAC_AGREE.
 
   (** Predicates *)
 
-  Parameter own : ∀ {A} `{Σ : cpp_logic, !DFRAC_AGREE.G A Σ}
+  Parameter own : ∀ {A} {thread_info : biIndex} {Σ} `{!DFRAC_AGREE.G A Σ}
     (g : gname A) (q : Qp) (x : A), mpred.
-  Parameter know : ∀ {A} `{Σ : cpp_logic, !DFRAC_AGREE.G A Σ}
+  Parameter know : ∀ {A} {thread_info : biIndex} {Σ} `{!DFRAC_AGREE.G A Σ}
     (g : gname A) (x : A), mpred.
 
   Section properties.
-    Context {A} `{Σ : cpp_logic, !DFRAC_AGREE.G A Σ}.
+    Context {A} {thread_info : biIndex} {Σ} `{!DFRAC_AGREE.G A Σ}.
 
     (** Structure *)
 
@@ -119,7 +119,7 @@ Module dfrac_agree : DFRAC_AGREE.
   (** Predicates *)
 
   Section defs.
-    Context {A} `{Σ : cpp_logic, !dfrac_agree.G A Σ}.
+    Context {A} {thread_info : biIndex} {Σ} `{!dfrac_agree.G A Σ}.
 
     Definition know (g : gname A) (x : A) : mpred :=
       own g (to_dfrac_agree (A:=leibnizO A) DfracDiscarded x).
