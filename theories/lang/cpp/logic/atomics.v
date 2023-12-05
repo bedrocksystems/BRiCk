@@ -16,7 +16,7 @@ Export bedrock.lang.bi.atomic1.
 #[local] Open Scope Z_scope.
 
 Section with_Σ.
-  Context `{cpp_logic thread_info} {resolve : genv} (tu : translation_unit).
+  Context `{cpp_logic} {resolve : genv} (tu : translation_unit).
   Variables (M : coPset) (ρ : region).
 
   Implicit Type (Q : val → mpred). (* atomics do not throw *)

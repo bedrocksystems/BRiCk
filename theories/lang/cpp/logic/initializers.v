@@ -63,7 +63,7 @@ Definition default_initialize_array `{Σ : cpp_logic, σ : genv} :
     (tu : translation_unit) (ty : exprtype) (len : N) (p : ptr)
     (Q : FreeTemps -> epred), mpred :=
   Cbn (Reduce (default_initialize_array_body true)).
-#[global] Arguments default_initialize_array {_ _ _} _ _ _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments default_initialize_array {_ _ _ _} _ _ _ _ _ _%I : assert.	(* mlock bug *)
 
 (**
 [default_initialize tu ty p Q] default initializes the memory at [p]
@@ -126,7 +126,7 @@ Definition default_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_uni
     : ∀ (ty : exprtype) (p : ptr) (Q : FreeTemps -> epred), mpred :=
   fix default_initialize ty p Q {struct ty} :=
   Cbn (Reduce (default_initialize_body true) default_initialize tu ty p Q).
-#[global] Arguments default_initialize {_ _ _} _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments default_initialize {_ _ _ _} _ _ _ _%I : assert.	(* mlock bug *)
 
 Section unfold.
   Context `{Σ : cpp_logic, σ : genv}.
@@ -238,7 +238,7 @@ Section default_initialize.
     - apply default_initialize_shift.
   Qed.
 
-  #[global] Instance: Params (@default_initialize) 6 := {}.
+  #[global] Instance: Params (@default_initialize) 7 := {}.
   #[local] Notation INIT R := (
     ∀ tu ty this,
     Proper (pointwise_relation _ R ==> R) (default_initialize tu ty this)
@@ -254,7 +254,7 @@ Section default_initialize.
   #[global] Instance default_initialize_proper : INIT equiv.
   Proof. intros * Q1 Q2 HQ. by split'; apply default_initialize_mono=>free; rewrite HQ. Qed.
 
-  #[global] Instance: Params (@default_initialize_array) 8 := {}.
+  #[global] Instance: Params (@default_initialize_array) 9 := {}.
   #[local] Notation ARRAY R := (
     ∀ tu ty sz p,
     Proper (pointwise_relation _ R ==> R)
@@ -422,13 +422,13 @@ Definition wp_initialize_unqualified `{Σ : cpp_logic, σ : genv} :
     (cv : type_qualifiers) (ty : decltype)
     (addr : ptr) (init : Expr) (Q : FreeTemps -> epred), mpred :=
   Cbn (Reduce (wp_initialize_unqualified_body fupd_compatible)).
-#[global] Arguments wp_initialize_unqualified {_ _ _} _ _ _ _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments wp_initialize_unqualified {_ _ _ _} _ _ _ _ _ _ _%I : assert.	(* mlock bug *)
 
 Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ : region)
     (qty : decltype) (addr : ptr) (init : Expr) (Q : FreeTemps -> epred) : mpred :=
   qual_norm (wp_initialize_unqualified tu ρ) qty addr init Q.
 #[global] Hint Opaque wp_initialize : typeclass_instances.
-#[global] Arguments wp_initialize {_ _ _} _ _ !_ _ _ _ / : assert.
+#[global] Arguments wp_initialize {_ _ _ _} _ _ !_ _ _ _ / : assert.
 (* END wp_initialize *)
 
 Definition heap_type_of (t : type) : type :=
@@ -495,7 +495,7 @@ Definition wpi `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ : region
   letI* := interp tu free in
   Q.
 #[global] Hint Opaque wpi : typeclass_instances.
-#[global] Arguments wpi {_ _ _} _ _ _ _ _ _ / : assert.
+#[global] Arguments wpi {_ _ _ _} _ _ _ _ _ _ / : assert.
 
 (*
 All framing lemmas *should* work with [genv] weakening, but that
@@ -505,7 +505,7 @@ right now. So, for the time being, we prove [_frame] lemmas without
 *)
 
 Section wp_initialize.
-  Context `{Σ : cpp_logic thread_info, σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (Q : FreeTemps -> epred).
 
   (** [wp_initialize_unqualified] *)
@@ -673,7 +673,7 @@ Section wp_initialize.
   *)
   Qed.
 
-  #[global] Instance: Params (@wp_initialize_unqualified) 9 := {}.
+  #[global] Instance: Params (@wp_initialize_unqualified) 10 := {}.
   #[local] Notation BODY R := (
     ∀ tu ρ cv ty obj init,
     Proper (pointwise_relation _ R ==> R) (wp_initialize_unqualified tu ρ cv ty obj init)
@@ -795,7 +795,7 @@ Section wp_initialize.
   *)
   Qed.
 
-  #[global] Instance: Params (@wp_initialize) 8 := {}.
+  #[global] Instance: Params (@wp_initialize) 9 := {}.
   #[local] Notation INIT R := (
     ∀ tu ρ ty obj init,
     Proper (pointwise_relation _ R ==> R) (wp_initialize tu ρ ty obj init)
@@ -917,7 +917,7 @@ Section wp_initialize.
   *)
   Qed.
 
-  #[global] Instance: Params (@wpi) 8 := {}.
+  #[global] Instance: Params (@wpi) 9 := {}.
   #[local] Notation WPI R := (
     ∀ tu ρ cls this e,
     Proper (R ==> R) (wpi tu ρ cls this e)

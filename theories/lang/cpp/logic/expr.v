@@ -24,7 +24,7 @@ Require Import bedrock.lang.bi.errors.
 
 Module Type Expr.
   (* Needed for [Unfold wp_test] *)
-  #[local] Arguments wp_test [_ _ _] _ _ _.
+  #[local] Arguments wp_test [_ _ _ _] _ _ _.
   #[local] Open Scope free_scope.
 
   (**
@@ -43,7 +43,7 @@ Module Type Expr.
    *)
 
   Section with_resolve.
-    Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+    Context `{Σ : cpp_logic} {resolve:genv}.
     Variables (tu : translation_unit) (ρ : region).
 
     #[local] Notation wp_lval := (wp_lval tu ρ).
@@ -1492,7 +1492,7 @@ Module Type Expr.
 
   (* `Earrayloop_init` needs to extend the region, so we need to start a new section. *)
   Section with_resolve__arrayloop.
-    Context `{Σ : cpp_logic thread_info} {σ : genv}.
+    Context `{Σ : cpp_logic} {σ : genv}.
     Variable (tu : translation_unit).
 
     #[local] Notation interp := (interp tu).

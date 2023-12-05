@@ -77,7 +77,7 @@ Definition SMethod `{Σ : cpp_logic} {cc : calling_conv} {ar : function_arity}
   SMethodOptCast (cc:=cc) class None qual ret targs (ar:=ar) PQ.
 
 Section with_cpp.
-  Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+  Context `{Σ : cpp_logic} {resolve:genv}.
 
   #[local] Notation _base := (o_base resolve).
   #[local] Notation _derived := (o_derived resolve).

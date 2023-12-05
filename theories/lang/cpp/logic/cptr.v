@@ -251,9 +251,9 @@ Section defs.
   Definition fs_entails_fupd (P Q : function_spec) : Prop := |-- fs_impl_fupd P Q.
 End defs.
 
-#[global] Instance: Params (@cptrR) 3 := {}.
+#[global] Instance: Params (@cptrR) 4 := {}.
 
-#[global] Arguments cptrR {_ Σ resolve} _ : rename.
+#[global] Arguments cptrR {_ _ Σ resolve} _ : rename.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {resolve : genv}.
@@ -332,7 +332,7 @@ Section with_cpp.
   Proof. repeat intro. by rewrite -cptrR_mono_fupd. Qed.
 End with_cpp.
 
-#[global] Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} p s :
+#[global] Instance Persistent_spec `{cpp_logic} {resolve:genv} p s :
   Persistent (_at p (cptrR s)) := _.
-#[global] Instance Affine_spec `{Σ:cpp_logic ti} {resolve:genv} p s :
+#[global] Instance Affine_spec `{cpp_logic} {resolve:genv} p s :
   Affine (_at p (cptrR s)) := _.

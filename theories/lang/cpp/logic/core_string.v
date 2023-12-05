@@ -30,7 +30,7 @@ mlock
 Definition string_bytesR `{Σ : cpp_logic} {σ : genv} (cty : char_type) (q : cQp.t) (ls : list N) : Rep :=
   let ty := Tchar_ cty in
   arrayR ty (λ c, primR ty q (N_to_char cty c)) (ls ++ [0%N]).
-#[global] Arguments string_bytesR {_ _ _} _ _ _ : assert.
+#[global] Arguments string_bytesR {_ _ _ _} _ _ _ : assert.
 
 (* Arguments char_type.bitsN !_ /.
 Arguments char_type.bytesN !_ /. *)
