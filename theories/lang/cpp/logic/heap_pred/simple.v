@@ -16,18 +16,18 @@ mlock
 Definition derivationR `{Σ : cpp_logic} {σ : genv} (cls : globname) (mdc : list globname)
   (q : cQp.t) : Rep :=
     as_Rep (mdc_path cls mdc q).
-#[global] Arguments derivationR {_ Σ σ} _ _ _.
+#[global] Arguments derivationR {_ _ Σ σ} _ _ _.
 
 mlock
 Definition alignedR `{Σ : cpp_logic} (al : N) : Rep :=
   as_Rep (λ p, [| aligned_ptr al p |]).
-#[global] Arguments alignedR {_ Σ} _.
+#[global] Arguments alignedR {_ _ Σ} _.
 
 (* [Rep] version of (to be deprecated) [aligned_ptr_ty] *)
 mlock
 Definition aligned_ofR `{Σ : cpp_logic} {σ} (ty : type) : Rep :=
   ∃ align : N, [| align_of ty = Some align |] ** alignedR align.
-#[global] Arguments aligned_ofR {_ Σ σ} _.
+#[global] Arguments aligned_ofR {_ _ Σ σ} _.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
