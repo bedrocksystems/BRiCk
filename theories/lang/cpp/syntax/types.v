@@ -3,7 +3,6 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-
 From bedrock.prelude.elpi Require Import derive.
 From bedrock.prelude Require Import base bool list.
 Require Export bedrock.lang.cpp.arith.types.
@@ -115,7 +114,7 @@ Variant calling_conv : Set :=
 
 (* in almost all contexts, we are going to use [CC_C], so we're going to make
    that the default. Clients interested in specifying another calling convention
-   should write, e.g., [Tfunction (cc:=CC_PreserveAll) ..] to specify the
+   should write, e.g., [Tfunction (cc:=CC_RegCall) ..] to specify the
    calling convention explicitly.
  *)
 Existing Class calling_conv.
@@ -514,20 +513,21 @@ Definition Qconst_volatile : type -> type :=
   Tqualified QCV.
 Definition Qconst : type -> type :=
   Tqualified QC.
-Definition Qmut_volatile : type -> type :=
+Definition Qvolatile : type -> type :=
   Tqualified QV.
+Notation Qmut_volatile := Qvolatile (only parsing).
 Definition Qmut : type -> type :=
   Tqualified QM.
 
 #[global] Hint Opaque
-  Qconst_volatile Qconst Qmut_volatile Qmut
+  Qconst_volatile Qconst Qvolatile Qmut
 : typeclass_instances.
 
 #[global] Instance Qconst_volatile_proper : Proper (equiv ==> equiv) Qconst_volatile.
 Proof. solve_proper. Qed.
 #[global] Instance Qconst_proper : Proper (equiv ==> equiv) Qconst.
 Proof. solve_proper. Qed.
-#[global] Instance Qmut_volatile_proper : Proper (equiv ==> equiv) Qmut_volatile.
+#[global] Instance Qvolatile_proper : Proper (equiv ==> equiv) Qvolatile.
 Proof. solve_proper. Qed.
 #[global] Instance Qmut_proper : Proper (equiv ==> equiv) Qmut.
 Proof. solve_proper. Qed.
@@ -559,6 +559,19 @@ Section qual_norm.
     qual_norm' QM.
   #[global] Hint Opaque qual_norm : typeclass_instances.
 End qual_norm.
+
+Lemma qual_norm'_only_type {T} (f : _ -> T) t : forall q1 q2,
+    qual_norm' (fun (_ : type_qualifiers) t => f t) q1 t
+    = qual_norm' (fun (_ : type_qualifiers) t => f t) q2 t.
+Proof. induction t; simpl; auto. Qed.
+
+Lemma qual_norm_map {T U} (f : T -> U) g ty :
+  f (qual_norm g ty) = qual_norm (fun cv t => f (g cv t)) ty.
+Proof.
+  unfold qual_norm.
+  generalize QM.
+  induction ty; simpl; intros; eauto.
+Qed.
 
 Definition decompose_type : type -> type_qualifiers * type :=
   qual_norm (fun q t => (q, t)).
@@ -759,7 +772,7 @@ Proof.
   by rewrite left_id_L.
 Qed.
 
-(** [drop_qualifeirs] *)
+(** [drop_qualifiers] *)
 
 Lemma is_qualified_drop_qualifiers ty : ~~ is_qualified (drop_qualifiers ty).
 Proof. by induction ty. Qed.
@@ -1356,7 +1369,7 @@ Definition is_value_type (t : type) : bool :=
   | Tmember_pointer _ _
   (**
   NOTE: In C++ the the underlying type of an enumeration must be an
-  integral type. This definition presuppposes [t] a valid enumeration.
+  integral type. This definition pre-supposes [t] a valid enumeration.
   *)
   | Tenum _ (* enum types are value types *)
   | Tvoid => true
@@ -1389,6 +1402,36 @@ Fixpoint zero_sized_array ty : bool :=
                      | _ => false
                      end) ty.
 #[global] Arguments zero_sized_array !_ /.
+
+Lemma zero_sized_array_unfold t : forall q,
+    zero_sized_array t =
+    qual_norm' (fun _ t =>
+                  match t with
+                  | Tarray t n => if bool_decide (n = 0%N) then true else zero_sized_array t
+                  | _ => false
+                  end) q t.
+Proof.
+  induction t; simpl; intros; auto.
+  { rewrite qual_norm_unfold. rewrite /qual_norm/=.
+    rewrite -IHt. rewrite {2}/zero_sized_array.
+    destruct t0; auto. }
+Qed.
+Lemma zero_sized_array_erase_qualifiers t :
+  zero_sized_array t = zero_sized_array (erase_qualifiers t).
+Proof.
+  induction t; simpl; auto.
+  { rewrite !qual_norm_unfold -IHt. done. }
+  { rewrite qual_norm_unfold.
+    rewrite -IHt.
+    erewrite zero_sized_array_unfold. done. }
+Qed.
+Lemma zero_sized_array_qual ty : forall t,
+    zero_sized_array ty = zero_sized_array (Tqualified t ty).
+Proof.
+  intros. rewrite (zero_sized_array_erase_qualifiers (Tqualified _ _)) /=.
+  apply zero_sized_array_erase_qualifiers.
+Qed.
+
 
 (**
 [is_reference_type t] returns [true] if [t] is a (possibly
@@ -1491,6 +1534,59 @@ Lemma aggregate_type_non_ref ty : is_aggregate_type ty -> ~~ is_reference_type t
 Proof. by induction ty. Qed.
 Lemma aggregate_type_non_val ty : is_aggregate_type ty -> ~~ is_value_type ty.
 Proof. by induction ty. Qed.
+
+Lemma decompose_type_erase_qualifiers ty
+  : decompose_type (erase_qualifiers ty) = (QM, erase_qualifiers ty).
+Proof.
+  induction ty; simpl; intros; eauto.
+Qed.
+
+(** ** Heap Types
+
+    The C++ memory is typed, but loosely so with respect to cv-qualifiers.
+    For example, the C++ runtime invariant does *not* guarantee that a value
+    stored in a memory cell of type <<int*>> points to a memory cell that is
+    mutable. Generally, this will be true, but constructs such as
+    <<const_cast<>>> and casting through pointers explicitly circumvent this.
+    To track this, the C++ abstract machine tracks locations with "heap types"
+    which are [decltype]s with all qualifiers erased and top-level references
+    normalized to [Tref].
+
+    Concrete examples of the above are:
+    - <<const int x = 1>>           -- [tptsto Tint (cQp.m 1) _ 1]
+    - <<const int* x = nullptr>>    -- [tptsto (Tptr Tint) (cQp.m 1) _ nullptr]
+    - <<int* const x = nullptr>>    -- [tptsto (Tptr Tint) (cQp.c 1) _ nullptr]
+    - <<volatile int x = 0>>        -- not represted using [tptsto]
+    - <<volatile int* p = nullptr>> -- [tptsto (Tptr Tint) (cQp.m 1) _ nullptr]
+    - <<int&& r = ..>>              -- [tptsto (Tref Tint) (cQp.m 1) _ _]
+
+    TODO: this probably belongs in [syntax/types.v].
+ *)
+Definition heap_type : Set := type.
+Definition is_heap_type (t : type) : bool :=
+     bool_decide (t = erase_qualifiers t)
+  && (is_value_type t || match t with
+                        | Tref _ => true
+                        | _ => false
+                        end).
+
+(* get the [heap_type] representation of the given type *)
+Definition to_heap_type (t : type) : heap_type :=
+  match erase_qualifiers t with
+  | Trv_ref t => Tref t
+  | t => t
+  end.
+Lemma to_heap_type_qualified cv t : to_heap_type (Tqualified cv t) = to_heap_type t.
+Proof. done. Qed.
+
+Lemma heap_type_not_qualified cv t : is_heap_type (Tqualified cv t) -> False.
+Proof.
+  rewrite /is_heap_type. case_bool_decide => /=; eauto.
+  exfalso; eapply unqual_erase_qualifiers; eauto.
+Qed.
+
+Definition is_volatile : type -> bool :=
+  qual_norm (fun cv _ => q_volatile cv).
 
 (** ** Notation for character types *)
 Coercion Tchar_ : char_type.t >-> type.

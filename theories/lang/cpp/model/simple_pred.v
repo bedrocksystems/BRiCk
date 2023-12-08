@@ -920,7 +920,7 @@ Module SimpleCPP.
     Proof. rewrite /mdc_path. eauto. Qed.
 
     Definition tptsto {σ : genv} (t : type) (q : cQp.t) (p : ptr) (v : val) : mpred :=
-      [| p <> nullptr |] **
+      [| p <> nullptr |] ** [| is_heap_type t |] **
       Exists (oa : option addr),
         type_ptr t p ** (* use the appropriate ghost state instead *)
         mem_inj_own p oa **
@@ -928,6 +928,11 @@ Module SimpleCPP.
     (* TODO: [tptsto] should not include [type_ptr] wholesale, but its
     pieces in the new model, replacing [mem_inj_own], and [tptsto_type_ptr]
     should be proved properly. *)
+
+    #[global] Instance tptsto_valid_type
+      : forall {σ:genv} (t : type) (q : cQp.t) (a : ptr) (v : val),
+        Observe [| is_heap_type t |] (tptsto t q a v).
+    Proof. rewrite /tptsto; refine _. Qed.
 
     #[global] Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
         Observe (type_ptr ty p) (tptsto ty q p v) := _.
@@ -951,9 +956,11 @@ Module SimpleCPP.
     Proof.
       rewrite /tptsto /oaddr_encodes /addr_encodes.
       intros ?? Hσ ??-> ??-> ??-> ??->.
-      iIntros "(%Hnonnull & H)";
+      iIntros "(%Hnonnull & %Htype & H)";
         iDestruct "H" as (oa) "(Htype_ptr & Hmem_inj_own & Hoa)".
-      iSplitR; [by iPureIntro |]; iExists oa; iFrame "Hmem_inj_own".
+      iSplitR; first eauto.
+      iSplitR; first eauto.
+      iExists oa; iFrame "Hmem_inj_own".
       iSplitL "Htype_ptr"; first by rewrite Hσ.
       iStopProof; destruct oa; by solve_proper.
     Qed.
@@ -982,8 +989,8 @@ Module SimpleCPP.
       Observe2 [| v1 = v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2).
     Proof.
       intros; apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "H1".
-      iDestruct 1 as (Hnn2 oa2) "H2".
+      iDestruct 1 as (Hnn1 Ht1 oa1) "H1".
+      iDestruct 1 as (Hnn2 Ht2 oa2) "H2".
       iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
       destruct oa2; [iApply (observe_2 with "H1 H2") |].
       iDestruct (observe_2 [| v1 = v2 |] with "H1 H2") as %->.

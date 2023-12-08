@@ -44,9 +44,11 @@ Module Type RAW_BYTES.
       The following might help but will likely require other
       axioms which reflect boundedness or round-trip properties.
 
+    [[
     Parameter of_raw_byte : raw_byte -> N.
     Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
     #[global] Existing Instance inj_of_raw_byte.
+    ]]
   *)
 End RAW_BYTES.
 
@@ -476,7 +478,7 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     Axiom has_type_prop_bool : forall v,
         has_type_prop v Tbool <-> exists b, v = Vbool b.
 
-    (* NOTE: even if an enumeration's underlying type is `unsigned int` (which contains
+    (* NOTE: even if an enumeration's underlying type is <<unsigned char>> (which contains
        raw values), raw values are not well typed at the enumeration type. *)
     Axiom has_type_prop_enum : forall v nm,
         has_type_prop v (Tenum nm) <->

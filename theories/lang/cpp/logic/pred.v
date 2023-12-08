@@ -203,6 +203,8 @@ Module Type CPP_LOGIC
       #[global] Declare Instance reference_to_knowledge : Knowledge2 reference_to.
       #[global] Declare Instance reference_to_timeless : Timeless2 reference_to.
 
+      (* NOTE: this is almost derivable from [reference_to_intro] and
+         [reference_to_elim] except for the issue with non-standard types. *)
       Axiom reference_to_erase : forall ty p,
           reference_to ty p -|- reference_to (erase_qualifiers ty) p.
 
@@ -250,8 +252,8 @@ Module Type CPP_LOGIC
       Timeless (provides_storage storage_ptr obj_ptr ty).
     #[global] Existing Instances provides_storage_persistent provides_storage_affine provides_storage_timeless.
 
-    (**
-    Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:
+    (** *** Typed points-to predicate.
+    Fact [tptsto t q p v] asserts the following things:
     1. Pointer [p] points to value [v].
     2. We have fractional ownership [q] (in the separation logic sense).
     3. Pointer [p] points to a memory location with C++ type [t].
@@ -259,10 +261,21 @@ Module Type CPP_LOGIC
     1. Value [v] need not be initialized.
     2. Hence, [v] might not satisfy [has_type_prop t v].
 
+    [tptsto] is only used to represent memory cells that contain
+    values representable as a single [val]. This includes:
+    - value types (see [is_value_type]), and
+    - reference types. Note that all gl-values, i.e. x-values ([Trv_ref])
+      and l-values ([Tref]), are represented using [Tref].
+    These requirements justify the axiom [tptsto_valid_type].
+
     We use this predicate both for pointers to actual memory and for pointers to
     C++ locations that are not stored in memory (as an optimization).
     *)
-    Parameter tptsto : forall {σ:genv} (t : type) (q : cQp.t) (a : ptr) (v : val), mpred.
+    Parameter tptsto : forall {σ:genv} (t : heap_type) (q : cQp.t) (a : ptr) (v : val), mpred.
+
+    #[global] Declare Instance tptsto_valid_type
+      : forall {σ:genv} (t : heap_type) (q : cQp.t) (a : ptr) (v : val),
+        Observe [| is_heap_type t |] (tptsto t q a v).
 
     Axiom tptsto_nonnull : forall {σ} ty q a,
       @tptsto σ ty q nullptr a |-- False.
@@ -388,13 +401,18 @@ Module Type CPP_LOGIC
     Parameter method_at : genv -> translation_unit -> Method -> ptr -> mpred.
     Parameter ctor_at : genv -> translation_unit -> Ctor -> ptr -> mpred.
     Parameter dtor_at : genv -> translation_unit -> Dtor -> ptr -> mpred.
+    #[global] Arguments code_at {σ} tu _ _.
+    #[global] Arguments method_at {σ} tu _ _.
+    #[global] Arguments ctor_at {σ} tu _ _.
+    #[global] Arguments dtor_at {σ} tu _ _.
+
 
     Section with_genv.
       Context {σ : genv} (tu : translation_unit).
-      #[local] Notation code_at := (code_at σ tu) (only parsing).
-      #[local] Notation method_at := (method_at σ tu) (only parsing).
-      #[local] Notation ctor_at := (ctor_at σ tu) (only parsing).
-      #[local] Notation dtor_at := (dtor_at σ tu) (only parsing).
+      #[local] Notation code_at := (@code_at σ tu) (only parsing).
+      #[local] Notation method_at := (@method_at σ tu) (only parsing).
+      #[local] Notation ctor_at := (@ctor_at σ tu) (only parsing).
+      #[local] Notation dtor_at := (@dtor_at σ tu) (only parsing).
 
       Axiom code_at_persistent : forall f p, Persistent (code_at f p).
       Axiom code_at_affine : forall f p, Affine (code_at f p).
@@ -865,13 +883,13 @@ Declare Module Export VALID_PTR : VALID_PTR_AXIOMS PTRS_INTF_AXIOM VALUES_INTF_A
 Section valid_ptr_code.
   Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
 
-  Lemma code_at_valid   : forall f p,   code_at _ tu f p |-- valid_ptr p.
+  Lemma code_at_valid   : forall f p,   code_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite code_at_strict_valid; apply strict_valid_valid. Qed.
-  Lemma method_at_valid : forall f p, method_at _ tu f p |-- valid_ptr p.
+  Lemma method_at_valid : forall f p, method_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite method_at_strict_valid; apply strict_valid_valid. Qed.
-  Lemma ctor_at_valid   : forall f p,   ctor_at _ tu f p |-- valid_ptr p.
+  Lemma ctor_at_valid   : forall f p,   ctor_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite ctor_at_strict_valid; apply strict_valid_valid. Qed.
-  Lemma dtor_at_valid   : forall f p,   dtor_at _ tu f p |-- valid_ptr p.
+  Lemma dtor_at_valid   : forall f p,   dtor_at tu f p |-- valid_ptr p.
   Proof. intros. rewrite dtor_at_strict_valid; apply strict_valid_valid. Qed.
 End valid_ptr_code.
 

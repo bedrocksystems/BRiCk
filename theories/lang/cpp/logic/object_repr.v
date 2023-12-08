@@ -252,7 +252,7 @@ Section raw_type_ptrs.
         unshelve iDestruct (big_sepL_mono with "anyRs") as "H";
           [ by exact (fun _ v =>  <pers> type_ptr Tu8 (p .[Tu8 ! v]))%I
           | by intros k v Hlookup; cbn;
-            rewrite _at_offsetR anyR_type_ptr_observe _at_pers _at_type_ptrR
+            rewrite _at_offsetR anyR_type_ptr_observe // _at_pers _at_type_ptrR
           | ]; cbn.
         rewrite -big_sepL_persistently; iDestruct "H" as "#tptrs"; iModIntro.
 
