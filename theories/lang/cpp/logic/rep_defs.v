@@ -29,7 +29,7 @@ Proof. by move=>i i'. Qed.
 Lemma ptr_rel_elim (p1 p2 : ptr) : p1 ⊑ p2 → p1 = p2.
 Proof. done. Qed.
 
-Canonical Structure RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
+Canonical Structure RepI `{!cpp_logic thread_info Σ} := monPredI ptr_bi_index (@mpredI thread_info Σ).
 Definition Rep `{Σ : cpp_logic} : Type := RepI.
 Definition RepO `{Σ : cpp_logic} : ofe := RepI.
 
@@ -44,20 +44,20 @@ Section defs.
   Definition pureR (P : mpred) : Rep :=
     as_Rep (fun _ => P).
 End defs.
-#[global] Instance: Params (@as_Rep) 2 := {}.
-#[global] Instance: Params (@pureR) 2 := {}.
+#[global] Instance: Params (@as_Rep) 3 := {}.
+#[global] Instance: Params (@pureR) 3 := {}.
 
 mlock Definition at_aux `{Σ : cpp_logic} (p : ptr) (R : Rep) : mpred :=
   R.(monPred_at) p.
-#[global] Arguments at_aux {_ _} _ _ : assert.
+#[global] Arguments at_aux {_ _ _} _ _ : assert.
 
 mlock Definition offsetR_aux `{Σ : cpp_logic} (o : offset) (R : Rep) : Rep :=
   as_Rep (fun base => R.(monPred_at) (base ,, o)).
-#[global] Arguments offsetR_aux {_ _} _ _ : assert.
+#[global] Arguments offsetR_aux {_ _ _} _ _ : assert.
 
 (* TODO replace by the right instances. *)
-#[global] Instance: Params (@at_aux) 3 := {}.
-#[global] Instance: Params (@offsetR_aux) 3 := {}.
+#[global] Instance: Params (@at_aux) 4 := {}.
+#[global] Instance: Params (@offsetR_aux) 4 := {}.
 
 (* points-to *)
 #[projections(primitive=yes)]
@@ -67,10 +67,10 @@ Structure AT `{Σ : cpp_logic} : Type :=
   ; #[canonical=yes] AT_Result : Type
   (* We hardcode [Rep] as second argument to improve error messages *)
   ; #[canonical=no] AT_at : AT_LHS -> Rep -> AT_Result }.
-#[global] Arguments AT_at {AT} _ _ : rename, simpl never.
+#[global] Arguments AT_at {AT} _ _ _ : rename, simpl never.
 
 mlock Definition __at := @AT_at.
-#[global] Arguments __at {ti Σ AT} _ _ : rename.
+#[global] Arguments __at {ti Σ0 Σ AT} _ _ : rename.
 
 (** Since this will appear in inferred types, we choose meaningful names. This
 naming choice makes [ptrA] seem an alternative spelling of [ptr] (like [mpred]

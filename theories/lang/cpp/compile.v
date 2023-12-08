@@ -17,7 +17,7 @@ Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.cpp.semantics.
 
 Section with_Σ.
-  Context `{Σ : cpp_logic thread_info}.
+  Context `{Σ : cpp_logic}.
   Context {ti : thread_info} {σ : genv} (tu : translation_unit).
 
   (* BEGIN COMPILE SNIPPET *)

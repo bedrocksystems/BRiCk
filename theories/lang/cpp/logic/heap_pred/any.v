@@ -26,7 +26,7 @@ Definition primitiveR `{Σ : cpp_logic} {σ : genv} q ty :=
 mlock
 Definition anyR `{Σ : cpp_logic} {σ : genv} (ty : type) (q : cQp.t) : Rep :=
   everywhereR σ.(genv_tu) primitiveR q ty.
-#[global] Arguments anyR {_ Σ σ} _ _ : assert.
+#[global] Arguments anyR {_ _ Σ σ} _ _ : assert.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.

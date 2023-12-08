@@ -8,7 +8,7 @@ Require Import ZArith.
 From bedrock.lang.cpp Require Import notations code_notations logic logic.builtins.
 
 Module WpTestDefns.
-  Context (ti : biIndex) (Σ : cpp_logic ti) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)
+  Context (ti : biIndex) (_Σ : gFunctors) (Σ : cpp_logic ti _Σ) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)
           (v : val) (p p' p'' p''' this : ptr)
           (free : FreeTemps) (E : epred) (K : Kpred).
   #[local] Notation cv := (types.QC).
@@ -128,9 +128,9 @@ Module WpTestDefns.
       wp_initialize tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) ty p e Q.
 
     Definition NOTATION_wp_cond_nowrap T Q :=
-      @wp_cond _ _ _ tu (Rbind "foo" p (Remp (Some this) None ty)) T Q.
+      @wp_cond _ _ _ _ tu (Rbind "foo" p (Remp (Some this) None ty)) T Q.
     Definition NOTATION_wp_cond_wrap T Q :=
-      @wp_cond _ _ _ tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))))T Q.
+      @wp_cond _ _ _ _ tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))))T Q.
 
     (*
     Definition NOTATION_wp_call_nowrap ls Q :=

@@ -15,12 +15,12 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.bi.errors.
 
 Module Type Stmt.
-  #[local] Arguments wp_test [_ _ _] _ _ _.
+  #[local] Arguments wp_test [_ _ _ _] _ _ _.
 
   (** weakest pre-condition for statements
    *)
   Section with_resolver.
-    Context `{Σ : cpp_logic thread_info} {σ : genv}.
+    Context `{Σ : cpp_logic} {σ : genv}.
     Variable (tu : translation_unit).
 
     #[local] Notation wp := (wp tu).

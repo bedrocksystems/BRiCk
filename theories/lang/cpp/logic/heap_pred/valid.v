@@ -23,7 +23,7 @@ Section with_cpp.
   Definition svalidR := svalidR_aux.(unseal).
   Definition svalidR_eq : @svalidR = _ := svalidR_aux.(seal_eq).
 
-  Definition type_ptrR_def (t : type) : Rep := as_Rep (@type_ptr _ _ σ t).
+  Definition type_ptrR_def (t : type) : Rep := as_Rep (@type_ptr _ _ _ σ t).
   Definition type_ptrR_aux : seal (@type_ptrR_def). Proof. by eexists. Qed.
   Definition type_ptrR := type_ptrR_aux.(unseal).
   Definition type_ptrR_eq : @type_ptrR = _ := type_ptrR_aux.(seal_eq).

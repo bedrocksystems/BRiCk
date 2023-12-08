@@ -21,19 +21,19 @@ Implicit Types (σ : genv) (p : ptr) (o : offset).
 mlock
 Definition uninitR `{Σ : cpp_logic} {σ : genv} (ty : type) (q : cQp.t) : Rep :=
   tptstoR ty q Vundef.
-#[global] Arguments uninitR {thread_info Σ σ} ty q : rename.
+#[global] Arguments uninitR {thread_info _ Σ σ} ty q : rename.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   #[global] Instance uninitR_proper
-    : Proper (genv_eq ==> (=) ==> (=) ==> (≡)) (@uninitR _ Σ).
+    : Proper (genv_eq ==> (=) ==> (=) ==> (≡)) (@uninitR _ _ Σ).
   Proof.
     intros σ1 σ2 Hσ ??-> ??->     .
     rewrite uninitR.unlock. by setoid_rewrite Hσ.
   Qed.
   #[global] Instance uninitR_mono
-    : Proper (genv_leq ==> (=) ==> (=) ==> (⊢)) (@uninitR _ Σ).
+    : Proper (genv_leq ==> (=) ==> (=) ==> (⊢)) (@uninitR _ _ Σ).
   Proof.
     intros σ1 σ2 Hσ ??-> ??->     .
     rewrite uninitR.unlock. by setoid_rewrite Hσ.

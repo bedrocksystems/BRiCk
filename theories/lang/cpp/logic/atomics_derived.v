@@ -12,7 +12,7 @@ Require Import bedrock.lang.cpp.logic.atomics.
 Require Import iris.proofmode.proofmode.
 
 Section cmpxchg_derived.
-  Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+  Context `{Σ : cpp_logic} {resolve:genv}.
   Variables (M : coPset) (ρ : region).
 
   Local Notation wp_atom' := (wp_atom M) (only parsing).

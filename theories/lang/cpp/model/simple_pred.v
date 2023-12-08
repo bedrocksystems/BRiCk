@@ -109,14 +109,14 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bytesNat n.
   Proof. by rewrite /Z_to_bytes fmap_length _Z_to_bytes_length. Qed.
 
-  Record cpp_ghost : Type :=
+  Record cpp_ghost' : Type :=
     { heap_name : gname
     ; ghost_mem_name : gname
     ; mem_inj_name : gname
     ; blocks_name : gname
     ; code_name : gname
     }.
-  Definition _cpp_ghost := cpp_ghost.
+  Definition _cpp_ghost := cpp_ghost'.
 
   Record cppG' (Σ : gFunctors) : Type :=
     { heapGS : inG Σ (gmapR addr (cfractionalR runtime_val'))
@@ -139,38 +139,34 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; has_cinv' : cinvG Σ
     }.
 
-  Definition cppG : gFunctors -> Type := cppG'.
-  Existing Class cppG.
-  (* Used to be needed to prevent turning instances of cppG' into cppG and risking loops in this file;
-  should not hurt now. *)
-  #[global] Typeclasses Opaque cppG.
+  Definition cppPreG : gFunctors -> Type := cppG'.
 
-  #[global] Instance has_inv Σ : cppG Σ -> invGS Σ := @has_inv' Σ.
-  #[global] Instance has_cinv Σ : cppG Σ -> cinvG Σ := @has_cinv' Σ.
+  Definition has_inv Σ : cppPreG Σ -> invGS Σ := @has_inv' Σ.
+  Definition has_cinv Σ : cppPreG Σ -> cinvG Σ := @has_cinv' Σ.
 
   Include CPP_LOGIC_CLASS_MIXIN.
 
   Section with_cpp.
-    Context `{Σ : cpp_logic}.
+    Context `{!cpp_logic thread_info Σ}.
 
     Existing Class cppG'.
-    #[local] Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
+    #[local] Instance cppPreG_cppG' : cppG' Σ := cpp_has_cppG.
     #[local] Existing Instances heapGS ghost_memG mem_injG blocksG codeG.
 
     Definition heap_own (a : addr) q (r : runtime_val') : mpred :=
       own (A := gmapR addr (cfractionalR runtime_val'))
-      _ghost.(heap_name) {[ a := cfrac q r ]}.
+        cpp_ghost.(heap_name) {[ a := cfrac q r ]}.
     Definition ghost_mem_own (p : ptr) q (v : val) : mpred :=
       own (A := gmapR ptr (cfractionalR val))
-        _ghost.(ghost_mem_name) {[ p := cfrac q v ]}.
+        cpp_ghost.(ghost_mem_name) {[ p := cfrac q v ]}.
     Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (option addr))))
-        _ghost.(mem_inj_name) {[ p := to_agree va ]}.
+        cpp_ghost.(mem_inj_name) {[ p := to_agree va ]}.
     Definition blocks_own (p : ptr) (l h : Z) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (Z * Z))))
-        _ghost.(blocks_name) {[ p := to_agree (l, h) ]}.
+        cpp_ghost.(blocks_name) {[ p := to_agree (l, h) ]}.
     Definition _code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
-      own _ghost.(code_name)
+      own cpp_ghost.(code_name)
         (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
         {[ p := to_agree f ]}.
 
@@ -189,9 +185,10 @@ End SimpleCPP_BASE.
 Module Type SimpleCPP_VIRTUAL.
   Import SimpleCPP_BASE.
 
+  Parameter vbyte : forall `{!cpp_logic thread_info Σ}
+    (va : addr) (rv : runtime_val') (q : Qp), mpred.
   Section with_cpp.
-    Context `{Σ : cpp_logic}.
-    Parameter vbyte : forall (va : addr) (rv : runtime_val') (q : Qp), mpred.
+    Context `{cpp_logic}.
 
     Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
     Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
@@ -217,10 +214,11 @@ Module SimpleCPP.
 
   Definition runtime_val := runtime_val'.
 
-  Section with_cpp.
-    Context `{Σ : cpp_logic}.
+  Parameter live_alloc_id : forall `{!cpp_logic thread_info Σ}, alloc_id -> mpred.
 
-    Parameter live_alloc_id : alloc_id -> mpred.
+  Section with_cpp.
+    Context `{cpp_logic}.
+
     Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
     Global Existing Instance live_alloc_id_timeless.
 
@@ -483,7 +481,7 @@ Module SimpleCPP.
           | _ => 1	(* dummy for absurd case, but useful for length_encodes_pos. *)
           end.
       Proof.
-        rewrite /pure_encodes => H.
+        rewrite /pure_encodes => ?.
         destruct (erase_qualifiers _) => //;
           destruct v => //; destruct_and? => //;
           repeat case_decide => //;
@@ -843,7 +841,7 @@ Module SimpleCPP.
     Proof. iDestruct 1 as "(_ & $ & _)". Qed.
 
     Lemma type_ptr_size {σ} ty p : type_ptr ty p |-- [| is_Some (size_of σ ty) |].
-    Proof. iDestruct 1 as "(_ & _ & %H & _)"; eauto. Qed.
+    Proof. iDestruct 1 as "(_ & _ & % & _)"; eauto. Qed.
 
     (* See [o_sub_mono] in [simple_pointers.v] *)
     Axiom valid_ptr_o_sub_proper : forall {σ1 σ2 p ty}, genv_leq σ1 σ2 ->
@@ -852,8 +850,8 @@ Module SimpleCPP.
     Instance type_ptr_mono :
       Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@type_ptr).
     Proof.
-      rewrite /type_ptr /aligned_ptr_ty => σ1 σ2 Heq.
-      solve_proper_prepare. rewrite (valid_ptr_o_sub_proper Heq).
+      rewrite /type_ptr /aligned_ptr_ty => σ1 σ2 Heq x y ????; subst.
+      rewrite (valid_ptr_o_sub_proper Heq).
       do 3 f_equiv.
       - move=> -[align [HalTy Halp]]. eexists; split => //.
         move: Heq HalTy => /Proper_align_of /(_ y _ eq_refl).
@@ -939,17 +937,15 @@ Module SimpleCPP.
 
     (* TODO (JH): We shouldn't be axiomatizing this in our model in the long-run *)
     Axiom tptsto_live : forall {σ} ty (q : cQp.t) p v,
-      @tptsto σ ty q p v |-- live_ptr p ** True.
+      tptsto (σ:=σ) ty q p v |-- live_ptr p ** True.
 
     #[global] Instance tptsto_nonnull_obs {σ} ty q a :
-      Observe False (@tptsto σ ty q nullptr a).
+      Observe False (tptsto (σ:=σ) ty q nullptr a).
     Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
 
     Theorem tptsto_nonnull {σ} ty q a :
-      @tptsto σ ty q nullptr a |-- False.
+      tptsto (σ:=σ) ty q nullptr a |-- False.
     Proof. rewrite tptsto_nonnull_obs. iDestruct 1 as "[]". Qed.
-
-    #[global] Instance tptsto_params : Params (@tptsto) 2 := {}.
 
     #[global] Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
@@ -973,20 +969,20 @@ Module SimpleCPP.
     Qed.
 
     (* Relies on [oaddr_encodes_fractional] *)
-    #[global] Instance tptsto_cfractional {σ} ty : CFractional2 (@tptsto σ ty) := _.
+    #[global] Instance tptsto_cfractional {σ} ty : CFractional2 (tptsto (σ:=σ) ty) := _.
 
     #[global] Instance tptsto_timeless {σ} ty q p v :
-      Timeless (@tptsto σ ty q p v) := _.
+      Timeless (tptsto (σ:=σ) ty q p v) := _.
 
     #[global] Instance tptsto_nonvoid {σ} ty (q : cQp.t) p v :
-      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
+      Observe [| ty <> Tvoid |] (tptsto (σ:=σ) ty q p v) := _.
 
     #[global] Instance tptsto_cfrac_valid {σ} ty :
-      CFracValid2 (@tptsto σ ty).
+      CFracValid2 (tptsto (σ:=σ) ty).
     Proof. solve_cfrac_valid. Qed.
 
     #[global] Instance tptsto_agree σ ty q1 q2 p v1 v2 :
-      Observe2 [| v1 = v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2).
+      Observe2 [| v1 = v2 |] (tptsto (σ:=σ) ty q1 p v1) (tptsto (σ:=σ) ty q2 p v2).
     Proof.
       intros; apply: observe_2_intro_persistent.
       iDestruct 1 as (Hnn1 Ht1 oa1) "H1".
@@ -1031,7 +1027,17 @@ Module SimpleCPP.
       [| 0 <= Z.of_N va - z |]%Z **
       [| pinned_ptr_pure (Z.to_N (Z.of_N va - z)) p |].
 
-    Parameter exposed_aid : alloc_id -> mpred.
+  End with_cpp.
+
+    Parameter exposed_aid : forall `{!cpp_logic thread_info Σ}, alloc_id -> mpred.
+
+  Section with_cpp.
+    Context `{!cpp_logic thread_info Σ}.
+    (* strict validity (not past-the-end) *)
+    Notation strict_valid_ptr := (_valid_ptr Strict).
+    (* relaxed validity (past-the-end allowed) *)
+    Notation valid_ptr := (_valid_ptr Relaxed).
+
     Axiom exposed_aid_persistent : forall aid, Persistent (exposed_aid aid).
     Axiom exposed_aid_affine : forall aid, Affine (exposed_aid aid).
     Axiom exposed_aid_timeless : forall aid, Timeless (exposed_aid aid).
@@ -1125,7 +1131,7 @@ Module SimpleCPP.
        [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
      *)
     Lemma tptsto_ptr_congP_transport : forall {σ} q p1 p2 v,
-      ptr_congP σ p1 p2 |-- @tptsto σ Tu8 q p1 v -* @tptsto σ Tu8 q p2 v.
+      ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tu8 q p1 v -* tptsto (σ:=σ) Tu8 q p2 v.
     Proof. Admitted.
 
     Definition strict_valid_if_not_empty_array ty : ptr -> mpred :=
@@ -1262,9 +1268,9 @@ Module SimpleCPP.
       Proof.
         rewrite /has_type/=/reference_to has_type_prop_ref.
         rewrite /strict_valid_if_not_empty_array.
-        iIntros "[%H [#H $]]".
-        destruct H as [? [H?]].
-        inversion H; subst. case_match; iFrame "%#∗".
+        iIntros "[%Ht [#H $]]".
+        destruct Ht as [? [Ht?]].
+        inversion Ht; subst. case_match; iFrame "%#∗".
         by rewrite strict_valid_valid.
       Qed.
 
@@ -1308,25 +1314,37 @@ Module SimpleCPP.
     End with_genv.
 
     #[local] Theorem tptsto_welltyped : forall {σ} p ty q (v : val),
-      Observe (has_type_or_undef v ty) (@tptsto σ ty q p v).
+      Observe (has_type_or_undef v ty) (tptsto (σ:=σ) ty q p v).
     Proof. Admitted.
 
     (* TODO: the [Notation] connects to the wrong definition *)
     #[local] Theorem tptsto_reference_to : forall {σ} p ty q (v : val),
-      Observe (reference_to ty p) (@tptsto σ ty q p v).
+      Observe (reference_to ty p) (tptsto (σ:=σ) ty q p v).
     Proof. Admitted.
 
-    Axiom struct_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> mpred.
+  End with_cpp.
 
-    #[global] Declare Instance struct_padding_timeless :  Timeless4 (@struct_padding).
+    Axiom struct_padding : forall `{!cpp_logic thread_info Σ} {σ:genv},
+      ptr -> globname -> cQp.t -> mpred.
+
+  Section with_cpp.
+    Context `{cpp_logic}.
+
+    #[global] Declare Instance struct_padding_timeless {σ:genv} :  Timeless3 (struct_padding).
     #[global] Declare Instance struct_padding_fractional : forall {σ : genv} p cls, CFractional (struct_padding p cls).
     #[global] Declare Instance struct_padding_frac_valid :  forall {σ : genv} p cls, CFracValid0 (struct_padding p cls).
 
     #[global] Declare Instance struct_padding_type_ptr_observe : forall {σ : genv} p cls q, Observe (type_ptr (Tnamed cls) p) (struct_padding p cls q).
 
-    Axiom union_padding : forall {σ:genv}, ptr -> globname -> cQp.t -> option nat -> mpred.
+  End with_cpp.
 
-    #[global] Declare Instance union_padding_timeless :  Timeless5 (@union_padding).
+    Axiom union_padding : forall `{!cpp_logic thread_info Σ} {σ:genv},
+      ptr -> globname -> cQp.t -> option nat -> mpred.
+
+  Section with_cpp.
+    Context `{cpp_logic}.
+
+    #[global] Declare Instance union_padding_timeless {σ:genv} :  Timeless4 (union_padding).
     #[global] Declare Instance union_padding_fractional : forall {σ : genv} p cls, CFractional1 (union_padding p cls).
     #[global] Declare Instance union_padding_frac_valid :  forall {σ : genv} p cls, CFracValid1 (union_padding p cls).
 
@@ -1336,6 +1354,8 @@ Module SimpleCPP.
         Observe2 [| i = i' |] (union_padding p cls q i) (union_padding p cls q' i').
 
   End with_cpp.
+
+  #[global] Instance tptsto_params : Params (@tptsto) 3 := {}.
 
 End SimpleCPP.
 

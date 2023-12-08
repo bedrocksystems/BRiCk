@@ -449,8 +449,8 @@ Section raw_type_ptrs.
     Qed.
   End equivalences.
 End raw_type_ptrs.
-#[global] Arguments raw_type_ptrs {_ Σ σ} _ _.
-#[global] Arguments raw_type_ptrsR {_ Σ σ} _.
+#[global] Arguments raw_type_ptrs {_ _ Σ σ} _ _.
+#[global] Arguments raw_type_ptrsR {_ _ Σ σ} _.
 #[global] Hint Opaque raw_type_ptrs raw_type_ptrsR : typeclass_instances.
 
 Section primR_transport.

@@ -237,7 +237,7 @@ Definition xval_receive `{Σ : cpp_logic, σ : genv}
   underlying an inhabitant of a reference type.
   *)
   Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
-#[global] Arguments xval_receive {_ _ _} _ _ _ / : assert.
+#[global] Arguments xval_receive {_ _ _ _} _ _ _ / : assert.
 
 Definition lval_receive `{Σ : cpp_logic, σ : genv}
     (ty : exprtype) (res : ptr) (Q : ptr -> epred) : mpred :=
@@ -246,7 +246,7 @@ Definition lval_receive `{Σ : cpp_logic, σ : genv}
   underlying an inhabitant of a reference type.
   *)
   Exists p, res |-> primR (Tref (erase_qualifiers ty)) (cQp.mut 1) (Vref p) ** Q p.
-#[global] Arguments lval_receive {_ _ _} _ _ _ / : assert.
+#[global] Arguments lval_receive {_ _ _ _} _ _ _ / : assert.
 
 mlock Definition operand_receive `{Σ : cpp_logic, σ : genv}
     (ty : exprtype) (res : ptr) (Q : val -> epred) : mpred :=
@@ -254,12 +254,12 @@ mlock Definition operand_receive `{Σ : cpp_logic, σ : genv}
   let cv := qual_norm (fun cv _ => cv) ty in
   res |-> tptsto_fuzzyR (erase_qualifiers ty) (cQp.mk (q_const cv) 1) v **
   Q v.
-#[global] Arguments operand_receive {_ _ _} _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments operand_receive {_ _ _ _} _ _ _ : assert.	(* mlock bug *)
 
 Definition init_receive `{Σ : cpp_logic, σ : genv}
     (addr res : ptr) (Q : epred) : mpred :=
   [| addr = res |] -* Q.
-#[global] Arguments init_receive {_ _ _} _ _ _ / : assert.
+#[global] Arguments init_receive {_ _ _ _} _ _ _ / : assert.
 
 Section receive.
   Context `{Σ : cpp_logic, σ : genv}.

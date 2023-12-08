@@ -45,13 +45,13 @@ Module Type AUTH_FRAC.
 
   (** Predicates *)
 
-  Parameter auth : ∀ {A} `{Σ : cpp_logic, !AUTH_FRAC.G A Σ}
+  Parameter auth : ∀ {A} {thread_info : biIndex} {Σ} `{!AUTH_FRAC.G A Σ}
     (g : gname A) (q : Qp) (x : A), mpred.
-  Parameter frag : ∀ {A} `{Σ : cpp_logic, !AUTH_FRAC.G A Σ}
+  Parameter frag : ∀ {A} {thread_info : biIndex} {Σ} `{!AUTH_FRAC.G A Σ}
     (g : gname A) (q : Qp) (x : A), mpred.
 
   Section properties.
-    Context {A} `{Σ : cpp_logic, !AUTH_FRAC.G A Σ}.
+    Context {A} {thread_info : biIndex} {Σ} `{!AUTH_FRAC.G A Σ}.
 
     (** Structure *)
 
@@ -125,7 +125,7 @@ Module afrac : AUTH_FRAC.
   (** Predicates *)
 
   Section defs.
-    Context {A} `{Σ : cpp_logic, !afrac.G A Σ}.
+    Context {A} {thread_info : biIndex} {Σ} `{!afrac.G A Σ}.
 
     #[local] Notation to_agree := (to_agree (A:=leibnizO A)).
 

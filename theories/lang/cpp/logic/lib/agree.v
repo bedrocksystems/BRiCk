@@ -39,11 +39,11 @@ Module Type AGREE.
 
   (** Predicates *)
 
-  Parameter own : ∀ {A} `{Σ : cpp_logic, !AGREE.G A Σ}
+  Parameter own : ∀ {A} {thread_info : biIndex} {Σ} `{!AGREE.G A Σ}
     (g : gname A) (x : A), mpred.
 
   Section properties.
-    Context {A} `{Σ : cpp_logic, !AGREE.G A Σ}.
+    Context {A} {thread_info : biIndex} {Σ} `{!AGREE.G A Σ}.
 
     (** Structure *)
 
@@ -100,7 +100,7 @@ Module agree : AGREE.
   (** Predicates *)
 
   Section defs.
-    Context {A} `{Σ : cpp_logic, !agree.G A Σ}.
+    Context {A} {thread_info : biIndex} {Σ} `{!agree.G A Σ}.
 
     #[local] Notation to_agree := (to_agree (A:=leibnizO A)).
 

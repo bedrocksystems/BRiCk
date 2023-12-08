@@ -121,10 +121,10 @@ End wp_gen.
 mlock Definition wp_destroy_prim `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (cv : type_qualifiers) (ty : type) (this : ptr) (Q : epred) : mpred :=
   wp_destroy_prim_body tu cv ty this Q.
-#[global] Arguments wp_destroy_prim {_ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments wp_destroy_prim {_ _ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
 
 Section unfold.
-  Context `{Σ : cpp_logic thread_info, σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (Q : epred).
 
   Lemma wp_destroy_prim_unfold ty tu :
@@ -189,7 +189,7 @@ Section prim.
   reduce to entailments after [f_equiv] to instead reduce to
   equalities.
   *)
-  #[global] Instance: Params (@wp_destroy_prim) 7 := {}.
+  #[global] Instance: Params (@wp_destroy_prim) 8 := {}.
   #[local] Notation PROPER R := (
     ∀ tu cv ty p,
     Proper (R ==> R) (wp_destroy_prim tu cv ty p)
@@ -246,14 +246,14 @@ invoking the destructor [dtor] for type [ty] on [this].
 mlock Definition wp_destructor `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (ty : type) (dtor : ptr) (this : ptr) (Q : epred) : mpred :=
   wp_destructor_body tu ty dtor this Q.
-#[global] Arguments wp_destructor {_ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments wp_destructor {_ _ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
 
 (** Note: All we need in this file is [type_table_le]. *)
 #[local] Notation TULE tu tu' := (sub_module tu tu') (only parsing).
 #[local] Hint Resolve types_compat : core.
 
 Section unfold.
-  Context `{Σ : cpp_logic thread_info, σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (Q : epred).
 
   Lemma wp_destructor_unfold ty tu :
@@ -271,7 +271,7 @@ Ltac wp_destructor_unfold :=
   end.
 
 Section dtor.
-  Context `{Σ : cpp_logic thread_info, σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (Q : epred).
 
   Lemma wp_destructor_intro tu ty dtor this Q :
@@ -284,7 +284,7 @@ Section dtor.
     Reduce (wp_destructor_body tu ty dtor this Q).
   Proof. by wp_destructor_unfold. Qed.
 
-  #[global] Instance: Params (@wp_destructor) 7 := {}.
+  #[global] Instance: Params (@wp_destructor) 8 := {}.
   #[local] Notation PROPER R := (
     ∀ tu ty dtor this,
     Proper (R ==> R) (wp_destructor tu ty dtor this)
@@ -359,10 +359,10 @@ End dtor.
 mlock Definition wp_destroy_named `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (cls : globname) (this : ptr) (Q : epred) : mpred :=
   wp_destroy_named_body tu cls this Q.
-#[global] Arguments wp_destroy_named {_ _ _} _ _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments wp_destroy_named {_ _ _ _} _ _ _ _ : assert.	(* mlock bug *)
 
 Section unfold.
-  Context `{Σ : cpp_logic thread_info, σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (Q : epred).
 
   Lemma wp_destroy_named_unfold cls tu :
@@ -397,7 +397,7 @@ Proof. intros -><-. by iIntros "? >?". Qed.
 #[local] Hint Resolve bi.False_elim : core.
 
 Section named.
-  Context `{Σ : cpp_logic thread_info, σ : genv}.
+  Context `{Σ : cpp_logic, σ : genv}.
   Implicit Types (Q : epred).
 
   Let wp_destroy_named_intro_body (tu : translation_unit)
@@ -442,7 +442,7 @@ Section named.
     |-- wp_destructor tu (Tnamed cls) (_global u.(u_dtor)) this Q.
   Proof. by rewrite wp_destroy_named_elim=>->. Qed.
 
-  #[global] Instance: Params (@wp_destroy_named) 6 := {}.
+  #[global] Instance: Params (@wp_destroy_named) 7 := {}.
   #[local] Notation PROPER R := (
     ∀ tu cls this,
     Proper (R ==> R) (wp_destroy_named tu cls this)
@@ -561,17 +561,17 @@ mlock Definition wp_destroy_val `{Σ : cpp_logic, σ : genv}
   fix wp_destroy_val tu q ty :=
     let wp_destroy_array := wp_destroy_array_body wp_destroy_val in
     wp_destroy_val_body wp_destroy_val wp_destroy_array tu q ty.
-#[global] Arguments wp_destroy_val {_ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments wp_destroy_val {_ _ _ _} _ _ _ _ _ : assert.	(* mlock bug *)
 
 mlock Definition destroy_val `{Σ : cpp_logic, σ : genv}
     : ∀ (tu : translation_unit) (ty : type) (p : ptr) (Q : epred), mpred :=
   destroy_val_body wp_destroy_val.
-#[global] Arguments destroy_val {_ _ _} _ _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments destroy_val {_ _ _ _} _ _ _ _ : assert.	(* mlock bug *)
 
 mlock Definition wp_destroy_array `{Σ : cpp_logic, σ : genv}
     (tu : translation_unit) (cv : type_qualifiers) (ety : type) (sz : N) (base : ptr) (Q : epred) : mpred :=
   wp_destroy_array_body wp_destroy_val tu cv ety sz base Q.
-#[global] Arguments wp_destroy_array {_ _ _} _ _ _ _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments wp_destroy_array {_ _ _ _} _ _ _ _ _ _ : assert.	(* mlock bug *)
 
 #[local] Notation V := (wp_destroy_val_body wp_destroy_val wp_destroy_array) (only parsing).
 #[local] Notation A := (wp_destroy_array_body wp_destroy_val) (only parsing).
@@ -727,7 +727,7 @@ Section val_array.
 
   (** Setoids *)
 
-  #[global] Instance: Params (@wp_destroy_val) 7 := {}.
+  #[global] Instance: Params (@wp_destroy_val) 8 := {}.
   #[local] Notation V'PROPER R := (
     ∀ tu cv ty this,
     Proper (R ==> R) (wp_destroy_val tu cv ty this)
@@ -743,7 +743,7 @@ Section val_array.
   #[global] Instance wp_destroy_val_proper : V'PROPER equiv.
   Proof. intros * Q1 Q2 HQ. by split'; apply wp_destroy_val_mono; rewrite HQ. Qed.
 
-  #[global] Instance: Params (@destroy_val) 6 := {}.
+  #[global] Instance: Params (@destroy_val) 7 := {}.
   #[local] Notation VPROPER R := (
     ∀ tu ty this,
     Proper (R ==> R) (destroy_val tu ty this)
@@ -755,7 +755,7 @@ Section val_array.
   #[global] Instance destroy_val_proper : VPROPER equiv.
   Proof. intros * Q1 Q2 HQ. by split'; apply destroy_val_mono; rewrite HQ. Qed.
 
-  #[global] Instance: Params (@wp_destroy_array) 8 := {}.
+  #[global] Instance: Params (@wp_destroy_array) 9 := {}.
   #[local] Notation APROPER R := (
     ∀ tu cv ety n p,
     Proper (R ==> R) (wp_destroy_array tu cv ety n p)
@@ -1031,7 +1031,7 @@ mlock Definition interp `{Σ : cpp_logic, σ : genv}
     : translation_unit -> FreeTemps -> epred -> mpred :=
   fix interp tu free :=
   interp_body interp tu free.
-#[global] Arguments interp {_ _ _} _ free Q : assert.	(* set names *)
+#[global] Arguments interp {_ _ _ _} _ free Q : assert.	(* set names *)
 (* END interp *)
 (* ^^ These BEGIN/END markers matter to our documentation *)
 
@@ -1232,7 +1232,7 @@ Section temps.
       setoid_rewrite IHi. by setoid_rewrite IHi0. }
   Qed.
 
-  #[global] Instance: Params (@interp) 4 := {}.
+  #[global] Instance: Params (@interp) 5 := {}.
   #[local] Notation PROPER R := (
     ∀ tu,
     Proper (equiv ==> R ==> R) (interp tu)

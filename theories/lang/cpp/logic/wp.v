@@ -21,7 +21,7 @@ Require Import bedrock.lang.bi.errors.
  * - in full C++, this includes exceptions, but our current semantics
  *   doesn't treat those.
  *)
-Definition epred `{Σ : cpp_logic thread_info} := mpred.
+Definition epred `{cpp_logic} := mpred.
 Notation epredO := mpredO (only parsing).
 Bind Scope bi_scope with epred.
 
@@ -130,11 +130,11 @@ Canonical Structure rt_biIndex : biIndex :=
   {| bi_index_type := ReturnType
    ; bi_index_rel := eq
    |}.
-Definition KpredI `{Σ : cpp_logic} : bi := monPredI rt_biIndex mpredI.
+Definition KpredI `{!cpp_logic thread_info Σ} : bi := monPredI rt_biIndex (@mpredI thread_info Σ).
 #[global] Notation Kpred := (bi_car KpredI).
 
-Definition KP `{Σ : cpp_logic} (P : ReturnType -> mpred) : Kpred := MonPred P _.
-#[global] Arguments KP _ _ _%I : assert.
+Definition KP `{cpp_logic} (P : ReturnType -> mpred) : Kpred := MonPred P _.
+#[global] Arguments KP {_ _ _} _%I : assert.
 #[global] Hint Opaque KP : typeclass_instances.
 
 Section KP.
@@ -294,7 +294,7 @@ Arguments _this !_ / : assert.
 
 Module WPE.
 Section with_cpp.
-  Context `{Σ : cpp_logic thread_info}.
+  Context `{Σ : cpp_logic}.
 
   (* the monad for expression evaluation *)
   #[local] Definition M (T : Type) : Type :=
@@ -1191,7 +1191,7 @@ Section with_cpp.
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_frame; eauto.
-    by iIntros (rt); iApply monPred_in_entails.
+    iIntros (rt). iApply H2.
   Qed.
 
   Section wp.

@@ -26,12 +26,12 @@ mlock Definition primR `{Σ : cpp_logic, σ : genv} (ty : type) (q : cQp.t) (v :
   *)
   pureR (has_type v ty) **
   tptsto_fuzzyR ty q v.
-#[global] Arguments primR {_ _ _} _ _ _ : assert.	(* mlock bug *)
+#[global] Arguments primR {_ _ _ _} _ _ _ : assert.	(* mlock bug *)
 
 (* TODO: documentation needed *)
 mlock Definition reference_toR `{Σ : cpp_logic, σ : genv} (ty : type) : Rep :=
   as_Rep (reference_to ty).
-#[global] Arguments reference_toR {_ _ _} _ : assert.	(* mlock bug *)
+#[global] Arguments reference_toR {_ _ _ _} _ : assert.	(* mlock bug *)
 
 #[global] Instance reference_toR_knoweldge `{Σ : cpp_logic, resolve : genv}
   : Knowledge1 reference_toR.
@@ -57,15 +57,15 @@ Section with_cpp.
     by rewrite primR.unlock !_at_sep _at_only_provable _at_pureR.
   Qed.
 
-  #[global] Instance: Params (@primR) 2 := {}.
+  #[global] Instance: Params (@primR) 3 := {}.
   #[global] Instance primR_proper :
-    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR _ _).
+    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR _ _ _).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
     rewrite primR.unlock. by setoid_rewrite Hσ.
   Qed.
   #[global] Instance primR_mono :
-    Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> (⊢)) (@primR _ _).
+    Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> (⊢)) (@primR _ _ _).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
     rewrite primR.unlock. by setoid_rewrite Hσ.

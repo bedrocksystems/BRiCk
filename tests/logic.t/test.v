@@ -1,7 +1,7 @@
 From bedrock.lang.cpp Require Import logic.
 
 Section with_Σ.
-  Context `{Σ : cpp_logic}.
+  Context `{Σ : !cpp_logic thread_info _Σ}.
   Section bi_inference.
     Definition mpred_sep (P Q : mpred) := P ** Q.
     Definition rep_sep (P Q : Rep) := P ** Q.
@@ -14,7 +14,7 @@ About rep_sep.
 (* Test suite *)
 Module Type TEST_SUITE.
 Section test_suite.
-  Context {σ : genv} `{Σ : cpp_logic} (R : Rep) (f g : field) (o : offset) (p : ptr) (v : val).
+  Context {σ : genv} `{Σ : !cpp_logic thread_info _Σ} (R : Rep) (f g : field) (o : offset) (p : ptr) (v : val).
 
   #[local] Ltac syntactically_equal :=
     lazymatch goal with

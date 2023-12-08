@@ -11,11 +11,11 @@ Implicit Types (σ : genv) (p : ptr) (o : offset).
 
 mlock Definition nullR `{Σ : cpp_logic} : Rep :=
   as_Rep (fun addr => [| addr = nullptr |]).
-#[global] Arguments nullR {_ _} : assert.
+#[global] Arguments nullR {_ _ _} : assert.
 
 mlock Definition nonnullR `{Σ : cpp_logic} : Rep :=
   as_Rep (fun addr => [| addr <> nullptr |]).
-#[global] Arguments nonnullR {_ _} : assert.	(* mlock bug *)
+#[global] Arguments nonnullR {_ _ _} : assert.	(* mlock bug *)
 
 Section with_cpp.
   Context `{Σ : cpp_logic, σ : genv}.

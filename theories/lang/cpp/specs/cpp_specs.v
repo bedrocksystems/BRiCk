@@ -37,7 +37,7 @@ Notation WithPrePost PROP := (WpSpec PROP ptr ptr) (only parsing).
 Require Import bedrock.lang.cpp.logic.
 
 Section with_Σ.
-  Context `{Σ : cpp_logic ti}.
+  Context `{Σ : cpp_logic}.
 
   #[local] Notation WPP := (WpSpec_cpp_val).
 

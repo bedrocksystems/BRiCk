@@ -21,7 +21,7 @@ C++ abstract machine.
 *)
 mlock Definition rawR `{Σ : cpp_logic, σ : genv} (q : cQp.t) (r : raw_byte) : Rep :=
   tptsto_fuzzyR Tu8 q (Vraw r).
-#[global] Arguments rawR {_ _ _} _ _ : assert.	(* mlock bug *)
+#[global] Arguments rawR {_ _ _ _} _ _ : assert.	(* mlock bug *)
 
 (**
 [rawsR q rs]: An array of raw bytes
@@ -69,7 +69,7 @@ Section with_Σ.
   (** [rawR] *)
 
   #[local] Notation PROPER R S := (
-    Proper (R ==> eq ==> eq ==> S) (@rawR _ _)
+    Proper (R ==> eq ==> eq ==> S) (@rawR _ _ _)
   ) (only parsing).
   #[global] Instance rawR_mono : PROPER genv_leq bi_entails.
   Proof. rewrite rawR.unlock. solve_proper. Qed.

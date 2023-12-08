@@ -25,7 +25,7 @@ Import ChargeNotation.
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
 Section with_cpp.
-  Context `{Σ : cpp_logic}.
+  Context `{!cpp_logic thread_info Σ}.
 
   Implicit Type (R : Rep).
 
