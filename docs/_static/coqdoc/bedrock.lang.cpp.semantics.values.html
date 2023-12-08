@@ -77,7 +77,7 @@ The "operational" style definitions about C++ values.
 </div>
 
 <div class="doc">
-<a id="lab151"></a><h1 class="section">Raw bytes</h1>
+<a id="lab152"></a><h1 class="section">Raw bytes</h1>
 
       Raw bytes represent the low-level view of data.
       <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES.raw_byte"><span class="id" title="axiom">raw_byte</span></a></span> abstracts over the internal structure of this low-level view of data.
@@ -104,10 +104,14 @@ The "operational" style definitions about C++ values.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;following&nbsp;might&nbsp;help&nbsp;but&nbsp;will&nbsp;likely&nbsp;require&nbsp;other<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;axioms&nbsp;which&nbsp;reflect&nbsp;boundedness&nbsp;or&nbsp;round-trip&nbsp;properties.<br/>
 <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;Parameter&nbsp;of_raw_byte&nbsp;:&nbsp;raw_byte&nbsp;-&gt;&nbsp;N.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;Axiom&nbsp;inj_of_raw_byte&nbsp;:&nbsp;Inj&nbsp;(=)&nbsp;(=)&nbsp;of_raw_byte.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;[global] Existing Instance inj_of_raw_byte.
-  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Parameter</span> <span class="id" title="var">of_raw_byte</span> : <span class="id" title="var">raw_byte</span> -&gt; <span class="id" title="var">N</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <span class="id" title="var">inj_of_raw_byte</span> : <span class="id" title="var">Inj</span> (=) (=) <span class="id" title="var">of_raw_byte</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Existing</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">inj_of_raw_byte</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<div class="paragraph"> </div>
+
+</span>&nbsp;&nbsp;*)</span><br/>
 <span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES"><span class="id" title="module">RAW_BYTES</span></a>.<br/>
 
 <br/>
@@ -115,7 +119,7 @@ The "operational" style definitions about C++ values.
 </div>
 
 <div class="doc">
-<a id="lab152"></a><h1 class="section">Values</h1>
+<a id="lab153"></a><h1 class="section">Values</h1>
 
       Primitive abstract C++ runtime values come in two flavors.
 <ul class="doclist">
@@ -169,7 +173,7 @@ The "operational" style definitions about C++ values.
 </div>
 
 <div class="doc">
-<a id="lab153"></a><h2 class="section">Notation wrappers for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.val"><span class="id" title="inductive">val</span></a></span></h2>
+<a id="lab154"></a><h2 class="section">Notation wrappers for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.val"><span class="id" title="inductive">val</span></a></span></h2>
 
 </div>
 <div class="code">
@@ -350,7 +354,7 @@ we use <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantic
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES_VAL.raw_bytes_of_struct"><span class="id" title="axiom">raw_bytes_of_struct</span></a></span> <span class="inlinecode">σ</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#padding.cls"><span class="id" title="variable">cls</span></a></span> <span class="inlinecode"><span class="id" title="var">rss</span></span> <span class="inlinecode"><span class="id" title="var">rs</span></span> states that the struct
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES_VAL.raw_bytes_of_struct"><span class="id" title="axiom">raw_bytes_of_struct</span></a></span> <span class="inlinecode">σ</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.aggregate.html#aggregate.cls"><span class="id" title="variable">cls</span></a></span> <span class="inlinecode"><span class="id" title="var">rss</span></span> <span class="inlinecode"><span class="id" title="var">rs</span></span> states that the struct
       consisting of fields of the raw bytes <span class="inlinecode"><span class="id" title="var">rss</span></span> is represented by the
       raw bytes in <span class="inlinecode"><span class="id" title="var">rs</span></span>.
 
@@ -375,7 +379,7 @@ we use <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantic
 TODO: introduction rules for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES_VAL.raw_bytes_of_struct"><span class="id" title="axiom">raw_bytes_of_struct</span></a></span> 
 <div class="paragraph"> </div>
 
-<a id="lab154"></a><h3 class="section">Elimination rules for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES_VAL.raw_bytes_of_struct"><span class="id" title="axiom">raw_bytes_of_struct</span></a></span></h3>
+<a id="lab155"></a><h3 class="section">Elimination rules for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES_VAL.raw_bytes_of_struct"><span class="id" title="axiom">raw_bytes_of_struct</span></a></span></h3>
 
 <div class="paragraph"> </div>
 
@@ -694,7 +698,7 @@ typedness of values
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE.has_type_prop"><span class="id" title="axiom">has_type_prop</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#v:200"><span class="id" title="variable">v</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tbool"><span class="id" title="constructor">Tbool</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">&lt;-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">exists</span></a> <a id="b:201" class="idref" href="#b:201"><span class="id" title="binder">b</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#v:200"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#V.Vbool"><span class="id" title="definition">Vbool</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#b:201"><span class="id" title="variable">b</span></a>.<br/>
 
 <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;NOTE:&nbsp;even&nbsp;if&nbsp;an&nbsp;enumeration's&nbsp;underlying&nbsp;type&nbsp;is&nbsp;`unsigned&nbsp;int`&nbsp;(which&nbsp;contains<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;NOTE:&nbsp;even&nbsp;if&nbsp;an&nbsp;enumeration's&nbsp;underlying&nbsp;type&nbsp;is&nbsp;&lt;&lt;unsigned&nbsp;char&gt;&gt;&nbsp;(which&nbsp;contains<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raw&nbsp;values),&nbsp;raw&nbsp;values&nbsp;are&nbsp;not&nbsp;well&nbsp;typed&nbsp;at&nbsp;the&nbsp;enumeration&nbsp;type.&nbsp;*)</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="HAS_TYPE.has_type_prop_enum" class="idref" href="#HAS_TYPE.has_type_prop_enum"><span class="id" title="axiom">has_type_prop_enum</span></a> : <span class="id" title="notation">forall</span> <a id="v:203" class="idref" href="#v:203"><span class="id" title="binder">v</span></a> <a id="nm:204" class="idref" href="#nm:204"><span class="id" title="binder">nm</span></a><span class="id" title="notation">,</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE.has_type_prop"><span class="id" title="axiom">has_type_prop</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#v:203"><span class="id" title="variable">v</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tenum"><span class="id" title="constructor">Tenum</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#nm:204"><span class="id" title="variable">nm</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">&lt;-&gt;</span></a><br/>

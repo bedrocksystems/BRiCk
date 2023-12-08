@@ -60,14 +60,14 @@ TODO: merge back into <span class="inlinecode"><span class="id" title="var">rep.
 
 <br/>
 <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#ChargeNotation"><span class="id" title="module">ChargeNotation</span></a>.<br/>
-<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> (σ <span class="id" title="var">resolve</span> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>) (<span class="id" title="var">p</span> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>) (<span class="id" title="var">o</span> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.offset"><span class="id" title="axiom">offset</span></a>).<br/>
+<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> (σ : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>) (<span class="id" title="var">p</span> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>) (<span class="id" title="var">o</span> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.offset"><span class="id" title="axiom">offset</span></a>).<br/>
 
 <br/>
 </div>
 
 <div class="doc">
 Representation predicates are implicitly indexed by a location, and should be used to
-<a id="lab182"></a><h1 class="section">assert properties of the heap</h1>
+<a id="lab184"></a><h1 class="section">assert properties of the heap</h1>
 
   
 </div>
@@ -106,15 +106,6 @@ The tactic <span class="inlinecode"><span class="id" title="tactic">intros</span
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="as_Rep" class="idref" href="#as_Rep"><span class="id" title="definition">as_Rep</span></a> (<a id="P:11" class="idref" href="#P:11"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a> := <span class="id" title="constructor">MonPred</span> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#P:11"><span class="id" title="variable">P</span></a> <span class="id" title="var">_</span>.<br/>
 
 <br/>
-</div>
-
-<div class="doc">
-Values
-<a id="lab183"></a><h1 class="section">These `Rep` predicates wrap `ptsto` facts</h1>
-
-   
-</div>
-<div class="code">
 &nbsp;&nbsp;<span class="comment">(*&nbsp;todo(gmm):&nbsp;make&nbsp;opaque&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="pureR" class="idref" href="#pureR"><span class="id" title="definition">pureR</span></a> (<a id="P:12" class="idref" href="#P:12"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a> :=<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#as_Rep"><span class="id" title="definition">as_Rep</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#P:12"><span class="id" title="variable">P</span></a>).<br/>

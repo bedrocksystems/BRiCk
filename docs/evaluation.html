@@ -252,74 +252,75 @@ To capture this, BRiCk <em>defines</em> <code class="code highlight coq docutils
     (cv : type_qualifiers) (ty : decltype)
     (addr : ptr) (init : Expr) (Q : FreeTemps -&gt; epred) : mpred :=
   let UNSUPPORTED := funI m =&gt; |={top}=&gt;?u UNSUPPORTED m in
-  match ty with
+  if q_volatile cv then False%I
+  else
+    match ty with
+    | Tvoid =&gt;
+      (*
+      [wp_initialize] is used to `return` from a function. The following
+      is legal in C++:
+      &lt;&lt;
+        void f();
+        void g() { return f(); }
+      &gt;&gt;
+      *)
+      letI* v, frees := wp_operand tu ρ init in
+      let qf := cQp.mk (q_const cv) 1 in
+      [| v = Vvoid |] **
 
-  | Tvoid =&gt;
-    (*
-    [wp_initialize] is used to `return` from a function. The following
-    is legal in C++:
-    &lt;&lt;
-       void f();
-       void g() { return f(); }
-    &gt;&gt;
-    *)
-    letI* v, frees := wp_operand tu ρ init in
-    let qf := cQp.mk (q_const cv) 1 in
-    [| v = Vvoid |] **
+      (**
+      [primR] is enough because C++ code never uses the raw bytes
+      underlying an inhabitant of type void.
+      *)
+      (addr |-&gt; primR Tvoid qf Vvoid -* |={top}=&gt;?u Q frees)
 
-    (**
-    [primR] is enough because C++ code never uses the raw bytes
-    underlying an inhabitant of type void.
-    *)
-    (addr |-&gt; primR Tvoid qf Vvoid -* |={top}=&gt;?u Q frees)
+    | Tpointer _
+    | Tmember_pointer _ _
+    | Tbool
+    | Tnum _ _
+    | Tchar_ _
+    | Tenum _
+    | Tfloat_ _
+    | Tnullptr =&gt;
+      letI* v, free := wp_operand tu ρ init in
+      let qf := cQp.mk (q_const cv) 1 in
+      addr |-&gt; tptsto_fuzzyR (erase_qualifiers ty) qf v -* |={top}=&gt;?u Q free
 
-  | Tpointer _
-  | Tmember_pointer _ _
-  | Tbool
-  | Tnum _ _
-  | Tchar_ _
-  | Tenum _
-  | Tfloat_ _
-  | Tnullptr =&gt;
-    letI* v, free := wp_operand tu ρ init in
-    let qf := cQp.mk (q_const cv) 1 in
-    addr |-&gt; tptsto_fuzzyR (erase_qualifiers ty) qf v -* |={top}=&gt;?u Q free
+      (* non-primitives are handled via prvalue-initialization semantics *)
+    | Tarray _ _
+    | Tnamed _ =&gt; wp_init tu ρ (tqualified cv ty) addr init Q
 
-    (* non-primitives are handled via prvalue-initialization semantics *)
-  | Tarray _ _
-  | Tnamed _ =&gt; wp_init tu ρ (tqualified cv ty) addr init Q
+    | Tref ty =&gt;
+      let rty := Tref $ erase_qualifiers ty in
+      letI* p, free := wp_lval tu ρ init in
+      let qf := cQp.mk (q_const cv) 1 in
+      (*
+      [primR] is enough because C++ code never uses the raw bytes
+      underlying an inhabitant of a reference type.
 
-  | Tref ty =&gt;
-    let rty := Tref $ erase_qualifiers ty in
-    letI* p, free := wp_lval tu ρ init in
-    let qf := cQp.mk (q_const cv) 1 in
-    (*
-    [primR] is enough because C++ code never uses the raw bytes
-    underlying an inhabitant of a reference type.
+      TODO: [ref]s are never mutable, but we use [qf] here for
+      compatibility with [implicit_destruct_struct]
+      *)
+      addr |-&gt; primR rty qf (Vref p) -* |={top}=&gt;?u Q free
 
-    TODO: [ref]s are never mutable, but we use [qf] here for
-    compatibility with [implicit_destruct_struct]
-    *)
-    addr |-&gt; primR rty qf (Vref p) -* |={top}=&gt;?u Q free
+    | Trv_ref ty =&gt;
+      let rty := Tref $ erase_qualifiers ty in
+      letI* p, free := wp_xval tu ρ init in
+      let qf := cQp.mk (q_const cv) 1 in
+      (*
+      [primR] is enough because C++ code never uses the raw bytes
+      underlying an inhabitant of a reference type.
 
-  | Trv_ref ty =&gt;
-    let rty := Tref $ erase_qualifiers ty in
-    letI* p, free := wp_xval tu ρ init in
-    let qf := cQp.mk (q_const cv) 1 in
-    (*
-    [primR] is enough because C++ code never uses the raw bytes
-    underlying an inhabitant of a reference type.
+      TODO: [ref]s are never mutable, but we use [qf] here for
+      compatibility with [implicit_destruct_struct]
+      *)
+      addr |-&gt; primR rty qf (Vref p) -* |={top}=&gt;?u Q free
 
-    TODO: [ref]s are never mutable, but we use [qf] here for
-    compatibility with [implicit_destruct_struct]
-    *)
-    addr |-&gt; primR rty qf (Vref p) -* |={top}=&gt;?u Q free
+    | Tfunction _ _ =&gt; UNSUPPORTED (initializing_type ty init)
 
-  | Tfunction _ _ =&gt; UNSUPPORTED (initializing_type ty init)
-
-  | Tqualified _ ty =&gt; |={top}=&gt;?u False (* unreachable *)
-  | Tarch _ _ =&gt; UNSUPPORTED (initializing_type ty init)
-  end.
+    | Tqualified _ ty =&gt; |={top}=&gt;?u False (* unreachable *)
+    | Tarch _ _ =&gt; UNSUPPORTED (initializing_type ty init)
+    end%I.
 
 mlock
 Definition wp_initialize_unqualified `{Σ : cpp_logic, σ : genv} :
