@@ -26,17 +26,17 @@ End CPP_LOGIC_CLASS_BASE.
 Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
 
   (* In Iris idiom, this corresponds to a cppG *)
-  Class cpp_logic {thread_info : biIndex} {Σ : gFunctors} : Type :=
+  Class cpp_logic {thread_info : biIndex} {_Σ : gFunctors} : Type :=
   { cpp_ghost    : _cpp_ghost
-  ; cpp_has_cppG : cppPreG Σ
+  ; cpp_has_cppG : cppPreG _Σ
   }.
   #[global] Arguments cpp_logic : clear implicits.
   #[global] Hint Mode cpp_logic - - : cpp_logic.
 
-  #[global] Instance cpp_has_inv `{!cpp_logic thread_info Σ} : invGS Σ
-    := has_inv Σ cpp_has_cppG.
-  #[global] Instance cpp_has_cinv `{!cpp_logic thread_info Σ} : cinvG Σ
-    := has_cinv Σ cpp_has_cppG.
+  #[global] Instance cpp_has_inv `{!cpp_logic thread_info _Σ} : invGS _Σ
+    := has_inv _Σ cpp_has_cppG.
+  #[global] Instance cpp_has_cinv `{!cpp_logic thread_info _Σ} : cinvG _Σ
+    := has_cinv _Σ cpp_has_cppG.
   #[global] Hint Opaque cpp_has_inv cpp_has_cinv : typeclass_instances br_opacity.
 
 End CPP_LOGIC_CLASS_MIXIN.
