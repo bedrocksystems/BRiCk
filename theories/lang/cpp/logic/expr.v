@@ -62,15 +62,18 @@ Module Type Expr.
 
     #[local] Notation size_of := (@size_of resolve) (only parsing).
 
-    (* constants are rvalues *)
-    Axiom wp_operand_constant : forall ty cnst e Q,
-      tu.(types) !! cnst = Some (Gconstant ty (Some e)) ->
+    (* enumeration constants are prvalues *)
+    Axiom wp_operand_enum_const : forall gn id e Q,
+      (**
+      TODO (FM-4393): The type <<t>> in <<Gconstant t>> now redundant.
+      *)
+      tu.(types) !! Nenum_const gn id = Some (Gconstant (Tenum gn) (Some e)) ->
           (* evaluation of the expression does not get access to
              local variables, so it gets [Remp] rather than [ρ].
              In addition, the evaluation is done at compile-time, so we clean
              up the temporaries eagerly. *)
-          WPE.wp_operand tu (Remp None None ty) e (fun v frees => interp frees $ Q v FreeTemps.id)
-      |-- wp_operand (Econst_ref (Gname cnst) ty) Q.
+          WPE.wp_operand tu (Remp None None (Tenum gn)) e (fun v frees => interp frees $ Q v FreeTemps.id)
+      |-- wp_operand (Eenum_const gn id) Q.
 
     (* integer literals are prvalues *)
     Axiom wp_operand_int : forall n ty Q,
@@ -137,7 +140,7 @@ Module Type Expr.
       |-- wp_operand (Ethis ty) Q.
 
     (* [read_decl p t Q] "returns" the reference referred to by
-       the pointer [p] when the declaation has type [t]. If the resulting value
+       the pointer [p] when the declaration has type [t]. If the resulting value
        is [r], then [has_type (Vref r) (Tref $ drop_references t)].
 
        This logic encapsulates the handling of globals, locals, and members
@@ -156,16 +159,13 @@ Module Type Expr.
       | _ => reference_to (erase_qualifiers t) p ** Q p
       end.
 
-    Definition _var (ρ : region) (v : VarRef) : ptr :=
-      match v with
-      | Lname x => _local ρ x
-      | Gname x => _global x
-      end.
-
-    (* variables are lvalues *)
+    (* variables and global object references are lvalues *)
     Axiom wp_lval_var : forall ty x Q,
-          read_decl (_var ρ x) ty (fun p => Q p FreeTemps.id)
+          read_decl (_local ρ x) ty (fun p => Q p FreeTemps.id)
       |-- wp_lval (Evar x ty) Q.
+    Axiom wp_lval_global : forall ty x Q,
+          read_decl (_global x) ty (fun p => Q p FreeTemps.id)
+      |-- wp_lval (Eglobal x ty) Q.
 
     (* [Emember a f mut ty] is an lvalue by default except when
      * - where [m] is a member enumerator or a non-static member function, or
@@ -585,7 +585,7 @@ Module Type Expr.
      *)
     Axiom wp_operand_cast_fun2ptr_cpp : forall cc ar ret args g Q,
         let ty := Tfunction (cc:=cc) (ar:=ar) ret args in
-        let e := Evar (Gname g) ty in
+        let e := Eglobal g ty in
             wp_lval e (fun v => Q (Vptr v))
         |-- wp_operand (Ecast Cfun2ptr e Prvalue (Tptr ty)) Q.
 
@@ -593,7 +593,7 @@ Module Type Expr.
      *)
     Axiom wp_operand_cast_builtin2fun_cpp : forall cc ar ret args g Q,
         let ty := Tfunction (cc:=cc) (ar:=ar) ret args in
-        let e := Evar (Gname g) ty in
+        let e := Eglobal g ty in
             wp_lval e (fun v => Q (Vptr v))
         |-- wp_operand (Ecast Cbuiltin2fun e Prvalue (Tptr ty)) Q.
 
@@ -1551,11 +1551,11 @@ Module Type Expr.
        the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
 
     Axiom wp_lval_opaque_ref : forall n ρ ty Q,
-          wp_lval tu ρ (Evar (Lname (opaque_val n)) ty) Q
+          wp_lval tu ρ (Evar (opaque_val n) ty) Q
       |-- wp_lval tu ρ (Eopaque_ref n Lvalue ty) Q.
 
     Axiom wp_xval_opaque_ref : forall n ρ ty Q,
-          wp_lval tu ρ (Evar (Lname (opaque_val n)) ty) Q
+          wp_lval tu ρ (Evar (opaque_val n) ty) Q
       |-- wp_xval tu ρ (Eopaque_ref n Xvalue ty) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)

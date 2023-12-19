@@ -301,13 +301,7 @@ with a value category).
 Proof. solve_decision. Defined.
 Notation Cast := (Cast' exprtype).	(** TODO (FM-3431): Should be [decltype] *)
 
-(** * References *)
-Variant VarRef : Set :=
-| Lname (_ : localname)
-| Gname (_ : globname).
-#[global] Instance: EqDecision VarRef.
-Proof. solve_decision. Defined.
-
+(** Dispatch *)
 Variant dispatch_type : Set := Virtual | Direct.
 #[global] Instance: EqDecision dispatch_type.
 Proof. solve_decision. Defined.
@@ -344,12 +338,22 @@ Module operator_impl.
 End operator_impl.
 #[global] Notation operator_impl := (operator_impl.t functype).
 
+(**
+<<Nenum_const gn c>> names constant <<c>> in the enumeration with type
+name <<gn>>. We put these in a TU's type table, rather than its symbol
+table, because (unlike other things in the symbol table) enumeration
+constants lack addresses.
+*)
+Definition Nenum_const (gn : globname) (c : ident) : globname :=
+  gn ++ "::" ++ c.
+
 Inductive Expr : Set :=
-| Econst_ref (_ : VarRef) (_ : exprtype)
-  (* ^ these are different because they do not have addresses *)
-| Evar     (_ : VarRef) (ty : decltype)
-  (* ^ local and global variable reference
-       [ty] is the declaration type of the variable *)
+| Evar (_ : localname) (_ : decltype)
+| Eglobal (_ : obj_name) (_ : decltype)
+(**
+NOTE: Enumeration constants lack addresses (unlike other globals).
+*)
+| Eenum_const (gn : globname) (_ : ident)	(* type = Tenum gn *)
 
 | Echar    (value : N) (_ : exprtype)
   (* ^ [value] is the unsigned character value *)

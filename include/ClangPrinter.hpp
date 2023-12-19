@@ -41,6 +41,8 @@ public:
         return {*this, d};
     }
 
+    void printDeclName(const clang::NamedDecl*, CoqPrinter&) const;
+
     void printNameForAnonTemplateParam(unsigned depth, unsigned index,
                                        CoqPrinter& print);
 

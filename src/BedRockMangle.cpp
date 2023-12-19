@@ -23,7 +23,7 @@ NOTE: The existing ItaniumMangler does *almost* what we want
 except it does not produce cross-translation unit unique names
 for anonymous types which renders it largely unusable for
 modular verification purposes.
- */
+*/
 
 using namespace clang;
 
@@ -350,11 +350,10 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
         // not end up in the resulting binary. Therefore, we need a special
         // case.
         auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext());
-        print.ctor("Cenum_const", false);
+        print.ctor("Nenum_const", false);
         printTypeName(ed, print);
-        print.output() << " \"";
-        ecd->printName(print.output().nobreak());
-        print.output() << "\"";
+        print.output() << fmt::nbsp;
+        printDeclName(ecd, print);
         print.end_ctor();
     } else if (auto dd = dyn_cast<CXXDestructorDecl>(decl)) {
         // NOTE we implement our own destructor mangling because
@@ -373,8 +372,6 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
         mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
         print.output() << "\"";
     } else {
-        print.output() << "\"";
-        decl->printName(print.output().nobreak());
-        print.output() << "\"";
+        printDeclName(decl, print);
     }
 }

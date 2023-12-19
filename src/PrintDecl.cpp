@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2023 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -1088,9 +1088,9 @@ public:
         assert(not decl->getNameAsString().empty());
         auto ed = dyn_cast<EnumDecl>(decl->getDeclContext());
         print.ctor("Denum_constant");
-        cprint.printObjName(decl, print);
+        cprint.printTypeName(ed, print);
         print.output() << fmt::nbsp;
-        cprint.printQualType(decl->getType(), print);
+        cprint.printDeclName(decl, print);
         print.output() << fmt::nbsp;
         cprint.printQualType(ed->getIntegerType(), print);
         auto bt = ed->getIntegerType().getTypePtr()->getAs<BuiltinType>();

@@ -14,8 +14,8 @@ Module WpTestDefns.
   #[local] Notation cv := (types.QC).
   #[local] Notation ty := (types.Tptr types.Tvoid).
   #[local] Notation e := (expr.Ebinop expr.Badd
-                                      (expr.Evar (expr.Lname "foo") types.Tint)
-                                      (expr.Evar (expr.Lname "bar") types.Tint)
+                                      (expr.Evar "foo" types.Tint)
+                                      (expr.Evar "bar" types.Tint)
                                       types.Tint).
   #[local] Notation s := (stmt.Sseq [ stmt.Sexpr e
                                     ; stmt.Sbreak

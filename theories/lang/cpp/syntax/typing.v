@@ -93,8 +93,9 @@ Definition type_of_member (obj_ty : exprtype) (mut : bool) (mem_type : decltype)
 (** [type_of e] returns the type of the expression [e]. *)
 Fixpoint type_of (e : Expr) : exprtype :=
   match e with
-  | Econst_ref _ t => t
-  | Evar _ t => drop_reference t
+  | Evar _ t
+  | Eglobal _ t => drop_reference t
+  | Eenum_const gn _ => Tenum gn
   | Echar _ t => t
   | Estring vs t => Tarray (Qconst t) (1 + lengthN vs)
   | Eint _ t => t
@@ -194,8 +195,9 @@ End valcat_of_internal.
 
 Fixpoint valcat_of (e : Expr) : ValCat :=
   match e with
-  | Econst_ref _ _ => Prvalue
-  | Evar _ _ => Lvalue
+  | Evar _ _
+  | Eglobal _ _ => Lvalue
+  | Eenum_const _ _ => Prvalue
   | Echar _ _ => Prvalue
   | Estring _ _ => Lvalue
   | Eint _ _ => Prvalue

@@ -11,13 +11,10 @@ From bedrock.lang.cpp Require Import ast notations code_notations.
 Section TestExprNotations.
   Context (ty : type) (e : Expr).
 
-  #[local] Definition Econst_ref_lname : Expr := Econst_ref (Lname "FooBarBaz") ty.
-  #[local] Definition Econst_ref_gname : Expr := Econst_ref (Gname "FooBarBaz") ty.
-  Print Econst_ref_lname. Print Econst_ref_gname.
-
-  #[local] Definition Evar_lname : Expr := Evar (Lname "FooBarBaz") ty.
-  #[local] Definition Evar_gname : Expr := Evar (Gname "FooBarBaz") ty.
-  Print Evar_lname. Print Evar_gname.
+  #[local] Definition local_ref : Expr := Evar "FooBarBaz" ty.
+  #[local] Definition global_ref : Expr := Eglobal "FooBarBaz" ty.
+  #[local] Definition enum_const_ref : Expr := Eenum_const "_ZN6MyEnumE" "Const".
+  Print local_ref. Print global_ref. Print enum_const_ref.
 
   #[local] Definition A_ascii : N := Evaluate (Ascii.N_of_ascii "A"%char).
   #[local] Definition newline_ascii : N := Evaluate (Ascii.N_of_ascii "010"%char).
@@ -57,13 +54,13 @@ Section TestExprNotations.
 
   #[local] Definition Ebinop_custom_Bdotp_nowrap
     : Expr := Ebinop Bdotp
-                     (Evar (Lname "FooBarBaz") ty)
-                     (Evar (Lname "Qux") ty)
+                     (Evar "FooBarBaz" ty)
+                     (Evar "Qux" ty)
                      ty.
   #[local] Definition Ebinop_custom_Bdotip_nowrap
     : Expr := Ebinop Bdotip
-                     (Evar (Lname "FooBarBaz") ty)
-                     (Evar (Lname "Qux") ty)
+                     (Evar "FooBarBaz" ty)
+                     (Evar "Qux" ty)
                      ty.
   #[local] Definition Ebinop_custom_Bshr_nowrap
     : Expr := Ebinop Bshr
@@ -76,13 +73,13 @@ Section TestExprNotations.
 
   #[local] Definition Ebinop_custom_Bdotp_wrap
     : Expr := Ebinop Bdotp
-                     (Evar (Lname "FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz") ty)
-                     (Evar (Lname "Qux") ty)
+                     (Evar "FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz" ty)
+                     (Evar "Qux" ty)
                      ty.
   #[local] Definition Ebinop_custom_Bdotip_wrap
     : Expr := Ebinop Bdotip
-                     (Evar (Lname "FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz") ty)
-                     (Evar (Lname "Qux") ty)
+                     (Evar "FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz" ty)
+                     (Evar "Qux" ty)
                      ty.
   #[local] Definition Ebinop_custom_Bshr_wrap
     : Expr := Ebinop Bshr
@@ -143,7 +140,7 @@ Section TestExprNotations.
                      (Eint (-1)%Z ty)
                      (Ebinop Bsub
                              (Ebinop Bxor
-                                     (Evar (Gname "FOOBAR") ty)
+                                     (Eglobal "FOOBAR" ty)
                                      (Ebinop Bdiv
                                              (Eint 42 ty)
                                              (Eint 2 ty) ty)
@@ -152,19 +149,19 @@ Section TestExprNotations.
                      ty.
   Print Ebinop_compound_1. Print Ebinop_compound_2.
 
-  #[local] Definition Ederef_Evar : Expr := Ederef (Evar (Lname "Qux") ty) ty.
+  #[local] Definition Ederef_Evar : Expr := Ederef (Evar "Qux" ty) ty.
   #[local] Definition Ederef_Enull : Expr := Ederef Enull ty.
   Print Ederef_Evar. Print Ederef_Enull.
 
-  #[local] Definition Eaddrof_Evar_lname : Expr := Eaddrof (Evar (Lname "Qux") ty).
-  #[local] Definition Eaddrof_Evar_gname : Expr := Eaddrof (Evar (Gname "Qux") ty).
-  Print Eaddrof_Evar_lname. Print Eaddrof_Evar_gname.
+  #[local] Definition Eaddrof_local_ref : Expr := Eaddrof (Evar "Qux" ty).
+  #[local] Definition Eaddrof_global_ref : Expr := Eaddrof (Eglobal "Qux" ty).
+  Print Eaddrof_local_ref. Print Eaddrof_global_ref.
 
-  #[local] Definition Eassign_1 : Expr := Eassign (Evar (Lname "pi") ty) (Eint 314 ty) ty.
+  #[local] Definition Eassign_1 : Expr := Eassign (Evar "pi" ty) (Eint 314 ty) ty.
   Print Eassign_1.
 
   #[local] Definition Eassign_op_custom_Bshr : Expr
-    := Eassign_op Bshr (Evar (Lname "foo") ty) (Eint 21 ty) ty.
+    := Eassign_op Bshr (Evar "foo" ty) (Eint 21 ty) ty.
   Print Eassign_op_custom_Bshr.
 
   #[local] Definition Eassign_op_default_Badd
@@ -214,48 +211,48 @@ Section TestExprNotations.
   Print Eseqor_1. Print Eseqor_2.
 
   #[local] Definition Ecomma_1 : Expr := Ecomma e e.
-  #[local] Definition Ecomma_2 : Expr := Ecomma (Epreinc (Evar (Lname "baz") ty) ty) e.
+  #[local] Definition Ecomma_2 : Expr := Ecomma (Epreinc (Evar "baz" ty) ty) e.
   Print Ecomma_1. Print Ecomma_2.
 
   #[local] Definition Ecall_nil_1 : Expr := Ecall e []%list ty.
-  #[local] Definition Ecall_nil_2 : Expr := Ecall (Evar (Gname "fn") ty) []%list ty.
+  #[local] Definition Ecall_nil_2 : Expr := Ecall (Eglobal "fn" ty) []%list ty.
   Print Ecall_nil_1. Print Ecall_nil_2.
 
   #[local] Definition Ecall_cons_nowrap_1 : Expr := Ecall e [Eint 42 ty; Ebool false]%list ty.
-  #[local] Definition Ecall_cons_nowrap_2 : Expr := Ecall (Evar (Gname "fn") ty) [Eint 42 ty; Ebool false]%list ty.
+  #[local] Definition Ecall_cons_nowrap_2 : Expr := Ecall (Eglobal "fn" ty) [Eint 42 ty; Ebool false]%list ty.
   Print Ecall_cons_nowrap_1. Print Ecall_cons_nowrap_2.
 
   (* TODO (JH): Fix up the printing boxes s.t. the widths/splits correspond (and extra
      breaks aren't inserted; cf. [Ecall_cons_wrap_2].
    *)
   #[local] Definition Ecall_cons_wrap_1 : Expr := Ecall e [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
-  #[local] Definition Ecall_cons_wrap_2 : Expr := Ecall (Evar (Gname "fn") ty) [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
+  #[local] Definition Ecall_cons_wrap_2 : Expr := Ecall (Eglobal "fn" ty) [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
   Print Ecall_cons_wrap_1. Print Ecall_cons_wrap_2.
 
   #[local] Definition Ecast_elide_1 (cast : Cast) (vc : ValCat) := Ecast cast e vc ty.
   #[local] Definition Ecast_elide_2 (cast : Cast) (vc : ValCat) := Ecast cast (Eint 314 ty) vc ty.
   Print Ecast_elide_1. Print Ecast_elide_2.
 
-  #[local] Definition Emember_1 : Expr := Emember (Evar (Lname "foo") (Tnamed "foo")) "bar" false ty.
+  #[local] Definition Emember_1 : Expr := Emember (Evar "foo" (Tnamed "foo")) "bar" false ty.
   Print Emember_1.
 
   #[local] Definition Emember_call_nil_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e []%list ty.
-  #[local] Definition Emember_call_nil_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Evar (Gname "foo") ty) []%list ty.
+  #[local] Definition Emember_call_nil_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Eglobal "foo" ty) []%list ty.
   Print Emember_call_nil_1. Print Emember_call_nil_2.
 
   #[local] Definition Emember_call_cons_nowrap_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e [Eint 42 ty; Ebool false]%list ty.
-  #[local] Definition Emember_call_cons_nowrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Evar (Gname "foo") ty) [Eint 42 ty; Ebool false]%list ty.
+  #[local] Definition Emember_call_cons_nowrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Eglobal "foo" ty) [Eint 42 ty; Ebool false]%list ty.
   Print Emember_call_cons_nowrap_1. Print Emember_call_cons_nowrap_2.
 
   (* TODO (JH): Fix up the printing boxes s.t. the widths/splits correspond (and extra
      breaks aren't inserted; cf. [Ecall_cons_wrap_2].
    *)
   #[local] Definition Emember_call_cons_wrap_1 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) e [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
-  #[local] Definition Emember_call_cons_wrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Evar (Gname "foo") ty) [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
+  #[local] Definition Emember_call_cons_wrap_2 : Expr := Emember_call (inl ("fn"%bs, Direct, ty)) (Eglobal "foo" ty) [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list ty.
   Print Emember_call_cons_wrap_1. Print Emember_call_cons_wrap_2.
 
   #[local] Definition Esubscript_1 : Expr := Esubscript e (Eint 42 ty) ty.
-  #[local] Definition Esubscript_2 : Expr := Esubscript (Evar (Lname "foo") ty) (Eint 314 ty) ty.
+  #[local] Definition Esubscript_2 : Expr := Esubscript (Evar "foo" ty) (Eint 314 ty) ty.
   Print Esubscript_1. Print Esubscript_2.
 
   #[local] Definition Esizeof_type_1 : Expr := Esizeof (inl ty) ty.
@@ -265,7 +262,7 @@ Section TestExprNotations.
 
   #[local] Definition Esizeof_Expr_1 : Expr := Esizeof (inr e) ty.
   #[local] Definition Esizeof_Expr_2 : Expr := Esizeof (inr (Eint 314 ty)) ty.
-  #[local] Definition Esizeof_Expr_3 : Expr := Esizeof (inr (Evar (Lname "foo") ty)) ty.
+  #[local] Definition Esizeof_Expr_3 : Expr := Esizeof (inr (Evar "foo" ty)) ty.
   Print Esizeof_Expr_1. Print Esizeof_Expr_2. Print Esizeof_Expr_3.
 
   #[local] Definition Ealignof_type_1 : Expr := Ealignof (inl ty) ty.
@@ -275,7 +272,7 @@ Section TestExprNotations.
 
   #[local] Definition Ealignof_Expr_1 : Expr := Ealignof (inr e) ty.
   #[local] Definition Ealignof_Expr_2 : Expr := Ealignof (inr (Eint 314 ty)) ty.
-  #[local] Definition Ealignof_Expr_3 : Expr := Ealignof (inr (Evar (Lname "foo") ty)) ty.
+  #[local] Definition Ealignof_Expr_3 : Expr := Ealignof (inr (Evar "foo" ty)) ty.
   Print Ealignof_Expr_1. Print Ealignof_Expr_2. Print Ealignof_Expr_3.
 
   #[local] Definition Eoffsetof_1 : Expr := Eoffsetof "foo" "bar" ty.
@@ -301,7 +298,7 @@ Section TestExprNotations.
   #[local] Definition Eimplicit_init_2 : Expr := Eimplicit_init (Tnum W8 Unsigned).
   Print Eimplicit_init_1. Print Eimplicit_init_2.
 
-  #[local] Definition Eif_1 : Expr := Eif (Ebool true) (Ecall (Evar (Lname "fn") ty) []%list ty) (Eassign_op Bmul (Evar (Lname "foo") ty) (Evar (Lname "bar") ty) ty) Lvalue ty.
+  #[local] Definition Eif_1 : Expr := Eif (Ebool true) (Ecall (Evar "fn" ty) []%list ty) (Eassign_op Bmul (Evar "foo" ty) (Evar "bar" ty) ty) Lvalue ty.
   Print Eif_1.
 
   Check (Ethis ty). Check Enull.
@@ -339,19 +336,19 @@ Section TestExprNotations.
   Print Enew_array_nil_1. Print Enew_array_nil_2.
 
   #[local] Definition Edelete_nonarray_1 : Expr := Edelete false ("fn"%bs, ty) e ty.
-  #[local] Definition Edelete_nonarray_2 : Expr := Edelete false ("fn"%bs, ty) (Evar (Lname "foo") ty) ty.
+  #[local] Definition Edelete_nonarray_2 : Expr := Edelete false ("fn"%bs, ty) (Evar "foo" ty) ty.
   Print Edelete_nonarray_1. Print Edelete_nonarray_2.
 
   #[local] Definition Edelete_array_1 : Expr := Edelete true ("fn"%bs, ty) e ty.
-  #[local] Definition Edelete_array_2 : Expr := Edelete true ("fn"%bs, ty) (Evar (Lname "foo") ty) ty.
+  #[local] Definition Edelete_array_2 : Expr := Edelete true ("fn"%bs, ty) (Evar "foo" ty) ty.
   Print Edelete_array_1. Print Edelete_array_2.
 
   #[local] Definition Eandclean_1 : Expr := Eandclean e.
-  #[local] Definition Eandclean_2 : Expr := Eandclean (Evar (Lname "foo") ty).
+  #[local] Definition Eandclean_2 : Expr := Eandclean (Evar "foo" ty).
   Print Eandclean_1. Print Eandclean_2.
 
   #[local] Definition Ematerialize_temp_1 : Expr := Ematerialize_temp e Xvalue.
-  #[local] Definition Ematerialize_temp_2 : Expr := Ematerialize_temp (Evar (Lname "foo") ty) Xvalue.
+  #[local] Definition Ematerialize_temp_2 : Expr := Ematerialize_temp (Evar "foo" ty) Xvalue.
   Print Ematerialize_temp_1. Print Ematerialize_temp_2.
 
   Check Bin_alloca. Check Bin_alloca_with_align. Check Bin_launder. Check Bin_expect.

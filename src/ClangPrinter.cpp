@@ -48,6 +48,13 @@ getParameterNumber(const ParmVarDecl *decl) {
 } // namespace
 
 void
+ClangPrinter::printDeclName(const NamedDecl* decl, CoqPrinter& print) const {
+    print.output() << '"';
+    decl->printName(print.output().nobreak());
+    print.output() << '"';
+}
+
+void
 ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) const {
     print.output() << "\"";
     if (decl->getIdentifier()) {

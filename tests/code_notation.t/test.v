@@ -13,15 +13,15 @@ Section TestCodeNotations.
   Context (ty : decltype) (e : Expr) (s : Stmt).
 
   Let stmt1 : Stmt :=
-    Sexpr (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid).
+    Sexpr (Eassign (Evar "foo" Tvoid) (Eunop Unot (Evar "bar" Tvoid) Tvoid) Tvoid).
   Print stmt1.
 
   Let expr1 : Expr :=
-    Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid)) Tvoid) (Eint 3%Z Tvoid) Tvoid.
+    Ebinop Badd (Ederef (Eaddrof (Evar "hello" Tvoid)) Tvoid) (Eint 3%Z Tvoid) Tvoid.
   Print expr1.
 
   Let stmt2 : Stmt :=
-    Sseq (Sexpr (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil).
+    Sseq (Sexpr (Evar "hello" Tvoid) :: Scontinue :: Sbreak :: Sexpr (Evar "world" Tvoid) :: Sif None (Evar "world" Tvoid) Scontinue Sbreak :: nil).
   Print stmt2.
 
   Let stmt3 : Stmt :=
@@ -29,18 +29,18 @@ Section TestCodeNotations.
               [ Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                 (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                 (Sseq [Scontinue;Scontinue;Scontinue;Scontinue])
                 Sbreak
               ; Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                 (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                 (Sseq [])
                 Sbreak
-              ; Sreturn (Some (Evar (Lname "x") Ti32))
+              ; Sreturn (Some (Evar "x" Ti32))
               ; Sexpr (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
               ; Sreturn None
               ]%list
     )).
@@ -51,10 +51,10 @@ Section TestCodeNotations.
                 [ Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                   (Ecast Cint2bool
-                      (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                      (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                   (Scontinue)
                   (Sseq [Scontinue;Scontinue;Scontinue;Scontinue])
-                ; Sreturn (Some (Evar (Lname "x") Ti32))
+                ; Sreturn (Some (Evar "x" Ti32))
                 ; Sreturn None
                 ]%list
     ).
@@ -65,10 +65,10 @@ Section TestCodeNotations.
                 [ Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                   (Ecast Cint2bool
-                      (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                      (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                   (Scontinue)
                   (Scontinue)
-                ; Sreturn (Some (Evar (Lname "x") Ti32))
+                ; Sreturn (Some (Evar "x" Ti32))
                 ; Sreturn None
                 ]%list
     ).
@@ -79,10 +79,10 @@ Section TestCodeNotations.
                 (Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                   (Ecast Cint2bool
-                      (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                      (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                   (Sseq (
                       (Sexpr
-                        (Epostinc (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
+                        (Epostinc (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))
                   Scontinue) ::
                 nil
     ).
@@ -93,20 +93,20 @@ Section TestCodeNotations.
                 (Sif
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                   (Ecast Cint2bool
-                      (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                      (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                   (Sseq (
                       (Sexpr
-                        (Epostinc (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
+                        (Epostinc (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))
                   (Sseq (
                       (Sexpr
-                        (Epredec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) ::
+                        (Epredec (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))) ::
                 (Swhile
                   (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                   (Ecast Cint2bool
-                      (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                      (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                   (Sseq (
                       (Sexpr
-                        (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) :: nil).
+                        (Epostdec (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))) :: nil).
   Print stmt7.
 
   Let stmt8 : Stmt :=
@@ -114,8 +114,8 @@ Section TestCodeNotations.
            (Sdo
               (Sseq (
                    (Sexpr
-                          (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
-              (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
+                          (Epostdec (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))
+              (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32))
            ) :: nil).
   Print stmt8.
 
@@ -124,18 +124,18 @@ Section TestCodeNotations.
            (Sdo
               (Sseq (
                    (Sexpr
-                          (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)) :: nil))
-              (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
+                          (Eassign (Evar "foo" Tvoid) (Eunop Unot (Evar "bar" Tvoid) Tvoid) Tvoid)) :: nil))
+              (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32))
            ) :: nil).
   Print stmt9.
 
   Let stmt10 : Stmt :=
     Sexpr
-              (Eassign (Evar (Lname "should_continue") Tbool)
+              (Eassign (Evar "should_continue" Tbool)
                  (Eunop Unot
                     (Ecall
                        (Ecast Cfun2ptr
-                          (Evar (Gname "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin")
+                          (Eglobal "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin"
                              (Tfunction Tbool
                                 [Tqualified QC
                                    (Tptr
@@ -151,14 +151,14 @@ Section TestCodeNotations.
                                 Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64;
                                 Tref Ti32]%list)))
                        [Ecast Cl2r
-                          (Evar (Lname "ctx")
+                          (Evar "ctx"
                              (Tqualified QC
                                 (Tptr (Tqualified QC Tvoid))))
                           Prvalue
                           (Tptr (Tqualified QC Tvoid));
-                       Ecast Carray2ptr (Evar (Lname "buffer") (Tarray Tu8 1024)) Prvalue (Tptr Tu8);
-                       Evar (Lname "shared") (Tref (Tnamed "_Z9UmxShared"));
-                       Evar (Lname "client") (Tref Tu64); Evar (Lname "result") Ti32]%list
+                       Ecast Carray2ptr (Evar "buffer" (Tarray Tu8 1024)) Prvalue (Tptr Tu8);
+                       Evar "shared" (Tref (Tnamed "_Z9UmxShared"));
+                       Evar "client" (Tref Tu64); Evar "result" Ti32]%list
                        Tbool) Tbool)
                  Tbool).
   Print stmt10.
@@ -168,10 +168,10 @@ Section TestCodeNotations.
               [ Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint 0 (Qmut Ti32)))))
                 (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                 (Scontinue)
                 (Sseq [Scontinue;Scontinue;Scontinue;Scontinue])
-              ; Sreturn (Some (Evar (Lname "x") Ti32))
+              ; Sreturn (Some (Evar "x" Ti32))
               ; Sreturn None
               ]
     )).
@@ -182,10 +182,10 @@ Section TestCodeNotations.
               [ Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                 (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                 (Scontinue)
                 (Scontinue)
-              ; Sreturn (Some (Evar (Lname "x") Ti32))
+              ; Sreturn (Some (Evar "x" Ti32))
               ; Sreturn None
               ]
     )).
@@ -196,10 +196,10 @@ Section TestCodeNotations.
               (Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                 (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                 (Sseq (
                     (Sexpr
-                      (Epostinc (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
+                      (Epostinc (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))
                 Scontinue) ::
               nil)).
   Print stmt13.
@@ -209,20 +209,20 @@ Section TestCodeNotations.
               (Sif
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                 (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                 (Sseq (
                     (Sexpr
-                      (Epostinc (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
+                      (Epostinc (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))
                 (Sseq (
                     (Sexpr
-                      (Epredec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) ::
+                      (Epredec (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))) ::
               (Swhile
                 (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
                 (Ecast Cint2bool
-                    (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
+                    (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32)) Prvalue (Qmut Tbool))
                 (Sseq (
                     (Sexpr
-                      (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) :: nil)).
+                      (Epostdec (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))) :: nil)).
   Print stmt14.
 
   Let stmt15 : Stmt :=
@@ -230,8 +230,8 @@ Section TestCodeNotations.
          (Sdo
             (Sseq (
                  (Sexpr
-                        (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
-            (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
+                        (Epostdec (Evar "x" (Qmut Ti32)) (Qmut Ti32))) :: nil))
+            (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32))
          ) :: nil)).
   Print stmt15.
 
@@ -240,18 +240,18 @@ Section TestCodeNotations.
          (Sdo
             (Sseq (
                  (Sexpr
-                        (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)) :: nil))
-            (Ecast Cl2r (Evar (Lname  "x") (Qmut Ti32)) Prvalue (Qmut Ti32))
+                        (Eassign (Evar "foo" Tvoid) (Eunop Unot (Evar "bar" Tvoid) Tvoid) Tvoid)) :: nil))
+            (Ecast Cl2r (Evar "x" (Qmut Ti32)) Prvalue (Qmut Ti32))
          ) :: nil)).
   Print stmt16.
 
   Let stmt17 : Stmt :=
     (Sexpr
-            (Eassign (Evar (Lname "should_continue") Tbool)
+            (Eassign (Evar "should_continue" Tbool)
                (Eunop Unot
                   (Ecall
                      (Ecast Cfun2ptr
-                        (Evar (Gname "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin")
+                        (Eglobal "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin"
                            (Tfunction Tbool
                               [Tqualified QC
                                  (Tptr
@@ -267,14 +267,14 @@ Section TestCodeNotations.
                               Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64;
                               Tref Ti32])))
                      [Ecast Cl2r
-                        (Evar (Lname "ctx")
+                        (Evar "ctx"
                            (Tqualified QC
                               (Tptr (Tqualified QC Tvoid))))
                         Prvalue
                         (Tptr (Tqualified QC Tvoid));
-                     Ecast Carray2ptr (Evar (Lname "buffer") (Tarray Tu8 1024)) Prvalue (Tptr Tu8);
-                     Evar (Lname "shared") (Tref (Tnamed "_Z9UmxShared"));
-                     Evar (Lname "client") (Tref Tu64); Evar (Lname "result") Ti32]
+                     Ecast Carray2ptr (Evar "buffer" (Tarray Tu8 1024)) Prvalue (Tptr Tu8);
+                     Evar "shared" (Tref (Tnamed "_Z9UmxShared"));
+                     Evar "client" (Tref Tu64); Evar "result" Ti32]
                      Tbool) Tbool)
                Tbool)).
   Print stmt17.

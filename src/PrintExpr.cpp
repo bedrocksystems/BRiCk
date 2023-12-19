@@ -152,32 +152,29 @@ private:
         print.end_ctor();
     }
 
-    void printVarRef(const ValueDecl* decl, CoqPrinter& print,
-                     ClangPrinter& cprint, OpaqueNames& on) {
+    void printValueDecl(const ValueDecl* decl, CoqPrinter& print, ClangPrinter& cprint, OpaqueNames& on) {
         auto check_static_local = [](const ValueDecl* decl) {
             auto t = dyn_cast<VarDecl>(decl);
             return t && t->isStaticLocal();
         };
         auto t = on.find_anon(decl);
         if (t != -1) {
-            print.ctor("Lname", false) << "\"$" << t << "\"";
-            print.end_ctor();
+            print.ctor("Evar", false) << "\"$" << t << "\"";
         } else if (decl->getDeclContext()->isFunctionOrMethod() and
                    not(isa<FunctionDecl>(decl) or check_static_local(decl))) {
-            print.ctor("Lname", false);
+            print.ctor("Evar", false);
             if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
                 cprint.printParamName(pd, print);
             } else {
-                print.output() << "\"";
-                decl->printName(print.output().nobreak());
-                print.output() << "\"";
+                cprint.printDeclName(decl, print);
             }
-            print.end_ctor();
         } else {
-            print.ctor("Gname", false);
+            print.ctor("Eglobal", false);
             cprint.printObjName(decl, print);
-            print.end_ctor();
         }
+        print.output() << fmt::nbsp;
+        cprint.printQualType(decl->getType(), print);
+        print.end_ctor();
     }
 
 public:
@@ -414,29 +411,27 @@ public:
             // an `enum` constant is *always* the `enum` type.
             // To match the type of the expression, we insert
             // an implicit integral cast.
+
+            auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext());
             if (expr->getType()->isEnumeralType()) {
-                // nothing special to do.
-                print.ctor("Econst_ref", false);
-                print.ctor("Gname", false);
-                cprint.printObjName(d, print);
+                print.ctor("Eenum_const", false);
+                cprint.printTypeName(ed, print);
+                print.output() << fmt::nbsp;
+                cprint.printDeclName(ecd, print);
                 print.end_ctor();
-                done(expr, print, cprint);
             } else {
-                // TODO: is is possible to determine the `DeclContext` that
+                // TODO: is it possible to determine the `DeclContext` that
                 // this expression occurs in? If so, then we could assert that
                 // this is in the scope of the enumeration.
                 print.ctor("Eenum_const_at", false);
-                cprint.printObjName(d, print);
+                cprint.printTypeName(ed, print);
                 print.output() << fmt::nbsp;
-                cprint.printQualType(ecd->getType(), print);
+                cprint.printDeclName(ecd, print);
+                print.output() << fmt::nbsp;
                 done(expr, print, cprint);
             }
         } else {
-            print.ctor("Evar", false);
-            printVarRef(d, print, cprint, on);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(d->getType(), print);
-            print.end_ctor();
+            printValueDecl(d, print, cprint, on);
         }
     }
 
@@ -849,9 +844,7 @@ public:
         auto idx = 0;
         print.list(ctor->parameters(), [&](auto print, auto i) {
             print.ctor("Evar", false);
-            print.ctor("Lname", false);
             print.output() << "\"#" << idx << "\"";
-            print.end_ctor();
             print.output() << fmt::nbsp;
             cprint.printQualType(i->getType(), print);
             print.end_ctor();
