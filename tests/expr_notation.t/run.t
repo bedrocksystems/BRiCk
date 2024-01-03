@@ -657,11 +657,11 @@
        : Expr
   
   Eva_arg_2 uses section variable ty.
-  Epseudo_destructor_1 = {e: {?: e}}
+  Epseudo_destructor_1 = {e: {?: e}->~{?: ty}()}
        : Expr
   
   Epseudo_destructor_1 uses section variables ty e.
-  Epseudo_destructor_2 = {e: #217}
+  Epseudo_destructor_2 = {e: #217.~{?: ty}()}
        : Expr
   
   Epseudo_destructor_2 uses section variable ty.

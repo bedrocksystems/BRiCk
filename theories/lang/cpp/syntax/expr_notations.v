@@ -515,12 +515,21 @@ Module ExprNotations.
          , e custom CPP_expr at level 200
          , only printing).
 
-  (* QUESTION (JH): is this notation sufficient for [Epseudo_destructor]? *)
-  Notation "e"
-      := (Epseudo_destructor _ e)
+  Notation "e ->~ ty ()"
+      := (Epseudo_destructor true ty e)
          ( in custom CPP_expr at level 0
+         , ty custom CPP_type at level 200
          , e custom CPP_expr at level 200
+         , format "'[' e ->~ ty () ']'"
          , only printing).
+  Notation "e .~ ty ()"
+      := (Epseudo_destructor false ty e)
+         ( in custom CPP_expr at level 0
+         , ty custom CPP_type at level 200
+         , e custom CPP_expr at level 200
+         , format "'[' e .~ ty () ']'"
+         , only printing).
+
 
 
   (* TODO (JH): [Earrayloop_init]/[Earrayloop_index]/[Eopaque_ref] *)
