@@ -508,11 +508,12 @@ Module ExprNotations.
 
   (* TODO (JH): [Eatomic] *)
 
-  (* QUESTION (JH): is this notation sufficient for [Eva_arg]? *)
-  Notation "e"
-      := (Eva_arg e _)
+  Notation "'__builtin_vaarg(' e , t )"
+      := (Eva_arg e t)
          ( in custom CPP_expr at level 0
          , e custom CPP_expr at level 200
+         , t custom CPP_expr at level 200
+         , format "'[' __builtin_vaarg( e ,  t ) ']'"
          , only printing).
 
   Notation "e ->~ ty ()"
