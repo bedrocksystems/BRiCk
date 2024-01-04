@@ -80,6 +80,10 @@ Section defs.
         fold_left (fun Q i =>
             wp_const from to (addr .[ erase_qualifiers ety ! Z.of_N i ]) ety Q)
                     (seqN 0 sz) Q
+      | Tincomplete_array _ =>
+          False
+      | Tvariable_array _ =>
+          False
 
       | Tnamed cls =>
           match tu.(types) !! cls with

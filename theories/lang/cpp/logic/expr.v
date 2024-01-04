@@ -1366,13 +1366,12 @@ Module Type Expr.
 
     (** [is_array_of aty ety] checks that [aty] is a type representing an
         array of [ety].
-        NOTE that cpp2v currently prints the type `int[]` as [int*]
-             so we also permit that type.
      *)
     Definition is_array_of (aty ety : type) : Prop :=
       match aty with
+      | Tincomplete_array ety' => ety = ety'
+      | Tvariable_array ety' => ety = ety'
       | Tarray ety' _ => ety = ety'
-      | Tptr ety' => ety = ety'
       | _ => False
       end.
 
