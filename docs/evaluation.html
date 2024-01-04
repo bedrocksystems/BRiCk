@@ -289,6 +289,8 @@ To capture this, BRiCk <em>defines</em> <code class="code highlight coq docutils
       (* non-primitives are handled via prvalue-initialization semantics *)
     | Tarray _ _
     | Tnamed _ =&gt; wp_init tu ρ (tqualified cv ty) addr init Q
+    | Tincomplete_array _ =&gt; UNSUPPORTED (initializing_type ty init)
+    | Tvariable_array _ =&gt; UNSUPPORTED (initializing_type ty init)
 
     | Tref ty =&gt;
       let rty := Tref $ erase_qualifiers ty in
