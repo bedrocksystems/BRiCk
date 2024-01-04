@@ -257,7 +257,9 @@ Inductive type : Set :=
 | Tnum (size : int_type.t) (signed : signed)
 | Tchar_ (_ : char_type)
 | Tvoid
-| Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
+| Tarray (_ : type) (_ : N)
+| Tincomplete_array (_ : type)
+| Tvariable_array (_ : type) (* (_ : Expr) -- not supported *)
 | Tnamed (_ : globname)
 | Tenum (_ : globname) (* enumerations *)
 | Tfunction {cc : calling_conv} {ar : function_arity} (_ : (*decl*)type) (_ : list (*decl*)type)
@@ -324,6 +326,10 @@ Section type_ind'.
   Hypothesis Tvoid_ind' : P Tvoid.
   Hypothesis Tarray_ind' : forall (ty : type) (sz : N),
     P ty -> P (Tarray ty sz).
+  Hypothesis Tincomplete_array_ind' : forall ty,
+    P ty -> P (Tincomplete_array ty).
+  Hypothesis Tvariable_array_ind' : forall ty,
+    P ty -> P (Tvariable_array ty).
   Hypothesis Tnamed_ind' : forall (name : globname),
     P (Tnamed name).
   Hypothesis Tenum_ind' : forall (name : globname),
@@ -350,6 +356,8 @@ Section type_ind'.
     | Tchar_ sz               => Tchar__ind' sz
     | Tvoid                   => Tvoid_ind'
     | Tarray ty sz            => Tarray_ind' ty sz (type_ind' ty)
+    | Tincomplete_array ty    => Tincomplete_array_ind' ty (type_ind' ty)
+    | Tvariable_array ty      => Tvariable_array_ind' ty (type_ind' ty)
     | Tnamed name             => Tnamed_ind' name
     | Tenum name              => Tenum_ind' name
     | Tfunction ty tys        =>
@@ -403,6 +411,8 @@ Section type_countable.
       | Tnum sz sgn => GenNode 3 [BITSIZE sz; SIGNED sgn]
       | Tvoid => GenNode 4 []
       | Tarray t n => GenNode 5 [go t; N n]
+      | Tincomplete_array t => GenNode 17 [go t]
+      | Tvariable_array t => GenNode 18 [go t]
       | Tnamed gn => GenNode 6 [BS gn]
       | @Tfunction cc ar ret args => GenNode 7 $ (CC cc) :: (AR ar) :: go ret :: (go <$> args)
       | Tbool => GenNode 8 []
@@ -423,6 +433,8 @@ Section type_countable.
       | GenNode 3 [BITSIZE sz; SIGNED sgn] => Tnum sz sgn
       | GenNode 4 [] => Tvoid
       | GenNode 5 [t; N n] => Tarray (go t) n
+      | GenNode 17 [t] => Tincomplete_array (go t)
+      | GenNode 18 [t] => Tvariable_array (go t)
       | GenNode 6 [BS gn] => Tnamed gn
       | GenNode 7 (CC cc :: AR ar :: ret :: args) => @Tfunction cc ar (go ret) (go <$> args)
       | GenNode 8 [] => Tbool
@@ -437,7 +449,7 @@ Section type_countable.
       | _ => Tvoid	(** dummy *)
       end.
     apply (inj_countable' enc dec). refine (fix go t := _).
-    destruct t as [| | | | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
+    destruct t as [| | | | | | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
     induction args; simpl; f_equal; done.
   Defined.
 End type_countable.
@@ -709,7 +721,7 @@ Lemma decompose_type_unfold t :
     else (QM, t).
 Proof.
   rewrite /decompose_type qual_norm_unfold.
-  destruct t as [| | | | | | | | | | | | |q t| |]; try done. set pair := fun x y => (x, y).
+  destruct t as [| | | | | | | | | | | | | | |q t| |]; try done. set pair := fun x y => (x, y).
   move: q. induction t=>q; cbn; try by rewrite right_id_L.
   rewrite left_id_L !IHt /=. f_equal. by rewrite assoc_L.
 Qed.
@@ -831,6 +843,8 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tnamed _
   | Tenum _ => t
   | Tarray t sz => Tarray (erase_qualifiers t) sz
+  | Tincomplete_array t => Tincomplete_array (erase_qualifiers t)
+  | Tvariable_array t => Tvariable_array (erase_qualifiers t)
   | @Tfunction cc ar t ts => Tfunction (cc:=cc) (ar:=ar) (erase_qualifiers t) (List.map erase_qualifiers ts)
   | Tmember_pointer cls t => Tmember_pointer cls (erase_qualifiers t)
   | Tqualified _ t => erase_qualifiers t
@@ -855,7 +869,7 @@ Proof. by rewrite erase_qualifiers_qual_norm qual_norm_decompose_type. Qed.
 Lemma erase_qualifiers_idemp t : erase_qualifiers (erase_qualifiers t) = erase_qualifiers t.
 Proof.
   move: t. fix IHt 1=>t.
-  destruct t as [| | | | | | | | |cc ar ret args| | | | | |]; cbn; auto with f_equal.
+  destruct t as [| | | | | | | | | | |cc ar ret args| | | | | |]; cbn; auto with f_equal.
   { (* functions *) rewrite IHt. f_equal. induction args; cbn; auto with f_equal. }
 Qed.
 
@@ -1224,6 +1238,8 @@ Fixpoint normalize_type (t : type) : type :=
   | Tref t => Tref (normalize_type t)
   | Trv_ref t => Trv_ref (normalize_type t)
   | Tarray t n => Tarray (normalize_type t) n
+  | Tincomplete_array t => Tincomplete_array (normalize_type t)
+  | Tvariable_array t => Tvariable_array (normalize_type t)
   | @Tfunction cc ar r args =>
     Tfunction (cc:=cc) (ar:=ar) (normalize_type r) (List.map drop_norm args)
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
@@ -1615,7 +1631,7 @@ Notation Tu128  := (Tnum W128 Unsigned).
  * - cpp2v should probably insert these types.
  *)
 (**
-https://en.cppreference.com/w/cpp/language/types
+<https://en.cppreference.com/w/cpp/language/types>
 The 4 definitions below use the LP64 data model.
 LLP64 and LP64 agree except for the [long] type: see
 the warning below.

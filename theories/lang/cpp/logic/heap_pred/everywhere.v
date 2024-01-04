@@ -28,7 +28,7 @@ Section with_cpp.
     (mut_type f a).2 = (mut_type f b).2.
   Proof. rewrite /mut_type. case_match; case_match; simpl; auto. Qed.
 
-  (** [qualify cv q] applies the <<const>> qualify from [cv] to [q]. *)
+  (** [qualify cv q] applies the <<const>> qualifier from [cv] to [q]. *)
   Definition qualify (tq : type_qualifiers) (q : cQp.t) : cQp.t :=
     if q_const tq then cQp.const q else q.
 
@@ -128,6 +128,8 @@ Section with_cpp.
           end
       | Tarray ty n =>
           arrayR ty (fun _ => typeR q ty) (replicateN n tt)
+      | Tincomplete_array _ => False
+      | Tvariable_array _ => False
 
       | Tqualified tq ty => typeR (qualify tq q) ty
       | Tfunction _ _ => False

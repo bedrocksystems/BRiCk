@@ -568,6 +568,8 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
       rewrite -has_type_prop_char; naive_solver.
       admit.
       admit.
+      admit.
+      admit.
       { (* Needs well-founded induction on types and [genv]! *)
         rewrite has_type_prop_enum => -[?] [?] [?]. admit. }
       admit.

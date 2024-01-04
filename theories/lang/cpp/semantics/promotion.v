@@ -164,6 +164,8 @@ Definition promote_integral {σ : genv} (tu : translation_unit) (ty : type) : op
   | Trv_ref _
   | Tvoid
   | Tarray _ _
+  | Tincomplete_array _
+  | Tvariable_array _
   | Tnamed _
   | Tfunction _ _
   | Tmember_pointer _ _
