@@ -1181,10 +1181,19 @@ Module Type Expr.
         Note that the memory is *not* returned to the C++ abstract
         machine because this is not reclaimation for an object going
         out of scope.
+
+        TODO(gmm): These two rules are conservative.
+        - They requires a mutable object which means that it can not be used
+          to destroy <const> objects.
      *)
     Axiom wp_operand_pseudo_destructor : forall e ty Q,
-        wp_lval e (fun v free => v |-> anyR ty (cQp.mut 1) ** (v |-> tblockR ty (cQp.mut 1) -* Q Vvoid free))
-        |-- wp_operand (Epseudo_destructor ty e) Q.
+        (letI* v, free := wp_glval e in
+         v |-> anyR ty (cQp.mut 1) ** (v |-> tblockR ty (cQp.mut 1) -* Q Vvoid free))
+        |-- wp_operand (Epseudo_destructor false ty e) Q.
+    Axiom wp_operand_pseudo_destructor_arrow : forall e ty ety (_ : (unptr $ type_of e) = Some ety) Q,
+        (letI* v, free := wp_glval (Ederef e ety) in
+         v |-> anyR ty (cQp.mut 1) ** (v |-> tblockR ty (cQp.mut 1) -* Q Vvoid free))
+        |-- wp_operand (Epseudo_destructor true ty e) Q.
 
     (* [Eimplicit_init] nodes reflect implicit /value initializations/ which are inserted
        into the AST by Clang [1]. The C++ standard states that value initializations [2]

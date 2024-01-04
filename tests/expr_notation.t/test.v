@@ -365,8 +365,8 @@ Section TestExprNotations.
   #[local] Definition Eva_arg_2 : Expr := Eva_arg (Eint 217 ty) ty.
   Print Eva_arg_1. Print Eva_arg_2.
 
-  #[local] Definition Epseudo_destructor_1 : Expr := Epseudo_destructor ty e.
-  #[local] Definition Epseudo_destructor_2 : Expr := Epseudo_destructor ty (Eint 217 ty).
+  #[local] Definition Epseudo_destructor_1 : Expr := Epseudo_destructor true ty e.
+  #[local] Definition Epseudo_destructor_2 : Expr := Epseudo_destructor false ty (Eint 217 ty).
   Print Epseudo_destructor_1. Print Epseudo_destructor_2.
 
   Check (Eunsupported "This was an unsupported operation" Prvalue ty).

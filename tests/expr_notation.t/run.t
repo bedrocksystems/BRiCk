@@ -649,19 +649,19 @@
        : BuiltinFn
   {e: __builtin_UNKNOWN_"__builtin__foobarbaz"}
        : BuiltinFn
-  Eva_arg_1 = {e: {?: e}}
+  Eva_arg_1 = {e: __builtin_vaarg({?: e}, {?: ty})}
        : Expr
   
   Eva_arg_1 uses section variables ty e.
-  Eva_arg_2 = {e: #217}
+  Eva_arg_2 = {e: __builtin_vaarg(#217, {?: ty})}
        : Expr
   
   Eva_arg_2 uses section variable ty.
-  Epseudo_destructor_1 = {e: {?: e}}
+  Epseudo_destructor_1 = {e: {?: e}->~{?: ty}()}
        : Expr
   
   Epseudo_destructor_1 uses section variables ty e.
-  Epseudo_destructor_2 = {e: #217}
+  Epseudo_destructor_2 = {e: #217.~{?: ty}()}
        : Expr
   
   Epseudo_destructor_2 uses section variable ty.

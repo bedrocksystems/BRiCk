@@ -422,7 +422,7 @@ Inductive Expr : Set :=
 
 | Eatomic (_ : AtomicOp) (_ : list Expr) (_ : exprtype)
 | Eva_arg (_ : Expr) (_ : exprtype)
-| Epseudo_destructor (_ : decltype) (_ : Expr)
+| Epseudo_destructor (is_arrow : bool) (_ : decltype) (_ : Expr)
 
 | Earrayloop_init (oname : N) (src : Expr) (level : N) (length : N) (init : Expr) (_ : exprtype)
 | Earrayloop_index (level : N) (_ : exprtype)

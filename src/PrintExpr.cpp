@@ -465,6 +465,7 @@ public:
     void VisitCallExpr(const CallExpr* expr, CoqPrinter& print,
                        ClangPrinter& cprint, const ASTContext&,
                        OpaqueNames& li) {
+        auto callee = expr->getCallee();
         if (print.templates() && is_dependent(expr)) {
             /*
             Either the function or an argument is dependent.
@@ -476,15 +477,25 @@ public:
                 cprint.printExpr(i, print, li);
             });
             print.end_ctor();
-            return;
+        } else if (auto pd = dyn_cast<CXXPseudoDestructorExpr>(callee)) {
+            // in the clang AST, pseudo destructors are represented as calls
+            // but in the BRiCk AST, they are their own construct.
+            assert(expr->arguments().empty());
+            print.ctor("Epseudo_destructor")
+                << fmt::BOOL(pd->isArrow()) << fmt::nbsp;
+            cprint.printQualType(pd->getDestroyedType(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(pd->getBase(), print);
+            print.end_ctor();
+        } else {
+            print.ctor("Ecall");
+            cprint.printExpr(expr->getCallee(), print, li);
+            print.output() << fmt::line;
+            print.list(expr->arguments(), [&](auto print, auto i) {
+                cprint.printExpr(i, print, li);
+            });
+            done(expr, print, cprint, print.templates() ? Done::NONE : Done::T);
         }
-
-        print.ctor("Ecall");
-        cprint.printExpr(expr->getCallee(), print, li);
-        print.output() << fmt::line;
-        print.list(expr->arguments(),
-                   [&](auto print, auto i) { cprint.printExpr(i, print, li); });
-        done(expr, print, cprint, print.templates() ? Done::NONE : Done::T);
     }
 
     auto&& printOverloadableOperator(OverloadedOperatorKind oo,
