@@ -188,6 +188,21 @@ Section seqN.
         apply sublist_cons_r; left.
         apply IHm; [lia | lia].
   Qed.
+
+  Lemma dropN_seqN j n m :
+    dropN m (seqN j n) = seqN (j + m) (n - m).
+  Proof. by rewrite /dropN/seqN -!fmap_drop drop_seq N2Nat.inj_add N2Nat.inj_sub. Qed.
+
+  Lemma dropN_seqN_cons i n :
+    i < n ->
+    dropN i (seqN 0 n) = i :: dropN (i + 1) (seqN 0 n).
+  Proof.
+    move=>?.
+    rewrite dropN_seqN N.add_0_l (_ : (n - i = N.succ (N.pred (n - i)))); first by
+      rewrite seqN_S_start dropN_seqN N.add_0_l; repeat f_equal; lia.
+    rewrite (N.lt_succ_pred 0) //; lia.
+  Qed.
+
 End seqN.
 
 Lemma repeatN_replicateN {A} (x : A) n :
