@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -20,22 +20,34 @@
 using namespace clang;
 using namespace fmt;
 
+[[noreturn]] static void
+fatal(CoqPrinter& print, ClangPrinter &cprint, loc::loc loc, StringRef msg) {
+    cprint.error_prefix(logging::fatal(), loc) << "error: " << msg << "\n";
+    cprint.debug_dump(loc);
+    print.die();
+}
+
 static void
-unsupported_type(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
-    print.ctor("Tunsupported", false);
-    print.str(type->getTypeClassName());
-    print.end_ctor();
+unsupported(CoqPrinter& print, ClangPrinter& cprint, loc::loc loc,
+            const Twine &msg, bool well_known = false) {
+    if (!well_known || ClangPrinter::warn_well_known) {
+        cprint.error_prefix(logging::unsupported(), loc)
+            << "warning: unsupported " << msg << "\n";
+        cprint.debug_dump(loc);
+    }
+    guard::ctor _(print, "Tunsupported", false);
+    {
+        std::string coqmsg;
+        llvm::raw_string_ostream os{coqmsg};
+        os << loc::describe(loc, cprint.getContext());
+        print.str(coqmsg);
+    }
+}
 
-    using namespace logging;
-    unsupported() << "[WARN] unsupported type (" << type->getTypeClassName()
-                  << "):";
-#if CLANG_VERSION_MAJOR >= 11
-    type->dump(unsupported(), cprint.getContext());
-#else
-    type->dump(unsupported());
-#endif
-
-    unsupported() << "\n";
+static void
+unsupported_type(CoqPrinter& print, ClangPrinter& cprint, const Type* type,
+                 bool well_known = false) {
+    unsupported(print, cprint, loc::of(type), "type", well_known);
 }
 
 class PrintType :
@@ -47,12 +59,24 @@ public:
     static PrintType printer;
 
     void VisitType(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
-        unsupported_type(type, print, cprint);
+        unsupported_type(print, cprint, type);
     }
+
+#define IGNORE(T)                                                              \
+    void Visit##T(const T* type, CoqPrinter& print, ClangPrinter& cprint) {    \
+        unsupported_type(print, cprint, type, /*well_known*/ true);            \
+    }
+
+    // Several of these are template TODOs
+
+    IGNORE(BlockPointerType)
+    IGNORE(DependentNameType)
+    IGNORE(DependentSizedArrayType)
+    IGNORE(PackExpansionType)
 
     void VisitAttributedType(const AttributedType* type, CoqPrinter& print,
                              ClangPrinter& cprint) {
-        cprint.printQualType(type->getModifiedType(), print);
+        cprint.printQualType(type->getModifiedType(), print, loc::of(type));
     }
 
     static const char* getTransformName(UnaryTransformType::UTTKind k) {
@@ -73,6 +97,13 @@ public:
 
     void VisitUnaryTransformType(const UnaryTransformType* type,
                                  CoqPrinter& print, ClangPrinter& cprint) {
+        if (type->isDependentType()) {
+            // TODO: templates
+            unsupported_type(print, cprint, type,
+                             /*well_known*/ true);
+            return;
+        }
+
         switch (auto kind = type->getUTTKind()) {
         case UnaryTransformType::UTTKind::EnumUnderlyingType:
 
@@ -98,43 +129,43 @@ public:
         }
 
         // The argument
-        cprint.printQualType(type->getBaseType(), print);
+        cprint.printQualType(type->getBaseType(), print, loc::of(type));
         print.output() << fmt::nbsp;
 
-        // The result
-        cprint.printQualType(type->getUnderlyingType(), print);
+        // The result (can be null if dependent)
+        cprint.printQualType(type->getUnderlyingType(), print, loc::of(type));
         print.end_ctor();
     }
 
     void VisitAutoType(const AutoType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
-        if (type->isDeduced()) {
-            cprint.printQualType(type->getDeducedType(), print);
+        if (type->isDeduced() && !type->isDependentType()) {
+            cprint.printQualType(type->getDeducedType(), print, loc::of(type));
         } else {
             if (print.templates())
                 print.output() << "Tauto";
             else
-                unsupported_type(type, print, cprint);
+                unsupported_type(print, cprint, type, /*well_known*/ true);
         }
     }
 
     void VisitDeducedType(const DeducedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         if (type->isDeduced()) {
-            cprint.printQualType(type->getDeducedType(), print);
+            cprint.printQualType(type->getDeducedType(), print, loc::of(type));
         } else {
-            unsupported_type(type, print, cprint);
+            unsupported_type(print, cprint, type);
         }
     }
 
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
                                    CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Tvar", false);
+        print.ctor(print.ast2() ? "Tparam" : "Tvar", false);
         if (auto ident = type->getIdentifier()) {
             print.str(ident->getName());
         } else {
             cprint.printNameForAnonTemplateParam(type->getDepth(),
-                                                 type->getIndex(), print);
+                                                 type->getIndex(), print, loc::of(type));
         }
         print.end_ctor();
     }
@@ -143,20 +174,20 @@ public:
                        ClangPrinter& cprint) {
         auto ed = type->getDecl()->getCanonicalDecl();
         print.ctor("Tenum", false);
-        cprint.printTypeName(ed, print);
+        cprint.printTypeName(ed, print, loc::of(type));
         print.end_ctor();
     }
 
     void VisitRecordType(const RecordType* type, CoqPrinter& print,
                          ClangPrinter& cprint) {
         print.ctor("Tnamed", false);
-        cprint.printTypeName(type->getDecl(), print);
+        cprint.printTypeName(type->getDecl(), print, loc::of(type));
         print.end_ctor();
     }
 
     void VisitParenType(const ParenType* type, CoqPrinter& print,
                         ClangPrinter& cprint) {
-        cprint.printQualType(type->getInnerType(), print);
+        cprint.printQualType(type->getInnerType(), print, loc::of(type));
     }
 
     void VisitBuiltinType(const BuiltinType* type, CoqPrinter& print,
@@ -215,17 +246,20 @@ public:
             break;
 #endif
         case BuiltinType::Kind::Dependent:
-            if (!print.templates()) {
-                unsupported_type(type, print, cprint);
+            if (print.templates()) {
+                // TODO: Placeholder
+                print.output() << "Tdependent";
+            } else if (false) {
+                // We prefer to keep going with Tunsupported
                 using namespace logging;
                 fatal()
                     << "Clang failed to resolve type, due to earlier errors or "
                        "unresolved templates\n"
                     << "Try fixing earlier errors, or ask for help. Aborting\n";
                 die();
-                break;
-            }
-            [[fallthrough]];
+            } else
+                unsupported_type(print, cprint, type, /*well_known*/ true);
+            break;
 
         default:
             if (type->isAnyCharacterType()) {
@@ -236,16 +270,16 @@ public:
                 assert(false);
 #if CLANG_VERSION_MAJOR >= 11
             } else if (type->isSizelessBuiltinType()) {
+                // TODO: This seems a bit random. Do we need
+                // another type constructor?
                 print.output() << fmt::lparen << "Tarch None \""
                                << type->getNameAsCString(
                                       cprint.getContext().getPrintingPolicy())
                                << "\"" << fmt::rparen;
                 break;
 #endif
-            } else if (print.templates() && type->isDependentType()) {
-                print.output() << "Tdependent";
             } else {
-                unsupported_type(type, print, cprint);
+                unsupported_type(print, cprint, type);
             }
         }
     }
@@ -253,21 +287,21 @@ public:
     void VisitLValueReferenceType(const LValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tref", false);
-        cprint.printQualType(type->getPointeeType(), print);
+        cprint.printQualType(type->getPointeeType(), print, loc::of(type));
         print.end_ctor();
     }
 
     void VisitRValueReferenceType(const RValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Trv_ref", false);
-        cprint.printQualType(type->getPointeeType(), print);
+        cprint.printQualType(type->getPointeeType(), print, loc::of(type));
         print.end_ctor();
     }
 
     void VisitPointerType(const PointerType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         print.ctor("Tptr", false);
-        cprint.printQualType(type->getPointeeType(), print);
+        cprint.printQualType(type->getPointeeType(), print, loc::of(type));
         print.end_ctor();
     }
 
@@ -277,44 +311,44 @@ public:
             print.ctor("@Talias", false);
             print.type() << fmt::nbsp;
             print.output() << "\"";
-            cprint.printTypeName(type->getDecl(), print);
+            cprint.printTypeName(type->getDecl(), print, loc::of(type));
             // printing a "human readable" type
             // type->getDecl()->printQualifiedName(print.output().nobreak());
             print.output() << "\"" << fmt::nbsp;
             cprint.printQualType(
                 type->getDecl()->getCanonicalDecl()->getUnderlyingType(),
-                print);
+                print, loc::of(type));
             print.end_ctor();
         } else {
             cprint.printQualType(
                 type->getDecl()->getCanonicalDecl()->getUnderlyingType(),
-                print);
+                print, loc::of(type));
         }
     }
 
     void VisitFunctionProtoType(const FunctionProtoType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("@Tfunction");
-        cprint.printCallingConv(type->getCallConv(), print);
+        cprint.printCallingConv(type->getCallConv(), print, loc::of(type));
         print.output() << fmt::nbsp;
         cprint.printVariadic(type->isVariadic(), print);
         print.output() << fmt::nbsp;
-        cprint.printQualType(type->getReturnType(), print);
+        cprint.printQualType(type->getReturnType(), print, loc::of(type));
         print.output() << fmt::nbsp;
         print.list(type->param_types(),
-                   [&](auto print, auto i) { cprint.printQualType(i, print); });
+                   [&](auto i) { cprint.printQualType(i, print, loc::of(type)); });
         print.end_ctor();
     }
 
     void VisitElaboratedType(const ElaboratedType* type, CoqPrinter& print,
                              ClangPrinter& cprint) {
-        cprint.printQualType(type->getNamedType(), print);
+        cprint.printQualType(type->getNamedType(), print, loc::of(type));
     }
 
     void VisitConstantArrayType(const ConstantArrayType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tarray");
-        cprint.printQualType(type->getElementType(), print);
+        cprint.printQualType(type->getElementType(), print, loc::of(type));
         print.output() << fmt::nbsp << type->getSize().getLimitedValue();
         print.end_ctor();
     }
@@ -322,20 +356,20 @@ public:
     void VisitSubstTemplateTypeParmType(const SubstTemplateTypeParmType* type,
                                         CoqPrinter& print,
                                         ClangPrinter& cprint) {
-        cprint.printQualType(type->getReplacementType(), print);
+        cprint.printQualType(type->getReplacementType(), print, loc::of(type));
     }
 
     void VisitIncompleteArrayType(const IncompleteArrayType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tincomplete_array");
-        cprint.printQualType(type->getElementType(), print);
+        cprint.printQualType(type->getElementType(), print, loc::of(type));
         print.end_ctor();
     }
 
     void VisitVariableArrayType(const VariableArrayType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tvariable_array");
-        cprint.printQualType(type->getElementType(), print);
+        cprint.printQualType(type->getElementType(), print, loc::of(type));
         print.output() << fmt::nbsp;
         cprint.printExpr(type->getSizeExpr(), print);
         print.end_ctor();
@@ -344,63 +378,125 @@ public:
     void VisitDecayedType(const DecayedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         print.ctor("Tdecay_type");
-        cprint.printQualType(type->getOriginalType(), print);
+        cprint.printQualType(type->getOriginalType(), print, loc::of(type));
         print.output() << fmt::nbsp;
-        cprint.printQualType(type->getAdjustedType(), print);
+        cprint.printQualType(type->getAdjustedType(), print, loc::of(type));
         print.end_ctor();
+    }
+
+    fmt::Formatter&
+    printRiskyTypeComment(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
+        if (ClangPrinter::debug && cprint.trace(Trace::Type)) {
+            auto loc = loc::of(type);
+            cprint.trace("printRiskyTypeComment", loc);
+            std::string cmt;
+            llvm::raw_string_ostream os{cmt};
+            auto &context = cprint.getContext();
+            os << "risky type";
+            if (loc::can_describe(loc))
+                os << ": " << loc::describe(loc, context);
+            cprint.error_prefix(logging::unsupported(), loc)
+                << "warning: " << cmt << "\n";
+            return print.cmt(cmt);
+        } else
+            return print.output();
     }
 
     void VisitTemplateSpecializationType(const TemplateSpecializationType* type,
                                          CoqPrinter& print,
                                          ClangPrinter& cprint) {
+        auto unsupported = [&]() {
+            unsupported_type(print, cprint, type, /*well_known*/ true);
+        };
         if (type->isSugared()) {
-            cprint.printQualType(type->desugar(), print);
-        } else {
-            unsupported_type(type, print, cprint);
-        }
+            cprint.printQualType(type->desugar(), print, loc::of(type));
+        } else if (print.ast2()) {
+            /*
+            TODO: See the comment in VisitInjectedClassNameType. We
+            probably have to print the entire specialized scope, and not
+            just this type.
+            */
+            auto temp = type->getTemplateName().getAsTemplateDecl();
+            auto args = type->template_arguments();
+            if (temp) {
+                printRiskyTypeComment(type, print, cprint) << fmt::nbsp;
+                guard::ctor _1(print, "Tnamed");
+                guard::ctor _2(print, "Ninst");
+                cprint.printStructuredName(*temp, print) << fmt::nbsp;
+                cprint.printTemplateArgumentList(args, print);
+            } else
+                unsupported();
+        } else
+            unsupported();
     }
 
     void VisitDecltypeType(const DecltypeType* type, CoqPrinter& print,
                            ClangPrinter& cprint) {
         if (type->isSugared()) {
             // The guard ensure the type visitor terminates.
-            cprint.printQualType(type->desugar(), print);
+            cprint.printQualType(type->desugar(), print, loc::of(type));
         } else if (print.templates()) {
-            cprint.printQualType(type->getUnderlyingType(), print);
-        } else {
-            unsupported_type(type, print, cprint);
-        }
+            cprint.printQualType(type->getUnderlyingType(), print, loc::of(type));
+        } else
+            unsupported_type(print, cprint, type, /*well_known*/ true);
     }
 
     void VisitTypeOfExprType(const TypeOfExprType* type, CoqPrinter& print,
                              ClangPrinter& cprint) {
         if (type->isSugared()) {
             // The guard ensure the type visitor terminates.
-            cprint.printQualType(type->desugar(), print);
+            cprint.printQualType(type->desugar(), print, loc::of(type));
         } else if (print.templates()) {
             /*
             TODO: Test whether we need printQualTypeOption here.
             */
-            cprint.printQualType(type->getUnderlyingExpr()->getType(), print);
+            cprint.printQualType(type->getUnderlyingExpr()->getType(), print, loc::of(type));
         } else {
-            unsupported_type(type, print, cprint);
+            unsupported_type(print, cprint, type);
         }
     }
 
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
                                     CoqPrinter& print, ClangPrinter& cprint) {
-        if (type->getDecl()) {
-            print.ctor("Tvar", false);
-            cprint.printTypeName(type->getDecl(), print);
-            print.end_ctor();
+        auto nodecl = [&]() {
+            unsupported(print, cprint, loc::of(type),
+                        "injected class name without declaration");
+        };
+        if (print.templates() && print.ast2()) {
+            if (auto decl = type->getDecl()) {
+                /*
+                TODO: We probably have to make this smarter.
+
+                Cobble up some examples and decide if there is a problem
+                with always synthesizing arguments.
+
+                Example idea: Print the type of a template in a
+                (partially) specialized scope.
+
+                Algorithm idea: We probably have have to walk up the
+                declaration context chain, collecting a list of
+                `TemplateArgument + TemplateParameter` entries, and
+                synthesizing only those arguments that are "missing".
+                */
+                printRiskyTypeComment(type, print, cprint) << fmt::nbsp;
+                guard::ctor _1(print, "Tnamed");
+                guard::ctor _2(print, "Ninst");
+                cprint.printStructuredName(*decl, print) << fmt::nbsp;
+                cprint.printTemplateParameters(*decl, print, true);
+            } else
+                nodecl();
         } else {
-            logging::log() << "no underlying declaration for \n";
-#if CLANG_VERSION_MAJOR >= 11
-            type->dump(logging::log(), cprint.getContext());
-#else
-            type->dump(logging::log());
-#endif
-            cprint.printQualType(type->getInjectedSpecializationType(), print);
+            if (auto decl = type->getDecl()) {
+                guard::ctor _(print, "Tvar");
+                cprint.printTypeName(*decl, print);
+            } else {
+                nodecl();
+                if (false) {
+                    // Previously, we complained but kept going with the IST.
+                    cprint.printQualType(type->getInjectedSpecializationType(),
+                                         print, loc::of(type));
+                }
+            }
         }
     }
 
@@ -409,7 +505,7 @@ public:
         print.ctor("Tmember_pointer");
         auto class_type = type->getClass();
         if (!print.templates()) {
-            cprint.printTypeName(class_type->getAsCXXRecordDecl(), print);
+            cprint.printTypeName(class_type->getAsCXXRecordDecl(), print, loc::of(type));
         } else {
             /*
             `class_type` may not be a concrete class (e.g., it could
@@ -418,35 +514,46 @@ public:
             this->Visit(class_type, print, cprint);
         }
         print.output() << fmt::nbsp;
-        cprint.printQualType(type->getPointeeType(), print);
+        cprint.printQualType(type->getPointeeType(), print, loc::of(type));
         print.end_ctor();
     }
 
     void VisitMacroQualifiedType(const MacroQualifiedType* type,
                                  CoqPrinter& print, ClangPrinter& cprint) {
-        cprint.printQualType(type->getModifiedType(), print);
+        cprint.printQualType(type->getModifiedType(), print, loc::of(type));
     }
 
 #if CLANG_VERSION_MAJOR >= 14
     void VisitUsingType(const UsingType* type, CoqPrinter& print,
                         ClangPrinter& cprint) {
         assert(type->isSugared());
-        cprint.printQualType(type->getUnderlyingType(), print);
+        cprint.printQualType(type->getUnderlyingType(), print, loc::of(type));
     }
 #endif
 };
 
 PrintType PrintType::printer;
 
-void
-ClangPrinter::printType(const clang::Type* type, CoqPrinter& print) {
+fmt::Formatter&
+ClangPrinter::printType(const Type& type, CoqPrinter& print) {
+    if (trace(Trace::Type)) trace("printType", loc::of(type));
     __attribute__((unused)) auto depth = print.output().get_depth();
-    PrintType::printer.Visit(type, print, *this);
+    PrintType::printer.Visit(&type, print, *this);
     assert(depth == print.output().get_depth());
+    return print.output();
 }
 
-void
-ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print) {
+fmt::Formatter&
+ClangPrinter::printType(const clang::Type* type, CoqPrinter& print, loc::loc loc) {
+    if (type)
+        return printType(*type, print);
+    else
+        fatal(print, *this, loc, "unexpected null type in printType");
+}
+
+fmt::Formatter&
+ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print, loc::loc loc) {
+    if (trace(Trace::Type)) trace("printQualType", loc::of(qt));
     if (auto p = qt.getTypePtrOrNull()) {
         if (qt.isLocalConstQualified()) {
             if (qt.isVolatileQualified()) {
@@ -454,55 +561,53 @@ ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print) {
             } else {
                 print.ctor("Qconst", false);
             }
-            printType(p, print);
+            printType(*p, print);
             print.end_ctor();
         } else {
             if (qt.isLocalVolatileQualified()) {
                 print.ctor("Qmut_volatile", false);
-                printType(p, print);
+                printType(*p, print);
                 print.end_ctor();
             } else {
-                printType(p, print);
+                printType(*p, print);
             }
         }
-    } else {
-        using namespace logging;
-        fatal() << "unexpected null type in printQualType\n";
-        die();
-    }
+        return print.output();
+    } else
+        fatal(print, *this, loc, "unexpected null type in printQualType");
 }
 
-void
-ClangPrinter::printQualTypeOption(const QualType& qt, CoqPrinter& print) {
+fmt::Formatter&
+ClangPrinter::printQualTypeOption(const QualType& qt, CoqPrinter& print, loc::loc loc) {
     auto t = qt.getTypePtrOrNull();
     if (t == nullptr || t->isDependentType()) {
-        print.none();
+        return print.none();
     } else {
         print.some();
-        printQualType(qt, print);
-        print.end_ctor();
+        printQualType(qt, print, loc);
+        return print.end_ctor();
     }
 }
 
-void
+fmt::Formatter&
 ClangPrinter::printQualifier(const QualType& qt, CoqPrinter& print) const {
-    printQualifier(qt.isConstQualified(), qt.isVolatileQualified(), print);
+    return printQualifier(qt.isConstQualified(), qt.isVolatileQualified(), print);
 }
 
-void
+fmt::Formatter&
 ClangPrinter::printQualifier(bool is_const, bool is_volatile,
-                             CoqPrinter& print) const {
+                            CoqPrinter& print) const {
     if (is_const) {
         if (is_volatile) {
-            print.output() << "QCV";
+            return print.output() << "QCV";
         } else {
-            print.output() << "QC";
+            return print.output() << "QC";
         }
     } else {
         if (is_volatile) {
-            print.output() << "QV";
+            return print.output() << "QV";
         } else {
-            print.output() << "QM";
+            return print.output() << "QM";
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -29,7 +29,10 @@ static inline llvm::raw_ostream&
 unsupported() {
     return log(UNSUPPORTED);
 }
-
+static inline llvm::raw_ostream&
+verbose() {
+    return log(VERBOSE);
+}
 static inline llvm::raw_ostream&
 debug() {
     return log(VERBOSER);

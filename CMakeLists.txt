@@ -1,5 +1,5 @@
 ##
-## Copyright (c) 2020 BedRock Systems, Inc.
+## Copyright (c) 2020-2024 BedRock Systems, Inc.
 ## This software is distributed under the terms of the BedRock Open-Source License.
 ## See the LICENSE-BedRock file in the repository root for details.
 ##
@@ -59,6 +59,7 @@ IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
     STATIC
     src/Elaborate.cpp
     src/Version.cpp
+    src/PrintName.cpp
     src/PrintExpr.cpp
     src/PrintStmt.cpp
     src/PrintType.cpp
@@ -70,8 +71,9 @@ IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
     src/NotationWriter.cpp
     src/Formatter.cpp
     src/Logging.cpp
+    src/Location.cpp
+	src/Template.cpp
     src/ClangPrinter.cpp
-    src/BedRockMangle.cpp
     src/StringPrettyPrinter.cpp
     src/ToCoq.cpp
     src/FromClang.cpp
@@ -86,6 +88,7 @@ ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
     PARTIAL_SOURCES_INTENDED
     src/Elaborate.cpp
     src/Version.cpp
+    src/PrintName.cpp
     src/PrintExpr.cpp
     src/PrintStmt.cpp
     src/PrintType.cpp
@@ -97,8 +100,9 @@ ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
     src/NotationWriter.cpp
     src/Formatter.cpp
     src/Logging.cpp
+    src/Location.cpp
+	src/Template.cpp
     src/ClangPrinter.cpp
-    src/BedRockMangle.cpp
     src/StringPrettyPrinter.cpp
     src/ToCoq.cpp
     src/FromClang.cpp

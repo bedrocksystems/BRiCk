@@ -321,13 +321,15 @@
   
   Sdo_multiline uses section variables ty s.
   {s: break;}
-       : Stmt' ?type ?Expr
+       : Stmt' ?obj_name ?type ?Expr
   where
+  ?obj_name : [ty : type  e : Expr  s : Stmt |- Set]
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
   {s: continue;}
-       : Stmt' ?type ?Expr
+       : Stmt' ?obj_name ?type ?Expr
   where
+  ?obj_name : [ty : type  e : Expr  s : Stmt |- Set]
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
   Sreturn_None = {s: return;}
@@ -347,20 +349,23 @@
   Sattr_cons = {s: [["foo", "bar", "baz"]] break;}
        : Stmt
   {s: <LABEL: "FOO_BAR"> return;}
-       : Stmt' ?type ?Expr
+       : Stmt' ?obj_name ?type ?Expr
   where
+  ?obj_name : [ty : type  e : Expr  s : Stmt |- Set]
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
   {s: goto "FOO_BAR";}
-       : Stmt' ?type ?Expr
+       : Stmt' ?obj_name ?type ?Expr
   where
+  ?obj_name : [ty : type  e : Expr  s : Stmt |- Set]
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
   {s: <LABEL: "FOO_BAR"> continue;
       goto "FOO_BAR";
       // end block}
-       : Stmt' ?type ?Expr
+       : Stmt' ?obj_name ?type ?Expr
   where
+  ?obj_name : [ty : type  e : Expr  s : Stmt |- Set]
   ?type : [ty : type  e : Expr  s : Stmt |- Set]
   ?Expr : [ty : type  e : Expr  s : Stmt |- Set]
   {e: {UNSUPPORTED: "This was an unsupported operation"}}

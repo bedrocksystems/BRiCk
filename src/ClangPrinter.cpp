@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -18,8 +18,8 @@
 using namespace clang;
 
 ClangPrinter::ClangPrinter(clang::CompilerInstance *compiler,
-                           clang::ASTContext *context)
-    : compiler_(compiler), context_(context) {
+                           clang::ASTContext *context, Trace::Mask trace)
+    : compiler_(compiler), context_(context), trace_(trace) {
     mangleContext_ =
         ItaniumMangleContext::create(*context, compiler->getDiagnostics());
 }
@@ -47,15 +47,10 @@ getParameterNumber(const ParmVarDecl *decl) {
 }
 } // namespace
 
-void
-ClangPrinter::printDeclName(const NamedDecl* decl, CoqPrinter& print) const {
-    print.output() << '"';
-    decl->printName(print.output().nobreak());
-    print.output() << '"';
-}
+fmt::Formatter&
+ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
+    if (trace(Trace::Name)) trace("printParamName", loc::of(decl));
 
-void
-ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) const {
     print.output() << "\"";
     if (decl->getIdentifier()) {
         decl->printName(print.output().nobreak());
@@ -65,19 +60,20 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) const {
         if (i.has_value()) {
             print.output() << "#" << i.value();
         } else {
-            logging::fatal() << "failed to find a parameter.";
+            auto loc = loc::of(decl);
+            error_prefix(logging::fatal(), loc)
+                << "error: cannot find parameter\n";
+            debug_dump(loc);
             logging::die();
         }
     }
-    print.output() << "\"";
+    return print.output() << "\"";
 }
 
-void
+fmt::Formatter&
 ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
-#ifdef DEBUG
-    d->dump(llvm::errs());
-    llvm::errs().flush();
-#endif
+    if (trace(Trace::Type)) trace("printValCat", loc::of(d));
+
     // note(gmm): Classify doesn't work on dependent types which occur in templates
     // that clang can't completely eliminate.
 
@@ -89,12 +85,13 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
         else if (d->isXValue())
             print.output() << "Xvalue";
         else {
-            using namespace logging;
-            fatal() << "Error: cannot determine value category"
-                    << " (at " << sourceRange(d->getSourceRange()) << ")\n";
-            die();
+            auto loc = loc::of(d);
+            error_prefix(logging::fatal(), loc)
+                << "error: cannot determine value category\n";
+            debug_dump(loc);
+            logging::die();
         }
-        return;
+        return print.output();
     }
 
     auto Class = d->Classify(*this->context_);
@@ -108,31 +105,21 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
         assert(false);
         //fatal("unknown value category");
     }
+    return print.output();
 }
 
-void
-ClangPrinter::printInstantiatableRecordName(const RecordDecl *decl,
-                                            CoqPrinter &print) {
-    if (print.templates()) {
-        printType(decl->getTypeForDecl(), print);
-    } else {
-        printTypeName(decl, print);
-    }
-}
-
-void
+fmt::Formatter&
 ClangPrinter::printNameForAnonTemplateParam(unsigned depth, unsigned index,
-                                            CoqPrinter &print) {
+                                            CoqPrinter &print, loc::loc loc) {
+    if (trace(Trace::Name)) trace("printNameForAnonTemplateParam", loc);
     for (auto d = decl_; d; d = d->getLexicalParent()) {
         if (auto psd = dyn_cast<ClassTemplatePartialSpecializationDecl>(d)) {
             for (auto i : psd->getTemplateParameters()->asArray()) {
                 if (auto tpd = dyn_cast<TemplateTypeParmDecl>(i)) {
                     if (tpd->getDepth() != depth)
                         break;
-                    if (tpd->getIndex() == index) {
-                        print.str(tpd->getName());
-                        return;
-                    }
+                    if (tpd->getIndex() == index)
+                        return print.str(tpd->getName());
                 }
             }
         } else if (auto fd = dyn_cast<FunctionDecl>(d)) {
@@ -141,37 +128,33 @@ ClangPrinter::printNameForAnonTemplateParam(unsigned depth, unsigned index,
                     if (auto tpd = dyn_cast<TemplateTypeParmDecl>(i)) {
                         if (tpd->getDepth() != depth)
                             break;
-                        if (tpd->getIndex() == index) {
-                            print.str(tpd->getName());
-                            return;
-                        }
+                        if (tpd->getIndex() == index)
+                            return print.str(tpd->getName());
                     }
                 }
         }
     }
-    logging::debug() << "Could not find variable declaration " << depth << " "
-                     << index << " in " << decl_;
-
-    if (decl_) {
-#if CLANG_VERSION_MAJOR > 15
-        decl_->dumpAsDecl();
-#endif
-    }
-    print.str("??TODO??");
+    error_prefix(logging::debug(), loc)
+        << "error: could not infer template parameter name at depth "
+        << depth << ", index " << index << "\n";
+    debug_dump(loc);
+    logging::die();
 }
 
-void
+fmt::Formatter&
 ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
+    if (trace(Trace::Decl)) trace("printField", loc::of(decl));
+
     if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
         print.ctor("Build_field", false);
-        this->printTypeName(f->getParent(), print);
+        this->printTypeName(f->getParent(), print, loc::of(f));
         print.output() << fmt::nbsp;
 
         if (decl->getName() == "") {
             const CXXRecordDecl *rd = f->getType()->getAsCXXRecordDecl();
             assert(rd && "unnamed field must be a record");
             print.ctor("Nanon", false);
-            this->printTypeName(rd, print);
+            this->printTypeName(rd, print, loc::of(f));
             print.end_ctor();
         } else {
             print.str(decl->getName());
@@ -180,17 +163,19 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
     } else if (const CXXMethodDecl *meth =
                    dyn_cast<clang::CXXMethodDecl>(decl)) {
         print.ctor("Build_field", false);
-        this->printTypeName(meth->getParent(), print);
+        this->printTypeName(meth->getParent(), print, loc::of(meth));
         print.output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
         print.end_ctor();
     } else if (isa<VarDecl>(decl)) {
 
     } else {
-        using namespace logging;
-        fatal() << "member not pointing to field " << decl->getDeclKindName()
-                << " (at " << sourceRange(decl->getSourceRange()) << ")\n";
-        die();
+        auto loc = loc::of(decl);
+        error_prefix(logging::fatal(), loc)
+            << "error: member not pointing to field\n";
+        debug_dump(loc);
+        logging::die();
     }
+    return print.output();
 }
 
 std::string
@@ -203,13 +188,38 @@ ClangPrinter::sourceRange(const SourceRange sr) const {
     return sr.printToString(this->context_->getSourceManager());
 }
 
-void
-ClangPrinter::printVariadic(bool va, CoqPrinter &print) const {
-    print.output() << (va ? "Ar_Variadic" : "Ar_Definite");
+const Decl*
+ClangPrinter::getDecl() const {
+    return decl_ ? Decl::castFromDeclContext(decl_) : nullptr;
 }
 
-void
-ClangPrinter::printCallingConv(clang::CallingConv cc, CoqPrinter &print) const {
+llvm::raw_ostream&
+ClangPrinter::debug_dump(loc::loc loc) {
+    return logging::debug() << loc::dump(loc, getContext(), getDecl());
+}
+
+llvm::raw_ostream&
+ClangPrinter::error_prefix(llvm::raw_ostream& os, loc::loc loc) {
+    return os << loc::prefix(loc, getContext(), getDecl());
+}
+
+llvm::raw_ostream&
+ClangPrinter::trace(StringRef whence, loc::loc loc) {
+    auto& os = llvm::errs();
+    os << "[TRACE] " << whence;
+    auto decl = getDecl();
+    if (loc::can_trace(loc, decl))
+        os << " " << loc::trace(loc, getContext(), decl);
+    return os << "\n";
+}
+
+fmt::Formatter&
+ClangPrinter::printVariadic(bool va, CoqPrinter &print) const {
+    return print.output() << (va ? "Ar_Variadic" : "Ar_Definite");
+}
+
+fmt::Formatter&
+ClangPrinter::printCallingConv(clang::CallingConv cc, CoqPrinter &print, loc::loc loc) {
 #define PRINT(x)                                                               \
     case CallingConv::x:                                                       \
         print.output() << #x;                                                  \
@@ -240,8 +250,10 @@ ClangPrinter::printCallingConv(clang::CallingConv cc, CoqPrinter &print) const {
         PRINT(CC_AArch64VectorCall);
 #endif
     default:
-        using namespace logging;
-        logging::fatal() << "unsupported calling convention\n";
+        error_prefix(logging::fatal(), loc)
+            << "error: unsupported calling convention\n";
+        debug_dump(loc);
         logging::die();
     }
+    return print.output();
 }

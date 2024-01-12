@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -17,16 +17,16 @@ Variant SwitchBranch : Set :=
 #[global] Instance: EqDecision SwitchBranch.
 Proof. solve_decision. Defined.
 
-Inductive VarDecl' {type Expr : Set} : Set :=
+Inductive VarDecl' {obj_name type Expr : Set} : Set :=
 | Dvar (name : localname) (_ : type) (init : option Expr)
 | Ddecompose (_ : Expr) (anon_var : ident) (_ : list VarDecl')
   (* initialization of a function-local [static]. See https://eel.is/c++draft/stmt.dcl#3 *)
 | Dinit (thread_safe : bool) (name : obj_name) (_ : type) (init : option Expr).
-#[global] Arguments VarDecl' _ _ : clear implicits, assert.
-#[global] Instance VarDecl_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
-  EqDecision (VarDecl' type Expr).
+#[global] Arguments VarDecl' _ _ _ : clear implicits, assert.
+#[global] Instance VarDecl_eq_dec {obj_name type Expr : Set} `{!EqDecision obj_name, !EqDecision type, !EqDecision Expr} :
+  EqDecision (VarDecl' obj_name type Expr).
 Proof.
-  refine (fix dec (x y : VarDecl' type Expr) : {x = y} + {x <> y} :=
+  refine (fix dec (x y : VarDecl' obj_name type Expr) : {x = y} + {x <> y} :=
             let _ : EqDecision _ := dec in
             match x as x , y as y return {x = y} + {x <> y} with
             | Ddecompose xi xx xs , Ddecompose yi yx ys =>
@@ -58,18 +58,18 @@ Proof.
   { by destruct pf as [ -> [ -> [ -> -> ] ] ]. }
   { intro. apply pf. inversion H; tauto. }
 Defined.
-Notation VarDecl := (VarDecl' decltype Expr).
+Notation VarDecl := (VarDecl' obj_name decltype Expr).
 
-Inductive Stmt' {type Expr : Set} : Set :=
+Inductive Stmt' {obj_name type Expr : Set} : Set :=
 | Sseq    (_ : list Stmt')
-| Sdecl   (_ : list (VarDecl' type Expr))
+| Sdecl   (_ : list (VarDecl' obj_name type Expr))
 
-| Sif     (_ : option (VarDecl' type Expr)) (_ : Expr) (_ _ : Stmt')
-| Swhile  (_ : option (VarDecl' type Expr)) (_ : Expr) (_ : Stmt')
+| Sif     (_ : option (VarDecl' obj_name type Expr)) (_ : Expr) (_ _ : Stmt')
+| Swhile  (_ : option (VarDecl' obj_name type Expr)) (_ : Expr) (_ : Stmt')
 | Sfor    (_ : option Stmt') (_ : option Expr) (_ : option Expr) (_ : Stmt')
 | Sdo     (_ : Stmt') (_ : Expr)
 
-| Sswitch (_ : option (VarDecl' type Expr)) (_ : Expr) (_ : Stmt')
+| Sswitch (_ : option (VarDecl' obj_name type Expr)) (_ : Expr) (_ : Stmt')
 | Scase   (_ : SwitchBranch)
 | Sdefault
 
@@ -90,18 +90,18 @@ Inductive Stmt' {type Expr : Set} : Set :=
 | Slabeled (_ : ident) (_ : Stmt')
 | Sgoto (_ : ident)
 | Sunsupported (_ : bs).
-#[global] Arguments Stmt' _ _ : clear implicits, assert.
-#[global] Instance Stmt_eq_dec {type Expr : Set} `{!EqDecision type, !EqDecision Expr} :
-  EqDecision (Stmt' type Expr).
+#[global] Arguments Stmt' _ _ _ : clear implicits, assert.
+#[global] Instance Stmt_eq_dec {obj_name type Expr : Set} `{!EqDecision obj_name, !EqDecision type, !EqDecision Expr} :
+  EqDecision (Stmt' obj_name type Expr).
 Proof.
   rewrite /RelDecision /Decision.
   fix IHs 1.
   rewrite -{1}/(EqDecision _) in IHs.
   decide equality; try solve_trivial_decision.
 Defined.
-Notation Stmt := (Stmt' decltype Expr).
+Notation Stmt := (Stmt' obj_name decltype Expr).
 
-Definition Sskip {type Expr : Set} : Stmt' type Expr := Sseq nil.
+Definition Sskip {obj_name type Expr : Set} : Stmt' obj_name type Expr := Sseq nil.
 
 Variant OrDefault {t : Set} : Set :=
 | Defaulted

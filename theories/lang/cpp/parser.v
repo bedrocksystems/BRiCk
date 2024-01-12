@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -68,7 +68,7 @@ Definition DTOR (ty : globname) : obj_name :=
   | _ => "OOPS"
   end%bs.
 
-Definition Nanon (ty : globname) : globname :=
+Definition Nanon (ty : globname) : ident :=
   "#" ++ ty.
 
 Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
@@ -143,8 +143,8 @@ Notation NonAllocating := new_form.NonAllocating (only parsing).
 (** ** Statements *)
 
 Section stmt.
-  Context {type Expr : Set}.
-  #[local] Notation Stmt := (Stmt' type Expr).
+  Context {obj_name type Expr : Set}.
+  #[local] Notation Stmt := (Stmt' obj_name type Expr).
 
   Definition Sreturn_void : Stmt := Sreturn None.
   Definition Sreturn_val (e : Expr) : Stmt := Sreturn (Some e).
@@ -172,7 +172,7 @@ Definition Dfunction (name : obj_name) (f : Func) : translation_unitK :=
   fun syms tys k =>
   k (<[ name := Ofunction f ]> syms) tys.
 
-Definition Dmethod (static : bool) (name : obj_name) (f : Method) : translation_unitK :=
+Definition Dmethod (name : obj_name) (static : bool) (f : Method) : translation_unitK :=
   fun syms tys k =>
     let add := if static then Ofunction $ static_method f else Omethod f in
       k (<[ name := add ]> syms) tys.
@@ -197,10 +197,9 @@ Definition Denum (name : globname) (t : type) (branches : list ident) : translat
   fun syms tys k =>
   k syms $ <[ name := Genum t branches ]> tys.
 
-Definition Denum_constant (gn : globname) (id : ident)
-    (ut : exprtype) (v : N + Z) (init : option Expr) : translation_unitK :=
+Definition Denum_constant (name : globname)
+    (gn : globname) (ut : exprtype) (v : N + Z) (init : option Expr) : translation_unitK :=
   fun syms tys k =>
-  let name := Nenum_const gn id in
   let v := match v with inl n => Echar n ut | inr z => Eint z ut end in
   let t := Tenum gn in
   k syms $ <[ name := Gconstant t (Some (Ecast Cintegral v Prvalue t)) ]> tys.

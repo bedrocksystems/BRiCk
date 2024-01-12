@@ -32,7 +32,7 @@ Bind Scope bs_scope with ident.
  *   not present in the object file
  * - there are also "unnamed" functions, e.g. constructors and destructors
  *)
-Definition globname : Set := ident.
+Definition globname : Set := bs.
 Bind Scope bs_scope with globname.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -18,25 +18,26 @@ Export decl.
 #[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
 #[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
 #[local] Notation EqDecision3 T := (∀ (A : Set), EqDecision A -> EqDecision2 (T A)) (only parsing).
+#[local] Notation EqDecision4 T := (∀ (A : Set), EqDecision A -> EqDecision3 (T A)) (only parsing).
 
 #[local] Tactic Notation "solve_decision" := intros; solve_decision.
 
 (* Values in Object files. These can be externed. *)
-Variant ObjValue' {classname type Expr : Set} : Set :=
+Variant ObjValue' {classname obj_name type Expr : Set} : Set :=
 | Ovar         (_ : type) (_ : option Expr)
-| Ofunction    (_ : Func' type Expr)
-| Omethod      (_ : Method' classname type Expr)
-| Oconstructor (_ : Ctor' classname type Expr)
-| Odestructor  (_ : Dtor' classname type Expr).
-#[global] Arguments ObjValue' _ _ _ : clear implicits, assert.
-#[global] Arguments Ovar _ _ _ &.
-#[global] Arguments Ofunction _ _ _ &.
-#[global] Arguments Omethod _ _ _ &.
-#[global] Arguments Oconstructor _ _ _ &.
-#[global] Arguments Odestructor _ _ _ &.
-#[global] Instance: EqDecision3 ObjValue'.
+| Ofunction    (_ : Func' obj_name type Expr)
+| Omethod      (_ : Method' classname obj_name type Expr)
+| Oconstructor (_ : Ctor' classname obj_name type Expr)
+| Odestructor  (_ : Dtor' classname obj_name type Expr).
+#[global] Arguments ObjValue' : clear implicits.
+#[global] Arguments Ovar _ _ _ _ & _ _ : assert.
+#[global] Arguments Ofunction _ _ _ _ & _ : assert.
+#[global] Arguments Omethod _ _ _ _ & _ : assert.
+#[global] Arguments Oconstructor _ _ _ _ & _ : assert.
+#[global] Arguments Odestructor _ _ _ _ & _ : assert.
+#[global] Instance: EqDecision4 ObjValue'.
 Proof. solve_decision. Defined.
-Notation ObjValue := (ObjValue' globname type Expr).
+Notation ObjValue := (ObjValue' globname obj_name type Expr).
 
 (**
 TODO: [Tmember_func], [type_of_value] seem misplaced
@@ -56,22 +57,22 @@ Definition type_of_value (o : ObjValue) : type :=
     Tmember_func (Tnamed d.(d_class)) $ Tfunction (cc:=d.(d_cc)) Tvoid nil
   end.
 
-Variant GlobDecl' {classname type Expr : Set} : Set :=
+Variant GlobDecl' {classname obj_name type Expr : Set} : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
-| Gunion    (_ : Union' type Expr) (* union body *)
-| Gstruct   (_ : Struct' classname type Expr) (* struct body *)
+| Gunion    (_ : Union' obj_name type Expr) (* union body *)
+| Gstruct   (_ : Struct' classname obj_name type Expr) (* struct body *)
 | Genum     (_ : type) (_ : list ident) (* *)
 | Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
 | Gtypedef  (_ : type).
-#[global] Arguments GlobDecl' _ _ _ : clear implicits, assert.
-#[global] Arguments Gunion _ _ _ &.
-#[global] Arguments Gstruct _ _ _ &.
-#[global] Arguments Genum _ _ _ &.
-#[global] Arguments Gconstant _ _ _ &.
-#[global] Arguments Gtypedef _ _ _ &.
-#[global] Instance: EqDecision3 GlobDecl'.
+#[global] Arguments GlobDecl' : clear implicits.
+#[global] Arguments Gunion _ _ _ _ & _ : assert.
+#[global] Arguments Gstruct _ _ _ _ & _ : assert.
+#[global] Arguments Genum _ _ _ _ & _ _ : assert.
+#[global] Arguments Gconstant _ _ _ _ & _ _ : assert.
+#[global] Arguments Gtypedef _ _ _ _ & _ : assert.
+#[global] Instance: EqDecision4 GlobDecl'.
 Proof. solve_decision. Defined.
-Notation GlobDecl := (GlobDecl' globname type Expr).
+Notation GlobDecl := (GlobDecl' globname obj_name type Expr).
 
 Definition symbol_table : Type := IM.t ObjValue.
 
@@ -351,8 +352,8 @@ Variant GlobalInit' {Expr : Set} : Set :=
      See https://eel.is/c++draft/stmt.dcl#3
    *)
 | FunctionInit (at_most_once : bool).
-#[global] Arguments GlobalInit' _ : clear implicits, assert.
-#[global] Arguments ExprInit _ &.
+#[global] Arguments GlobalInit' : clear implicits.
+#[global] Arguments ExprInit _ & _ : assert.
 #[global] Instance: EqDecision1 GlobalInit'.
 Proof. solve_decision. Defined.
 Notation GlobalInit := (GlobalInit' Expr).
@@ -360,16 +361,16 @@ Notation GlobalInit := (GlobalInit' Expr).
 (** [GlobalInitializer] represents an initializer for a
     global variable.
  *)
-Record GlobalInitializer' {type Expr : Set} : Set := Build_GlobalInitializer
+Record GlobalInitializer' {obj_name type Expr : Set} : Set := Build_GlobalInitializer
   { g_name : obj_name
   ; g_type : type
   ; g_init : GlobalInit' Expr
   }.
-#[global] Arguments GlobalInitializer' _ _ : clear implicits, assert.
-#[global] Arguments Build_GlobalInitializer {_ _} &.
-#[global] Instance: EqDecision2 GlobalInitializer'.
+#[global] Arguments GlobalInitializer' : clear implicits.
+#[global] Arguments Build_GlobalInitializer {_ _ _} & _ _ _ : assert.
+#[global] Instance: EqDecision3 GlobalInitializer'.
 Proof. solve_decision. Defined.
-Notation GlobalInitializer := (GlobalInitializer' type Expr).
+Notation GlobalInitializer := (GlobalInitializer' obj_name type Expr).
 
 (** An initialization block is a sequence of variable initializers
     that will be run when the compilation unit is loaded.
@@ -381,10 +382,10 @@ Notation GlobalInitializer := (GlobalInitializer' type Expr).
     This means that, to be completely precise, this type needs to be
     something a bit more exotic that permits concurrent initialization.
  *)
-Definition InitializerBlock' (type Expr : Set) : Set :=
-  list (GlobalInitializer' type Expr).
-Notation InitializerBlock := (InitializerBlock' type Expr).
-#[global] Instance InitializerBlock_empty {type Expr} : Empty (InitializerBlock' type Expr) :=
+Definition InitializerBlock' (obj_name type Expr : Set) : Set :=
+  list (GlobalInitializer' obj_name type Expr).
+Notation InitializerBlock := (InitializerBlock' obj_name type Expr).
+#[global] Instance InitializerBlock_empty {obj_name type Expr} : Empty (InitializerBlock' obj_name type Expr) :=
   nil.
 
 (**

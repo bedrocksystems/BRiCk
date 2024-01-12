@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -34,7 +34,7 @@ private:
         // TODO when destructors move to classes, we can change this
         if (auto dest = get_dtor(qt)) {
             print.some();
-            cprint.printObjName(dest, print);
+            cprint.printObjName(*dest, print);
             print.end_ctor();
         } else {
             print.none();
@@ -46,19 +46,21 @@ public:
 
     bool VisitVarDecl(const VarDecl* decl, CoqPrinter& print,
                       ClangPrinter& cprint, OpaqueNames& names) {
+        // TODO: The following seems to be unsupported by parser.v
         if (decl->isStaticLocal()) {
             bool thread_safe =
                 cprint.getCompiler().getLangOpts().ThreadsafeStatics;
             print.ctor("Dinit");
             print.output() << fmt::BOOL(thread_safe) << fmt::nbsp;
-            cprint.printObjName(decl, print, false);
+            cprint.printMangledObjName(*decl, print);
             print.output() << fmt::nbsp;
         } else {
             print.ctor("Dvar")
                 << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
         }
+
         auto declty = decl->getType();
-        cprint.printQualType(declty, print);
+        cprint.printQualType(declty, print, loc::of(decl));
         print.output() << fmt::nbsp;
 
         if (auto init = decl->getInit()) {
@@ -108,7 +110,7 @@ public:
 
         print.output() << fmt::nbsp;
 
-        print.list(decl->bindings(), [&](auto print, const BindingDecl* b) {
+        print.list(decl->bindings(), [&](const BindingDecl* b) {
             // NOTE: this code is copied from [VisitVarDecl].
             // We previously did:
             // [[
@@ -118,7 +120,7 @@ public:
             // [nullptr]. So we access the data directly from the [BindDecl].
             print.ctor("Dvar")
                 << "\"" << b->getNameAsString() << "\"" << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
+            cprint.printQualType(decl->getType(), print, loc::of(b));
             print.output() << fmt::nbsp;
             print.some();
             cprint.printExpr(b->getBinding(), print, on);
@@ -141,6 +143,7 @@ PrintLocalDecl PrintLocalDecl::printer;
 
 bool
 ClangPrinter::printLocalDecl(const clang::Decl* decl, CoqPrinter& print) {
+    if (trace(Trace::Local)) trace("printLocalDecl", loc::of(decl));
     OpaqueNames names;
     return PrintLocalDecl::printer.Visit(decl, print, *this, names);
 }
