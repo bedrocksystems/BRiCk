@@ -71,9 +71,6 @@ Definition DTOR (ty : globname) : obj_name :=
 Definition Nanon (ty : globname) : globname :=
   "#" ++ ty.
 
-Definition Cenum_const (e : globname) (x : ident) : obj_name :=
-  e ++ "::" ++ x.
-
 Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
   (x, None).
 Definition impl_virt (x : obj_name) : obj_name * option obj_name :=
@@ -118,11 +115,11 @@ Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct
 Definition Eoperator_call (oo : OverloadableOperator) (f : obj_name) (ft : type) (es : list Expr) (ty : type) : Expr :=
   Eoperator_call oo (operator_impl.Func f ft) es ty.
 
-Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
-  Ecast Cintegral (Econst_ref (Gname e) ety) Prvalue ty.
+Definition Eenum_const_at (e : globname) (c : ident) (ty : exprtype) : Expr :=
+  Ecast Cintegral (Eenum_const e c) Prvalue ty.
 
 Definition Ebuiltin (nm : obj_name) (ty : type) : Expr :=
-  Ecast Cbuiltin2fun (Evar (Gname nm) ty) Prvalue (Tptr ty).
+  Ecast Cbuiltin2fun (Eglobal nm ty) Prvalue (Tptr ty).
 
 Definition Emember (arrow : bool) (e : Expr) (f : ident + obj_name) (mut : bool) (ty : decltype) : _ :=
   option.get_some $
@@ -136,7 +133,7 @@ Definition Emember (arrow : bool) (e : Expr) (f : ident + obj_name) (mut : bool)
         Some e
     in
     (fun e => match f with
-           | inr nm => Ecomma e (Evar (Gname nm) ty)
+           | inr nm => Ecomma e (Eglobal nm ty)
            | inl f => Emember e f mut ty
            end) <$> e.
 
@@ -197,9 +194,12 @@ Definition Denum (name : globname) (t : type) (branches : list ident) : translat
   fun syms tys k =>
   k syms $ <[ name := Genum t branches ]> tys.
 
-Definition Denum_constant (name : globname) (t ut : type) (v : N + Z) (init : option Expr) : translation_unitK :=
+Definition Denum_constant (gn : globname) (id : ident)
+    (ut : exprtype) (v : N + Z) (init : option Expr) : translation_unitK :=
   fun syms tys k =>
+  let name := Nenum_const gn id in
   let v := match v with inl n => Echar n ut | inr z => Eint z ut end in
+  let t := Tenum gn in
   k syms $ <[ name := Gconstant t (Some (Ecast Cintegral v Prvalue t)) ]> tys.
 
 Definition Dtypedef (name : globname) (t : type) : translation_unitK :=

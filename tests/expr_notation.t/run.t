@@ -1,21 +1,15 @@
   $ . ../setup-project.sh
   $ dune build test.vo
-  Econst_ref_lname = {e: $"FooBarBaz"}
+  local_ref = {e: $"FooBarBaz"}
        : Expr
   
-  Econst_ref_lname uses section variable ty.
-  Econst_ref_gname = {e: $::"FooBarBaz"}
+  local_ref uses section variable ty.
+  global_ref = {e: $::"FooBarBaz"}
        : Expr
   
-  Econst_ref_gname uses section variable ty.
-  Evar_lname = {e: $"FooBarBaz"}
+  global_ref uses section variable ty.
+  enum_const_ref = {e: $::"_ZN6MyEnumE"::"Const"}
        : Expr
-  
-  Evar_lname uses section variable ty.
-  Evar_gname = {e: $::"FooBarBaz"}
-       : Expr
-  
-  Evar_gname uses section variable ty.
   Echar_letter = {e: ASCII#65}
        : Expr
   
@@ -211,14 +205,14 @@
        : Expr
   
   Ederef_Enull uses section variable ty.
-  Eaddrof_Evar_lname = {e: &$"Qux"}
+  Eaddrof_local_ref = {e: &$"Qux"}
        : Expr
   
-  Eaddrof_Evar_lname uses section variable ty.
-  Eaddrof_Evar_gname = {e: &$::"Qux"}
+  Eaddrof_local_ref uses section variable ty.
+  Eaddrof_global_ref = {e: &$::"Qux"}
        : Expr
   
-  Eaddrof_Evar_gname uses section variable ty.
+  Eaddrof_global_ref uses section variable ty.
   Eassign_1 = {e: $"pi" = #314}
        : Expr
   

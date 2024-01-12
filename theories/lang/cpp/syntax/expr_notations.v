@@ -49,29 +49,25 @@ Module ExprNotations.
    *)
 
   Notation "$ v"
-      := (Econst_ref (Lname v%bs) _)
+      := (Evar v%bs _)
          ( in custom CPP_expr at level 0
          , v constr
          , format "'[' $ v ']'"
          , only printing).
+
   Notation "$ :: v"
-      := (Econst_ref (Gname v%bs) _)
+      := (Eglobal v%bs _)
          ( in custom CPP_expr at level 0
          , v constr
          , format "'[' $ :: v ']'"
          , only printing).
 
-  Notation "$ v"
-      := (Evar (Lname v%bs) _)
+  Notation "$ :: t :: v"
+      := (Eenum_const t%bs v%bs)
          ( in custom CPP_expr at level 0
+         , t constr
          , v constr
-         , format "'[' $ v ']'"
-         , only printing).
-  Notation "$ :: v"
-      := (Evar (Gname v%bs) _)
-         ( in custom CPP_expr at level 0
-         , v constr
-         , format "'[' $ :: v ']'"
+         , format "'[' $ :: t :: v ']'"
          , only printing).
 
   Notation "'ASCII#' ascii_code"
