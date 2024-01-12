@@ -97,30 +97,27 @@
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="31215ff4c59cedd61e21f222bd43f39f" class="idref" href="#31215ff4c59cedd61e21f222bd43f39f"><span class="id" title="notation">&quot;</span></a>$ v"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Econst_ref"><span class="id" title="constructor">Econst_ref</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Lname"><span class="id" title="constructor">Lname</span></a> <span class="id" title="var">v</span>%<span class="id" title="var">bs</span>) <span class="id" title="var">_</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Evar"><span class="id" title="constructor">Evar</span></a> <span class="id" title="var">v</span>%<span class="id" title="var">bs</span> <span class="id" title="var">_</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">CPP_expr</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">v</span> <span class="id" title="keyword">constr</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' $ v ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
+
+<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="77bb0fa964d375343456d94a03fa20b2" class="idref" href="#77bb0fa964d375343456d94a03fa20b2"><span class="id" title="notation">&quot;</span></a>$ :: v"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Econst_ref"><span class="id" title="constructor">Econst_ref</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Gname"><span class="id" title="constructor">Gname</span></a> <span class="id" title="var">v</span>%<span class="id" title="var">bs</span>) <span class="id" title="var">_</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Eglobal"><span class="id" title="constructor">Eglobal</span></a> <span class="id" title="var">v</span>%<span class="id" title="var">bs</span> <span class="id" title="var">_</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">CPP_expr</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">v</span> <span class="id" title="keyword">constr</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' $ :: v ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 
 <br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="31215ff4c59cedd61e21f222bd43f39f" class="idref" href="#31215ff4c59cedd61e21f222bd43f39f"><span class="id" title="notation">&quot;</span></a>$ v"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Evar"><span class="id" title="constructor">Evar</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Lname"><span class="id" title="constructor">Lname</span></a> <span class="id" title="var">v</span>%<span class="id" title="var">bs</span>) <span class="id" title="var">_</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="9baaffba461f0af4e2c88c5dc2def31d" class="idref" href="#9baaffba461f0af4e2c88c5dc2def31d"><span class="id" title="notation">&quot;</span></a>$ :: t :: v"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Eenum_const"><span class="id" title="constructor">Eenum_const</span></a> <span class="id" title="var">t</span>%<span class="id" title="var">bs</span> <span class="id" title="var">v</span>%<span class="id" title="var">bs</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">CPP_expr</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">t</span> <span class="id" title="keyword">constr</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">v</span> <span class="id" title="keyword">constr</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' $ v ']'"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="77bb0fa964d375343456d94a03fa20b2" class="idref" href="#77bb0fa964d375343456d94a03fa20b2"><span class="id" title="notation">&quot;</span></a>$ :: v"<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Evar"><span class="id" title="constructor">Evar</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Gname"><span class="id" title="constructor">Gname</span></a> <span class="id" title="var">v</span>%<span class="id" title="var">bs</span>) <span class="id" title="var">_</span>)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">CPP_expr</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">v</span> <span class="id" title="keyword">constr</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' $ :: v ']'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">format</span> "'[' $ :: t :: v ']'"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
 
 <br/>
