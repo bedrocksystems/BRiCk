@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -234,8 +234,8 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
   | Ecomma _ e2 => valcat_of e2
   | Ecast _ _ vc _ => vc
   | Ecall f _ _ =>
-    match f with
-    | Ecast Cfun2ptr _ _ (Tptr t) => valcat_from_function_type t
+    match type_of f with
+    | Tptr t => valcat_from_function_type t
     | _ => UNEXPECTED_valcat e
     end
   | Emember e _ _ mty =>
@@ -247,9 +247,12 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
       end
   | Emember_call f _ _ _ =>
     match f with
-    | inl (_, _, t)
-    | inr (Ecast Cl2r _  _ (Tmember_pointer _ t)) => valcat_from_function_type t
-    | _ => UNEXPECTED_valcat e
+    | inl (_, _, t) => valcat_from_function_type t
+    | inr e =>
+        match type_of e with
+        | Tmember_pointer _ t => valcat_from_function_type t
+        | _ => UNEXPECTED_valcat e
+        end
     end
   | Eoperator_call _ f _ _ =>
     match f with
