@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -235,7 +235,8 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
   | Ecast _ _ vc _ => vc
   | Ecall f _ _ =>
     match f with
-    | Ecast Cfun2ptr _ _ (Tptr t) => valcat_from_function_type t
+    | Ecast Cfun2ptr _ _ (Tptr t)
+    | Ecast Cl2r _ _ (Tptr t) => valcat_from_function_type t
     | _ => UNEXPECTED_valcat e
     end
   | Emember e _ _ mty =>
