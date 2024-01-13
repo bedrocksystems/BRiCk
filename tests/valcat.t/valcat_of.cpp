@@ -16,6 +16,12 @@ struct C {
   C() {}
 };
 
+using FP = int (*)();
+
+FP get_fp();
+FP& get_fpl();
+FP&& get_fpx();
+
 // note, we use `sizeof` simply to get the type written into the AST.
 #define CHECK_VALCAT(e) ((void)(e)) , sizeof(decltype((e)))
 
@@ -98,4 +104,7 @@ void test() {
   CHECK_VALCAT((*fp_xvalue)());
   CHECK_VALCAT(fp_xvalue());
 
+  CHECK_VALCAT((get_fp())());
+  CHECK_VALCAT((get_fpl())());
+  CHECK_VALCAT((get_fpx())());
 }
