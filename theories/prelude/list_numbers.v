@@ -271,6 +271,12 @@ Section listN.
     dropN n (replicateN (n + m) x) = replicateN m x.
   Proof. by rewrite /dropN /replicateN N2Nat.inj_add drop_replicate_add. Qed.
 
+  Lemma dropN_replicateN_succ n m x :
+    n < m -> dropN n (replicateN m x) = x :: dropN (n + 1)%N (replicateN m x).
+  Proof.
+    move=>?; rewrite !dropN_replicateN (N.sub_add_distr) replicateN_cons //. lia.
+  Qed.
+
   (* Lift all theory about [take] and [replicate] interaction. *)
   Lemma takeN_replicateN n m x :
     takeN n (replicateN m x) = replicateN (n `min` m) x.
