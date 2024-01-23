@@ -12,9 +12,14 @@
 -arg -w -arg +unknown-option
 -arg -w -arg +future-coercion-class-field
 
+-Q coq-lens/Lens Lens
 -Q theories/prelude bedrock.prelude
 -Q theories/lang bedrock.lang
 -Q theories/noimport/doc bedrock.noimport.doc
+
+# Lens library (only the Elpi version is required)
+coq-lens/Lens/Lens.v
+coq-lens/Lens/Elpi/Elpi.v
 
 # Definitions about hardware (some misplaced)
 theories/prelude/hw_types.v
@@ -71,12 +76,15 @@ theories/prelude/elpi/basis.v
 
 # coq-elpi derive plugins
 theories/prelude/elpi/derive.v
+theories/prelude/elpi/derive_test.v
+theories/prelude/elpi/derive/common.v
 theories/prelude/elpi/derive/countable.v
 theories/prelude/elpi/derive/eq_dec.v
 theories/prelude/elpi/derive/finite_type.v
 theories/prelude/elpi/derive/bitset.v
 theories/prelude/elpi/derive/finite.v
 theories/prelude/elpi/derive/inhabited.v
+theories/prelude/elpi/derive/lens.v
 
 # Adapters
 theories/lang/prelude/base.v

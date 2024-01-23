@@ -6,7 +6,7 @@
 From stdpp Require Import finite.
 
 From elpi Require Import elpi.
-From elpi.apps Require Import derive.
+Require Export bedrock.prelude.elpi.derive.common.
 
 From bedrock.prelude.elpi Require Import basis.
 Elpi Accumulate derive Db bedrock.basis.db.
