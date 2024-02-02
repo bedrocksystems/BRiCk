@@ -70,4 +70,9 @@ Section with_cpp.
     Observe nonnullR (uninitR ty q).
   Proof. rewrite uninitR_tptstoR. apply _. Qed.
 
+  Lemma nullptr_uninitR ty q : nullptr |-> uninitR ty q |-- False.
+  Proof.
+    rewrite uninitR_tptstoR tptstoR_nonnull _at_pers _at_nonnullR. eauto.
+  Qed.
+
 End with_cpp.

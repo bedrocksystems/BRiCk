@@ -24,7 +24,7 @@ using namespace fmt;
 void
 printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
                   ClangPrinter& cprint, OpaqueNames& li) {
-    if (expr.has_value()) {
+    if (expr.has_value() && expr.value()) {
         print.some();
         cprint.printExpr(expr.value(), print, li);
         print.end_ctor();
@@ -36,7 +36,7 @@ printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
 void
 printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
                   ClangPrinter& cprint, OpaqueNames& li) {
-    if (expr.hasValue()) {
+    if (expr.hasValue() && expr.getValue()) {
         print.some();
         cprint.printExpr(expr.getValue(), print, li);
         print.end_ctor();
@@ -152,7 +152,8 @@ private:
         print.end_ctor();
     }
 
-    void printValueDecl(const ValueDecl* decl, CoqPrinter& print, ClangPrinter& cprint, OpaqueNames& on) {
+    void printValueDecl(const ValueDecl* decl, CoqPrinter& print,
+                        ClangPrinter& cprint, OpaqueNames& on) {
         auto check_static_local = [](const ValueDecl* decl) {
             auto t = dyn_cast<VarDecl>(decl);
             return t && t->isStaticLocal();
@@ -1139,37 +1140,49 @@ public:
     void VisitCXXNewExpr(const CXXNewExpr* expr, CoqPrinter& print,
                          ClangPrinter& cprint, const ASTContext&,
                          OpaqueNames& li) {
-        print.ctor("Enew");
-        if (expr->getOperatorNew()) {
-            print.begin_tuple();
-            cprint.printObjName(expr->getOperatorNew(), print);
-            print.next_tuple();
-            cprint.printQualType(expr->getOperatorNew()->getType(), print);
-            print.end_tuple() << fmt::nbsp;
-        } else {
+        auto new_fn = expr->getOperatorNew();
+        if (not new_fn) {
             logging::fatal() << "missing operator [new]\n";
             logging::die();
         }
+
+        print.ctor("Enew");
+
+        print.begin_tuple();
+        cprint.printObjName(new_fn, print);
+        print.next_tuple();
+        cprint.printQualType(new_fn->getType(), print);
+        print.end_tuple() << fmt::nbsp;
 
         print.list(expr->placement_arguments(), [&](auto print, auto arg) {
             cprint.printExpr(arg, print, li);
         }) << fmt::nbsp;
 
+        if (new_fn->isReservedGlobalPlacementOperator()) {
+            assert(expr->getNumPlacementArgs() == 1 &&
+                   "placement new gets a single argument");
+            assert(!expr->passAlignment() &&
+                   "alignment is not passed to placement new");
+            print.output() << "NonAllocating" << fmt::nbsp;
+        } else {
+            print.ctor("Allocating")
+                << fmt::BOOL(expr->passAlignment()) << fmt::nbsp;
+            print.end_ctor() << fmt::nbsp;
+        }
+
         cprint.printQualType(expr->getAllocatedType(), print);
 
         print.output() << fmt::nbsp;
 
+        // NOTE: the clang documentation says that this can return
+        // None even if it is an array new, but I have not found a
+        // way to trigger that.
+        assert(expr->isArray() == (bool)expr->getArraySize());
         printOptionalExpr(expr->getArraySize(), print, cprint, li);
 
         print.output() << fmt::nbsp;
 
-        if (auto v = expr->getInitializer()) {
-            print.some();
-            cprint.printExpr(v, print, li);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
+        printOptionalExpr(expr->getInitializer(), print, cprint, li);
 
         print.end_ctor();
     }

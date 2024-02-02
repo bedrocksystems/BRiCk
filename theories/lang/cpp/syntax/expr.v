@@ -347,6 +347,14 @@ constants lack addresses.
 Definition Nenum_const (gn : globname) (c : ident) : globname :=
   gn ++ "::" ++ c.
 
+Module new_form.
+  Variant t : Set :=
+  | Allocating (pass_align : bool)
+  | NonAllocating.
+  #[global] Instance: EqDecision t := ltac:(solve_decision).
+End new_form.
+#[global] Notation new_form := (new_form.t).
+
 Inductive Expr : Set :=
 | Evar (_ : localname) (_ : decltype)
 | Eglobal (_ : obj_name) (_ : decltype)
@@ -412,7 +420,7 @@ NOTE: Enumeration constants lack addresses (unlike other globals).
 | Enull
 | Einitlist (_ : list Expr) (_ : option Expr) (_ : exprtype)
 
-| Enew (new_fn : obj_name * functype) (new_args : list Expr)
+| Enew (new_fn : obj_name * functype) (new_args : list Expr) (_ : new_form)
        (alloc_ty : exprtype)
        (array_size : option Expr) (init : option Expr) (* type = Tptr alloc_ty *)
 | Edelete (is_array : bool) (del_fn : obj_name * functype)

@@ -423,28 +423,37 @@ Module ExprNotations.
          , format "'[' ( ty ){ '[hv' e1 ,  '/' .. ,  '/' e2 ']' }{default:  '/' edefault } ']'"
          , only printing).
 
-  Notation "'new' '(nothrow)' ty"
-      := (Enew _ nil ty None _)
+  Notation "'new' ty"
+      := (Enew _ nil _ ty None _)
          ( in custom CPP_expr at level 30
          , ty custom CPP_type at level 200
-         , format "'[' new  (nothrow)  ty ']'"
+         , format "'[' new  ty ']'"
          , only printing).
-  Notation "'new' '(nothrow)' ty ( a1 , .. , a2 )"
-      := (Enew _ (cons a1 .. (cons a2 nil) ..) ty None _)
+  Notation "'new' ( a1 , .. , a2 ) ty"
+      := (Enew _ (cons a1 .. (cons a2 nil) ..) _ ty None _)
          ( in custom CPP_expr at level 30
          , a1 custom CPP_expr at level 200
          , a2 custom CPP_expr at level 200
          , ty custom CPP_type at level 200
-         , format "'[' new  (nothrow)  ty ( '[hv' a1 ,  '/' .. ,  '/' a2 ']' ) ']'"
+         , format "'[' new  ( '[hv' a1 ,  '/' .. ,  '/' a2 ']' )  ty ']'"
          , only printing).
 
-  (* NOTE (JH): array-[new] expressions shouldn't have argument lists *)
-  Notation "'new' '(nothrow)' ty [ esz ]"
-      := (Enew _ _ ty (Some esz) _)
+  Notation "'new' ty [ esz ]"
+      := (Enew _ nil _ ty (Some esz) _)
          ( in custom CPP_expr at level 30
          , esz custom CPP_expr at level 200
          , ty custom CPP_type at level 200
-         , format "'[' new  (nothrow)  ty [ esz ] ']'"
+         , format "'[' new  ty [ esz ] ']'"
+         , only printing).
+
+  Notation "'new' ( a1 , .. , a2 ) ty [ esz ]"
+      := (Enew _ (cons a1 .. (cons a2 nil) ..) _ ty (Some esz) _)
+         ( in custom CPP_expr at level 30
+         , a1 custom CPP_expr at level 200
+         , a2 custom CPP_expr at level 200
+         , esz custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , format "'[' new  ( '[hv' a1 ,  '/' .. ,  '/' a2 ']' )  ty [ esz ] ']'"
          , only printing).
 
   Notation "'delete' e"

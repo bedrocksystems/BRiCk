@@ -541,27 +541,27 @@
        : Expr
   
   Einitlist_cons_wrap_default_2 uses section variable ty.
-  Enew_nonarray_nil_1 = {e: new (nothrow) {?: ty}}
+  Enew_nonarray_nil_1 = {e: new {?: ty}}
        : Expr
   
   Enew_nonarray_nil_1 uses section variables ty e.
-  Enew_nonarray_nil_2 = {e: new (nothrow) uint8}
+  Enew_nonarray_nil_2 = {e: new uint8}
        : Expr
   
   Enew_nonarray_nil_2 uses section variable ty.
-  Enew_nonarray_cons_1 = {e: new (nothrow) {?: ty}(#42, #false)}
+  Enew_nonarray_cons_1 = {e: new (#42, #false) {?: ty}}
        : Expr
   
   Enew_nonarray_cons_1 uses section variables ty e.
-  Enew_nonarray_cons_2 = {e: new (nothrow) "Foo"(#42, #false)}
+  Enew_nonarray_cons_2 = {e: new (#42, #false) "Foo"}
        : Expr
   
   Enew_nonarray_cons_2 uses section variable ty.
-  Enew_array_nil_1 = {e: new (nothrow) {?: ty}[#314]}
+  Enew_array_nil_1 = {e: new {?: ty}[#314]}
        : Expr
   
   Enew_array_nil_1 uses section variables ty e.
-  Enew_array_nil_2 = {e: new (nothrow) uint8[#314]}
+  Enew_array_nil_2 = {e: new uint8[#314]}
        : Expr
   
   Enew_array_nil_2 uses section variable ty.

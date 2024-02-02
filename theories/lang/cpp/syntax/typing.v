@@ -130,7 +130,7 @@ Fixpoint type_of (e : Expr) : exprtype :=
   | Enull => Tnullptr
   | Einitlist _ _ t
   | Eimplicit_init t => t
-  | Enew _ _ aty _ _ => Tptr aty
+  | Enew _ _ _ aty _ _ => Tptr aty
   | Edelete _ _ _ _ => Tvoid
   | Eandclean e => type_of e
   | Ematerialize_temp e _ => type_of e
@@ -299,7 +299,7 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
     https://en.cppreference.com/w/cpp/language/value_initialization
     *)
     Prvalue
-  | Enew _ _ _ _ _ => Prvalue
+  | Enew _ _ _ _ _ _ => Prvalue
   | Edelete _ _ _ _ => Prvalue
   | Eandclean e => valcat_of e
   | Ematerialize_temp _ vc => vc

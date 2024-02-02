@@ -323,16 +323,17 @@ Section TestExprNotations.
   #[local] Definition Einitlist_cons_wrap_default_2 : Expr := Einitlist [Eint 42 ty; Ebool false; Estring' "FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz" ty]%list (Some (Eint 314 ty)) (Tnum W64 Unsigned).
   Print Einitlist_cons_wrap_default_1. Print Einitlist_cons_wrap_default_2.
 
-  #[local] Definition Enew_nonarray_nil_1 : Expr := Enew ("fn"%bs, ty) []%list ty None (Some e).
-  #[local] Definition Enew_nonarray_nil_2 : Expr := Enew ("fn"%bs, ty) []%list (Tnum W8 Unsigned) None None.
+  #[local] Definition Enew_nonarray_nil_1 : Expr := Enew ("fn"%bs, ty) []%list (new_form.Allocating false) ty None (Some e).
+
+  #[local] Definition Enew_nonarray_nil_2 : Expr := Enew ("fn"%bs, ty) []%list (new_form.Allocating false) (Tnum W8 Unsigned) None None.
   Print Enew_nonarray_nil_1. Print Enew_nonarray_nil_2.
 
-  #[local] Definition Enew_nonarray_cons_1 : Expr := Enew ("fn"%bs, ty) [Eint 42 ty; Ebool false]%list ty None (Some e).
-  #[local] Definition Enew_nonarray_cons_2 : Expr := Enew ("fn"%bs, ty) [Eint 42 ty; Ebool false]%list (Tnamed "Foo") None None.
+  #[local] Definition Enew_nonarray_cons_1 : Expr := Enew ("fn"%bs, ty) [Eint 42 ty; Ebool false]%list (new_form.Allocating false) ty None (Some e).
+  #[local] Definition Enew_nonarray_cons_2 : Expr := Enew ("fn"%bs, ty) [Eint 42 ty; Ebool false]%list (new_form.Allocating false) (Tnamed "Foo") None None.
   Print Enew_nonarray_cons_1. Print Enew_nonarray_cons_2.
 
-  #[local] Definition Enew_array_nil_1 : Expr := Enew ("fn"%bs, ty) []%list ty (Some (Eint 314 ty)) (Some e).
-  #[local] Definition Enew_array_nil_2 : Expr := Enew ("fn"%bs, ty) []%list (Tnum W8 Unsigned) (Some (Eint 314 ty)) None.
+  #[local] Definition Enew_array_nil_1 : Expr := Enew ("fn"%bs, ty) []%list (new_form.Allocating false) ty (Some (Eint 314 ty)) (Some e).
+  #[local] Definition Enew_array_nil_2 : Expr := Enew ("fn"%bs, ty) []%list (new_form.Allocating false) (Tnum W8 Unsigned) (Some (Eint 314 ty)) None.
   Print Enew_array_nil_1. Print Enew_array_nil_2.
 
   #[local] Definition Edelete_nonarray_1 : Expr := Edelete false ("fn"%bs, ty) e ty.

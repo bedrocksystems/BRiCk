@@ -389,10 +389,10 @@ TOOD: add support for symbols with _internal_ linkage.
 TODO: does linking induce a (non-commutative) monoid on object files? Is then
 a translation unit a "singleton" value in this monoid? *)
 Record translation_unit : Type :=
-{ symbols    : symbol_table
-; types    : type_table
+{ symbols     : symbol_table
+; types       : type_table
 ; initializer : InitializerBlock
-; byte_order : endian
+; byte_order  : endian
 }.
 
 (** These [Lookup] instances come with no theory; use instead the unfolding

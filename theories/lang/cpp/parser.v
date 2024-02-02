@@ -137,6 +137,9 @@ Definition Emember (arrow : bool) (e : Expr) (f : ident + obj_name) (mut : bool)
            | inl f => Emember e f mut ty
            end) <$> e.
 
+Notation Allocating := new_form.Allocating (only parsing).
+Notation NonAllocating := new_form.NonAllocating (only parsing).
+
 (** ** Statements *)
 
 Section stmt.

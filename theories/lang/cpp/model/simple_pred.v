@@ -47,15 +47,15 @@ Section fractional.
 
   Let gmap_own γ q k v :=
     own (A := gmapR K (cfractionalR V)) γ {[ k := cfrac q v ]}.
-  Global Instance cfractional_own_frac γ k v :
+  #[global] Instance cfractional_own_frac γ k v :
     CFractional (λ q, gmap_own γ q k v).
   Proof. intros q1 q2. by rewrite -own_op singleton_op cfrac_op. Qed.
 
-  Global Instance fractional_own_frac_as_fractional γ k v q :
+  #[global] Instance fractional_own_frac_as_fractional γ k v q :
     AsCFractional (gmap_own γ q k v) (λ q, gmap_own γ q k v) q.
   Proof. solve_as_cfrac. Qed.
 
-  Global Instance gmap_own_agree
+  #[global] Instance gmap_own_agree
     `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (cfractionalR V))}
     v1 v2 γ q1 q2 k :
     Observe2 [| v1 = v2 |] (gmap_own γ q1 k v1) (gmap_own γ q2 k v2).
@@ -192,19 +192,19 @@ Module Type SimpleCPP_VIRTUAL.
 
     Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
     Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
-    Global Existing Instances vbyte_fractional vbyte_timeless.
+    #[global] Existing Instances vbyte_fractional vbyte_timeless.
 
     Definition vbytes (a : addr) (rv : list runtime_val') (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v q).
 
-    Global Instance vbytes_fractional va rv : Fractional (vbytes va rv).
+    #[global] Instance vbytes_fractional va rv : Fractional (vbytes va rv).
     Proof. apply fractional_big_sepL; intros. apply vbyte_fractional. Qed.
 
-    Global Instance vbytes_as_fractional va rv q :
+    #[global] Instance vbytes_as_fractional va rv q :
       AsFractional (vbytes va rv q) (vbytes va rv) q.
     Proof. exact: Build_AsFractional. Qed.
 
-    Global Instance vbytes_timeless va rv q : Timeless (vbytes va rv q) := _.
+    #[global] Instance vbytes_timeless va rv q : Timeless (vbytes va rv q) := _.
   End with_cpp.
 End SimpleCPP_VIRTUAL.
 
@@ -220,7 +220,7 @@ Module SimpleCPP.
     Context `{cpp_logic}.
 
     Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
-    Global Existing Instance live_alloc_id_timeless.
+    #[global] Existing Instance live_alloc_id_timeless.
 
     Definition live_ptr (p : ptr) :=
       default False%I (live_alloc_id <$> ptr_alloc_id p).
@@ -291,18 +291,18 @@ Module SimpleCPP.
     A more useful definition should probably not be persistent. *)
     Definition provides_storage (storage_ptr obj_ptr : ptr) (_ : type) : mpred :=
       [| same_address storage_ptr obj_ptr |] ** valid_ptr storage_ptr ** valid_ptr obj_ptr.
-    Global Instance provides_storage_persistent storage_ptr obj_ptr ty :
+    #[global] Instance provides_storage_persistent storage_ptr obj_ptr ty :
       Persistent (provides_storage storage_ptr obj_ptr ty) := _.
-    Global Instance provides_storage_affine storage_ptr obj_ptr ty :
+    #[global] Instance provides_storage_affine storage_ptr obj_ptr ty :
       Affine (provides_storage storage_ptr obj_ptr ty) := _.
-    Global Instance provides_storage_timeless storage_ptr obj_ptr ty :
+    #[global] Instance provides_storage_timeless storage_ptr obj_ptr ty :
       Timeless (provides_storage storage_ptr obj_ptr ty) := _.
-    Global Instance provides_storage_same_address storage_ptr obj_ptr ty :
+    #[global] Instance provides_storage_same_address storage_ptr obj_ptr ty :
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty) := _.
 
-    Global Instance provides_storage_valid_storage_ptr storage_ptr obj_ptr aty :
+    #[global] Instance provides_storage_valid_storage_ptr storage_ptr obj_ptr aty :
       Observe (valid_ptr storage_ptr) (provides_storage storage_ptr obj_ptr aty) := _.
-    Global Instance provides_storage_valid_obj_ptr storage_ptr obj_ptr aty :
+    #[global] Instance provides_storage_valid_obj_ptr storage_ptr obj_ptr aty :
       Observe (valid_ptr obj_ptr) (provides_storage storage_ptr obj_ptr aty) := _.
 
     Section with_genv.
@@ -329,7 +329,7 @@ Module SimpleCPP.
 
       Lemma bytesNat_nnonnull b : bytesNat b <> 0.
       Proof. have := bytesNat_pos b. lia. Qed.
-      Local Hint Resolve bytesNat_nnonnull : core.
+      #[local] Hint Resolve bytesNat_nnonnull : core.
 
       Lemma bytesNat_nnonnull' b : bytesNat b = S (pred (bytesNat b)).
       Proof. by rewrite (Nat.succ_pred _ (bytesNat_nnonnull _)). Qed.
@@ -457,16 +457,16 @@ Module SimpleCPP.
       Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred :=
         [| pure_encodes t v vs |].
 
-      Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs) := _.
+      #[global] Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs) := _.
 
-      Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a) := _.
+      #[global] Instance encodes_timeless : forall t v a, Timeless (encodes t v a) := _.
 
-      Local Hint Resolve length_Z_to_bytes : core.
-      Local Hint Resolve length_aptr : core.
-      Local Hint Resolve length_cptr : core.
-      Local Hint Resolve length_pure_encodes_undef : core.
+      #[local] Hint Resolve length_Z_to_bytes : core.
+      #[local] Hint Resolve length_aptr : core.
+      #[local] Hint Resolve length_cptr : core.
+      #[local] Hint Resolve length_pure_encodes_undef : core.
 
-      Global Instance encodes_nonvoid t v vs :
+      #[global] Instance encodes_nonvoid t v vs :
         Observe [| t <> Tvoid |] (encodes t v vs).
       Proof. apply: observe_intro_persistent; iIntros "!%". by destruct t. Qed.
 
@@ -498,7 +498,7 @@ Module SimpleCPP.
         repeat case_match; by [ | exact: bytesNat_pos].
       Qed.
 
-      Global Instance Inj_aptr: Inj eq eq aptr.
+      #[global] Instance Inj_aptr: Inj eq eq aptr.
       Proof.
         rewrite /aptr => p1 p2.
         by rewrite bytesNat_nnonnull'; csimpl => -[? _].
@@ -519,9 +519,9 @@ Module SimpleCPP.
         by edestruct Z_to_bytes_cons as (? & ? & ->).
       Qed.
 
-      Local Hint Resolve pure_encodes_undef_aptr pure_encodes_undef_Z_to_bytes : core.
+      #[local] Hint Resolve pure_encodes_undef_aptr pure_encodes_undef_Z_to_bytes : core.
 
-      Global Instance encodes_agree t v1 v2 vs :
+      #[global] Instance encodes_agree t v1 v2 vs :
         Observe2 [| v1 = v2 |] (encodes t v1 vs) (encodes t v2 vs).
       Proof.
         apply: observe_2_intro_persistent; rewrite /encodes /pure_encodes;
@@ -534,7 +534,7 @@ Module SimpleCPP.
           f_equiv; exact: Z_to_bytes_inj ].
       Qed.
 
-      Global Instance encodes_consistent t v1 v2 vs1 vs2 :
+      #[global] Instance encodes_consistent t v1 v2 vs1 vs2 :
         Observe2 [| length vs1 = length vs2 |] (encodes t v1 vs1) (encodes t v2 vs2).
       Proof. iIntros "!%". by move=> /length_encodes -> /length_encodes ->. Qed.
     End with_genv.
@@ -563,10 +563,10 @@ Module SimpleCPP.
     Definition val_ (a : ptr) (v : val) q : mpred :=
       ghost_mem_own a q v.
 
-    Global Instance val_agree a v1 v2 q1 q2 :
+    #[global] Instance val_agree a v1 v2 q1 q2 :
       Observe2 [| v1 = v2 |] (val_ a v1 q1) (val_ a v2 q2) := _.
 
-    Global Instance val_cfrac_valid a v :
+    #[global] Instance val_cfrac_valid a v :
       CFracValid0 (val_ a v).
     Proof. solve_cfrac_valid. Qed.
 
@@ -580,9 +580,9 @@ Module SimpleCPP.
     Definition byte_ (a : addr) (rv : runtime_val) q : mpred :=
       heap_own a q rv.
 
-    Global Instance byte_agree a v1 v2 q1 q2 :
+    #[global] Instance byte_agree a v1 v2 q1 q2 :
       Observe2 [|v1 = v2|] (byte_ a v1 q1) (byte_ a v2 q2) := _.
-    Global Instance byte_cfrac_valid a rv q :
+    #[global] Instance byte_cfrac_valid a rv q :
       Observe [| q ≤ 1 |]%Qp (byte_ a rv q) := _.
 
     Instance byte_cfractional {a rv} : CFractional (byte_ a rv) := _.
@@ -675,14 +675,14 @@ Module SimpleCPP.
     (* Auxiliary definitions.
       They're not exported, so we don't give them a complete theory;
       however, some of their proofs can be done via TC inference *)
-    Local Definition addr_encodes
+    #[local] Definition addr_encodes
         (σ : genv) (t : type) q (a : addr) (v : val) (vs : list runtime_val) :=
       encodes σ t v vs ** bytes a vs q ** vbytes a vs q.
 
-    Local Instance addr_encodes_fractional {σ} ty a v vs :
+    #[local] Instance addr_encodes_fractional {σ} ty a v vs :
       CFractional (λ q, addr_encodes σ ty q a v vs) := _.
 
-    Local Instance addr_encodes_agree_dst σ t a v1 v2 vs1 vs2 q1 q2 :
+    #[local] Instance addr_encodes_agree_dst σ t a v1 v2 vs1 vs2 q1 q2 :
       Observe2 [| vs1 = vs2 |]
         (addr_encodes σ t q1 a v1 vs1)
         (addr_encodes σ t q2 a v2 vs2).
@@ -693,7 +693,7 @@ Module SimpleCPP.
       by iDestruct (bytes_agree Heq with "By1 By2") as %->.
     Qed.
 
-    Local Instance addr_encodes_agree_src σ t v1 v2 a vs1 vs2 q1 q2 :
+    #[local] Instance addr_encodes_agree_src σ t v1 v2 a vs1 vs2 q1 q2 :
       Observe2 [| v1 = v2 |]
         (addr_encodes σ t q1 a v1 vs1)
         (addr_encodes σ t q2 a v2 vs2).
@@ -704,7 +704,7 @@ Module SimpleCPP.
       iApply (observe_2 with "H1 H2").
     Qed.
 
-    Global Instance addr_encodes_cfrac_valid {σ} ty :
+    #[global] Instance addr_encodes_cfrac_valid {σ} ty :
       CFracValid3 (addr_encodes σ ty).
     Proof.
       constructor. intros. apply: observe_intro_persistent.
@@ -712,7 +712,7 @@ Module SimpleCPP.
       by iApply (bytes_cfrac_valid with "B").
     Qed.
 
-    Local Definition oaddr_encodes
+    #[local] Definition oaddr_encodes
         (σ : genv) (t : type) q (oa : option addr) p (v : val) :=
         match oa with
         | Some a =>
@@ -722,14 +722,14 @@ Module SimpleCPP.
         end.
 
     (* Needed by tptsto_cfractional *)
-    Local Instance oaddr_encodes_fractional {σ} t oa p v :
+    #[local] Instance oaddr_encodes_fractional {σ} t oa p v :
       CFractional (λ q, oaddr_encodes σ t q oa p v).
     Proof. rewrite /oaddr_encodes; destruct oa; apply _. Qed.
 
-    Local Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
+    #[local] Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
       Observe [| ty <> Tvoid |] (oaddr_encodes σ ty q oa p v).
     Proof. destruct oa; apply _. Qed.
-    Local Instance oaddr_encodes_cfrac_valid {σ} t :
+    #[local] Instance oaddr_encodes_cfrac_valid {σ} t :
       CFracValid3 (oaddr_encodes σ t).
     Proof. constructor. intros ? oa ??. destruct oa; apply _. Qed.
 
@@ -783,10 +783,10 @@ Module SimpleCPP.
 
     Section with_genv.
       Context {σ : genv}.
-      Local Notation code_at := (code_at σ) (only parsing).
-      Local Notation method_at := (method_at σ) (only parsing).
-      Local Notation ctor_at := (ctor_at σ) (only parsing).
-      Local Notation dtor_at := (dtor_at σ) (only parsing).
+      #[local] Notation code_at := (code_at σ) (only parsing).
+      #[local] Notation method_at := (method_at σ) (only parsing).
+      #[local] Notation ctor_at := (ctor_at σ) (only parsing).
+      #[local] Notation dtor_at := (dtor_at σ) (only parsing).
 
       Lemma code_at_strict_valid tu f p :   code_at tu f p |-- strict_valid_ptr p.
       Proof. exact: code_own_strict_valid. Qed.
@@ -801,7 +801,7 @@ Module SimpleCPP.
     (** physical representation of pointers.
     OLD, not exposed any more.
      *)
-    Local Definition pinned_ptr (va : N) (p : ptr) : mpred :=
+    #[local] Definition pinned_ptr (va : N) (p : ptr) : mpred :=
       valid_ptr p **
       ([| p = nullptr /\ va = 0%N |] \\//
       ([| p <> nullptr /\ ptr_vaddr p = Some va |] ** mem_inj_own p (Some va))).
@@ -866,8 +866,8 @@ Module SimpleCPP.
 
     (* This lemma is unused; it confirms we can lift the other half of
     [pinned_ptr_aligned_divide], but we don't expose this. *)
-    Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
-      (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
+    #[local] Lemma pinned_ptr_type_divide_2 {va n σ p ty}
+      (Hal : align_of (σ := σ) ty = Some n) (Hnn : p <> nullptr) :
       pinned_ptr va p ⊢ valid_ptr (p ,, o_sub σ ty 1) -∗
       [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
     Proof.
@@ -888,7 +888,7 @@ Module SimpleCPP.
     above on [aligned_ptr_mpred] and [mem_inj_own].
     XXX: this assumes that casting to uchar preserves the pointer.
     *)
-    Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
+    #[local] Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
       pinned_ptr va p ⊢
       valid_ptr (p ,, o_sub resolve Tuchar 1) -∗
       type_ptr (resolve := resolve) Tuchar p.
