@@ -54,11 +54,14 @@ Proof.
   case_bool_decide; subst; eauto. simpl. case_match; constructor; eauto. contradiction.
 Qed.
 
-(** * sizeof() *)
+(** * sizeof *)
 (** The size of a C++ object.
     This is *not* the same as the semantics of the <<sizeof()>> operator
     because <<sizeof(int&)>> is actually <<sizeof(int)>> whereas
     [size_of (Tref Tint)] is the size of the reference.
+
+    Also, [size_of] is well-defined even in case of overflow, so many users need
+    bound-checking; see for instance [wp_operand_sizeof].
  *)
 Fixpoint size_of (resolve : genv) (t : type) : option N :=
   match t with
@@ -81,6 +84,13 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tfloat_ sz => Some (float_type.bytesN sz)
   | Tarch sz _ => bytesN <$> sz
   end%N.
+
+(* [size_of] result can overflow: *)
+Goal forall σ, size_of σ (Tarray Tu8 (2^128)) = Some (2^128)%N.
+Proof. by []. Abort.
+(* [size_of] result can overflow, even with in-bounds arguments: *)
+Goal forall σ, size_of σ (Tarray Tu64 (2^61)) = Some (2^64)%N.
+Proof. by []. Abort.
 
 #[global] Instance Proper_size_of
   : Proper (genv_leq ==> eq ==> Roption_leq eq) (@size_of).
@@ -331,14 +341,18 @@ Proof.
   by erewrite glob_def_genv_compat_struct.
 Qed.
 
-(** * alignof() *)
-Parameter align_of : forall {resolve : genv} (t : type), option N.
+(** * alignof *)
+
+(* [align_of t] returns the alignment of the type [t].
+ *)
+Parameter align_of : forall {σ : genv} (t : type), option N.
 Section with_genv.
   Context {σ : genv}.
 
-  Axiom align_of_named : forall (nm : globname),
-    align_of (Tnamed nm) =
-    glob_def σ nm ≫= GlobDecl_align_of.
+  (* All alignments are in integral power of 2.
+     See <https://eel.is/c++draft/basic.memobj#basic.align-4>
+   *)
+  Axiom align_of_power_of_two : forall t al, align_of t = Some al -> exists n, al = N.pow 2 n.
 
   (** If [size_of] is defined, [align_of] must divide [size_of]. *)
   Axiom align_of_size_of' : forall (t : type) sz,
@@ -355,16 +369,50 @@ Section with_genv.
     eauto.
   Qed.
 
+  (* The alignment of named types are recorded in the translation unit *)
+  Axiom align_of_named : forall (nm : globname),
+    align_of (Tnamed nm) =
+    glob_def σ nm ≫= GlobDecl_align_of.
+
   Axiom align_of_array : forall (ty : type) n,
       align_of (Tarray ty n) = align_of ty.
+  Axiom align_of_incomplete_array : forall (ty : type),
+      align_of (Tincomplete_array ty) = align_of ty.
+  Axiom align_of_variable_array : forall (ty : type),
+      align_of (Tvariable_array ty) = align_of ty.
+
   Axiom align_of_erase_qualifiers : ∀ t,
-      align_of (resolve:=σ) t = align_of (resolve:=σ) (erase_qualifiers t).
+      align_of (erase_qualifiers t) = align_of t.
+
+  Lemma align_of_char : align_of Tchar = Some 1%N.
+  Proof.
+    destruct (align_of_size_of' Tchar 1 (size_of_char _)) as [?[->[?Hd]]].
+    by f_equal; eapply N.divide_1_r.
+  Qed.
+  Lemma align_of_uchar : align_of Tuchar = Some 1%N.
+  Proof.
+    destruct (align_of_size_of' Tuchar 1 (size_of_int _ _)) as [?[->[?Hd]]].
+    by f_equal; eapply N.divide_1_r.
+  Qed.
+  Lemma align_of_schar : align_of Tschar = Some 1%N.
+  Proof.
+    destruct (align_of_size_of' Tschar 1 (size_of_int _ _)) as [?[->[?Hd]]].
+    by f_equal; eapply N.divide_1_r.
+  Qed.
+
+  (* NOTE: the following three axioms equate the size and alignment of
+     certain fundamental types. This does not seem to be sanctioned by
+     the standard, but does seem to be true in practice.
+   *)
+  Axiom UNSAFE_align_is_size_int : forall sz sgn, align_of (Tnum sz sgn) = size_of σ (Tnum sz sgn).
+  Axiom UNSAFE_align_is_size_char : forall c, align_of (Tchar_ c) = size_of σ (Tchar_ c).
+  Axiom UNSAFE_align_is_size_ptr : forall t, align_of (Tptr t) = size_of σ (Tptr t).
 
   Lemma align_of_qualified : ∀ t q,
-      align_of (resolve:=σ) (Tqualified q t) = align_of (resolve:=σ) t.
+      align_of (Tqualified q t) = align_of t.
   Proof.
     intros.
-    rewrite {1}align_of_erase_qualifiers. simpl. by rewrite -align_of_erase_qualifiers.
+    rewrite -{1}align_of_erase_qualifiers. simpl. by rewrite align_of_erase_qualifiers.
   Qed.
 
   Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).

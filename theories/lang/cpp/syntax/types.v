@@ -1645,6 +1645,10 @@ Notation int_bits       := (int_type.Iint)      (only parsing).
 Notation long_bits      := (int_type.Ilong)     (only parsing).
 Notation long_long_bits := (int_type.Ilonglong) (only parsing).
 
+(* TODO: this is correct in the LP64 data model, but we will probably need to
+ * index this by the [genv] in the future. *)
+Notation Tsize_t := Tu64 (only parsing).
+
 (** ** Types with implicit size information. *)
 
 Notation Tschar  := (Tnum int_type.Ichar Signed) (only parsing).

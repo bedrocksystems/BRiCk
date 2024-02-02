@@ -47,6 +47,20 @@ Section with_cpp.
     try solve_cfrac_valid.
   Qed.
 
+  Lemma nullptr_blockR sz q :
+    nullptr |-> blockR sz q |-- [| sz = 0%N |].
+  Proof.
+    rewrite blockR_eq/blockR_def _at_sep.
+    destruct sz; eauto.
+    have->: (N.to_nat (N.pos p) = S (N.to_nat (N.pos p - 1))) by lia.
+    rewrite -cons_seq /= o_sub_0 => //.
+    rewrite !_at_offsetR _offsetR_id _at_sep.
+    iIntros "(?&B&C)".
+    iDestruct (observe (nullptr |-> nonnullR) with "B") as "X".
+    rewrite _at_nonnullR.
+    by iDestruct "X" as %[].
+  Qed.
+
   Lemma blockR_disjoint (l : ptr):
     l |-> blockR 1 (cQp.m 1) |-- l |-> blockR 1 (cQp.m 1) -* False.
   Proof.

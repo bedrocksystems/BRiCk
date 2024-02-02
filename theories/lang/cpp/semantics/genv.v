@@ -7,6 +7,13 @@ From bedrock.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Export names types stmt translation_unit.
 From bedrock.lang.cpp.semantics Require Export sub_module.
 
+(* NOTE:
+    This constant should be provided by the C++ compiler / runtime.
+    It defines the minimal alignment, and it must be at least as
+    aligned as pointers.
+  *)
+Definition STDCPP_DEFAULT_NEW_ALIGNMENT : N := 16.
+
 (**
 A [genv] describes the dynamic semantics of a potentially incomplete program,
 comprising one or more C++ translation units.

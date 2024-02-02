@@ -851,15 +851,21 @@ Module Type Expr.
         https://eel.is/c++draft/expr.sizeof#1 and https://eel.is/c++draft/expr.sizeof#2
         When applied to a reference type, the size of the referenced type is used.
 
-        We do not require [has_type] in [wp_operand_sizeof] this is guaranteed by the
-        C++ standard. In particular, <https://eel.is/c++draft/support.types#layout-3>
+        While <<size_t>> is large enough to constrain the size in bytes of any object,
+        <https://eel.is/c++draft/support.types#layout-3>
 
         > The type <<size_t>> is an implementation-defined unsigned integer type that
         > is large enough to contain the size in bytes of any object ([expr.sizeof]).
+
+        dynamic expressions such as <<sizeof(int[n])>> for a variable <<n>> would allow
+        constructing a value that violates this. Therefore, we require
+        [has_type_prop sz Tsize_t].
      *)
     Axiom wp_operand_sizeof : forall ety ty Q,
-        Exists sz, [| size_of (drop_reference $ get_type ety) = Some sz |] **
-                   Q (Vn sz) FreeTemps.id
+        Exists sz,
+          [| size_of (drop_reference $ get_type ety) = Some sz |] **
+          [| has_type_prop sz Tsize_t |] **
+          Q (Vn sz) FreeTemps.id
         |-- wp_operand (Esizeof ety ty) Q.
 
     (** `alignof(e)`
@@ -869,8 +875,10 @@ Module Type Expr.
         by the compiler.
      *)
     Axiom wp_operand_alignof : forall ety ty Q,
-        Exists align, [| align_of (drop_reference $ get_type ety) = Some align |] **
-                      Q (Vn align) FreeTemps.id
+        Exists align,
+          [| align_of (drop_reference $ get_type ety) = Some align |] **
+          [| has_type_prop align Tsize_t |] **
+          Q (Vn align) FreeTemps.id
         |-- wp_operand (Ealignof ety ty) Q.
 
     (** * Function calls

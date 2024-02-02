@@ -535,7 +535,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Lemma aligned_ptr_ty_erase_qualifiers : forall {σ} p ty,
       aligned_ptr_ty ty p <-> aligned_ptr_ty (erase_qualifiers ty) p.
   Proof.
-    rewrite /aligned_ptr_ty; intros. by rewrite align_of_erase_qualifiers.
+    rewrite /aligned_ptr_ty; intros. by rewrite -align_of_erase_qualifiers.
   Qed.
 
   #[global] Instance aligned_ptr_ty_mono :
