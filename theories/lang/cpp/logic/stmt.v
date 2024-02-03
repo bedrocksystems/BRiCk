@@ -368,7 +368,7 @@ Module Type Stmt.
     Axiom wp_seq : forall ρ Q ss,
         wp_block ρ ss Q |-- wp ρ (Sseq ss) Q.
 
-    (** [if] *)
+    (** * <<if>> *)
 
     Axiom wp_if : forall ρ e thn els Q,
         |> Unfold WPE.wp_test (wp_test tu ρ e (fun c free =>
@@ -448,7 +448,7 @@ Module Type Stmt.
         I |-- wp ρ body (Kdo ρ test I Q) ->
         I |-- wp ρ (Sdo body test) Q.
 
-    (** * Return *)
+    (** * <<return>> *)
 
     (* the semantics of return is like an initialization
      * expression.
@@ -471,19 +471,20 @@ Module Type Stmt.
           Forall v, Q (ReturnVal v) -* Q' (ReturnVal v)
         end |-- wp ρ (Sreturn rv) Q -* wp ρ (Sreturn rv) Q'.
 
-    (** * Control flow: `break`, `continue` *)
+    (** * <<break>> *)
 
     Axiom wp_break : forall ρ Q,
         |> Q Break |-- wp ρ Sbreak Q.
     Axiom wp_break_frame : forall ρ (Q Q' : Kpred),
         Q Break -* Q' Break |-- wp ρ Sbreak Q -* wp ρ Sbreak Q'.
 
+    (** * <<continue>> *)
     Axiom wp_continue : forall ρ Q,
         |> Q Continue |-- wp ρ Scontinue Q.
     Axiom wp_continue_frame : forall ρ (Q Q' : Kpred),
         Q Continue -* Q' Continue |-- wp ρ Scontinue Q -* wp ρ Scontinue Q'.
 
-    (** `switch` *)
+    (** * <<switch>> *)
 
     (* compute the [Prop] that is known if this switch branch is taken *)
     Definition wp_switch_branch (s : SwitchBranch) (v : Z) : Prop :=
