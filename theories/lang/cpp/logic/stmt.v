@@ -416,11 +416,23 @@ Module Type Stmt.
       iLöb as "IH".
       iIntros "I".
       iApply wp_while_unroll.
-      rewrite {2}H /while_unroll.
+      rewrite {2}H.
       iRevert "I"; iApply wp_frame; first reflexivity.
       iIntros (rt) "K"; destruct rt; simpl; eauto.
       - iApply "IH"; eauto.
       - iApply "IH"; eauto.
+    Qed.
+
+    (* for backwards compatibility *)
+    Lemma wp_while_inv_nolater I : forall ρ test body Q,
+        I |-- Unfold while_unroll (while_unroll ρ test body (Kloop I Q)) ->
+        I |-- wp ρ (Swhile None test body) Q.
+    Proof.
+      intros.
+      iApply wp_while_inv.
+      rewrite {1}H.
+      iApply wp_frame; first reflexivity.
+      iIntros (rt); destruct rt; simpl; eauto.
     Qed.
 
     (**
@@ -472,6 +484,22 @@ Module Type Stmt.
       all: iIntros "I !>"; iApply "IH"; eauto.
     Qed.
 
+    Lemma wp_for_inv_nolater I : forall ρ test incr body Q,
+        I |-- Unfold for_unroll (for_unroll ρ test incr body (Kloop (|> I) Q)) ->
+        I |-- wp ρ (Sfor None test incr body) Q.
+    Proof.
+      intros.
+      apply wp_for_inv.
+      rewrite {1}H /for_unroll/=.
+      iIntros "X"; iRevert "X".
+      case_match; simpl.
+      all: iApply wp_frame; first reflexivity.
+      all: iIntros (rt); destruct rt; simpl; eauto.
+      all: case_match.
+      all: try (iApply wp_discard_frame; first reflexivity;
+                iIntros (?); iApply interp_frame).
+    Qed.
+
     (**
        `for (init; test; incr) body` desugars to `{ init; for (; test; incr) body }`
      *)
@@ -505,6 +533,20 @@ Module Type Stmt.
       { iRevert "K"; iApply wp_test_frame; iIntros (??).
         iApply interp_frame; case_match; eauto.
         iIntros "? !>"; iApply "IH"; eauto. }
+    Qed.
+
+    Lemma wp_do_inv_nolater I : forall ρ body test Q,
+        I |-- Unfold do_unroll (do_unroll ρ body test (Kloop I Q)) ->
+        I |-- wp ρ (Sdo body test) Q.
+    Proof.
+      intros.
+      apply wp_do_inv.
+      rewrite {1}H /do_unroll.
+      iIntros "X"; iRevert "X".
+      iApply wp_frame; first reflexivity.
+      iIntros (rt); destruct rt; simpl; eauto.
+      all: iApply wp_test_frame; iIntros (??).
+      all: iApply interp_frame; case_match; eauto.
     Qed.
 
     (** * <<return>> *)
@@ -677,6 +719,14 @@ Module Type Stmt.
       Arguments wp_decl_var _ _ _ _ !_ _ /. *)
   #[global] Arguments wp_decl_var _ _ _ _ _ _ _ _ _ /.
   #[global] Arguments wp_decl _ _ _ _ _ _ _ /. (* ! should occur on [d] *)
+
+
+  #[global,deprecated(since="20240204",note="use [wp_for_inv_nolater]")]
+  Notation wp_for := wp_for_inv_nolater (only parsing).
+  #[global,deprecated(since="20240204",note="use [wp_do_inv_nolater]")]
+  Notation wp_do := wp_do_inv_nolater (only parsing).
+  #[global,deprecated(since="20240204",note="use [wp_while_inv_nolater]")]
+  Notation wp_while := wp_while_inv_nolater (only parsing).
 
 End Stmt.
 
