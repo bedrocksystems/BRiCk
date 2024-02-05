@@ -385,9 +385,9 @@ Module Type Stmt.
     (* The loops are phrased using 1-step unfoldings and invariant rules are
        proved using Löb induction.
 
-       Certain infinite loops can be optimized away in C/C++.
-       E.g. <<while (1);>> can be optimized to <<;>>.
-       The loop rules do not support these optimizations.
+       C++ (and C) allow optimizing away certain infinite loops,
+       e.g. <<while (1);>> can be optimized to <<;>>.
+       These loop rules are not sound for use with compilations that use this optimization.
      *)
 
     (* loop with invariant `I` *)
