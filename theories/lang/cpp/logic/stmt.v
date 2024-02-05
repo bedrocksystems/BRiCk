@@ -510,7 +510,7 @@ Module Type Stmt.
     (** * <<do>> *)
 
     Definition do_unroll ρ body test (Q : Kpred) :=
-      wp ρ body (Kpost (wp_test tu ρ test (fun c free => interp free $ if c then Q Continue else Q Break)) Q).
+      wp ρ body (Kpost (Unfold WPE.wp_test (wp_test tu ρ test (fun c free => interp free $ if c then Q Continue else Q Break))) Q).
 
     Axiom wp_do_unroll : forall ρ body test Q,
             do_unroll ρ body test (Kloop (|> wp ρ (Sdo body test) Q) Q)
