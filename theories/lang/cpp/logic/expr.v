@@ -628,6 +628,28 @@ Module Type Expr.
             wp_operand e Q (* note: [has_type v Tnullptr |-- has_type v (Tptr ty)] *)
         |-- wp_operand (Ecast Cnull2ptr e Prvalue ty) Q.
 
+    (* Determine if a 0-constant of this type can be used as a pseudonym for <<nullptr>> *)
+    Definition can_represent_null (ty : type) : bool :=
+      match ty with
+      | Tnum _ _ => true
+      | _ => false
+      end.
+
+    (* For backwards compatiblity, the C++ semantics allows treating 0-valued integer
+       literals (of integral types) as synonymous with <<nullptr>>
+       (cf. <https://en.cppreference.com/w/cpp/language/pointer#Null_pointers>).
+
+       To make this rule compositional, we allow arbitrary integer expressions, but
+       note that the front-end will only use this construct if the expression is
+       exactly <<0>>.
+     *)
+    Axiom wp_operand_cast_null_int : forall e ty Q,
+        can_represent_null (type_of e) ->
+        is_ptr_type ty ->
+            (letI* v, free := wp_operand e in
+             [| v = Vint 0 |] ** Q (Vptr nullptr) free)
+        |-- wp_operand (Ecast Cnull2ptr e Prvalue ty) Q.
+
     (* note(gmm): in the clang AST, the subexpression is the call.
      * in essence, [Ecast (Cuser ..)] is a syntax annotation.
      *)
