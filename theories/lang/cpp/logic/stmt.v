@@ -368,7 +368,7 @@ Module Type Stmt.
     Axiom wp_seq : forall ρ Q ss,
         wp_block ρ ss Q |-- wp ρ (Sseq ss) Q.
 
-    (** [if] *)
+    (** * <<if>> *)
 
     Axiom wp_if : forall ρ e thn els Q,
         |> Unfold WPE.wp_test (wp_test tu ρ e (fun c free =>
@@ -382,13 +382,12 @@ Module Type Stmt.
         wp ρ (Sseq (Sdecl (d :: nil) :: Sif None e thn els :: nil)) Q
         |-- wp ρ (Sif (Some d) e thn els) Q.
 
-    (** * Loops *)
-    (* The loop rules are phrased using loop invariants. An alternative
-     * is to use their 1-step unfoldings and a greatest-fixpoint.
-     *
-     * Inconsistency: Certain infinite loops can be optimized away
-     * in C/C++. E.g. [while (1);] can be optimized to [;]. The loop
-     * rules do not support these.
+    (* The loops are phrased using 1-step unfoldings and invariant rules are
+       proved using Löb induction.
+
+       C++ (and C) allow optimizing away certain infinite loops,
+       e.g. <<while (1);>> can be optimized to <<;>>.
+       These loop rules are not sound for use with compilations that use this optimization.
      *)
 
     (* loop with invariant `I` *)
@@ -400,9 +399,41 @@ Module Type Stmt.
           | rt => Q rt
           end).
 
-    Axiom wp_while : forall ρ test body Q I,
-        I |-- wp ρ (Sif None test body Sbreak) (Kloop I Q) ->
+    (** * <<while>> *)
+
+    Definition while_unroll ρ test body :=
+      wp ρ (Sif None test body Sbreak).
+
+    Axiom wp_while_unroll : forall ρ test body Q,
+            while_unroll ρ test body (Kloop (|> wp ρ (Swhile None test body) Q) Q)
+        |-- wp ρ (Swhile None test body) Q.
+
+    Theorem wp_while_inv I : forall ρ test body Q,
+        I |-- while_unroll ρ test body (Kloop (|> I) Q) ->
         I |-- wp ρ (Swhile None test body) Q.
+    Proof.
+      intros.
+      iLöb as "IH".
+      iIntros "I".
+      iApply wp_while_unroll.
+      rewrite {2}H.
+      iRevert "I"; iApply wp_frame; first reflexivity.
+      iIntros (rt) "K"; destruct rt; simpl; eauto.
+      - iApply "IH"; eauto.
+      - iApply "IH"; eauto.
+    Qed.
+
+    (* for backwards compatibility *)
+    Lemma wp_while_inv_nolater I : forall ρ test body Q,
+        I |-- Unfold while_unroll (while_unroll ρ test body (Kloop I Q)) ->
+        I |-- wp ρ (Swhile None test body) Q.
+    Proof.
+      intros.
+      iApply wp_while_inv.
+      rewrite {1}H.
+      iApply wp_frame; first reflexivity.
+      iIntros (rt); destruct rt; simpl; eauto.
+    Qed.
 
     (**
        `while (T x = e) body` desugars to `{ T x = e; while (x) body }`
@@ -411,20 +442,63 @@ Module Type Stmt.
             wp ρ (Sseq (Sdecl (d :: nil) :: Swhile None test body :: nil)) Q
         |-- wp ρ (Swhile (Some d) test body) Q.
 
-    Axiom wp_for : forall ρ test incr body Q I,
-        let incr_I :=
-          match incr with
-          | None => I
-          | Some incr => wp_discard tu ρ incr (fun free => interp free I)
-          end
-        in
-        match test with
-        | None =>
-          I |-- wp ρ body (Kloop incr_I Q)
-        | Some test =>
-          I |-- wp ρ (Sif None test body Sbreak) (Kloop incr_I Q)
-        end ->
+    (** * <<for>> *)
+    Definition Kpost I Q :=
+      KP (fun rt =>
+            match rt with
+            | Normal | Continue => I
+            | _ => Q rt
+            end).
+
+    Definition for_unroll ρ test incr body (Q : Kpred) :=
+      let Kinc :=
+        Kpost (match incr with
+               | None => Q Normal
+               | Some incr => wp_discard tu ρ incr (fun free => interp free $ Q Normal)
+               end) Q
+      in
+      match test with
+      | None => wp ρ body
+      | Some test => wp ρ (Sif None test body Sbreak)
+      end Kinc.
+
+    Axiom wp_for_unroll : forall ρ test incr body Q,
+            for_unroll ρ test incr body (Kloop (|> wp ρ (Sfor None test incr body) Q) Q)
+        |-- wp ρ (Sfor None test incr body) Q.
+
+    Theorem wp_for_inv I : forall ρ test incr body Q,
+        I |-- for_unroll ρ test incr body (Kloop (|> I) Q) ->
         I |-- wp ρ (Sfor None test incr body) Q.
+    Proof.
+      intros.
+      iLöb as "IH".
+      iIntros "I".
+      iApply wp_for_unroll.
+      rewrite {2}H /for_unroll.
+      iRevert "I"; case_match; (iApply wp_frame; first reflexivity).
+      all: iIntros (rt); destruct rt; simpl; eauto.
+      all: case_match.
+      all: try (iApply wp_discard_frame; first reflexivity;
+                iIntros (?); iApply interp_frame;
+                iIntros "I !>"; iApply "IH"; eauto).
+      all: iIntros "I !>"; iApply "IH"; eauto.
+    Qed.
+
+    Lemma wp_for_inv_nolater I : forall ρ test incr body Q,
+        I |-- Unfold for_unroll (for_unroll ρ test incr body (Kloop (|> I) Q)) ->
+        I |-- wp ρ (Sfor None test incr body) Q.
+    Proof.
+      intros.
+      apply wp_for_inv.
+      rewrite {1}H /for_unroll/=.
+      iIntros "X"; iRevert "X".
+      case_match; simpl.
+      all: iApply wp_frame; first reflexivity.
+      all: iIntros (rt); destruct rt; simpl; eauto.
+      all: case_match.
+      all: try (iApply wp_discard_frame; first reflexivity;
+                iIntros (?); iApply interp_frame).
+    Qed.
 
     (**
        `for (init; test; incr) body` desugars to `{ init; for (; test; incr) body }`
@@ -433,22 +507,49 @@ Module Type Stmt.
             wp ρ (Sseq (init :: Sfor None test incr b :: nil)) Q
         |-- wp ρ (Sfor (Some init) test incr b) Q.
 
-    (** ** `do` loops *)
+    (** * <<do>> *)
 
-    Definition Kdo (ρ : region) (e : Expr) (I : mpred) (Q : Kpred) : Kpred :=
-      KP (funI rt =>
-          match rt with
-          | Break => Q Normal
-          | Continue | Normal =>
-            Unfold WPE.wp_test (wp_test tu ρ e (fun c free => interp free $ if c then I else Q Normal))
-          | rt => Q rt
-          end).
+    Definition do_unroll ρ body test (Q : Kpred) :=
+      wp ρ body (Kpost (Unfold WPE.wp_test (wp_test tu ρ test (fun c free => interp free $ if c then Q Continue else Q Break))) Q).
 
-    Axiom wp_do : forall ρ test body Q I,
-        I |-- wp ρ body (Kdo ρ test I Q) ->
+    Axiom wp_do_unroll : forall ρ body test Q,
+            do_unroll ρ body test (Kloop (|> wp ρ (Sdo body test) Q) Q)
+        |-- wp ρ (Sdo body test) Q.
+
+    Theorem wp_do_inv I : forall ρ body test Q,
+        I |-- do_unroll ρ body test (Kloop (|> I) Q) ->
         I |-- wp ρ (Sdo body test) Q.
+    Proof.
+      intros.
+      iLöb as "IH".
+      iIntros "I".
+      iApply wp_do_unroll.
+      rewrite {2}H /do_unroll.
+      iRevert "I"; iApply wp_frame; first reflexivity.
+      iIntros (rt) "K"; destruct rt; simpl; eauto.
+      { iRevert "K"; iApply wp_test_frame; iIntros (??).
+        iApply interp_frame; case_match; eauto.
+        iIntros "? !>"; iApply "IH"; eauto. }
+      { iRevert "K"; iApply wp_test_frame; iIntros (??).
+        iApply interp_frame; case_match; eauto.
+        iIntros "? !>"; iApply "IH"; eauto. }
+    Qed.
 
-    (** * Return *)
+    Lemma wp_do_inv_nolater I : forall ρ body test Q,
+        I |-- Unfold do_unroll (do_unroll ρ body test (Kloop I Q)) ->
+        I |-- wp ρ (Sdo body test) Q.
+    Proof.
+      intros.
+      apply wp_do_inv.
+      rewrite {1}H /do_unroll.
+      iIntros "X"; iRevert "X".
+      iApply wp_frame; first reflexivity.
+      iIntros (rt); destruct rt; simpl; eauto.
+      all: iApply wp_test_frame; iIntros (??).
+      all: iApply interp_frame; case_match; eauto.
+    Qed.
+
+    (** * <<return>> *)
 
     (* the semantics of return is like an initialization
      * expression.
@@ -471,19 +572,20 @@ Module Type Stmt.
           Forall v, Q (ReturnVal v) -* Q' (ReturnVal v)
         end |-- wp ρ (Sreturn rv) Q -* wp ρ (Sreturn rv) Q'.
 
-    (** * Control flow: `break`, `continue` *)
+    (** * <<break>> *)
 
     Axiom wp_break : forall ρ Q,
         |> Q Break |-- wp ρ Sbreak Q.
     Axiom wp_break_frame : forall ρ (Q Q' : Kpred),
         Q Break -* Q' Break |-- wp ρ Sbreak Q -* wp ρ Sbreak Q'.
 
+    (** * <<continue>> *)
     Axiom wp_continue : forall ρ Q,
         |> Q Continue |-- wp ρ Scontinue Q.
     Axiom wp_continue_frame : forall ρ (Q Q' : Kpred),
         Q Continue -* Q' Continue |-- wp ρ Scontinue Q -* wp ρ Scontinue Q'.
 
-    (** `switch` *)
+    (** * <<switch>> *)
 
     (* compute the [Prop] that is known if this switch branch is taken *)
     Definition wp_switch_branch (s : SwitchBranch) (v : Z) : Prop :=
@@ -617,6 +719,14 @@ Module Type Stmt.
       Arguments wp_decl_var _ _ _ _ !_ _ /. *)
   #[global] Arguments wp_decl_var _ _ _ _ _ _ _ _ _ /.
   #[global] Arguments wp_decl _ _ _ _ _ _ _ /. (* ! should occur on [d] *)
+
+
+  #[global,deprecated(since="20240204",note="use [wp_for_inv_nolater]")]
+  Notation wp_for := wp_for_inv_nolater (only parsing).
+  #[global,deprecated(since="20240204",note="use [wp_do_inv_nolater]")]
+  Notation wp_do := wp_do_inv_nolater (only parsing).
+  #[global,deprecated(since="20240204",note="use [wp_while_inv_nolater]")]
+  Notation wp_while := wp_while_inv_nolater (only parsing).
 
 End Stmt.
 

@@ -966,6 +966,15 @@ Section with_cpp.
                       | None => ERROR (is_true_None v)
                       end).
 
+  Lemma wp_test_frame {σ : genv} tu ρ test (Q Q' : _ -> _ -> epred) :
+    Forall b free, Q b free -* Q' b free |-- wp_test tu ρ test Q -* wp_test tu ρ test Q'.
+  Proof.
+    rewrite /wp_test.
+    iIntros "Q".
+    iApply wp_operand_frame; first reflexivity.
+    iIntros (??); case_match; eauto.
+  Qed.
+
   (** * xvalues *)
 
   (* evaluate an expression as an xvalue *)
