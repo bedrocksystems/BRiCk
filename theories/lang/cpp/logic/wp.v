@@ -965,6 +965,8 @@ Section with_cpp.
                       | Some c => Q c free
                       | None => ERROR (is_true_None v)
                       end).
+  #[global] Hint Opaque wp_test : br_opacity.
+  #[global] Arguments wp_test /.
 
   Lemma wp_test_frame {σ : genv} tu ρ test (Q Q' : _ -> _ -> epred) :
     Forall b free, Q b free -* Q' b free |-- wp_test tu ρ test Q -* wp_test tu ρ test Q'.
