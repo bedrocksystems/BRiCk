@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import elpi.locker.
+Require Import elpi.apps.locker.
 Require Import bedrock.prelude.base.
 Require Import iris.bi.bi.
 Require Import iris.bi.monpred.

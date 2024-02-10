@@ -17,7 +17,7 @@
  * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5415ad3003fd4b587a2189ddc2cc29c1bd9a9999/LICENSE
  *)
 
-Require Import elpi.locker.
+Require Import elpi.apps.locker.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.bool.
 
