@@ -5,7 +5,8 @@
  *)
 
 Require Import bedrock.lang.cpp.logic.heap_pred.prelude.
-From bedrock.lang.cpp.logic.heap_pred Require Import valid null.
+Require Import bedrock.lang.cpp.logic.heap_pred.valid.
+Require Import bedrock.lang.cpp.logic.heap_pred.null.
 
 #[local] Set Printing Coercions.
 Implicit Types (σ : genv) (p : ptr) (o : offset).

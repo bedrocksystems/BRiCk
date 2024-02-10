@@ -4,7 +4,11 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.prelude Require Import base bool finite fin list_numbers.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.bool.
+Require Import bedrock.prelude.finite.
+Require Import bedrock.prelude.fin.
+Require Import bedrock.prelude.list_numbers.
 #[local] Set Printing Coercions.
 
 (** [get_range_bitsN] *)

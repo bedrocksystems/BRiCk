@@ -3,11 +3,13 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From elpi Require Import locker.
+Require Import elpi.locker.
 
-From bedrock.prelude Require Import base numbers.
-From bedrock.lang.cpp.arith Require Import operator.
-From bedrock.lang.cpp Require Import ast semantics.values.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.numbers.
+Require Import bedrock.lang.cpp.arith.operator.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.values.
 
 #[local] Open Scope Z_scope.
 

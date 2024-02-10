@@ -5,7 +5,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From stdpp Require Import base.
+Require Import stdpp.base.
 
 (** * Syntax for straight-line CPS function calls
 

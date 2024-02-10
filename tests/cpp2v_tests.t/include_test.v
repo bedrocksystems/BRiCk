@@ -6,7 +6,8 @@
  *)
 Require Import bedrock.lang.cpp.semantics.
 
-From test Require include_hpp include_cpp.
+Require test.include_hpp.
+Require test.include_cpp.
 
 Goal module_le include_hpp.module include_cpp.module.
 Proof. vm_compute. done. Qed.

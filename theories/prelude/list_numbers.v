@@ -4,8 +4,9 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude Require Import base.
-From bedrock.prelude Require Export list numbers.
+Require Import bedrock.prelude.base.
+Require Export bedrock.prelude.list.
+Require Export bedrock.prelude.numbers.
 
 #[global] Instance set_unfold_elem_of_seq (n start len : nat) P :
   SetUnfold (start ≤ n < start + len)%nat P →

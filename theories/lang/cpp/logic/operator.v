@@ -4,9 +4,12 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import iris.proofmode.proofmode.
-From bedrock.prelude Require Import base option.
-From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
-From bedrock.lang.cpp Require Import logic.pred.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.option.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.semantics.operator.
+Require Import bedrock.lang.cpp.logic.pred.
 
 Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {σ : genv},
     translation_unit -> BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), mpred.

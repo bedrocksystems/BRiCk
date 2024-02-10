@@ -5,7 +5,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export stdpp.fin_sets.
-From bedrock.prelude Require Import base sets list.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.sets.
+Require Import bedrock.prelude.list.
 
 (** * Small extensions to [stdpp.fin_sets]. *)
 #[local] Set Default Proof Using "Type*".

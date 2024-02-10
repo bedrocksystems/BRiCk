@@ -6,8 +6,10 @@
 
 (** Support code for [inductive_pointers.v]. *)
 
-From bedrock.prelude Require Import base addr numbers.
-From bedrock.lang.cpp.semantics Require Import values.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.addr.
+Require Import bedrock.prelude.numbers.
+Require Import bedrock.lang.cpp.semantics.values.
 
 Module address_sums.
   Definition offset_vaddr : Z -> vaddr -> option vaddr := λ z pa,

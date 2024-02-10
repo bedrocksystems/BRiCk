@@ -4,8 +4,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.prelude Require Import base wrap.
-From bedrock.lang.cpp Require Import semantics.values.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.wrap.
+Require Import bedrock.lang.cpp.semantics.values.
 
 Module Type val_wrapper.
   Include wrapper.

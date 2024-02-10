@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.cpp.logic.heap_pred.prelude.
-From bedrock.lang.cpp.logic.heap_pred Require Import valid.
+Require Import bedrock.lang.cpp.logic.heap_pred.valid.
 
 #[local] Set Printing Coercions.
 Implicit Types (σ : genv) (p : ptr) (o : offset).

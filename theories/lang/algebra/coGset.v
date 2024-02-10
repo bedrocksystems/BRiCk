@@ -27,11 +27,12 @@
  * Original Iris License:
  * https://gitlab.mpi-sws.org/iris/iris/-/blob/79a110823166f989e622c8cdf1a8d564cc2078fd/LICENSE-CODE
  *)
-From stdpp Require Export coGset.
-From stdpp Require Import countable.
-From iris.algebra Require Export cmra.
-From iris.algebra Require Import updates local_updates.
-From iris.prelude Require Import options.
+Require Export stdpp.coGset.
+Require Import stdpp.countable.
+Require Export iris.algebra.cmra.
+Require Import iris.algebra.updates.
+Require Import iris.algebra.local_updates.
+Require Import iris.prelude.options.
 
 (** Misplaced: Upstream to [iris.algebra.coGset]? *)
 

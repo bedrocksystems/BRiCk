@@ -11,33 +11,36 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
-From elpi.apps Require Import locker.
+Require Import elpi.apps.locker.
 Require Export bedrock.prelude.addr.
 
-From bedrock.lang.bi Require Export prelude observe spec.knowledge.
-From bedrock.lang.cpp.logic Require Export mpred rep.
+Require Export bedrock.lang.bi.prelude.
+Require Export bedrock.lang.bi.observe.
+Require Export bedrock.lang.bi.spec.knowledge.
+Require Export bedrock.lang.cpp.logic.mpred.
+Require Export bedrock.lang.cpp.logic.rep.
 (** ^^ Delicate; export types and canonical structures (CS) for [monPred], [mpred] and [Rep].
 Export order can affect CS inference. *)
 
-From bedrock.lang.cpp.algebra Require Export cfrac.
+Require Export bedrock.lang.cpp.algebra.cfrac.
 Require Export bedrock.lang.cpp.bi.cfractional.
 
-From iris.base_logic.lib Require Export iprop.
+Require Export iris.base_logic.lib.iprop.
 (* TODO: ^^ only needed to export uPredI, should be removed. *)
-From iris.bi.lib Require Import fractional.
-From iris.proofmode Require Import proofmode.
+Require Import iris.bi.lib.fractional.
+Require Import iris.proofmode.proofmode.
 
 Require Import bedrock.lang.bi.na_invariants.
 Require Import bedrock.lang.bi.cancelable_invariants.
 Export ChargeNotation.
 Require Import bedrock.lang.cpp.bi.cfractional.
 
-From bedrock.lang.cpp.syntax Require Import
-     names
-     types
-     typing
-     translation_unit.
-From bedrock.lang.cpp.semantics Require Import values subtyping.
+Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.types.
+Require Import bedrock.lang.cpp.syntax.typing.
+Require Import bedrock.lang.cpp.syntax.translation_unit.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.semantics.subtyping.
 
 #[local] Set Printing Coercions.
 

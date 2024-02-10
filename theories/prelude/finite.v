@@ -5,9 +5,15 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From stdpp Require Export finite.
-From bedrock.prelude Require Import base bool numbers list_numbers gmap list fin_sets.
-From bedrock.prelude.axioms Require Import funext.
+Require Export stdpp.finite.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.bool.
+Require Import bedrock.prelude.numbers.
+Require Import bedrock.prelude.list_numbers.
+Require Import bedrock.prelude.gmap.
+Require Import bedrock.prelude.list.
+Require Import bedrock.prelude.fin_sets.
+Require Import bedrock.prelude.axioms.funext.
 
 #[local] Open Scope N_scope.
 

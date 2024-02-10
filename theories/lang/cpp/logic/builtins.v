@@ -7,10 +7,13 @@ Require Import bedrock.prelude.base.
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
-From bedrock.lang.cpp Require Import ast semantics.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.arith.builtins.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.wp.
 
 #[local] Arguments ERROR {_ _} _%bs : assert.
 

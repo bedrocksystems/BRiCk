@@ -5,14 +5,21 @@
  *)
 
 (** The "operational" style definitions about C++ values. *)
-From Coq Require Import Strings.Ascii.
+Require Import Coq.Strings.Ascii.
 Require Import stdpp.gmap.
 
-From bedrock.prelude Require Import base addr option numbers.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.addr.
+Require Import bedrock.prelude.option.
+Require Import bedrock.prelude.numbers.
 
-From bedrock.lang.cpp.arith Require Import operator builtins.
+Require Import bedrock.lang.cpp.arith.operator.
+Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.
-From bedrock.lang.cpp.semantics Require Export types sub_module genv ptrs.
+Require Export bedrock.lang.cpp.semantics.types.
+Require Export bedrock.lang.cpp.semantics.sub_module.
+Require Export bedrock.lang.cpp.semantics.genv.
+Require Export bedrock.lang.cpp.semantics.ptrs.
 
 #[local] Set Printing Coercions.
 #[local] Close Scope nat_scope.

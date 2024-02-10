@@ -6,7 +6,9 @@
 Require Import ZArith.
 
 Require Import bedrock.prelude.base.
-From bedrock.lang.cpp Require Import ast notations code_notations.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.notations.
+Require Import bedrock.lang.cpp.code_notations.
 
 Section TestStmtNotations.
   Context (ty : type) (e : Expr) (s : Stmt).

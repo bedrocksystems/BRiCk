@@ -13,9 +13,16 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.rep_proofmode.
 
-From bedrock.lang.cpp.logic Require Import
-  pred path_pred heap_pred wp builtins cptr const
-  initializers translation_unit destroy.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.builtins.
+Require Import bedrock.lang.cpp.logic.cptr.
+Require Import bedrock.lang.cpp.logic.const.
+Require Import bedrock.lang.cpp.logic.initializers.
+Require Import bedrock.lang.cpp.logic.translation_unit.
+Require Import bedrock.lang.cpp.logic.destroy.
 
 (* UPSTREAM. *)
 Lemma wand_frame {PROP : bi} (R Q Q' : PROP) :

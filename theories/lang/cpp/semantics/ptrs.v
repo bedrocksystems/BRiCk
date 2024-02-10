@@ -11,12 +11,16 @@ C++ pointers are subtle to model.
 The definitions in this file are based on the C and C++ standards, and
 formalizations of their memory object models (see [doc/sphinx/bibliography.rst]).
  *)
-From elpi Require Import locker.
+Require Import elpi.locker.
 
-From bedrock.prelude Require Import base addr option numbers.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.addr.
+Require Import bedrock.prelude.option.
+Require Import bedrock.prelude.numbers.
 
 Require Import bedrock.lang.cpp.ast.
-From bedrock.lang.cpp.semantics Require Export types genv.
+Require Export bedrock.lang.cpp.semantics.types.
+Require Export bedrock.lang.cpp.semantics.genv.
 
 (* We only load Iris to declare trivial OFEs over pointers via [leibnizO]. *)
 Require Import iris.algebra.ofe.

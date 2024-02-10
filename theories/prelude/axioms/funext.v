@@ -11,7 +11,7 @@ extension of Coq.
 *)
 
 Require Export Coq.Logic.FunctionalExtensionality.
-From bedrock.prelude Require Import base.
+Require Import bedrock.prelude.base.
 
 Ltac funext := apply: functional_extensionality.
 Ltac funext_dep := apply: functional_extensionality_dep.

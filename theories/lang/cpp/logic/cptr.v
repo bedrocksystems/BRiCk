@@ -3,10 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.proofmode Require Import proofmode.
+Require Import iris.proofmode.proofmode.
 
-From bedrock.lang.cpp Require Import
-     semantics logic.pred logic.wp.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.wp.
 
 Section defs.
   Context `{Σ : cpp_logic}.

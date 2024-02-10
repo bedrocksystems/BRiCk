@@ -5,12 +5,14 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import elpi.apps.locker.
-From iris.proofmode Require Import proofmode.
+Require Import iris.proofmode.proofmode.
 
-From bedrock.lang.bi Require Import prelude observe.
-From bedrock.lang.cpp.semantics Require Import values.
-From bedrock.lang.cpp.logic Require Import arr heap_pred.
-From bedrock.lang.cpp.bi Require Import spec.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.logic.arr.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.bi.spec.
 
 Import ChargeNotation.
 #[local] Open Scope Z_scope.

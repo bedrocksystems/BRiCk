@@ -3,9 +3,12 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude Require Import base.
-From bedrock.lang.cpp.syntax Require Export names types stmt translation_unit.
-From bedrock.lang.cpp.semantics Require Export sub_module.
+Require Import bedrock.prelude.base.
+Require Export bedrock.lang.cpp.syntax.names.
+Require Export bedrock.lang.cpp.syntax.types.
+Require Export bedrock.lang.cpp.syntax.stmt.
+Require Export bedrock.lang.cpp.syntax.translation_unit.
+Require Export bedrock.lang.cpp.semantics.sub_module.
 
 (* NOTE:
     This constant should be provided by the C++ compiler / runtime.

@@ -8,8 +8,8 @@ Require Import Lens.Lens.
 From elpi.apps.derive Extra Dependency "lens.elpi" as lens.
 From elpi.apps.derive Extra Dependency "derive_hook.elpi" as derive_hook.
 
-From elpi Require Import elpi.
-From elpi.apps Require Import derive.
+Require Import elpi.elpi.
+Require Import elpi.apps.derive.
 
 Import LensNotations.
 #[local] Open Scope lens_scope.

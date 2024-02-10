@@ -3,11 +3,12 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From elpi Require Import elpi.
+Require Import elpi.elpi.
 Require Export bedrock.prelude.elpi.derive.common.
 
-From bedrock.prelude Require Import prelude.
-From bedrock.prelude.elpi Require Import basis derive.finite_type.
+Require Import bedrock.prelude.prelude.
+Require Import bedrock.prelude.elpi.basis.
+Require Import bedrock.prelude.elpi.derive.finite_type.
 
 (***************************************************
  Bitsets

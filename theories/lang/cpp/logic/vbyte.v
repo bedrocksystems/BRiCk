@@ -3,12 +3,14 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.proofmode Require Import proofmode.
+Require Import iris.proofmode.proofmode.
 
-From iris.bi.lib Require Import fractional.
+Require Import iris.bi.lib.fractional.
 
-From bedrock.lang.cpp Require Import logic.pred.
-From bedrock.lang.cpp.semantics Require Import types genv values.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.semantics.types.
+Require Import bedrock.lang.cpp.semantics.genv.
+Require Import bedrock.lang.cpp.semantics.values.
 Require Import bedrock.prelude.addr.
 
 Module Type VBYTE.

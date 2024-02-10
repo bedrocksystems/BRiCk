@@ -7,12 +7,16 @@
 
     This file covers conversions between primitive types.
  *)
-From elpi Require Import locker.
+Require Import elpi.locker.
 
-From bedrock.prelude Require Import base numbers.
-From bedrock.lang.cpp.arith Require Export operator.
-From bedrock.lang.cpp Require Import ast.
-From bedrock.lang.cpp.semantics Require Import values genv promotion characters.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.numbers.
+Require Export bedrock.lang.cpp.arith.operator.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.semantics.genv.
+Require Import bedrock.lang.cpp.semantics.promotion.
+Require Import bedrock.lang.cpp.semantics.characters.
 Export characters.
 
 #[local] Open Scope Z_scope.

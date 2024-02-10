@@ -8,9 +8,11 @@
 This file defines the core type [Rep] of representation predicates.
 TODO: merge back into [rep.v]?
 *)
-From elpi Require Import locker.
-From bedrock.lang.bi Require Import prelude monpred.
-From bedrock.lang.cpp Require Import semantics.values logic.mpred.
+Require Import elpi.locker.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.monpred.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.logic.mpred.
 
 Import ChargeNotation.
 Implicit Types (σ : genv) (p : ptr) (o : offset).

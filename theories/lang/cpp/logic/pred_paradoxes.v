@@ -7,7 +7,9 @@
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.prelude.base.
 
-From bedrock.lang.cpp Require Import semantics logic.pred ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.ast.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.

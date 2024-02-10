@@ -4,14 +4,17 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.proofmode Require Import proofmode monpred.
+Require Import iris.proofmode.proofmode.
+Require Import iris.proofmode.monpred.
 
 Require Import bedrock.prelude.base.
 
-From bedrock.lang.cpp Require Import semantics ast.
-From bedrock.lang.cpp.logic Require Import
-  pred path_pred wp
-  heap_pred.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.heap_pred.
 
 #[local] Set Printing Coercions.
 

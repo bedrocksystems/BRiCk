@@ -3,7 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import countable strings.
+Require Import stdpp.countable.
+Require Import stdpp.strings.
 Require Import bedrock.prelude.base.
 Require Export bedrock.prelude.bytestring.
 

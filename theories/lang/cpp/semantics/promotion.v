@@ -12,9 +12,11 @@
     be performed. The dynamic semantics of casts is defined in [semantics/cast.v]
  *)
 
-From bedrock.prelude Require Import base numbers.
-From bedrock.lang.cpp.arith Require Export operator.
-From bedrock.lang.cpp Require Import ast semantics.values.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.numbers.
+Require Export bedrock.lang.cpp.arith.operator.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.values.
 
 #[local] Open Scope Z_scope.
 

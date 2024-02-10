@@ -7,7 +7,8 @@
 
 Require Export bedrock.lang.cpp.bi.cfractional.
 
-From bedrock.lang.bi Require Import prelude observe.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
 Require Import iris.proofmode.proofmode.
 
 #[local] Set Primitive Projections.

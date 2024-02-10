@@ -6,8 +6,11 @@
 
 (** "Prelude" for available-everywhere dependencies. *)
 
-From stdpp Require Export prelude countable.
-From bedrock.prelude Require Export stdpp_ssreflect tc_cond_type notations.
+Require Export stdpp.prelude.
+Require Export stdpp.countable.
+Require Export bedrock.prelude.stdpp_ssreflect.
+Require Export bedrock.prelude.tc_cond_type.
+Require Export bedrock.prelude.notations.
 Require bedrock.prelude.tactics.base_dbs. (* For [br_opacity]; import not required. *)
 
 #[global] Hint Opaque elem_of : typeclass_instances.

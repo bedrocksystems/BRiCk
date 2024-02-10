@@ -5,7 +5,10 @@
  *)
 Require Import ZArith.
 
-From bedrock.lang.cpp Require Import notations code_notations logic logic.builtins.
+Require Import bedrock.lang.cpp.notations.
+Require Import bedrock.lang.cpp.code_notations.
+Require Import bedrock.lang.cpp.logic.
+Require Import bedrock.lang.cpp.logic.builtins.
 
 Module WpTestDefns.
   Context (ti : biIndex) (_Σ : gFunctors) (Σ : cpp_logic ti _Σ) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)

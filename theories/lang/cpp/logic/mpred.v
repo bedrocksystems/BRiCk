@@ -7,11 +7,12 @@
 This file axiomatizes and instantiates [mpred] with the ghost types of the logic
 that we use for C++.
 The core C++ logic is defined in [pred.v]. *)
-From iris.base_logic.lib Require Import own cancelable_invariants.
+Require Import iris.base_logic.lib.own.
+Require Import iris.base_logic.lib.cancelable_invariants.
 Require Import iris.bi.monpred.
 
-From bedrock.prelude Require Import base.
-From bedrock.lang Require Import bi.prelude.
+Require Import bedrock.prelude.base.
+Require Import bedrock.lang.bi.prelude.
 Require Export bedrock.lang.base_logic.mpred.
 Import ChargeNotation.
 

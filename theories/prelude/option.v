@@ -17,8 +17,9 @@
  * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5415ad3003fd4b587a2189ddc2cc29c1bd9a9999/LICENSE
  *)
 
-From elpi Require Import locker.
-From bedrock.prelude Require Import base bool.
+Require Import elpi.locker.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.bool.
 
 (** Boolean version of stdpp's [is_Some] *)
 Definition isSome {A} (m : option A) : bool :=

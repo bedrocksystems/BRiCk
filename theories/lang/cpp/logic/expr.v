@@ -10,16 +10,22 @@
 Require Import bedrock.prelude.numbers.
 Require Import iris.proofmode.tactics.
 
-From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred raw
-     const
-     operator
-     destroy
-     initializers
-     wp call core_string
-     translation_unit
-     dispatch func.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.raw.
+Require Import bedrock.lang.cpp.logic.const.
+Require Import bedrock.lang.cpp.logic.operator.
+Require Import bedrock.lang.cpp.logic.destroy.
+Require Import bedrock.lang.cpp.logic.initializers.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.call.
+Require Import bedrock.lang.cpp.logic.core_string.
+Require Import bedrock.lang.cpp.logic.translation_unit.
+Require Import bedrock.lang.cpp.logic.dispatch.
+Require Import bedrock.lang.cpp.logic.func.
 Require Import bedrock.lang.bi.errors.
 
 Module Type Expr.

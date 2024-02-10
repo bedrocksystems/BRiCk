@@ -8,10 +8,14 @@ Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.atomic_commit.
 Require Import bedrock.lang.bi.spec.exclusive.
 
-From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred destroy
-     wp initializers.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.destroy.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.initializers.
 Require Import bedrock.lang.bi.errors.
 
 Module Type Stmt.

@@ -7,8 +7,11 @@ Require Import ExtLib.Tactics.Forward.
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp initializers.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.initializers.
 Require Import bedrock.prelude.letstar.
 
 (* BEGIN UPSTREAM *)

@@ -4,7 +4,11 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.cpp.logic.heap_pred.prelude.
-From bedrock.lang.cpp.logic.heap_pred Require Import simple valid null tptsto uninit.
+Require Import bedrock.lang.cpp.logic.heap_pred.simple.
+Require Import bedrock.lang.cpp.logic.heap_pred.valid.
+Require Import bedrock.lang.cpp.logic.heap_pred.null.
+Require Import bedrock.lang.cpp.logic.heap_pred.tptsto.
+Require Import bedrock.lang.cpp.logic.heap_pred.uninit.
 
 #[local] Set Printing Coercions.
 Implicit Types (σ : genv) (p : ptr) (o : offset).

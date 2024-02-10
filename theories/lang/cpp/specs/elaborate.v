@@ -8,8 +8,11 @@
     operands (i.e. [val]) and convert them to take materialized values.
  *)
 Require Import iris.proofmode.proofmode.
-From bedrock.lang.cpp Require Import ast logic semantics.
-From bedrock.lang.cpp.specs Require Import cpp_specs wp_spec_compat.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.logic.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.specs.cpp_specs.
+Require Import bedrock.lang.cpp.specs.wp_spec_compat.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.

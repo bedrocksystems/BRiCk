@@ -1,6 +1,7 @@
-From bedrock.lang.bi Require Import prelude observe.
-From bedrock.lang.cpp Require Import syntax.types.
-From bedrock.lang.cpp Require Import logic.heap_pred.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.cpp.syntax.types.
+Require Import bedrock.lang.cpp.logic.heap_pred.
 
 (** [Typed cls R] states that [R] is a [Rep] predicate for class [cls].
 Formally, from [Rep] predicate [R] we can observe [type_ptrR (Tnamed cls)] *)

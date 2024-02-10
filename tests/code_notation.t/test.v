@@ -6,7 +6,9 @@
 Require Import ZArith.
 
 Require Import bedrock.prelude.base.
-From bedrock.lang Require Import ast notations code_notations.
+Require Import bedrock.lang.ast.
+Require Import bedrock.lang.notations.
+Require Import bedrock.lang.code_notations.
 
 (* TODO (JH): Add more examples here (and remove the duplicates) *)
 Section TestCodeNotations.

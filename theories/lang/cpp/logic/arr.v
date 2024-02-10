@@ -4,15 +4,19 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.algebra Require Import list.
-From iris.proofmode Require Import proofmode.
-From bedrock.prelude Require Import numbers.
-From bedrock.lang.bi Require Import observe fractional big_op.
-From bedrock.lang.cpp Require Import bi.cfractional.
-From bedrock.lang.cpp.semantics Require Import types genv.
-From bedrock.lang.cpp.logic Require Import pred path_pred.
-From bedrock.lang.cpp.logic.heap_pred Require Import valid.
-From bedrock.lang.cpp.semantics Require Import values.
+Require Import bedrock.lang.algebra.list.
+Require Import iris.proofmode.proofmode.
+Require Import bedrock.prelude.numbers.
+Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.bi.fractional.
+Require Import bedrock.lang.bi.big_op.
+Require Import bedrock.lang.cpp.bi.cfractional.
+Require Import bedrock.lang.cpp.semantics.types.
+Require Import bedrock.lang.cpp.semantics.genv.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.valid.
+Require Import bedrock.lang.cpp.semantics.values.
 
 #[local] Set Printing Coercions.	(** Readability *)
 

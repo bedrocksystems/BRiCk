@@ -8,8 +8,9 @@
  * Semantics of arithmetic and pointer operators: support operators.
  *)
 
-From bedrock.prelude Require Import base numbers.
-From bedrock.lang.cpp.arith Require Import types.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.numbers.
+Require Import bedrock.lang.cpp.arith.types.
 
 #[local] Open Scope Z_scope.
 

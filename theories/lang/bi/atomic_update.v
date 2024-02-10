@@ -18,7 +18,7 @@
  * https://gitlab.mpi-sws.org/iris/iris/-/blob/ecad6c9fc48752b52678119c923dc4fff8e96f15/LICENSE-CODE
  *)
 Require Export iris.bi.lib.atomic.
-From iris.bi.lib Require Import fixpoint.
+Require Import iris.bi.lib.fixpoint.
 Require Import bedrock.lang.bi.telescopes.
 Require Import iris.proofmode.proofmode.
 Set Default Proof Using "Type".

@@ -17,8 +17,13 @@
  * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5415ad3003fd4b587a2189ddc2cc29c1bd9a9999/LICENSE
  *)
 
-From stdpp Require Import base decidable countable.
-From bedrock.prelude Require Import base option list_numbers finite.
+Require Import stdpp.base.
+Require Import stdpp.decidable.
+Require Import stdpp.countable.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.option.
+Require Import bedrock.prelude.list_numbers.
+Require Import bedrock.prelude.finite.
 
 #[local] Open Scope N_scope.
 

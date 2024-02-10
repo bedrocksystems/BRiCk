@@ -5,8 +5,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.cpp.algebra Require Export cfrac.
-From bedrock.lang.bi Require Import prelude split_andb split_frac.
+Require Export bedrock.lang.cpp.algebra.cfrac.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.split_andb.
+Require Import bedrock.lang.bi.split_frac.
 Require Import iris.proofmode.proofmode.
 Import ChargeNotation.
 

@@ -7,9 +7,13 @@
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.atomic1.
-From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp call.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.call.
 
 Export bedrock.lang.bi.atomic1.
 

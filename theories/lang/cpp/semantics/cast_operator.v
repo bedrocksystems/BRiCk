@@ -9,9 +9,13 @@
    require side conditions on the abstract machine state.
  *)
 
-From bedrock.prelude Require Import base numbers.
-From bedrock.lang.cpp.arith Require Export operator.
-From bedrock.lang.cpp Require Import ast semantics.values semantics.promotion semantics.cast.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.numbers.
+Require Export bedrock.lang.cpp.arith.operator.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.semantics.promotion.
+Require Import bedrock.lang.cpp.semantics.cast.
 
 #[local] Open Scope Z_scope.
 

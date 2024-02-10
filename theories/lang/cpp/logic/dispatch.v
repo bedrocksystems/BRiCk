@@ -9,8 +9,10 @@
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
-From bedrock.lang.cpp.logic Require Import pred heap_pred path_pred.
-From bedrock.lang.cpp.logic Require Import translation_unit.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.translation_unit.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.

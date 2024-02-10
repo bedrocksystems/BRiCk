@@ -5,8 +5,8 @@
  *)
 
 
-From elpi Require Import elpi.
-From elpi.apps Require Import derive.
+Require Import elpi.elpi.
+Require Import elpi.apps.derive.
 Require Import stdpp.numbers.
 Require Import Lens.Elpi.Elpi.
 

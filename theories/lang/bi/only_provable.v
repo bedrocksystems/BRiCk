@@ -4,10 +4,13 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From elpi Require Import locker.
+Require Import elpi.locker.
 Require Import bedrock.prelude.base.
-From iris.bi Require Import bi monpred embedding fractional.
-From iris.proofmode Require Import proofmode.
+Require Import iris.bi.bi.
+Require Import iris.bi.monpred.
+Require Import iris.bi.embedding.
+Require Import iris.bi.fractional.
+Require Import iris.proofmode.proofmode.
 
 (**
 [only_provable P], written [ [| P |] ], is a variant of [⌜ P ⌝] that, in a

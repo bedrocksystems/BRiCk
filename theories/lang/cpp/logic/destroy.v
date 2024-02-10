@@ -9,8 +9,14 @@ Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
-From bedrock.lang.cpp.logic Require Import
-  pred wp path_pred heap_pred const dispatch layout arr.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.const.
+Require Import bedrock.lang.cpp.logic.dispatch.
+Require Import bedrock.lang.cpp.logic.layout.
+Require Import bedrock.lang.cpp.logic.arr.
 
 #[local] Set Printing Coercions.
 #[local] Infix "|--" := bi_entails.

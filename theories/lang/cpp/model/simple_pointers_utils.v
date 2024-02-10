@@ -6,9 +6,12 @@
 
 (** Support code for [simple_pointers.v]. *)
 
-From stdpp Require Import gmap.
-From bedrock.prelude Require Import base addr option avl.
-From bedrock.lang.cpp.semantics Require Import values.
+Require Import stdpp.gmap.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.addr.
+Require Import bedrock.prelude.option.
+Require Import bedrock.prelude.avl.
+Require Import bedrock.lang.cpp.semantics.values.
 
 Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.

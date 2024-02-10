@@ -5,7 +5,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.bi Require Import derived_laws observe fractional monpred.
+Require Import bedrock.lang.bi.derived_laws.
+Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.bi.fractional.
+Require Import bedrock.lang.bi.monpred.
 (**
 NOTE: The preceding modules include inner modules "nary" to enable the
 following exports, which in turn keep this module backwards compatible

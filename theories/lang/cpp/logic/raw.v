@@ -5,15 +5,18 @@
  *)
 Require Import bedrock.prelude.base.
 Require Import iris.proofmode.proofmode.
-From iris.bi.lib Require Import fractional.
+Require Import iris.bi.lib.fractional.
 
 Require Import bedrock.lang.cpp.bi.cfractional.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
-From bedrock.lang.cpp.logic Require Import
-     arr builtins heap_pred pred z_to_bytes.
+Require Import bedrock.lang.cpp.logic.arr.
+Require Import bedrock.lang.cpp.logic.builtins.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.z_to_bytes.
 
 (**
 [rawR q r]: the argument pointer points to [r : raw_byte] within the
