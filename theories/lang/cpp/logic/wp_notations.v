@@ -5,9 +5,9 @@
  *)
 Require Import bedrock.lang.cpp.syntax.names.
 From bedrock.lang.cpp Require Import
-     logic           (* [Expr]/[Stmt] wps *)
-     logic.atomics   (* [wp_atom] *)
-     logic.builtins. (* [wp_builtin] *)
+     logic
+     logic.atomics
+     logic.builtins.
 
 Require bedrock.lang.cpp.code_notations.
 Import type_notations.TypeNotationsInterface.

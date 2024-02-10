@@ -11,7 +11,7 @@ From iris.proofmode Require Import proofmode.
 Require Import bedrock.prelude.base.
 From bedrock.lang.bi Require Import prelude observe.
 From bedrock.lang.cpp.semantics Require Import values.
-From bedrock.lang.cpp.logic Require Import arr heap_pred (* pred *).
+From bedrock.lang.cpp.logic Require Import arr heap_pred.
 
 Import ChargeNotation.
 #[local] Open Scope Z_scope.
