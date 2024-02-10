@@ -17,7 +17,7 @@ Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.only_provable.
 Require Import iris.bi.monpred.
 Require Import iris.proofmode.proofmode.
-Require Import iris.bi.laterable.
+Require Import iris.bi.lib.laterable.
 
 (* Disable [BiAffine uPred] *)
 #[export] Remove Hints uPred_affine : typeclass_instances.

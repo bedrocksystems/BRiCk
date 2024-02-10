@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import Coq.Lists.List.
-Require Import Coq.NArith.
+Require Import Coq.NArith.NArith.
 Require Import Coq.Structures.OrderedType.
 Require Import Coq.micromega.Lia.
 Require Coq.Strings.Byte.

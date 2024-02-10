@@ -9,7 +9,7 @@ Require Import bedrock.prelude.base.
 Require Import iris.bi.bi.
 Require Import iris.bi.monpred.
 Require Import iris.bi.embedding.
-Require Import iris.bi.fractional.
+Require Import iris.bi.lib.fractional.
 Require Import iris.proofmode.proofmode.
 
 (**
