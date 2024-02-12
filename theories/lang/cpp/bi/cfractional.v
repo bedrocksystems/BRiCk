@@ -7,8 +7,10 @@
 
 Require Export bedrock.lang.cpp.algebra.cfrac.
 
-From bedrock.lang.bi Require Import prelude observe split_frac.
-From bedrock.lang.cpp.bi Require Import split_cfrac.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.bi.split_frac.
+Require Import bedrock.lang.cpp.bi.split_cfrac.
 Require Import iris.proofmode.proofmode.
 Import ChargeNotation.
 

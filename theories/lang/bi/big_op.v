@@ -7,8 +7,8 @@
 Require Export bedrock.lang.algebra.big_op.
 Require Export iris.bi.big_op.
 
-From bedrock.lang.bi Require Import prelude.
-From iris.proofmode Require Import proofmode.
+Require Import bedrock.lang.bi.prelude.
+Require Import iris.proofmode.proofmode.
 Import ChargeNotation.
 
 (** ** Lists *)

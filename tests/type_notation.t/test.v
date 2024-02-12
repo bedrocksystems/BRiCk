@@ -3,7 +3,9 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.cpp Require Import ast notations code_notations.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.notations.
+Require Import bedrock.lang.cpp.code_notations.
 
 Section TestTypeNotations.
   Context (ty rty aty1 aty2 : type) (n : N) (nm : bs).

@@ -6,7 +6,8 @@
 Require Import Coq.ZArith.ZArith.
 
 Require bedrock.lang.cpp.ast.
-From bedrock.lang.cpp.syntax Require Import expr names.
+Require Import bedrock.lang.cpp.syntax.expr.
+Require Import bedrock.lang.cpp.syntax.names.
 Require Export bedrock.lang.cpp.syntax.type_notations.
 
 #[local] Open Scope Z_scope.

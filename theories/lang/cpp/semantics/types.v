@@ -3,11 +3,15 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From elpi Require Import locker.
-From bedrock.prelude Require Import base.
-From bedrock.prelude Require Export option.
-From bedrock.lang.cpp.syntax Require Import names expr stmt types typing.
-From bedrock.lang.cpp.semantics Require Import genv.
+Require Import elpi.apps.locker.
+Require Import bedrock.prelude.base.
+Require Export bedrock.prelude.option.
+Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.expr.
+Require Import bedrock.lang.cpp.syntax.stmt.
+Require Import bedrock.lang.cpp.syntax.types.
+Require Import bedrock.lang.cpp.syntax.typing.
+Require Import bedrock.lang.cpp.semantics.genv.
 
 Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   match g with

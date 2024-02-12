@@ -6,7 +6,9 @@
 Require Import bedrock.prelude.base.
 
 Require Import iris.proofmode.proofmode.
-From bedrock.lang.cpp Require Import semantics logic.pred ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.ast.
 
 #[deprecated(since="20231103",note="use [ptr]")]
 Notation Loc := ptr (only parsing).

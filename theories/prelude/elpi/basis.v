@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 
-From elpi Require Import elpi.
+Require Import elpi.elpi.
 
 (*Export this tactic to [typeclass] use sites.*)
 Ltac try_typeclasses_eauto := try typeclasses eauto.

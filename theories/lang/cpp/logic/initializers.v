@@ -10,8 +10,12 @@ Require Import bedrock.prelude.bool.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.bi.errors.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp destroy const.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.destroy.
+Require Import bedrock.lang.cpp.logic.const.
 
 #[local] Set Printing Coercions.
 

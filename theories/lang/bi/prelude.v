@@ -3,12 +3,16 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.bi Require Export bi.
+Require Export iris.bi.bi.
 (* This export ensures that [upredI] is registered as a canonical structure everywhere. *)
-From iris.base_logic Require Export bi.
-From iris.proofmode Require Import classes.
-From bedrock.prelude Require Export base gmap letstar list_numbers.
-From bedrock.lang.bi Require Export only_provable derived_laws.
+Require Export iris.base_logic.bi.
+Require Import iris.proofmode.classes.
+Require Export bedrock.prelude.base.
+Require Export bedrock.prelude.gmap.
+Require Export bedrock.prelude.letstar.
+Require Export bedrock.prelude.list_numbers.
+Require Export bedrock.lang.bi.only_provable.
+Require Export bedrock.lang.bi.derived_laws.
 
 #[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp True.
 Proof. by rewrite /IntoPure (bi.pure_intro True emp). Qed.

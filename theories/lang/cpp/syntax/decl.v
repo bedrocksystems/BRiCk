@@ -3,8 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude Require Import base.
-From bedrock.lang.cpp.syntax Require Import names expr stmt types.
+Require Import bedrock.prelude.base.
+Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.expr.
+Require Import bedrock.lang.cpp.syntax.stmt.
+Require Import bedrock.lang.cpp.syntax.types.
 
 #[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
 #[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).

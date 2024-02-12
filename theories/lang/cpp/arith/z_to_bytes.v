@@ -6,7 +6,9 @@
 
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.list_numbers.
-From bedrock.lang.cpp.arith Require Import types builtins operator.
+Require Import bedrock.lang.cpp.arith.types.
+Require Import bedrock.lang.cpp.arith.builtins.
+Require Import bedrock.lang.cpp.arith.operator.
 
 Import arith.builtins.churn_bits.
 

@@ -4,9 +4,12 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.cpp.logic Require Import
-    pred path_pred heap_pred wp.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.wp.
 Require Import bedrock.lang.cpp.logic.atomics.
 
 Require Import iris.proofmode.proofmode.

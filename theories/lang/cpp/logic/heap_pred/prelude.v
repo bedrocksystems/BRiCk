@@ -3,14 +3,17 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From elpi.apps Require Export locker.
+Require Export elpi.apps.locker.
 
-From iris.proofmode Require Export proofmode.
-From bedrock.lang.bi Require Export fractional.
+Require Export iris.proofmode.proofmode.
+Require Export bedrock.lang.bi.fractional.
 
-From bedrock.lang.cpp Require Export
-  bi.cfractional
-  semantics ast logic.pred logic.pred logic.path_pred.
+Require Export bedrock.lang.cpp.bi.cfractional.
+Require Export bedrock.lang.cpp.semantics.
+Require Export bedrock.lang.cpp.ast.
+Require Export bedrock.lang.cpp.logic.pred.
+Require Export bedrock.lang.cpp.logic.pred.
+Require Export bedrock.lang.cpp.logic.path_pred.
 
 Export bedrock.lang.cpp.logic.pred.
 (* ^^ Should this be exported? this file is supposed to provide wrappers

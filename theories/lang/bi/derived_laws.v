@@ -4,11 +4,12 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From stdpp Require Import coPset.
-From iris.bi Require Import bi lib.fractional.
-From iris.proofmode Require Import proofmode.
-From bedrock.prelude Require Import reserved_notation.
-From bedrock.lang.bi Require Import only_provable.
+Require Import stdpp.coPset.
+Require Import iris.bi.bi.
+Require Import iris.bi.lib.fractional.
+Require Import iris.proofmode.proofmode.
+Require Import bedrock.prelude.reserved_notation.
+Require Import bedrock.lang.bi.only_provable.
 
 (**
 Derived BI laws, similarly to iris.bi.derived_laws.

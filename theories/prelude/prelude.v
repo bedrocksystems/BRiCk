@@ -5,12 +5,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 (** Small extensions to stdpp. *)
-From bedrock.prelude Require Export
-  base
-  fin
-  numbers
-  sets
-  fin_sets
-  list
-  list_numbers
-.
+Require Export bedrock.prelude.base.
+Require Export bedrock.prelude.fin.
+Require Export bedrock.prelude.numbers.
+Require Export bedrock.prelude.sets.
+Require Export bedrock.prelude.fin_sets.
+Require Export bedrock.prelude.list.
+Require Export bedrock.prelude.list_numbers.

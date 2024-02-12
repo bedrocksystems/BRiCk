@@ -18,7 +18,7 @@
  * Original stdpp License:
  * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/54252fbc10eaa88941ec1e157ce2c2e575e42604/LICENSE
  *)
-From Coq Require Import Utf8.
+Require Import Coq.Unicode.Utf8.
 
 (** Variants of [TCOr]/[TCAnd] for [Type]. *)
 Inductive TCOrT (P1 P2 : Type) : Type :=

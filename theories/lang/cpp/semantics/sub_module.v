@@ -9,8 +9,8 @@ Require Import ExtLib.Tactics.
 this reset propagates to clients, we must export one of them; we choose to
 export our [base] module. *)
 Require Import stdpp.fin_maps.
-From bedrock.prelude Require Export base.
-From bedrock.prelude Require Import avl.
+Require Export bedrock.prelude.base.
+Require Import bedrock.prelude.avl.
 Require Import bedrock.lang.cpp.ast.
 
 (** TODO rename [sub_module] since it is not actually about modules

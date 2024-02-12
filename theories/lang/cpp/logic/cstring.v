@@ -4,19 +4,22 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From Coq Require Import ZArith.BinInt Lists.List.
-From Coq.Strings Require Export Ascii.
+Require Import Coq.ZArith.BinInt.
+Require Import Coq.Lists.List.
+Require Export Coq.Strings.Ascii.
 
-From iris.proofmode Require Import proofmode.
+Require Import iris.proofmode.proofmode.
 
 Require Import bedrock.prelude.stdpp_ssreflect.
 Require bedrock.prelude.bytestring.
 Require Import bedrock.prelude.base.
-From bedrock.lang.bi Require Import
-     prelude observe.
-From bedrock.lang.cpp Require Import
-     semantics.values
-     logic.arr logic.heap_pred logic.mpred logic.zstring.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.logic.arr.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.mpred.
+Require Import bedrock.lang.cpp.logic.zstring.
 
 Import ChargeNotation.
 #[local] Open Scope Z_scope.

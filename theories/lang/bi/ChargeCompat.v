@@ -3,8 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris Require Import bi.bi.
-From iris.proofmode Require Import proofmode.
+Require Import iris.bi.bi.
+Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.prelude.
 Import ChargeNotation.
 

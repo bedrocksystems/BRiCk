@@ -4,7 +4,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.prelude.base.
-From bedrock.lang.cpp.syntax Require Import names types expr.
+Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.types.
+Require Import bedrock.lang.cpp.syntax.expr.
 Require Import bedrock.prelude.bytestring.
 
 Set Primitive Projections.

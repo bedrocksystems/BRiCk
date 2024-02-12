@@ -4,13 +4,12 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export Coq.NArith.BinNatDef.
-From bedrock.lang.cpp.syntax Require Export
-     names
-     expr
-     stmt
-     types
-     typing
-     decl
-     translation_unit.
+Require Export bedrock.lang.cpp.syntax.names.
+Require Export bedrock.lang.cpp.syntax.expr.
+Require Export bedrock.lang.cpp.syntax.stmt.
+Require Export bedrock.lang.cpp.syntax.types.
+Require Export bedrock.lang.cpp.syntax.typing.
+Require Export bedrock.lang.cpp.syntax.decl.
+Require Export bedrock.lang.cpp.syntax.translation_unit.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.

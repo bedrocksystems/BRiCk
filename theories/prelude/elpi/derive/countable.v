@@ -5,12 +5,12 @@
  *)
 Require Import ssreflect.
 
-From stdpp Require Import countable.
+Require Import stdpp.countable.
 
-From elpi Require Import elpi.
+Require Import elpi.elpi.
 Require Export bedrock.prelude.elpi.derive.common.
 
-From bedrock.prelude.elpi Require Import basis.
+Require Import bedrock.prelude.elpi.basis.
 
 Elpi Accumulate derive Db bedrock.basis.db.
 

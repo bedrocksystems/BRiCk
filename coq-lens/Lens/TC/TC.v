@@ -1,13 +1,16 @@
-From Coq.Classes Require Import DecidableClass.
-From Coq.Lists Require Import List.
-From Coq.Strings Require Import String.
+Require Import Coq.Classes.DecidableClass.
+Require Import Coq.Lists.List.
+Require Import Coq.Strings.String.
 
 (* Avoid [From MetaCoq.Template Require Import utils All.]
 to work around https://github.com/MetaCoq/metacoq/issues/580 *)
-From MetaCoq.Utils Require Import monad_utils MCUtils.
-From MetaCoq.Template Require Import Ast Loader TemplateMonad.
+Require Import MetaCoq.Utils.monad_utils.
+Require Import MetaCoq.Utils.MCUtils.
+Require Import MetaCoq.Template.Ast.
+Require Import MetaCoq.Template.Loader.
+Require Import MetaCoq.Template.TemplateMonad.
 
-From Lens Require Import Lens.
+Require Import Lens.Lens.
 
 Import MCMonadNotation.
 

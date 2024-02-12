@@ -3,7 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude Require Import base numbers.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.numbers.
 Require Export bedrock.prelude.wrap.
 
 Module int_line.

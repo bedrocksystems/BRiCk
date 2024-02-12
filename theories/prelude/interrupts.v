@@ -8,7 +8,8 @@
 
 (* XXX Only temporarily here. *)
 
-From bedrock.prelude Require Import base hw_types.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.hw_types.
 
 (** * Configurations of the interrupt lines attached to devices *)
 

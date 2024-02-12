@@ -3,13 +3,17 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude Require Import base numbers list.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.numbers.
+Require Import bedrock.prelude.list.
 Require Import iris.proofmode.proofmode.
 
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.ast.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred translation_unit.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.translation_unit.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.arr.
 Require Export bedrock.lang.cpp.logic.raw.

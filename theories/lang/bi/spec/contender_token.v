@@ -5,7 +5,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.bi Require Import prelude big_op.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.big_op.
 Require Import iris.proofmode.proofmode.
 Import ChargeNotation.
 

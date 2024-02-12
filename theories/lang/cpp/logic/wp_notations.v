@@ -4,10 +4,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.cpp.syntax.names.
-From bedrock.lang.cpp Require Import
-     logic           (* [Expr]/[Stmt] wps *)
-     logic.atomics   (* [wp_atom] *)
-     logic.builtins. (* [wp_builtin] *)
+Require Import bedrock.lang.cpp.logic.
+Require Import bedrock.lang.cpp.logic.atomics.
+Require Import bedrock.lang.cpp.logic.builtins.
 
 Require bedrock.lang.cpp.code_notations.
 Import type_notations.TypeNotationsInterface.

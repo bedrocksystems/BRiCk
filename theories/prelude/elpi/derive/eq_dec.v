@@ -3,12 +3,12 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import decidable.
+Require Import stdpp.decidable.
 
-From elpi Require Import elpi.
+Require Import elpi.elpi.
 Require Export bedrock.prelude.elpi.derive.common.
 
-From bedrock.prelude.elpi Require Import basis.
+Require Import bedrock.prelude.elpi.basis.
 
 Elpi Accumulate derive Db bedrock.basis.db.
 

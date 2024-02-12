@@ -20,11 +20,14 @@
  * https://gitlab.mpi-sws.org/iris/iris/-/blob/5bb93f57729a8cc7d0ffeaab769cd24728e51a38/LICENSE-CODE
  *)
 
-From stdpp Require Import coPset namespaces.
-From iris.bi.lib Require Import fixpoint.
-From iris.proofmode Require Import coq_tactics proofmode reduction.
-From iris.prelude Require Import options.
-From iris.bi.lib Require Import atomic.
+Require Import stdpp.coPset.
+Require Import stdpp.namespaces.
+Require Import iris.bi.lib.fixpoint.
+Require Import iris.proofmode.coq_tactics.
+Require Import iris.proofmode.proofmode.
+Require Import iris.proofmode.reduction.
+Require Import iris.prelude.options.
+Require Import iris.bi.lib.atomic.
 
 Require Export bedrock.lang.bi.laterable.
 Require Import bedrock.lang.bi.telescopes.

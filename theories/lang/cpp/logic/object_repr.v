@@ -15,7 +15,11 @@ Require Import bedrock.prelude.base.
 
 Require Import bedrock.lang.bi.big_op.
 Require Import bedrock.lang.cpp.semantics.
-From bedrock.lang.cpp.logic Require Import arr pred heap_pred layout raw.
+Require Import bedrock.lang.cpp.logic.arr.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.layout.
+Require Import bedrock.lang.cpp.logic.raw.
 
 Section Utilities.
   Context `{Σ : cpp_logic} {σ : genv}.

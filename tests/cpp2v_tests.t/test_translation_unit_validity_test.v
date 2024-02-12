@@ -3,9 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import fin_maps.
-From bedrock.prelude Require Import base bytestring.
-From bedrock.lang.cpp Require Import syntax.translation_unit syntax.types.
+Require Import stdpp.fin_maps.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.bytestring.
+Require Import bedrock.lang.cpp.syntax.translation_unit.
+Require Import bedrock.lang.cpp.syntax.types.
 
 Require Import test.test_translation_unit_validity_cpp.
 

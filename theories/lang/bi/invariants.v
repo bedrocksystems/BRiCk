@@ -28,7 +28,7 @@
 
 Require Export iris.base_logic.lib.invariants. (* << export [invGS] *)
 
-From iris.proofmode Require Import proofmode.
+Require Import iris.proofmode.proofmode.
 
 Set Default Proof Using "Type".
 Set Suggest Proof Using.

@@ -3,13 +3,12 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.cpp.semantics Require Export
-     sub_module
-     values
-     cast
-     operator
-     intensional
-     promotion
-     cast_operator
-     subtyping
-     dispatch.
+Require Export bedrock.lang.cpp.semantics.sub_module.
+Require Export bedrock.lang.cpp.semantics.values.
+Require Export bedrock.lang.cpp.semantics.cast.
+Require Export bedrock.lang.cpp.semantics.operator.
+Require Export bedrock.lang.cpp.semantics.intensional.
+Require Export bedrock.lang.cpp.semantics.promotion.
+Require Export bedrock.lang.cpp.semantics.cast_operator.
+Require Export bedrock.lang.cpp.semantics.subtyping.
+Require Export bedrock.lang.cpp.semantics.dispatch.

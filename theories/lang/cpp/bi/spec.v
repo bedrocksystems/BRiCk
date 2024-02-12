@@ -7,7 +7,5 @@
 
 Require Export bedrock.lang.bi.spec.
 
-From bedrock.lang.cpp.bi.spec Require Export
-  typed
-  cfrac_splittable
-.
+Require Export bedrock.lang.cpp.bi.spec.typed.
+Require Export bedrock.lang.cpp.bi.spec.cfrac_splittable.

@@ -9,8 +9,10 @@
  *)
 Require Import bedrock.prelude.base.
 Require Import bedrock.lang.cpp.ast.
-From bedrock.lang.cpp Require Import
-     semantics logic.pred logic.path_pred logic.heap_pred.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
 Require Import iris.proofmode.proofmode.
 
 Import ChargeNotation.

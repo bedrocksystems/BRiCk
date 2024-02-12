@@ -5,9 +5,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From iris.algebra Require Import cmra frac.
-From bedrock.prelude Require Import bool.
-From bedrock.lang.bi Require Import split_frac.
+Require Import iris.algebra.cmra.
+Require Import iris.algebra.frac.
+Require Import bedrock.prelude.bool.
+Require Import bedrock.lang.bi.split_frac.
 
 #[local] Set Printing Coercions.
 

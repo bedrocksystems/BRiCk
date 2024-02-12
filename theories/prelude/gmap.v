@@ -4,8 +4,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From stdpp Require Export gmap mapset.
-From bedrock.prelude Require Import base fin_sets.
+Require Export stdpp.gmap.
+Require Export stdpp.mapset.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.fin_sets.
 
 (* To upstream to Iris: using [mapseq_eq] directly would unfold a TC opaque
 definition and interfere with TC search. *)

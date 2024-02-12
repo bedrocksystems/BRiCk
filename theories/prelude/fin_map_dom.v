@@ -4,8 +4,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From stdpp Require Import fin_map_dom.
-From bedrock.prelude Require Import base fin_maps.
+Require Import stdpp.fin_map_dom.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.fin_maps.
 Section fin_map_dom.
   Context `{FinMapDom K M D}.
   Context {A : Type}.

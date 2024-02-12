@@ -6,12 +6,19 @@
 Require Import iris.bi.lib.fractional.
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.errors.
-From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.bi.spec Require Import frac_splittable nary_classes.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred
-     destroy initializers dispatch
-     wp call translation_unit.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.bi.spec.frac_splittable.
+Require Import bedrock.lang.bi.spec.nary_classes.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.destroy.
+Require Import bedrock.lang.cpp.logic.initializers.
+Require Import bedrock.lang.cpp.logic.dispatch.
+Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.logic.call.
+Require Import bedrock.lang.cpp.logic.translation_unit.
 
 Module Type Expr__newdelete.
 

@@ -6,7 +6,8 @@
 
 Require Export iris.bi.lib.fractional.
 
-From bedrock.lang.bi Require Import prelude observe.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
 
 (** * Simple extensions to iris.bi.lib.fractional *)
 (**

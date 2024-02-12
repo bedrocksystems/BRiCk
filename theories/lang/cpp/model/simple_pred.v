@@ -3,26 +3,30 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.algebra Require Import excl gmap.
-From iris.algebra.lib Require Import frac_auth.
-From iris.bi Require Import monpred.
-From iris.bi.lib Require Import fractional.
-From iris.proofmode Require Import proofmode.
+Require Import iris.algebra.excl.
+Require Import iris.algebra.gmap.
+Require Import iris.algebra.lib.frac_auth.
+Require Import iris.bi.monpred.
+Require Import iris.bi.lib.fractional.
+Require Import iris.proofmode.proofmode.
 
-From bedrock.lang.bi Require Import fractional cancelable_invariants.
-From bedrock.lang.cpp.bi Require Import cfractional.
+Require Import bedrock.lang.bi.fractional.
+Require Import bedrock.lang.bi.cancelable_invariants.
+Require Import bedrock.lang.cpp.bi.cfractional.
 Require Import bedrock.lang.cpp.logic.own_instances.
 
-From bedrock.prelude Require Import base option.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.option.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
-From bedrock.lang.cpp.algebra Require Import cfrac.
-From bedrock.lang.cpp.syntax Require Import
-     names
-     types
-     typing
-     translation_unit.
-From bedrock.lang.cpp.semantics Require Import values subtyping.
-From bedrock.lang.cpp.logic Require Import mpred pred.
+Require Import bedrock.lang.cpp.algebra.cfrac.
+Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.types.
+Require Import bedrock.lang.cpp.syntax.typing.
+Require Import bedrock.lang.cpp.syntax.translation_unit.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.semantics.subtyping.
+Require Import bedrock.lang.cpp.logic.mpred.
+Require Import bedrock.lang.cpp.logic.pred.
 
 #[local] Set Printing Coercions.
 
@@ -81,7 +85,7 @@ Section fractional.
 End fractional.
 #[local] Existing Instance gmap_own_cfrac_valid.
 
-From bedrock.lang.cpp.model Require Import inductive_pointers.
+Require Import bedrock.lang.cpp.model.inductive_pointers.
 (* Stand-in for actual models.
 Ensures that everything needed is properly functorized. *)
 Import PTRS_IMPL.

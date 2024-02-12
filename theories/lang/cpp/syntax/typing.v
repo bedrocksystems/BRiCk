@@ -3,8 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude Require Import base list_numbers.
-From bedrock.lang.cpp.syntax Require Import names expr types.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.list_numbers.
+Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.expr.
+Require Import bedrock.lang.cpp.syntax.types.
 
 (**
 [decltype_to_exprtype t] computes the value category and expression

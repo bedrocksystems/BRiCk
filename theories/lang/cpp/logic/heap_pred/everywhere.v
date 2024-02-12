@@ -4,8 +4,15 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.cpp.logic.heap_pred.prelude.
-From bedrock.lang.cpp.logic Require Import rep_proofmode arr.
-From bedrock.lang.cpp.logic.heap_pred Require Import valid null simple aggregate tptsto uninit prim.
+Require Import bedrock.lang.cpp.logic.rep_proofmode.
+Require Import bedrock.lang.cpp.logic.arr.
+Require Import bedrock.lang.cpp.logic.heap_pred.valid.
+Require Import bedrock.lang.cpp.logic.heap_pred.null.
+Require Import bedrock.lang.cpp.logic.heap_pred.simple.
+Require Import bedrock.lang.cpp.logic.heap_pred.aggregate.
+Require Import bedrock.lang.cpp.logic.heap_pred.tptsto.
+Require Import bedrock.lang.cpp.logic.heap_pred.uninit.
+Require Import bedrock.lang.cpp.logic.heap_pred.prim.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.

@@ -3,12 +3,12 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import base.
+Require Import stdpp.base.
 
-From elpi Require Import elpi.
+Require Import elpi.elpi.
 Require Export bedrock.prelude.elpi.derive.common.
 
-From bedrock.prelude.elpi Require Export basis.
+Require Export bedrock.prelude.elpi.basis.
 Elpi Accumulate derive Db bedrock.basis.db.
 
 Elpi Db derive.stdpp.inhabited.db lp:{{

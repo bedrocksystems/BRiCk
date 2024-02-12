@@ -5,10 +5,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.bi.spec Require Export
-  constant
-  contender_token
-  exclusive
-  frac_splittable
-  knowledge
-.
+Require Export bedrock.lang.bi.spec.constant.
+Require Export bedrock.lang.bi.spec.contender_token.
+Require Export bedrock.lang.bi.spec.exclusive.
+Require Export bedrock.lang.bi.spec.frac_splittable.
+Require Export bedrock.lang.bi.spec.knowledge.

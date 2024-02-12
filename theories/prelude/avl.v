@@ -3,8 +3,10 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import fin_maps strings.
-From bedrock.prelude Require Import base bytestring.
+Require Import stdpp.fin_maps.
+Require Import stdpp.strings.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.bytestring.
 Require Import Coq.FSets.FMapAVL.
 
 Module IM := FMapAVL.Make OT_bs.

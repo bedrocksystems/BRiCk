@@ -12,12 +12,18 @@ Unlike [PTRS_IMPL], this model cannot be extended to support
 [VALID_PTR_AXIOMS] because it collapses the structure of pointers.
 *)
 
-From stdpp Require Import gmap.
-From bedrock.prelude Require Import base addr avl bytestring option numbers.
+Require Import stdpp.gmap.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.addr.
+Require Import bedrock.prelude.avl.
+Require Import bedrock.prelude.bytestring.
+Require Import bedrock.prelude.option.
+Require Import bedrock.prelude.numbers.
 
-From bedrock.lang.cpp Require Import ast.
-From bedrock.lang.cpp.semantics Require Import sub_module values.
-From bedrock.lang.cpp.model Require Import simple_pointers_utils.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.sub_module.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.model.simple_pointers_utils.
 
 Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.

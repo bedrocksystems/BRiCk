@@ -3,8 +3,10 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.prelude.elpi Require Import derive.
-From bedrock.prelude Require Import base bool list.
+Require Import bedrock.prelude.elpi.derive.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.bool.
+Require Import bedrock.prelude.list.
 Require Export bedrock.lang.cpp.arith.types.
 Require Import bedrock.lang.cpp.syntax.names.
 

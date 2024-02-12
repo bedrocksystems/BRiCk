@@ -13,10 +13,11 @@ technically, they have [#[export]] visibility.
 *)
 
 Require Import bedrock.prelude.base.
-From bedrock.lang Require Import bi.prelude bi.only_provable.
-From iris.bi Require Import monpred.
-From iris.proofmode Require Import proofmode.
-From iris.bi Require Import laterable.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.only_provable.
+Require Import iris.bi.monpred.
+Require Import iris.proofmode.proofmode.
+Require Import iris.bi.lib.laterable.
 
 (* Disable [BiAffine uPred] *)
 #[export] Remove Hints uPred_affine : typeclass_instances.

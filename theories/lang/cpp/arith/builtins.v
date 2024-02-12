@@ -4,7 +4,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.prelude.base.
-From bedrock.lang.cpp.arith Require Import types operator.
+Require Import bedrock.lang.cpp.arith.types.
+Require Import bedrock.lang.cpp.arith.operator.
 
 #[local] Open Scope Z_scope.
 (* see

@@ -9,10 +9,14 @@ Require Import bedrock.prelude.base.
 
 Require Import stdpp.coPset.
 Require Import iris.bi.monpred.
-From iris.proofmode Require Import proofmode classes.
+Require Import iris.proofmode.proofmode.
+Require Import iris.proofmode.classes.
 
-From bedrock.lang.cpp Require Import
-     ast semantics logic.pred logic.heap_pred logic.translation_unit.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.heap_pred.
+Require Import bedrock.lang.cpp.logic.translation_unit.
 Require Import bedrock.lang.bi.errors.
 
 #[local] Set Primitive Projections.

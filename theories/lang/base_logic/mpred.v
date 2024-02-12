@@ -15,12 +15,15 @@ The construction also bakes in the common pattern of allowing to store global
 ghost names directly in the logic rather than needing to pass them separately.
 *)
 
-From iris.base_logic.lib Require Import own cancelable_invariants.
+Require Import iris.base_logic.lib.own.
+Require Import iris.base_logic.lib.cancelable_invariants.
 Require Import iris.bi.monpred.
 
-From bedrock.prelude Require Import base.
-From bedrock.lang Require Import bi.prelude bi.entailsN.
-From bedrock.lang.cpp.logic Require Import upred_entailsN monpred_entailsN.
+Require Import bedrock.prelude.base.
+Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.entailsN.
+Require Import bedrock.lang.cpp.logic.upred_entailsN.
+Require Import bedrock.lang.cpp.logic.monpred_entailsN.
 Import ChargeNotation.
 
 Section mpred.

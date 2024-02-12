@@ -8,7 +8,9 @@
 Require Export iris.algebra.big_op.
 Require Export bedrock.lang.algebra.monoid.
 
-From bedrock.prelude Require Import numbers list_numbers fin_sets.
+Require Import bedrock.prelude.numbers.
+Require Import bedrock.prelude.list_numbers.
+Require Import bedrock.prelude.fin_sets.
 
 (** * Big ops *)
 

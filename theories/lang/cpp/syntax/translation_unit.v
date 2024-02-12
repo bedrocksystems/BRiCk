@@ -4,8 +4,13 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import stdpp.fin_maps.
-From bedrock.prelude Require Import base avl.
-From bedrock.lang.cpp.syntax Require Import names expr stmt types decl.
+Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.avl.
+Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.expr.
+Require Import bedrock.lang.cpp.syntax.stmt.
+Require Import bedrock.lang.cpp.syntax.types.
+Require Import bedrock.lang.cpp.syntax.decl.
 Export decl.
 
 #[local] Set Primitive Projections.

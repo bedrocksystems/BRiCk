@@ -3,22 +3,32 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From elpi.apps Require Export locker.
+Require Export elpi.apps.locker.
 
-From iris.proofmode Require Import proofmode.
-From bedrock.lang.bi Require Import fractional.
+Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.bi.fractional.
 
-From bedrock.lang.cpp Require Import
-  bi.cfractional
-  semantics ast logic.pred logic.path_pred.
+Require Import bedrock.lang.cpp.bi.cfractional.
+Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.logic.pred.
+Require Import bedrock.lang.cpp.logic.path_pred.
 
 Export bedrock.lang.cpp.logic.pred.
 (* ^^ Should this be exported? this file is supposed to provide wrappers
    so that clients do not work directly with [pred.v] *)
 Export bedrock.lang.cpp.algebra.cfrac.
 
-From bedrock.lang.cpp.logic.heap_pred Require Export
-  aggregate any block everywhere null prim simple tptsto uninit valid.
+Require Export bedrock.lang.cpp.logic.heap_pred.aggregate.
+Require Export bedrock.lang.cpp.logic.heap_pred.any.
+Require Export bedrock.lang.cpp.logic.heap_pred.block.
+Require Export bedrock.lang.cpp.logic.heap_pred.everywhere.
+Require Export bedrock.lang.cpp.logic.heap_pred.null.
+Require Export bedrock.lang.cpp.logic.heap_pred.prim.
+Require Export bedrock.lang.cpp.logic.heap_pred.simple.
+Require Export bedrock.lang.cpp.logic.heap_pred.tptsto.
+Require Export bedrock.lang.cpp.logic.heap_pred.uninit.
+Require Export bedrock.lang.cpp.logic.heap_pred.valid.
 
 #[local] Set Printing Coercions.
 

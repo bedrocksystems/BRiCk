@@ -3,7 +3,9 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import countable strings namespaces.
+Require Import stdpp.countable.
+Require Import stdpp.strings.
+Require Import stdpp.namespaces.
 Require Export bedrock.prelude.bytestring_core.
 
 #[local] Set Default Proof Using "Type".

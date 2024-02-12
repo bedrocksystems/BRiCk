@@ -192,7 +192,7 @@ Section own_valid.
 End own_valid.
 
 Import iris.bi.derived_laws.bi.
-From iris.proofmode Require Import proofmode.
+Require Import iris.proofmode.proofmode.
 
 Section update.
   Context `{!BiBUpd PROP} `{!HasOwn PROP A} `{!HasOwnUpd PROP A}.
