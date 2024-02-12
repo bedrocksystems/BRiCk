@@ -58,14 +58,18 @@ formalizations of their memory object models (see <span class="inlinecode"><span
  
 </div>
 <div class="code">
-<span class="id" title="keyword">From</span> <span class="id" title="var">elpi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">locker</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">elpi.apps.locker</span>.<br/>
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.prelude</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">base</span></a> <a class="idref" href="bedrock.prelude.addr.html#"><span class="id" title="library">addr</span></a> <a class="idref" href="bedrock.prelude.option.html#"><span class="id" title="library">option</span></a> <a class="idref" href="bedrock.prelude.numbers.html#"><span class="id" title="library">numbers</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.addr.html#"><span class="id" title="library">bedrock.prelude.addr</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.option.html#"><span class="id" title="library">bedrock.prelude.option</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.numbers.html#"><span class="id" title="library">bedrock.prelude.numbers</span></a>.<br/>
 
 <br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.ast.html#"><span class="id" title="library">bedrock.lang.cpp.ast</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.semantics</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.semantics.types.html#"><span class="id" title="library">types</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#"><span class="id" title="library">genv</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.semantics.types.html#"><span class="id" title="library">bedrock.lang.cpp.semantics.types</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#"><span class="id" title="library">bedrock.lang.cpp.semantics.genv</span></a>.<br/>
 
 <br/>
 <span class="comment">(*&nbsp;We&nbsp;only&nbsp;load&nbsp;Iris&nbsp;to&nbsp;declare&nbsp;trivial&nbsp;OFEs&nbsp;over&nbsp;pointers&nbsp;via&nbsp;<span class="inlinecode"><span class="id" title="var">leibnizO</span></span>.&nbsp;*)</span><br/>

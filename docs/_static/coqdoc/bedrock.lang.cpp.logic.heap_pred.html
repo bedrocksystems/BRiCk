@@ -43,16 +43,18 @@
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">elpi.apps</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="library">locker</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="library">elpi.apps.locker</span>.<br/>
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">iris.proofmode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">proofmode</span>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.fractional.html#"><span class="id" title="library">fractional</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">iris.proofmode.proofmode</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.fractional.html#"><span class="id" title="library">bedrock.lang.bi.fractional</span></a>.<br/>
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
-&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#"><span class="id" title="library">bi.cfractional</span></a><br/>
-&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.html#"><span class="id" title="library">semantics</span></a> <a class="idref" href="bedrock.lang.cpp.ast.html#"><span class="id" title="library">ast</span></a> <a class="idref" href="bedrock.lang.cpp.logic.pred.html#"><span class="id" title="library">logic.pred</span></a> <a class="idref" href="bedrock.lang.cpp.logic.path_pred.html#"><span class="id" title="library">logic.path_pred</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#"><span class="id" title="library">bedrock.lang.cpp.bi.cfractional</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.html#"><span class="id" title="library">bedrock.lang.cpp.semantics</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.ast.html#"><span class="id" title="library">bedrock.lang.cpp.ast</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.pred.html#"><span class="id" title="library">bedrock.lang.cpp.logic.pred</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.path_pred.html#"><span class="id" title="library">bedrock.lang.cpp.logic.path_pred</span></a>.<br/>
 
 <br/>
 <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.pred.html#"><span class="id" title="module">bedrock.lang.cpp.logic.pred</span></a>.<br/>
@@ -61,8 +63,16 @@
 <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#"><span class="id" title="module">bedrock.lang.cpp.algebra.cfrac</span></a>.<br/>
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.logic.heap_pred</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span><br/>
-&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.heap_pred.aggregate.html#"><span class="id" title="library">aggregate</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.any.html#"><span class="id" title="library">any</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.block.html#"><span class="id" title="library">block</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.everywhere.html#"><span class="id" title="library">everywhere</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.null.html#"><span class="id" title="library">null</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.prim.html#"><span class="id" title="library">prim</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.simple.html#"><span class="id" title="library">simple</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.tptsto.html#"><span class="id" title="library">tptsto</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.uninit.html#"><span class="id" title="library">uninit</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.valid.html#"><span class="id" title="library">valid</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.aggregate.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.aggregate</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.any.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.any</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.block.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.block</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.everywhere.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.everywhere</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.null.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.null</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.prim.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.prim</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.simple.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.simple</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.tptsto.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.tptsto</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.uninit.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.uninit</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.valid.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred.valid</span></a>.<br/>
 
 <br/>
 #[<span class="id" title="var">local</span>] <span class="id" title="keyword">Set</span> <span class="id" title="keyword">Printing</span> <span class="id" title="var">Coercions</span>.<br/>

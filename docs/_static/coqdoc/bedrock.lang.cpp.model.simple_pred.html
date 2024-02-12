@@ -43,28 +43,32 @@
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">iris.algebra</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">excl</span> <span class="id" title="library">gmap</span>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">iris.algebra.lib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">frac_auth</span>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">iris.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">monpred</span>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">iris.bi.lib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">fractional</span>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">iris.proofmode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">proofmode</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">iris.algebra.excl</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">iris.algebra.gmap</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">iris.algebra.lib.frac_auth</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">iris.bi.monpred</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">iris.bi.lib.fractional</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">iris.proofmode.proofmode</span>.<br/>
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.fractional.html#"><span class="id" title="library">fractional</span></a> <a class="idref" href="bedrock.lang.bi.cancelable_invariants.html#"><span class="id" title="library">cancelable_invariants</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#"><span class="id" title="library">cfractional</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.fractional.html#"><span class="id" title="library">bedrock.lang.bi.fractional</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.cancelable_invariants.html#"><span class="id" title="library">bedrock.lang.bi.cancelable_invariants</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#"><span class="id" title="library">bedrock.lang.cpp.bi.cfractional</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.own_instances.html#"><span class="id" title="library">bedrock.lang.cpp.logic.own_instances</span></a>.<br/>
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.prelude</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">base</span></a> <a class="idref" href="bedrock.prelude.option.html#"><span class="id" title="library">option</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.option.html#"><span class="id" title="library">bedrock.prelude.option</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.arith.z_to_bytes.html#"><span class="id" title="library">bedrock.lang.cpp.arith.z_to_bytes</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.algebra</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#"><span class="id" title="library">cfrac</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.syntax</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.names.html#"><span class="id" title="library">names</span></a><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.types.html#"><span class="id" title="library">types</span></a><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#"><span class="id" title="library">typing</span></a><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#"><span class="id" title="library">translation_unit</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.semantics</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">values</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#"><span class="id" title="library">subtyping</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#"><span class="id" title="library">mpred</span></a> <a class="idref" href="bedrock.lang.cpp.logic.pred.html#"><span class="id" title="library">pred</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#"><span class="id" title="library">bedrock.lang.cpp.algebra.cfrac</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#"><span class="id" title="library">bedrock.lang.cpp.syntax.names</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#"><span class="id" title="library">bedrock.lang.cpp.syntax.types</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#"><span class="id" title="library">bedrock.lang.cpp.syntax.typing</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#"><span class="id" title="library">bedrock.lang.cpp.syntax.translation_unit</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">bedrock.lang.cpp.semantics.values</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#"><span class="id" title="library">bedrock.lang.cpp.semantics.subtyping</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#"><span class="id" title="library">bedrock.lang.cpp.logic.mpred</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.pred.html#"><span class="id" title="library">bedrock.lang.cpp.logic.pred</span></a>.<br/>
 
 <br/>
 #[<span class="id" title="var">local</span>] <span class="id" title="keyword">Set</span> <span class="id" title="keyword">Printing</span> <span class="id" title="var">Coercions</span>.<br/>
@@ -138,7 +142,7 @@
 #[<span class="id" title="var">local</span>] <span class="id" title="var">Existing</span> <span class="id" title="keyword">Instance</span> <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#gmap_own_cfrac_valid"><span class="id" title="instance">gmap_own_cfrac_valid</span></a>.<br/>
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.model</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#"><span class="id" title="library">inductive_pointers</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#"><span class="id" title="library">bedrock.lang.cpp.model.inductive_pointers</span></a>.<br/>
 <span class="comment">(*&nbsp;Stand-in&nbsp;for&nbsp;actual&nbsp;models.<br/>
 Ensures&nbsp;that&nbsp;everything&nbsp;needed&nbsp;is&nbsp;properly&nbsp;functorized.&nbsp;*)</span><br/>
 <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL"><span class="id" title="module">PTRS_IMPL</span></a>.<br/>
