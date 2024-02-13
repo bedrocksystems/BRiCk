@@ -647,7 +647,7 @@ Section coq_tactic.
     iIntros "[#P [#Q R]]". iStopProof. apply: aupd1_intro.
     iIntros "[#P Q]". iApply HAU.
     iSplit; first iDestruct "P" as "[$ _]".
-    iSplit; last done.
+    iSplit; last done. iClear "Q".
     iDestruct "P" as "[_ $]".
   Qed.
 End coq_tactic.

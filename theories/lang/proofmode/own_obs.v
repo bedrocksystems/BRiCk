@@ -644,10 +644,10 @@ Section observe.
 
   (** iris.algebra.lib.gmap_view *)
   Section gmap_view.
-    Context `{Countable K} {V : ofe}. Notation RA := (gmap_viewR K V).
+    Context `{Countable K} {V : ofe}. Notation RA := (gmap_viewR K (agreeR V)).
     Context `{!HasOwn RA, !HasOwnValid RA}.
     Implicit Types (k : K) (v : V).
-    Implicit Types (m : gmap K V).
+    Implicit Types (m : gmap K (agreeR V)).
 
     #[global] Instance own_gmap_view_auth_valid g q m :
       Observe [| q ≤ 1 |]%Qp (own g (gmap_view_auth (DfracOwn q) m)).
@@ -679,23 +679,23 @@ Section observe.
     Qed.
 
     #[global] Instance own_gmap_view_frag_valid g k q v :
-      Observe [| q ≤ 1 |]%Qp (own g (gmap_view_frag k (DfracOwn q) v)).
+      Observe [| q ≤ 1 |]%Qp (own g (gmap_view_frag k (DfracOwn q) (to_agree v))).
     Proof.
       GUARD. apply observe_pure, own_obs.
       by rewrite gmap_view_frag_validI.
     Qed.
     #[global] Instance own_gmap_view_frag_valid_2 g k q1 q2 v1 v2 :
       Observe2 [| q1 + q2 ≤ 1 |]%Qp
-        (own g (gmap_view_frag k (DfracOwn q1) v1))
-        (own g (gmap_view_frag k (DfracOwn q2) v1)).
+        (own g (gmap_view_frag k (DfracOwn q1) (to_agree v1)))
+        (own g (gmap_view_frag k (DfracOwn q2) (to_agree v1))).
     Proof.
       GUARD. apply observe_2_pure, own_2_obs.
       rewrite gmap_view_frag_op_validI. by iIntros "[% _]".
     Qed.
     #[global] Instance own_gmap_view_frag_exclusive_l g k dq v1 v2 :
       Observe2 False
-        (own g (gmap_view_frag k (DfracOwn 1) v1))
-        (own g (gmap_view_frag k dq v2)).
+        (own g (gmap_view_frag k (DfracOwn 1) (to_agree v1)))
+        (own g (gmap_view_frag k dq (to_agree v2))).
     Proof.
       GUARD. apply observe_2_pure, own_2_obs.
       rewrite gmap_view_frag_op_validI.
@@ -703,8 +703,8 @@ Section observe.
     Qed.
     #[global] Instance own_gmap_view_frag_exclusive_r g k dq v1 v2 :
       Observe2 False
-        (own g (gmap_view_frag k dq v1))
-        (own g (gmap_view_frag k (DfracOwn 1) v2)).
+        (own g (gmap_view_frag k dq (to_agree v1)))
+        (own g (gmap_view_frag k (DfracOwn 1) (to_agree v2))).
     Proof.
       GUARD. apply observe_2_pure, own_2_obs.
       rewrite gmap_view_frag_op_validI.
@@ -719,10 +719,10 @@ Section observe.
       by rewrite -dfrac_op_own gmap_view_auth_dfrac_op own_op.
     Qed.
     #[global] Instance own_gmap_view_frag_fractional g k v :
-      Fractional (fun q => own g (gmap_view_frag k (DfracOwn q) v)).
+      Fractional (fun q => own g (gmap_view_frag k (DfracOwn q) (to_agree v))).
     Proof.
       GUARD. intros q1 q2.
-      by rewrite -dfrac_op_own gmap_view_frag_op own_op.
+      by rewrite -own_op -gmap_view_frag_op dfrac_op_own agree_idemp.
     Qed.
 
   End gmap_view.
