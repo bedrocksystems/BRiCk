@@ -14,20 +14,21 @@
  (name coq-lens)
  (synopsis "Generation of lenses for record datatypes")
  (depends
-  (coq (and (>= 8.13.0) (< 8.19~)))))
+  (coq (and (>= 8.13.0) (< 8.20~)))))
 
-(package
- (name coq-lens-tc)
- (synopsis "Generation of lenses for record datatypes")
- (depends
-  coq-lens
-  (coq (and (>= 8.18.0) (< 8.19~)))
-  (coq-metacoq-template (= 1.2.1+8.18))))
+;(package
+; (name coq-lens-tc)
+; (synopsis "Generation of lenses for record datatypes")
+; (depends
+;  coq-lens
+;  (coq (and (>= 8.18.0) (< 8.19~)))
+;  (coq-metacoq-template (= 1.2.1+8.18))))
 
 (package
  (name coq-lens-elpi)
  (synopsis "Generation of lenses for record datatypes, Elpi backend")
  (depends
   coq-lens
-  (coq (and (>= 8.18.0) (< 8.19~)))
-  (coq-elpi (= 1.19.3)))) ; We stick to a public version on the package.
+  (coq (and (>= 8.19.0) (< 8.20~)))
+  (elpi (= 1.18.2))
+  (coq-elpi (= 2.0.2+bedrock+vanilla-coq)))) ; FIXME this is not a public version.

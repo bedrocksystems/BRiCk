@@ -18,13 +18,13 @@
  (name coq-cpp2v)
  (synopsis "Frontend and program logic for C++")
  (depends
-  (coq (and (>= 8.18.0) (< 8.19~)))
-  (coq-ext-lib (= 0.11.8))
-  (coq-iris (= dev.2023-10-17.0.b990ffb7))
+  (coq (and (>= 8.19.0) (< 8.20~)))
+  (coq-ext-lib (= 0.12.1))
+  (coq-iris (= dev.2024-03-06.1.9c192c8d))
   coq-lens
   coq-lens-elpi
-  (elpi (= 1.17.3)) ; We stick to a public version on the package.
-  (coq-elpi (= 1.19.3))))
+  (elpi (= 1.18.2))
+  (coq-elpi (= 2.0.2+bedrock+vanilla-coq)))) ; FIXME this is not a public version.
 
 (package
  (name coq-cpp2v-bin)
