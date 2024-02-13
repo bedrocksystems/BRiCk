@@ -15,7 +15,7 @@ Require Import bedrock.lang.cpp.logic.path_pred.
 Require Import bedrock.lang.cpp.logic.heap_pred.
 Require Import bedrock.lang.cpp.logic.wp.
 
-#[local] Arguments ERROR {_ _} _%bs : assert.
+#[local] Arguments ERROR {_ _} _%_bs : assert.
 
 (** ** Wp Semantics for builtins *)
 (**

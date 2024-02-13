@@ -138,7 +138,7 @@ Definition KpredI `{!cpp_logic thread_info Σ} : bi := monPredI rt_biIndex (@mpr
 #[global] Notation Kpred := (bi_car KpredI).
 
 Definition KP `{cpp_logic} (P : ReturnType -> mpred) : Kpred := MonPred P _.
-#[global] Arguments KP {_ _ _} _%I : assert.
+#[global] Arguments KP {_ _ _} _%_I : assert.
 #[global] Hint Opaque KP : typeclass_instances.
 
 Section KP.

@@ -69,7 +69,7 @@ An optional fancy update. Meant to be unfolded.
 *)
 Definition fupd_if {PROP} `{!FUpd PROP} (b : bool) (E1 E2 : coPset) (P : PROP) : PROP :=
   if b then fupd E1 E2 P else P.
-#[global] Arguments fupd_if {_ _} !_ _ _ _%I / : assert.
+#[global] Arguments fupd_if {_ _} !_ _ _ _%_I / : assert.
 #[global] Hint Opaque fupd_if : typeclass_instances.
 Notation "|={ E1 , E2 }=>? b P" := (fupd_if b E1 E2 P) : bi_scope.
 Notation "|={ E }=>? b P" := (fupd_if b E E P) : bi_scope.

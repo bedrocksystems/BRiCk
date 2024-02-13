@@ -28,7 +28,7 @@ of "absorbing" propositions, see
 *)
 mlock Definition only_provable {PROP : bi} (P : Prop) : PROP :=
   (<affine> ⌜P⌝)%I.
-#[global] Arguments only_provable {_} _%type_scope : simpl never, rename.
+#[global] Arguments only_provable {_} _%_type_scope : simpl never, rename.
 #[global] Instance: Params (@only_provable) 1 := {}.
 
 Notation "[ | P | ]" := (only_provable P) (format "[ |  P  | ]").

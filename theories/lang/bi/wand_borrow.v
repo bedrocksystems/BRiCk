@@ -22,7 +22,7 @@ Definition wand_borrow_def {PROP : bi} (P Q : PROP) : PROP :=
 Definition wand_borrow_aux : seal (@wand_borrow_def). Proof. by eexists. Qed.
 Definition wand_borrow := wand_borrow_aux.(unseal).
 Definition wand_borrow_eq : @wand_borrow = _ := wand_borrow_aux.(seal_eq).
-#[global] Arguments wand_borrow {_} (_ _)%I : assert.
+#[global] Arguments wand_borrow {_} (_ _)%_I : assert.
 #[global] Hint Opaque wand_borrow : typeclass_instances.
 
 Notation "P '-borrow-*' Q" := (wand_borrow P Q) : bi_scope.

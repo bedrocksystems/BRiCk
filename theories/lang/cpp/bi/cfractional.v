@@ -40,7 +40,7 @@ are fractional at type [cQp.t]
 Class CFractional {PROP : bi} (P : cQp.t -> PROP) : Prop :=
   cfractional q1 q2 : P (q1 + q2)%cQp -|- P q1 ** P q2.
 #[global] Hint Mode CFractional + ! : typeclass_instances.
-#[global] Arguments CFractional {_} _%I : simpl never, assert.
+#[global] Arguments CFractional {_} _%_I : simpl never, assert.
 
 (**
 [CFractionalN] states that predicate [P] taking a const/mutable
@@ -60,7 +60,7 @@ Class AsCFractional {PROP : bi} (P : PROP) (Q : cQp.t -> PROP) (q : cQp.t) : Pro
 }.
 #[global] Hint Mode AsCFractional + ! - - : typeclass_instances.
 #[global] Hint Mode AsCFractional + - + - : typeclass_instances.
-#[global] Arguments AsCFractional {_} (_ _)%I _%Qp : assert.
+#[global] Arguments AsCFractional {_} (_ _)%_I _%_Qp : assert.
 
 Ltac solve_as_cfrac := solve [intros; exact: Build_AsCFractional].
 
@@ -86,32 +86,32 @@ applied to const/mutable fraction [q] and then [N] arguments. The
 Class CFracValid0 {PROP : bi} (P : cQp.t -> PROP) : Prop :=
   { cfrac_valid_0 q : Observe [| cQp.frac q ≤ 1 |]%Qp (P q) }.
 #[global] Hint Mode CFracValid0 - + : typeclass_instances.
-#[global] Arguments CFracValid0 {_} _%I : assert.
+#[global] Arguments CFracValid0 {_} _%_I : assert.
 
 Class CFracValid1 {A} {PROP : bi} (P : cQp.t -> A -> PROP) : Prop :=
   { cfrac_valid_1 q a : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a) }.
 #[global] Hint Mode CFracValid1 - - + : typeclass_instances.
-#[global] Arguments CFracValid1 {_ _} _%I : assert.
+#[global] Arguments CFracValid1 {_ _} _%_I : assert.
 
 Class CFracValid2 {A B} {PROP : bi} (P : cQp.t -> A -> B -> PROP) : Prop :=
   { cfrac_valid_2 q a b : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b) }.
 #[global] Hint Mode CFracValid2 - - - + : typeclass_instances.
-#[global] Arguments CFracValid2 {_ _ _} _%I : assert.
+#[global] Arguments CFracValid2 {_ _ _} _%_I : assert.
 
 Class CFracValid3 {A B C} {PROP : bi} (P : cQp.t -> A -> B -> C -> PROP) : Prop :=
   { cfrac_valid_3 q a b c : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b c) }.
 #[global] Hint Mode CFracValid3 - - - - + : typeclass_instances.
-#[global] Arguments CFracValid3 {_ _ _ _} _%I : assert.
+#[global] Arguments CFracValid3 {_ _ _ _} _%_I : assert.
 
 Class CFracValid4 {A B C D} {PROP : bi} (P : cQp.t -> A -> B -> C -> D -> PROP) : Prop :=
   { cfrac_valid_4 q a b c d : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b c d) }.
 #[global] Hint Mode CFracValid4 - - - - - + : typeclass_instances.
-#[global] Arguments CFracValid4 {_ _ _ _ _} _%I : assert.
+#[global] Arguments CFracValid4 {_ _ _ _ _} _%_I : assert.
 
 Class CFracValid5 {A B C D E} {PROP : bi} (P : cQp.t -> A -> B -> C -> D -> E -> PROP) : Prop :=
   { cfrac_valid_5 q a b c d e : Observe [| cQp.frac q ≤ 1 |]%Qp (P q a b c d e) }.
 #[global] Hint Mode CFracValid5 - - - - - - + : typeclass_instances.
-#[global] Arguments CFracValid5 {_ _ _ _ _ _} _%I : assert.
+#[global] Arguments CFracValid5 {_ _ _ _ _ _} _%_I : assert.
 
 Ltac solve_cfrac_valid := solve [intros; constructor; apply _].
 

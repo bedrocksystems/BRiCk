@@ -18,7 +18,7 @@ Definition compose_embed_aux : seal (@compose_embed_def). Proof. by eexists. Qed
 Definition compose_embed := compose_embed_aux.(unseal).
 Definition compose_embed_eq : @compose_embed = _ := compose_embed_aux.(seal_eq).
 #[global] Arguments compose_embed
-  {_}%type_scope _%type_scope {_}%type_scope {_ _} _%bi_scope : assert.
+  {_}%_type_scope _%_type_scope {_}%_type_scope {_ _} _%_bi_scope : assert.
 
 Section instances.
   Context {PROP1 PROP2 PROP3 : bi}.

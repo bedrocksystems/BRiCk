@@ -17,7 +17,7 @@ Class Knowledge {PROP : bi} (P : PROP) : Prop := {
   #[global] knowledge_persistent :: Persistent P;
   #[global] knowledge_affine     :: Affine P;
 }.
-Arguments Knowledge {_} _%I.
+Arguments Knowledge {_} _%_I.
 
 Ltac solve_knowledge := solve [intros; split; apply _].
 

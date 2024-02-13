@@ -67,7 +67,7 @@ Definition default_initialize_array `{Σ : cpp_logic, σ : genv} :
     (tu : translation_unit) (ty : exprtype) (len : N) (p : ptr)
     (Q : FreeTemps -> epred), mpred :=
   Cbn (Reduce (default_initialize_array_body true)).
-#[global] Arguments default_initialize_array {_ _ _ _} _ _ _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments default_initialize_array {_ _ _ _} _ _ _ _ _ _%_I : assert.	(* mlock bug *)
 
 (**
 [default_initialize tu ty p Q] default initializes the memory at [p]
@@ -133,7 +133,7 @@ Definition default_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_uni
     : ∀ (ty : exprtype) (p : ptr) (Q : FreeTemps -> epred), mpred :=
   fix default_initialize ty p Q {struct ty} :=
   Cbn (Reduce (default_initialize_body true) default_initialize tu ty p Q).
-#[global] Arguments default_initialize {_ _ _ _} _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments default_initialize {_ _ _ _} _ _ _ _%_I : assert.	(* mlock bug *)
 
 Section unfold.
   Context `{Σ : cpp_logic, σ : genv}.
@@ -432,7 +432,7 @@ Definition wp_initialize_unqualified `{Σ : cpp_logic, σ : genv} :
     (cv : type_qualifiers) (ty : decltype)
     (addr : ptr) (init : Expr) (Q : FreeTemps -> epred), mpred :=
   Cbn (Reduce (wp_initialize_unqualified_body fupd_compatible)).
-#[global] Arguments wp_initialize_unqualified {_ _ _ _} _ _ _ _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments wp_initialize_unqualified {_ _ _ _} _ _ _ _ _ _ _%_I : assert.	(* mlock bug *)
 
 Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ : region)
     (qty : decltype) (addr : ptr) (init : Expr) (Q : FreeTemps -> epred) : mpred :=

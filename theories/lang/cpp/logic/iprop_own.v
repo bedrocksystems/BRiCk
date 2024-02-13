@@ -22,7 +22,7 @@ Solve Obligations with naive_solver eauto using siProp_closed.
 Definition si_embed_aux : seal (@si_embed_def). Proof. by eexists. Qed.
 Definition si_embed := si_embed_aux.(unseal).
 Definition si_embed_eq : @si_embed = _ := si_embed_aux.(seal_eq).
-#[global] Arguments si_embed {_} _%bi_scope : assert.
+#[global] Arguments si_embed {_} _%_bi_scope : assert.
 
 Section si_embedding.
   #[local] Existing Instance si_embed.

@@ -130,7 +130,7 @@ Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : 
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
 Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
-Arguments arrR {_ _ _ _} _ _%list_scope : assert.
+Arguments arrR {_ _ _ _} _ _%_list_scope : assert.
 #[global] Instance: Params (@arrR) 5 := {}.	(** TODO: [genv] weakening *)
 
 Section arrR.
@@ -278,7 +278,7 @@ Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : 
 Definition arrayR_aux : seal (@arrayR_def). Proof. by eexists. Qed.
 Definition arrayR := arrayR_aux.(unseal).
 Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
-Arguments arrayR {_ _ _ _ _} _ _%function_scope _%list_scope : assert.
+Arguments arrayR {_ _ _ _ _} _ _%_function_scope _%_list_scope : assert.
 #[global] Instance: Params (@arrayR) 6 := {}.	(** TODO: [genv] weakening *)
 
 Module arrayR_proper_ho.

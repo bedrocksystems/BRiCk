@@ -32,8 +32,8 @@ Proof. iIntros "Q W R". iApply ("Q" with "(W R)"). Qed.
 
 #[local] Set Printing Coercions.
 
-#[local] Arguments ERROR {_ _} _%bs.
-#[local] Arguments UNSUPPORTED {_ _} _%bs.
+#[local] Arguments ERROR {_ _} _%_bs.
+#[local] Arguments UNSUPPORTED {_ _} _%_bs.
 #[local] Arguments wpi : simpl never.
 
 (** ** Weakest precondition of a constructor: Initial construction step. *)
@@ -424,7 +424,7 @@ place to support `XX_shift` lemmas. This could be fixed.
   end.
 mlock Definition wp_func `{Σ : cpp_logic, σ : genv} :=
   Cbn (Reduce (wp_func' true)).
-#[global] Arguments wp_func {_ _ _ _} _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments wp_func {_ _ _ _} _ _ _ _%_I : assert.	(* mlock bug *)
 
 Definition func_ok `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (f : Func) (spec : function_spec) : mpred :=
@@ -494,7 +494,7 @@ parameters.
   end.
 mlock Definition wp_method `{Σ : cpp_logic, σ : genv} :=
   Cbn (Reduce (wp_method' true)).
-#[global] Arguments wp_method {_ _ _ _} _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments wp_method {_ _ _ _} _ _ _ _%_I : assert.	(* mlock bug *)
 
 Definition method_ok `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (m : Method) (spec : function_spec) : mpred :=
@@ -860,7 +860,7 @@ that implies [type_ptr].
   end.
 mlock Definition wp_ctor `{Σ : cpp_logic, σ : genv} :=
   Cbn (Reduce (wp_ctor' true)).
-#[global] Arguments wp_ctor {_ _ _ _} _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments wp_ctor {_ _ _ _} _ _ _ _%_I : assert.	(* mlock bug *)
 
 Definition ctor_ok `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (ctor : Ctor) (spec : function_spec) : mpred :=
@@ -1029,7 +1029,7 @@ this resource will be consumed immediately.
   end.
 mlock Definition wp_dtor `{Σ : cpp_logic, σ : genv} :=
   Cbn (Reduce (wp_dtor' true)).
-#[global] Arguments wp_dtor {_ _ _ _} _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments wp_dtor {_ _ _ _} _ _ _ _%_I : assert.	(* mlock bug *)
 
 Section wp_dtor.
   Context `{Σ : cpp_logic, σ : genv}.
