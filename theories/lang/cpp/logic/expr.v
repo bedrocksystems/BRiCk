@@ -616,15 +616,9 @@ Module Type Expr.
            Exists v', [| conv_int tu (type_of e) t v v' |] ** Q v' free)
         |-- wp_operand (Ecast Cintegral e Prvalue t) Q.
 
-    Definition is_ptr_type (t : type) : bool :=
-      match drop_qualifiers t with
-      | Tptr _ => true
-      | _ => false
-      end.
-
     Axiom wp_operand_cast_null : forall e ty Q,
         type_of e = Tnullptr ->
-        is_ptr_type ty ->
+        is_pointer ty ->
             wp_operand e Q (* note: [has_type v Tnullptr |-- has_type v (Tptr ty)] *)
         |-- wp_operand (Ecast Cnull2ptr e Prvalue ty) Q.
 
@@ -645,7 +639,7 @@ Module Type Expr.
      *)
     Axiom wp_operand_cast_null_int : forall e ty Q,
         can_represent_null (type_of e) ->
-        is_ptr_type ty ->
+        is_pointer ty ->
             (letI* v, free := wp_operand e in
              [| v = Vint 0 |] ** Q (Vptr nullptr) free)
         |-- wp_operand (Ecast Cnull2ptr e Prvalue ty) Q.
