@@ -1341,7 +1341,7 @@ Definition is_arithmetic (ty : type) : bool :=
 *)
 Definition is_pointer (ty : type) : bool :=
   match drop_qualifiers ty with
-  | Tptr _ => true
+  | Tptr _ | Tnullptr => true
   | _ => false
   end.
 
