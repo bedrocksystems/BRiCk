@@ -115,6 +115,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; mem_inj_name : gname
     ; blocks_name : gname
     ; code_name : gname
+    ; derivations_name : gname
     }.
   Definition _cpp_ghost := cpp_ghost'.
 
@@ -135,6 +136,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; codeG : inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
+    ; derivationsG : inG Σ (gmapUR ptr (cfractionalR (leibnizO (globname * list globname))))
     ; has_inv' : invGS Σ
     ; has_cinv' : cinvG Σ
     }.
@@ -151,7 +153,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
     Existing Class cppG'.
     #[local] Instance cppPreG_cppG' : cppG' Σ := cpp_has_cppG.
-    #[local] Existing Instances heapGS ghost_memG mem_injG blocksG codeG.
+    #[local] Existing Instances heapGS ghost_memG mem_injG blocksG codeG derivationsG.
 
     Definition heap_own (a : addr) q (r : runtime_val') : mpred :=
       own (A := gmapR addr (cfractionalR runtime_val'))
@@ -169,6 +171,9 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
       own cpp_ghost.(code_name)
         (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
         {[ p := to_agree f ]}.
+    Definition derivation_own (p : ptr) q (l : globname) (mdc : list globname) : mpred :=
+      own (A := gmapUR ptr (cfractionalR (leibnizO (globname * list globname))))
+        cpp_ghost.(derivations_name) {[ p := cfrac q (l, mdc) ]}.
 
     #[global] Instance mem_inj_own_persistent p va : Persistent (mem_inj_own p va) := _.
     #[global] Instance mem_inj_own_affine p va : Affine (mem_inj_own p va) := _.
@@ -902,22 +907,34 @@ Module SimpleCPP.
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
     Definition mdc_path {σ : genv} (this : globname) (most_derived : list globname)
-               (q : cQp.t) (p : ptr) : mpred := strict_valid_ptr p.
+               (q : cQp.t) (p : ptr) : mpred :=
+      strict_valid_ptr p ** derivation_own p q this most_derived.
 
-    Instance mdc_path_cfractional {σ} this mdc : CFractional1 (mdc_path this mdc).
-    Proof. move =>p q1 q2. rewrite /mdc_path. iSplit; [ iIntros "#P" | iIntros "[#P ?]" ]; iFrame "#". Qed.
+    Instance mdc_path_cfractional {σ} this mdc : CFractional1 (mdc_path this mdc) := _.
     Axiom mdc_path_cfrac_valid : forall {σ} cls path,
       CFracValid1 (mdc_path cls path).
     Instance mdc_path_timeless {σ} this mdc q p : Timeless (mdc_path this mdc q p) := _.
     Instance mdc_path_strict_valid {σ} this mdc q p : Observe (strict_valid_ptr p) (mdc_path this mdc q p).
     Proof. refine _. Qed.
+    Instance mdc_path_agree {σ} cls1 cls2 q1 q2 p mdc1 mdc2 :
+      Observe2 [| mdc1 = mdc2 /\ cls1 = cls2 |] (mdc_path cls1 mdc1 q1 p) (mdc_path cls2 mdc2 q2 p).
+    Proof.
+      rewrite /mdc_path.
+      iIntros "[_ A] [_ B]".
+      iDestruct (observe_2 [| _ = _ |] with "A B") as %Heq; inversion Heq; eauto.
+    Qed.
 
     (** this allows you to forget an object mdc_path, necessary for doing
         placement [new] over an existing object.
      *)
     Theorem mdc_path_forget : forall σ mdc this p,
         @mdc_path σ this mdc (cQp.mut 1) p |-- |={↑pred_ns}=> @mdc_path σ this nil (cQp.mut 1) p.
-    Proof. rewrite /mdc_path. eauto. Qed.
+    Proof.
+      rewrite /mdc_path; intros.
+      iIntros "[$ D]".
+      iDestruct (own_update with "D") as ">$"; eauto.
+      by apply singleton_update, cmra_update_exclusive.
+    Qed.
 
     Definition tptsto {σ : genv} (t : type) (q : cQp.t) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] ** [| is_heap_type t |] **
