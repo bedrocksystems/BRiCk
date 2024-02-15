@@ -12,9 +12,33 @@ Module Type Alias.
   Variant T := A | B.
   Definition t1 := T.
   Definition t2 := t1.
-  #[only(eq_dec)] derive T.
-  #[only(eq_dec)] derive t1.
-  #[only(eq_dec)] derive t2.
+
+  Module Type OnVariant.
+    #[only(eq_dec)] derive T.
+    Goal True.
+      let t := constr:(T_eq_dec) in (* T_eq_dec : EqDecision T *)
+      let ty := type of t in
+      lazymatch ty with EqDecision T => idtac end.
+    Abort.
+  End OnVariant.
+
+  Module Type OnAliasDirect.
+    #[only(eq_dec)] derive t1.  (* t1_eq_dec : EqDecision t1 *)
+    Goal True.
+      let t := constr:(t1_eq_dec) in
+      let ty := type of t in
+      lazymatch ty with EqDecision t1 => idtac end.
+    Abort.
+  End OnAliasDirect.
+
+  Module Type OnAliasIndirect.
+    #[only(eq_dec)] derive t2.  (* t2_eq_dec : EqDecision t2 *)
+    Goal True.
+      let t := constr:(t2_eq_dec) in
+      let ty := type of t in
+      lazymatch ty with EqDecision t2 => idtac end.
+    Abort.
+  End OnAliasIndirect.
 End Alias.
 
 Module Type BasicTests.
@@ -24,10 +48,8 @@ Module Type BasicTests.
   #[only(countable)] derive T1.
   #[only(finite)] derive T1.
 
-  (*TODO: Potential derive bug; the following produces:
-    Anomaly: Uncaught exception Failure("split dirpath")*)
-  (*#[only(finite)] derive
-   Variant T2 := A2 | B2 | C2.*)
+  Succeed #[only(finite)] derive
+  Variant T2 := A2 | B2 | C2.
 
   #[only(eq_dec,inhabited)] derive
   Variant T2 := A2 | B2 | C2.
@@ -139,8 +161,9 @@ Module Type Deriving2Test.
 End Deriving2Test.
 
 Module Type SimpleFiniteTest.
-  (*#[only(finite_type)] derive
-    Variant feature := A | B | C | D.*) (*TODO: potential derive bug? Anomaly/split_dirpath*)
+  Succeed #[only(finite_type)] derive
+  Variant feature := A | B | C | D.
+
   Variant feature := A | B | C | D.
   #[only(finite_type)] derive feature.
   Goal feature.of_N (feature.to_N A) = Some A.

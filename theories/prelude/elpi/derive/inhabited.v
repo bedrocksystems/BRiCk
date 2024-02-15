@@ -34,16 +34,16 @@ Elpi Accumulate derive lp:{{
   namespace derive.inhabited {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
-      remove-final-underscore Prefix Prefix',
-      InstanceName is Prefix' ^ "_inhabited",
-      TyInhabited = {{ Inhabited lp:{{global TyGR}} }},
+      InstanceName is Prefix ^ "inhabited",
+      derive-original-gref TyGR OrigGR,
+      TyInhabited = {{ Inhabited lp:{{global OrigGR}} }},
       std.assert-ok! (coq.elaborate-skeleton TyInhabited _ ETyInhabited) "[derive.inh.main] [TyInhabited]",
       std.assert-ok! (coq.typecheck {{ lp:BoInhabited : lp:ETyInhabited }} _) "typechecking the [Inhabited t] instance failed",
       coq.ltac.collect-goals BoInhabited [SealedGoal] [],
       coq.ltac.open (coq.ltac.call "solve_inhabited" []) SealedGoal [],
       @using! "Type" => coq.env.add-const InstanceName BoInhabited ETyInhabited @opaque! C,
       @global! => coq.TC.declare-instance (const C) 0,
-      Clauses = [inhabited-done TyGR, inhabited TyGR (const C)],
+      Clauses = [inhabited-done OrigGR, inhabited OrigGR (const C)],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.stdpp.inhabited.db" (clause _ _ x)
       ),

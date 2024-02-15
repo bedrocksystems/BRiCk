@@ -44,16 +44,16 @@ Elpi Accumulate derive lp:{{
   namespace derive.eqdec {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
-      remove-final-underscore Prefix Prefix',
-      InstanceName is Prefix' ^ "_eq_dec",
-      TyEqDecision = {{ EqDecision lp:{{global TyGR}} }},
+      InstanceName is Prefix ^ "eq_dec",
+      derive-original-gref TyGR OrigGR,
+      TyEqDecision = {{ EqDecision lp:{{global OrigGR}} }},
       std.assert-ok! (coq.elaborate-skeleton TyEqDecision _ ETyEqDecision) "[derive.eqdec] [TyEqDecision]",
       std.assert-ok! (coq.typecheck {{ lp:BoEqDecision : lp:ETyEqDecision }} _) "typechecking the [EqDecision t] instance failed",
       coq.ltac.collect-goals BoEqDecision [SealedGoal] [],
       coq.ltac.open (coq.ltac.call "solve_decision" []) SealedGoal [],
       coq.env.add-const InstanceName BoEqDecision ETyEqDecision @transparent! C,
       @global! => coq.TC.declare-instance (const C) 0,
-      Clauses = [eqdec-done TyGR, eqdec TyGR (const C)],
+      Clauses = [eqdec-done OrigGR, eqdec OrigGR (const C)],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.stdpp.eq_dec.db" (clause _ _ x)
       ),

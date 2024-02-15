@@ -7,6 +7,8 @@ Require Import stdpp.finite.
 
 Require Import elpi.elpi.
 Require Export bedrock.prelude.elpi.derive.common.
+Require Export bedrock.prelude.elpi.derive.eq_dec.
+Require Export bedrock.prelude.elpi.derive.finite.
 
 Require Import bedrock.prelude.elpi.basis.
 Elpi Accumulate derive Db bedrock.basis.db.
@@ -26,8 +28,8 @@ Elpi Db derive.finite_type.db lp:{{
   pred bitset-done o:gref.
 
   namespace derive.finite_type {
-    pred mk-finite-prelim i:string, i:gref.
-    mk-finite-prelim TypeName TyGR :- std.do! [
+    pred mk-finite-prelim i:string, i:gref, i:gref.
+    mk-finite-prelim TypeName TyGR OrigGR :- std.do! [
       %TODO: I'd like to be able to do a transparent ascription here, but
       %it doesn't seem like coq-elpi supports this (the following gives opaque ascription):
       %coq.locate-module-type "simple_finite_bitmask_type_intf" MTP,
@@ -36,33 +38,29 @@ Elpi Db derive.finite_type.db lp:{{
       coq.env.add-const "t" (global TyGR) _ @transparent! C,
       Ty = global (const C),
 
-      %TODO: these names are couplings, so centralize the calculation of instance names
-      %across Deriving and here.
-      EqdecName is TypeName ^ "_eq_dec",
-      coq.locate EqdecName GrEqdec,
+      eqdec OrigGR GrEqdec,
       std.assert-ok! (coq.elaborate-skeleton {{ EqDecision lp:{{ Ty }} }} _ ETyEqdec) "mk-finite-prelim: failed to check eq_dec",
       coq.env.add-const "t_eq_dec" (global GrEqdec) ETyEqdec @transparent! Ceq_dec,
       @global! => coq.TC.declare-instance (const Ceq_dec) 0,
 
-      FinName is TypeName ^ "_finite",
-      coq.locate FinName GrFin,
+      finite OrigGR GrFin,
       std.assert-ok! (coq.elaborate-skeleton {{ Finite lp:{{ Ty }} }} _ ETyFin) "mk-finite-prelim: failed to check finite",
       coq.env.add-const "t_finite" (global GrFin) ETyFin @transparent! Cfin,
       @global! => coq.TC.declare-instance (const Cfin) 0,
     ].
 
-    pred mk-simple-finite i:string, i:gref.
-    mk-simple-finite TypeName TyGR :- std.do! [
+    pred mk-simple-finite i:string, i:gref, i:gref.
+    mk-simple-finite TypeName TyGR OrigGR :- std.do! [
       derive.if-verbose (coq.say "[derive.finite_type][mk-simple-finite]" TypeName),
-      mk-finite-prelim TypeName TyGR,
+      mk-finite-prelim TypeName TyGR OrigGR,
       coq.env.include-module-type {coq.locate-module-type "finite_type_mixin"} coq.inline.default,
       coq.env.end-module MP_,
     ].
 
-    pred mk-finite i:string, i:gref, i:term.
-    mk-finite TypeName TyGR ToN :- std.do! [
+    pred mk-finite i:string, i:gref, i:gref, i:term.
+    mk-finite TypeName TyGR OrigGR ToN :- std.do! [
       derive.if-verbose (coq.say "[derive.finite_type][mk-finite]" TypeName),
-      mk-finite-prelim TypeName TyGR,
+      mk-finite-prelim TypeName TyGR OrigGR,
 
       coq.locate "t" GRTy,
       Ty is global GRTy,
@@ -111,15 +109,16 @@ Elpi Accumulate derive Db derive.finite_type.db.
 Elpi Accumulate derive lp:{{
   namespace derive.finite_type {
     pred main i:gref, i:string, i:bool, o:list prop.
-    main TyGR Prefix UseToN Clauses :- std.do! [
-      remove-final-underscore Prefix Variant,
+    main TyGR _Prefix UseToN Clauses :- std.do! [
+      coq.gref->id TyGR TypeName,
+      derive-original-gref TyGR OrigGR,
       if (UseToN is tt)
          (std.do! [
            derive.finite_type.to-N (global TyGR) ToN,
-           derive.finite_type.mk-finite Variant TyGR ToN,
+           derive.finite_type.mk-finite TypeName TyGR OrigGR ToN,
          ])
-         (derive.finite_type.mk-simple-finite Variant TyGR),
-      Clauses = [finite-type-done TyGR],
+         (derive.finite_type.mk-simple-finite TypeName TyGR OrigGR),
+      Clauses = [finite-type-done OrigGR],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.finite_type.db" (clause _ _ x)
       ),

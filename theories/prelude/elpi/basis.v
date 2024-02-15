@@ -223,13 +223,6 @@ Elpi Db bedrock.basis.db lp:{{
 
   }
 
-  % coq-elpi derive inserts an underscore at the end of prefixes.
-  % We generally remove it in all our extensions so hoist this code here.
-  pred remove-final-underscore i:string, o:string.
-  remove-final-underscore S S' :- std.do! [
-    rex.replace "_$" "" S S',
-  ].
-
   % Variant of [coq.elaborate-skeleton] that outputs evar-free terms on success.
   pred br.elaborate-skeleton i:term, o:term, o:term, o:diagnostic.
   br.elaborate-skeleton T ETy E D :- std.do-ok! D [
