@@ -411,9 +411,9 @@ Module Type CPP_LOGIC
     #[global] Declare Instance mdc_path_cfractional σ this mdc : CFractional1 (mdc_path this mdc).
     #[global] Declare Instance mdc_path_cfrac_valid {σ} cls path : CFracValid1 (mdc_path cls path).
     #[global] Declare Instance mdc_path_timeless {σ} : Timeless4 (mdc_path).
-    #[global] Declare Instance mdc_path_strict_valid σ this mdc q p : Observe (strict_valid_ptr p) (mdc_path this mdc q p).
-
-    (** cpp2v-core#194: Agreement? *)
+    #[global] Declare Instance mdc_path_strict_valid {σ} this mdc q p : Observe (strict_valid_ptr p) (mdc_path this mdc q p).
+    #[global] Declare Instance mdc_path_agree {σ} cls1 cls2 q1 q2 p mdc1 mdc2 :
+      Observe2 [| mdc1 = mdc2 /\ cls1 = cls2 |] (mdc_path cls1 mdc1 q1 p) (mdc_path cls2 mdc2 q2 p).
 
     (** this allows you to forget an object mdc_path, necessary for doing
         placement [new] over an existing object.
