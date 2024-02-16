@@ -157,6 +157,7 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
     match t with
     | Tpointer _ => Some (Vptr nullptr)
     | Tnum _ _ => Some (Vint 0%Z)
+    | Tchar_ _ => Some (Vchar 0%N)
     | Tbool => Some (Vbool false)
     | Tnullptr => Some (Vptr nullptr)
     | Tqualified _ t => get_default t
