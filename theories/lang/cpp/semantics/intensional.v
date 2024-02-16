@@ -39,6 +39,7 @@ Fixpoint prim_initializable (t : type) : bool :=
   match t with
   | Tpointer _
   | Tnum _ _
+  | Tchar_ _
   | Tbool
   | Tenum _
   | Tnullptr => true
