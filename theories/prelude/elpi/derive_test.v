@@ -13,32 +13,98 @@ Module Type Alias.
   Definition t1 := T.
   Definition t2 := t1.
 
-  Module Type OnVariant.
-    #[only(eq_dec)] derive T.
-    Goal True.
-      let t := constr:(T_eq_dec) in (* T_eq_dec : EqDecision T *)
-      let ty := type of t in
-      lazymatch ty with EqDecision T => idtac end.
-    Abort.
-  End OnVariant.
+  Module Import Cmd.
+    Elpi Command assert_type.
+    Elpi Accumulate lp:{{/*(*/
+      pred main i:argument list.
+      main [trm (global (const C)), (trm Ty)] :- std.do! [
+        coq.env.const C _ CTy,
+        Ty = CTy
+      ].
+    /*)*/}}.
+    Elpi Typecheck.
+    Elpi Export assert_type.
+  End Cmd.
 
-  Module Type OnAliasDirect.
-    #[only(eq_dec)] derive t1.  (* t1_eq_dec : EqDecision t1 *)
-    Goal True.
-      let t := constr:(t1_eq_dec) in
-      let ty := type of t in
-      lazymatch ty with EqDecision t1 => idtac end.
-    Abort.
-  End OnAliasDirect.
+  Module Eq_Dec.
+    Module Type OnVariant.
+      #[only(eq_dec)] derive T.
+      assert_type (T_eq_dec) (EqDecision T).
+    End OnVariant.
 
-  Module Type OnAliasIndirect.
-    #[only(eq_dec)] derive t2.  (* t2_eq_dec : EqDecision t2 *)
-    Goal True.
-      let t := constr:(t2_eq_dec) in
-      let ty := type of t in
-      lazymatch ty with EqDecision t2 => idtac end.
-    Abort.
-  End OnAliasIndirect.
+    Module Type OnAliasDirect.
+      #[only(eq_dec)] derive t1.
+      Fail assert_type (t1_eq_dec) (EqDecision T).
+      assert_type (t1_eq_dec) (EqDecision t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(eq_dec)] derive t2.
+      Fail assert_type (t2_eq_dec) (EqDecision T).
+      Fail assert_type (t2_eq_dec) (EqDecision t1).
+      assert_type (t2_eq_dec) (EqDecision t2).
+    End OnAliasIndirect.
+  End Eq_Dec.
+
+  Module Inhabited.
+    Module Type OnVariant.
+      #[only(inhabited)] derive T.
+      assert_type (T_inhabited) (Inhabited T).
+    End OnVariant.
+
+    Module Type OnAliasDirect.
+      #[only(inhabited)] derive t1.
+      Fail assert_type (t1_inhabited) (Inhabited T).
+      assert_type (t1_inhabited) (Inhabited t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(inhabited)] derive t2.
+      Fail assert_type (t2_inhabited) (Inhabited T).
+      Fail assert_type (t2_inhabited) (Inhabited t1).
+      assert_type (t2_inhabited) (Inhabited t2).
+    End OnAliasIndirect.
+  End Inhabited.
+
+  Module Countable.
+    Module Type OnVariant.
+      #[only(countable)] derive T.
+      assert_type (T_countable) (Countable T).
+    End OnVariant.
+
+    Module Type OnAliasDirect.
+      #[only(countable)] derive t1.
+      Fail assert_type (t1_countable) (Countable T).
+      assert_type (t1_countable) (Countable t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(countable)] derive t2.
+      Fail assert_type (t2_countable) (Countable T).
+      Fail assert_type (t2_countable) (Countable t1).
+      assert_type (t2_countable) (Countable t2).
+    End OnAliasIndirect.
+  End Countable.
+
+  Module Finite.
+    Module Type OnVariant.
+      #[only(finite)] derive T.
+      assert_type (T_finite) (Finite T).
+    End OnVariant.
+
+    Module Type OnAliasDirect.
+      #[only(finite)] derive t1.
+      Fail assert_type (t1_finite) (Finite T).
+      assert_type (t1_finite) (Finite t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(finite)] derive t2.
+      Fail assert_type (t2_finite) (Finite T).
+      Fail assert_type (t2_finite) (Finite t1).
+      assert_type (t2_finite) (Finite t2).
+    End OnAliasIndirect.
+  End Finite.
 End Alias.
 
 Module Type BasicTests.
