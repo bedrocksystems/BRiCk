@@ -69,21 +69,58 @@ Elpi Accumulate derive lp:{{
   }
 }}.
 
+#[phase="both"]
+Elpi Accumulate derive lp:{{
+  dep1 "bitset" "finite". %finite implies eq_dec
+  dep1 "bitset_to_bit" "finite". %finite implies eq_dec
+}}.
+
+#[synterp] Elpi Accumulate derive lp:{{
+  namespace derive.bitset {
+    pred main i:string, i:string, i:bool, o:list prop.
+    main TypeName _ UseToBit CL :- std.do! [
+      coq.env.begin-module TypeName none,
+      if (UseToBit is tt)
+         (std.do! [
+           coq.env.include-module-type {coq.locate-module-type "finite_bitmask_type_mixin"} coq.inline.default,
+           coq.env.end-module MP,
+           ModName is TypeName ^ "_set",
+           coq.env.apply-module-functor ModName none {coq.locate-module "finite_bits"} [MP] coq.inline.default _,
+         ])
+         (std.do! [
+           coq.env.include-module-type {coq.locate-module-type "simple_finite_bitmask_type_mixin"} coq.inline.default,
+           coq.env.end-module MP,
+           ModName is TypeName ^ "_set",
+           coq.env.apply-module-functor ModName none {coq.locate-module "simple_finite_bits"} [MP] coq.inline.default _,
+         ]),
+      CL = [done TypeName],
+    ].
+
+    pred done i:string.
+  }
+
+  derivation T Prefix (derive "bitset" (derive.bitset.main T Prefix ff) (derive.bitset.done T)).
+  derivation T Prefix (derive "bitset_to_bit" (derive.bitset.main T Prefix tt) (derive.bitset.done T)).
+}}.
+
 Elpi Accumulate derive Db derive.bitset.db.
 Elpi Accumulate derive lp:{{
   namespace derive.finset {
-    pred main i:gref, i:string, o:list prop.
-    main TyGR Prefix Clauses :- std.do! [
+    pred main i:gref, i:string, i:bool, o:list prop.
+    main TyGR Prefix UseToBit Clauses :- std.do! [
       remove-final-underscore Prefix Variant,
-      if (derive.bitset.to-bits (global TyGR) ToBit)
-        (derive.bitset.mk-bitset Variant TyGR ToBit)
+      if (UseToBit is tt)
+        (std.do! [
+          derive.bitset.to-bits (global TyGR) ToBit,
+          derive.bitset.mk-bitset Variant TyGR ToBit,
+        ])
         (derive.bitset.mk-simple-bitset Variant TyGR),
       Clauses = [bitset-done TyGR],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.bitset.db" (clause _ _ x)
       ),
     ].
-    main _ _ _ :- usage.
+    main _ _ _ _ :- usage.
 
     pred usage.
     usage :- coq.error
@@ -93,16 +130,23 @@ where T is an inductive or a definition that unfolds to an inductive.
 Assembles pieces from finite.v to expose `to_bits`, together with laws, on [gset VariantType].
 The encoding into bit indices is derived automatically from the order of constructors of `VariantType`
 (0 for the first constructor, 1 for the second, etc.).
-Add an instance of `ToBit` to override the default behavior.
+Add an instance of `ToBit` and use #[only(bitset_to_bit)] instead to override the default behavior.
 ".
   }
 
-  dep1 "bitset" "finite". %finite implies eq_dec
   derivation
-    (indt T) Prefix
+    (indt T) Prefix tt
     (derive "bitset"
-      (derive.finset.main (indt T) Prefix)
+      (derive.finset.main (indt T) Prefix ff)
       (bitset-done (indt T))
     ).
+
+  derivation
+    (indt T) Prefix tt
+    (derive "bitset_to_bit"
+      (derive.finset.main (indt T) Prefix tt)
+      (bitset-done (indt T))
+    ).
+
 }}.
 Elpi Typecheck derive.

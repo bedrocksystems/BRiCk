@@ -82,21 +82,49 @@ Elpi Accumulate derive lp:{{
   }
 }}.
 
+
+#[phase="both"] Elpi Accumulate derive lp:{{
+  dep1 "finite_type" "finite". %finite implies eq_dec
+  dep1 "finite_type_to_N" "finite". %finite implies eq_dec
+}}.
+
+#[synterp] Elpi Accumulate derive lp:{{
+  namespace derive.finite_type {
+    pred main i:string, i:string, i:bool, o:list prop.
+    main TypeName _ UseToN CL :- std.do! [
+      coq.env.begin-module TypeName none,
+      if (UseToN is tt)
+         (coq.env.include-module-type {coq.locate-module-type "finite_encoded_type_mixin"} coq.inline.default)
+         (coq.env.include-module-type {coq.locate-module-type "finite_type_mixin"} coq.inline.default),
+      coq.env.end-module MP_,
+      CL = [done TypeName]
+    ].
+
+    pred done i:string.
+  }
+
+  derivation T Prefix (derive "finite_type" (derive.finite_type.main T Prefix ff) (derive.finite_type.done T)).
+  derivation T Prefix (derive "finite_type_to_N" (derive.finite_type.main T Prefix tt) (derive.finite_type.done T)).
+}}.
+
 Elpi Accumulate derive Db derive.finite_type.db.
 Elpi Accumulate derive lp:{{
   namespace derive.finite_type {
-    pred main i:gref, i:string, o:list prop.
-    main TyGR Prefix Clauses :- std.do! [
+    pred main i:gref, i:string, i:bool, o:list prop.
+    main TyGR Prefix UseToN Clauses :- std.do! [
       remove-final-underscore Prefix Variant,
-      if (derive.finite_type.to-N (global TyGR) ToN)
-        (derive.finite_type.mk-finite Variant TyGR ToN)
-        (derive.finite_type.mk-simple-finite Variant TyGR),
+      if (UseToN is tt)
+         (std.do! [
+           derive.finite_type.to-N (global TyGR) ToN,
+           derive.finite_type.mk-finite Variant TyGR ToN,
+         ])
+         (derive.finite_type.mk-simple-finite Variant TyGR),
       Clauses = [finite-type-done TyGR],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.finite_type.db" (clause _ _ x)
       ),
     ].
-    main _ _ _ :- usage.
+    main _ _ _ _ :- usage.
 
     pred usage.
     usage :- coq.error
@@ -105,16 +133,23 @@ where T is an inductive or a definition that unfolds to an inductive.
 
 Assembles pieces from finite.v to expose `to_N` and `of_N` functions on `VariantType`, together with laws.
 The encoding into `N` is derived automatically from the order of constructors of `VariantType`.
-Use an instance of the typeclass `ToN` to override the default behavior.
+Use an instance of the typeclass `ToN` and #[only(finite_type_to_N)] instead to override the default behavior.
 ".
   }
 
-  dep1 "finite_type" "finite". %finite implies eq_dec
   derivation
-    (indt T) Prefix
+    (indt T) Prefix tt
     (derive "finite_type"
-      (derive.finite_type.main (indt T) Prefix)
+      (derive.finite_type.main (indt T) Prefix ff)
       (finite-type-done (indt T))
     ).
+
+  derivation
+    (indt T) Prefix tt
+    (derive "finite_type_to_N"
+      (derive.finite_type.main (indt T) Prefix tt)
+      (finite-type-done (indt T))
+    ).
+
 }}.
 Elpi Typecheck derive.

@@ -122,6 +122,14 @@ Elpi Db derive.finite.db lp:{{
   }
 }}.
 
+#[phase="both"] Elpi Accumulate derive lp:{{
+  dep1 "finite" "eq_dec".
+}}.
+
+#[synterp] Elpi Accumulate derive lp:{{
+  derivation _ _ (derive "finite" (cl\ cl = []) true).
+}}.
+
 Elpi Accumulate derive Db derive.finite.db.
 Elpi Accumulate derive lp:{{
   namespace derive.finite {
@@ -159,9 +167,8 @@ Example #3:
 
   }
 
-  dep1 "finite" "eq_dec".
   derivation
-    (indt T) Prefix
+    (indt T) Prefix ff
     (derive "finite"
       (derive.finite.main (indt T) Prefix)
       (finite-done (indt T))

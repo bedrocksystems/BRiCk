@@ -25,6 +25,11 @@ Elpi Typecheck derive.
 (***************************************************
  Inhabited
  ***************************************************)
+
+#[synterp] Elpi Accumulate derive lp:{{
+  derivation _ _ (derive "inhabited" (cl\ cl = []) true).
+}}.
+
 Elpi Accumulate derive lp:{{
   namespace derive.inhabited {
     pred main i:gref, i:string, o:list prop.
@@ -66,7 +71,7 @@ Example #3:
   }
 
   derivation
-    (indt T) Prefix
+    (indt T) Prefix ff
     (derive "inhabited"
        (derive.inhabited.main (indt T) Prefix)
        (inhabited-done (indt T))
