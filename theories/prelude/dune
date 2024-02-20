@@ -5,11 +5,12 @@
  (theories iris stdpp elpi Lens Lens.Elpi)
 )
 
-; copies the .elpi files below into dune's _build directory
+; hashes elpi/coq.elpi into a .v file in _build
+; add one such rule per .elpi file
+; TODO generalize this rule using %{deps} and to support more than one .elpi file
 (rule
- (target dummy.v)
- (deps
-  elpi/coq.elpi
-  ; elpi/more_files.elpi
-  )
- (action (with-stdout-to %{target} (echo "(* dummy file *)"))))
+ (target elpi_coq_elpi.v)
+ (deps elpi/coq.elpi)
+ (action
+   (with-stdout-to %{target}
+   (run ./elpi/dune_hash.sh elpi/coq.elpi))))
