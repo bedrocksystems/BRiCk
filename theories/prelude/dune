@@ -4,3 +4,13 @@
  (package coq-cpp2v)
  (theories iris stdpp elpi Lens Lens.Elpi)
 )
+
+; hashes elpi/coq.elpi into a .v file in _build
+; add one such rule per .elpi file
+; TODO generalize this rule using %{deps} and to support more than one .elpi file
+(rule
+ (target elpi_coq_elpi.v)
+ (deps elpi/coq.elpi)
+ (action
+   (with-stdout-to %{target}
+   (run ./elpi/dune_hash.sh elpi/coq.elpi))))

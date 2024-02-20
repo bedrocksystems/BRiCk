@@ -1,0 +1,33 @@
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Copyright (C) BedRock Systems Inc. 2024
+ %
+ % SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network,
+ % see repository root for details.
+ %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% depends on `coq-builtin.elpi.`
+
+namespace coq {
+  % [fold TM FUN ACC ACC']: fold FUN over coq term TM, accumulating ACC'.
+  % Expects FUN to be total (i.e., to never reject terms).
+  pred fold i:term, i:term -> A -> A -> prop, i:A, o:A.
+  fold (sort _ as TM) F A A' :- !, F TM A A'.
+  fold (global _ as TM) F A A' :- !, F TM A A'.
+  fold (pglobal _ _ as TM) F A A' :- !, F TM A A'.
+  fold (fun _ T FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T F A1} A'.
+  fold (prod _ T FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T F A1} A'.
+  fold (let _ T1 T2 FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T2 F {fold T1 F A1} } A'.
+  fold (app L as TM) F A A' :- !, F TM A A1, fold.aux L F A1 A'.
+  fold (match T1 T2 L as TM) F A A' :- !, F TM A A1,
+    fold.aux L F {fold T2 F {fold T1 F A1} } A'.
+  fold (fix _ _ T FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T F A1} A'.
+  fold (primitive _ as TM) F A A' :- !, F TM A A'.
+  fold (uvar _ L as TM) F A A' :- !, F TM A A1, fold.aux L F A1 A'.
+  fold X _ A A :- name X, !. %pi-bound variables c0, c1, etc.
+  fold TM _ A A :- !, coq.error "coq.fold: unexpected term" {coq.term->string TM}.
+  fold.aux L F A A' :- std.fold L A (X\ fold X F) A'.
+} %namespace coq
