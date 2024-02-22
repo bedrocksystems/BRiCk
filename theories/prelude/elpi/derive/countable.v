@@ -20,7 +20,7 @@ Elpi Accumulate derive Db bedrock.basis.db.
 Elpi Db derive.stdpp.countable.db lp:{{
   pred countable o:gref, o:gref.
   pred countable-done o:gref.
-  :name "coutable-done.typeclass"
+  :name "countable-done.typeclass"
   countable-done GR :-
     typeclass "derive.stdpp.countable.db"
       (before "countable-done.typeclass") (countable-done GR) {{ @Countable lp:{{global GR}} _ }} Bo_.
