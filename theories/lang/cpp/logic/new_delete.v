@@ -368,41 +368,6 @@ Module Type Expr__newdelete.
       iIntros (?) "p"; iApply "X"; iApply "Y"; done.
     Qed.
 
-    (* [delete_val default ty p Q] is the weakest pre-condition of deleting [p] (of type [ty]).
-        In the case that [ty] has a custom [operator delete], that function will be called, otherwise
-        the [default] delete operator will be used.
-
-        TODO: This does *not* support destroying <<delete>> introduced in C++20.
-      *)
-    Definition delete_val tu (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
-      let del_type := Tfunction Tvoid (Tptr Tvoid :: nil) in
-      let del '(fn, ty) :=
-          (letI* p', free := alloc_pointer p in
-          |> letI* p := wp_fptr tu.(types) ty (_global fn) (p' :: nil) in
-              letI* := interp tu free in
-              letI* _ := operand_receive Tvoid p in Q)%I
-      in
-      match erase_qualifiers ty with
-      | Tnamed nm =>
-        match tu !! nm with
-        | Some (Gstruct s) =>
-          del $ from_option (fun x => (x, del_type)) default s.(s_delete)
-        | Some (Gunion u) =>
-          del $ from_option (fun x => (x, del_type)) default u.(u_delete)
-        | _ => False
-        end
-      | _ => del default
-      end.
-
-    Lemma delete_val_frame : forall tu default ty p Q Q',
-        Q -* Q' |-- delete_val tu default ty p Q -* delete_val tu default ty p Q'.
-    Proof.
-      rewrite /delete_val; intros.
-      iIntros "X"; repeat case_match; eauto; iApply alloc_pointer_frame; iIntros (??);
-      iIntros "Y !>"; iRevert "Y";
-      iApply wp_fptr_frame; iIntros (?); iApply interp_frame; iApply operand_receive_frame; iIntros (?); done.
-    Qed.
-
     (** [resolve_dtor ty obj_ptr' Q] resolves the destructor for the object [obj_ptr'] (of type [ty]).
         The continuation [Q] is passed the pointer to the most-derived-object of [obj_ptr] and its type.
       *)
@@ -455,6 +420,42 @@ Module Type Expr__newdelete.
     | Tvariable_array _ => False
     | _ => is_array = false
     end.
+
+    (* [delete_val default ty p Q] is the weakest pre-condition of deleting [p] (of type [ty]).
+        In the case that [ty] has a custom [operator delete], that function will be called, otherwise
+        the [default] delete operator will be used.
+
+        TODO: This does *not* support destroying <<delete>> introduced in C++20.
+      *)
+    mlock
+    Definition delete_val `{Σ : cpp_logic} {σ : genv} tu (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
+      let del_type := Tfunction Tvoid (Tptr Tvoid :: nil) in
+      let del '(fn, ty) :=
+          (letI* p', free := alloc_pointer p in
+          |> letI* p := wp_fptr tu.(types) ty (_global fn) (p' :: nil) in
+              letI* := interp tu free in
+              letI* _ := operand_receive Tvoid p in Q)%I
+      in
+      match erase_qualifiers ty with
+      | Tnamed nm =>
+        match tu !! nm with
+        | Some (Gstruct s) =>
+          del $ from_option (fun x => (x, del_type)) default s.(s_delete)
+        | Some (Gunion u) =>
+          del $ from_option (fun x => (x, del_type)) default u.(u_delete)
+        | _ => False
+        end
+      | _ => del default
+      end.
+
+    Lemma delete_val_frame `{Σ : cpp_logic} {σ : genv} : forall tu default ty p Q Q',
+        Q -* Q' |-- delete_val tu default ty p Q -* delete_val tu default ty p Q'.
+    Proof.
+      rewrite delete_val.unlock; intros.
+      iIntros "X"; repeat case_match; eauto; iApply alloc_pointer_frame; iIntros (??);
+      iIntros "Y !>"; iRevert "Y";
+      iApply wp_fptr_frame; iIntros (?); iApply interp_frame; iApply operand_receive_frame; iIntros (?); done.
+    Qed.
 
   (* [wp_delete] encapsulates the logic needed to <<delete>> an
       object of a particular type.
