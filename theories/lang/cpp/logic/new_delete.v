@@ -58,7 +58,7 @@ Module Type Expr__newdelete.
       |     deleted and the static type shall have a virtual destructor or the behavior is
       |     undefined. In an array delete expression, if the dynamic type of the object to
       |     be deleted is not similar to its static type, the behavior is undefined.
-      [new_tokenR q allocation_type] tracks this Dynamic Type information.
+      [new_token.R q allocation_type] tracks this Dynamic Type information.
 
       Making this [Fractional] instead of [Exclusive] helps write representation
       predicates for classes like the following:
@@ -69,36 +69,57 @@ Module Type Expr__newdelete.
       };
       >>
 
-      [obj |-> new_tokenR q (ty, storage, offset)] is ownership that:
-      - [obj] is the constructed pointer
+      [obj |-> new_token.R q (new_token.mk ty storage ptr offset)] is ownership that:
+      - [obj] is the constructed object pointer
       - [ty] is the <<new>>d type, *including qualifiers*.
-      - [storage] is the storage pointer that underlies [obj],
+      - [storage_ptr] is the block storage pointer that underlies [obj],
         see [new_token_provides_storage].
       - [offset] is the size of the meta-data owned by the C++ abstract machine.
-        This overhead lives at [storage .[ Tuchar ! -offset ] |-> blockR 1 offset].
+        This overhead lives at [storage_ptr .[ Tbyte ! -offset) |-> blockR 1 offset].
    *)
-  Parameter new_tokenR : forall `{Σ : cpp_logic} {σ : genv} (q : Qp) (ty_storage_overhead : type * ptr * N), Rep.
-  #[global] Arguments new_tokenR {_ _ _ σ} _%Qp _%N.
 
   #[local] Notation Tbyte := Tuchar (only parsing).
+
+  Module new_token.
+    Record t := mk
+      { alloc_ty : type
+      ; storage_ptr : ptr
+      ; overhead : N
+      }.
+
+    Definition mkBase  `{σ : genv} ty storage_base (overhead : N)
+      := mk ty (storage_base .[ Tbyte ! overhead ]) overhead.
+
+    #[global] Notation storage_base d
+      := (d.(storage_ptr) .[ Tuchar ! - d.(overhead) ]).
+
+    Parameter R : forall `{Σ : cpp_logic} {σ : genv} (q : Qp) (data : t), Rep.
+    #[global] Arguments R {_ _ _ σ} _%Qp _%N.
+
+    Section with_cpp_logic.
+      Context `{Σ : cpp_logic} {σ : genv}.
+
+      #[global] Declare Instance Observe_provides_storage : forall obj q d,
+          Observe (provides_storage d.(storage_ptr) obj d.(alloc_ty))
+            (obj |-> R q d).
+
+      #[global] Declare Instance Observe_type_size : forall q d,
+          Observe [| exists sz, size_of d.(alloc_ty) = Some sz |]
+            (R q d).
+
+      #[global] Declare Instance R_frac :
+        FracSplittable_1 R.
+      #[global] Declare Instance R_agree :
+        AgreeF1 R.
+
+    End with_cpp_logic.
+  End new_token.
 
   Section with_cpp_logic.
     Context `{Σ : cpp_logic} {σ : genv}.
 
-    #[global] Declare Instance new_token_provides_storage : forall obj q ty storage (offset : N),
-      Observe (provides_storage (storage .[ Tuchar ! offset ]) obj ty)
-              (obj |-> new_tokenR q (ty, storage, offset)).
-
-    #[global] Declare Instance new_token_type_size : forall q ty storage (offset : N),
-      Observe [| exists sz, size_of ty = Some sz |]
-              (new_tokenR q (ty, storage, offset)).
-
-    #[global] Declare Instance new_tokenR_frac :
-      FracSplittable_1 new_tokenR.
-    #[global] Declare Instance new_tokenR_agree :
-      AgreeF1 new_tokenR.
-
     Section with_region.
+
       Context (ρ : region).
       Variable (tu : translation_unit).
 
@@ -218,7 +239,7 @@ Module Type Expr__newdelete.
                           It is important that this preserves
                           `const`ness of the type.
                         *)
-                        obj_ptr |-> new_tokenR 1 (aty, storage_ptr, 0%N) -*
+                        obj_ptr |-> new_token.R 1 (new_token.mk aty storage_ptr 0) -*
                         Q (Vptr obj_ptr) (free' >*> free)))
         |-- wp_operand (Enew new_fn new_args (new_form.Allocating pass_align) aty None oinit) Q.
 
@@ -266,7 +287,7 @@ Module Type Expr__newdelete.
                           It is important that this preserves
                           `const`ness of the type.
                         *)
-                        obj_ptr |-> new_tokenR 1 (aty, storage_ptr, 0%N) -*
+                        obj_ptr |-> new_token.R 1 (new_token.mk aty storage_ptr 0) -*
                         Q (Vptr obj_ptr) (free' >*> free))))
         |-- wp_operand (Enew new_fn [storage_expr] new_form.NonAllocating aty None oinit) Q.
 
@@ -346,7 +367,7 @@ Module Type Expr__newdelete.
                           (* Track the type we are allocating
                             so it can be checked at [delete]
                             *)
-                          obj_ptr |-> new_tokenR 1 (array_ty, storage_base, overhead_sz) -*
+                          obj_ptr |-> new_token.R 1 (new_token.mkBase array_ty storage_base overhead_sz) -*
                           Q (Vptr obj_ptr) (free'' >*> free' >*> free))))
         |-- wp_operand (Enew new_fn new_args (new_form.Allocating pass_align) aty (Some array_size) oinit) Q.
 
@@ -411,6 +432,11 @@ Module Type Expr__newdelete.
 
     Definition cv_compat (t1 t2 : type) : Prop :=
       erase_qualifiers t1 = erase_qualifiers t2.
+
+    Lemma cv_compat_refl ty :
+      cv_compat ty ty.
+    Proof. done. Qed.
+
   End with_cpp_logic.
 
   Definition array_compatible (is_array : bool) (ty : type) : Prop :=
@@ -469,7 +495,7 @@ Module Type Expr__newdelete.
     denoteModule tu -*
     letI* this', mdc_ty := resolve_dtor tu destroyed_type obj_ptr in
     Exists cv_mdc storage_ptr overhead,
-      this' |-> new_tokenR 1 (cv_mdc, storage_ptr, overhead) ** [| cv_compat cv_mdc mdc_ty |] **
+      this' |-> new_token.R 1 (new_token.mk cv_mdc storage_ptr overhead) ** [| cv_compat cv_mdc mdc_ty |] **
       [| array_compatible array cv_mdc |] **
       Exists tu', denoteModule tu' **
       letI* := destroy_val tu' cv_mdc this' (* << invoke the destructor *) in
