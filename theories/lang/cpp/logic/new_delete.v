@@ -78,7 +78,7 @@ Module Type Expr__newdelete.
         This overhead lives at [storage_ptr .[ Tbyte ! -offset) |-> blockR 1 offset].
    *)
 
-  #[local] Notation Tbyte := Tuchar (only parsing).
+  #[global] Notation Tbyte := Tuchar (only parsing).
 
   Module new_token.
     Record t := mk
