@@ -99,6 +99,9 @@ Notation Struct := (Struct' globname type Expr).
     (or bases). Having a vtable is *not* a transitive property.
     A class that only inherits <<virtual>> methods does not have a
     vtable.
+
+    Note that methods that override virtual methods are implicitly virtual.
+    This includes destructor.
  *)
 Definition has_vtable {classname type Expr} (s : Struct' classname type Expr) : bool :=
   match s.(s_virtuals) with
