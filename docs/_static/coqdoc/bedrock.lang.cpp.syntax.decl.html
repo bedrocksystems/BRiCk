@@ -154,6 +154,11 @@
     (or bases). Having a vtable is *not* a transitive property.
     A class that only inherits <code>virtual</code> methods does not have a
     vtable.
+
+<div class="paragraph"> </div>
+
+    Note that methods that override virtual methods are implicitly virtual.
+    This includes destructor.
  
 </div>
 <div class="code">
