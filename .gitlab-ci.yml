@@ -46,10 +46,15 @@ variables:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-#.llvm17:
-#  extends: .base
-#  variables:
-#    LLVM_MAJ_VER: 17
+.llvm17:
+  extends: .base
+  variables:
+    LLVM_MAJ_VER: 17
+
+.llvm18:
+  extends: .base
+  variables:
+    LLVM_MAJ_VER: 18
 
 .public:
   extends: .base
@@ -130,6 +135,7 @@ stages:
 
 build_latest:
   extends:
+    - .public
     - .build
     - .latest
 
@@ -406,10 +412,15 @@ dune-build:
     - .dune-build
     - .latest
 
-#dune-build-llvm17:
+dune-build-llvm17:
+  extends:
+    - .dune-build-aux
+    - .llvm17
+
+#dune-build-llvm18:
 #  extends:
 #    - .dune-build-aux
-#    - .llvm17
+#    - .llvm18
 
 # TODO FM-4156 Reenable
 # dune-build-public:
@@ -424,12 +435,19 @@ dune-test:
   needs:
     - dune-build
 
-#dune-test-llvm17:
+dune-test-llvm17:
+  extends:
+    - .dune-test-aux
+    - .llvm17
+  needs:
+    - dune-build-llvm17
+
+#dune-test-llvm18:
 #  extends:
 #    - .dune-test-aux
-#    - .llvm17
+#    - .llvm18
 #  needs:
-#    - dune-build-llvm17
+#    - dune-build-llvm18
 
 # TODO FM-4156 Reenable
 # dune-test-public:
