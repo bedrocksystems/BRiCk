@@ -50,7 +50,7 @@ CPP2V_LOGS := cpp2v-cmake.log cpp2v-make.log
 
 SHELL := /bin/bash
 
-build/Makefile: Makefile CMakeLists.txt
+build/Makefile: $(MAKEFILE_LIST) CMakeLists.txt
 	@$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) &> cpp2v-cmake.log || { cat cpp2v-cmake.log; exit 1; }
 
 cpp2v: build/Makefile

@@ -1,5 +1,5 @@
 ;
-; Copyright (C) BedRock Systems Inc. 2022
+; Copyright (C) BedRock Systems Inc. 2022-2024
 ; All rights reserved.
 ;
 ; This software is distributed under the terms of the BedRock Open-Source License.
@@ -28,15 +28,25 @@
  )))))
 
 ; Explain Dune how to find and build cpp2v binary
+;
+; TODO (PDS): This does not seem to play well with dune's cache. I've
+; observed something like "build (v1), change two files, build (v2),
+; revert one file, build (v3)" resulting in binary (v1) rather than
+; (v3). Should we give up and add `universe`, or honor an environment
+; variable to that effect for use by folks who are modifying cpp2v?
+; Can we make the dependencies more meaningful? Is there a dune bug
+; lurking here that we can isolate and fix? (This seems likely given
+; the `source_tree` deps.)
+;
 (subdir build
  (env
   (release (env-vars (BUILD_TYPE Release)))
   (_ (env-vars (BUILD_TYPE Debug))))
  (rule
-  (targets llvm-lib-path.txt)
+  (target llvm-lib-path.txt)
   (deps (universe))
   (action
-   (with-outputs-to llvm-lib-path.txt
+   (with-outputs-to %{target}
     ; Compute path of the LLVM library. The output looks like one of:
     ; ```
     ; /opt/homebrew/Cellar/llvm/14.0.6/lib/libLLVM-14.dylib
@@ -51,11 +61,33 @@
     ; This code depends on the LLVM library, to try rebuilding `cpp2v` if LLVM
     ; is upgraded.
     ; TODO: Check this is sound — could `cmake` detect LLVM/Clang in other ways?
+    ;
+    ; TODO: llvm-config provides other data which seem relevant to how
+    ; a generated cpp2v binary will behave: cxxflags, ldflags (≈ how
+    ; llvm+cmake likely conspire to build cpp2v).
+    ;
     %{read-lines:llvm-lib-path.txt}
-    ../Makefile ../Makefile.doc ../CMakeLists.txt (source_tree ../src)
-    (source_tree ../cmake) (source_tree ../include) (source_tree ../doc)
+    ;
+    ; We care about `$(MAKEFILE_LIST)` because we use `make` to invoke `cmake`
+    ; and any makefile can, in principle, change what `make` does.
+    ;
+    ../Makefile
+    ../Makefile.doc
+    ;
+    ../CMakeLists.txt
+    (source_tree ../include)
     (source_tree ../llvm-include)
-    (env_var PATH) (env_var LLVM_DIR) (env_var CLANG_DIR) (env_var BUILD_TYPE))
+    (source_tree ../src)
+    ;
+    ; TODO: These seem pointless
+    (source_tree ../cmake)	;; does not exist
+    (source_tree ../doc)	;; irrelevant to cpp2v
+    ;
+    (env_var PATH)
+    (env_var LLVM_DIR)
+    (env_var CLANG_DIR)
+    (env_var BUILD_TYPE)
+  )
   (action (chdir .. (run make -j 7 cpp2v))))
  ; The install rule is also necessary to _use_ cpp2v in other actions
  (install
