@@ -16,7 +16,7 @@ Require Import bedrock.lang.si_logic.bi.
 Require Import bedrock.lang.bi.own.
 Require Import bedrock.lang.bi.includedI.
 Require Import bedrock.lang.bi.embedding.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Set Printing Coercions.
 
 Implicit Types (p q : Qp) (dp dq : dfrac).

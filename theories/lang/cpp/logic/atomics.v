@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.atomic1.
 Require Import bedrock.lang.cpp.ast.

@@ -7,7 +7,7 @@
 Require Import stdpp.coPset.
 Require Import iris.bi.bi.
 Require Import iris.bi.lib.fractional.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.prelude.reserved_notation.
 Require Import bedrock.lang.bi.only_provable.
 

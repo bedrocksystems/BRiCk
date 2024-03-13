@@ -6,7 +6,7 @@
 Require Import elpi.apps.locker.
 Require Import bedrock.lang.bi.prelude.
 Require Import iris.bi.bi iris.bi.monpred.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 (** * Observations *)
 (** We define type classes for making observations and a few instances

@@ -5,7 +5,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.algebra.list.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.prelude.numbers.
 Require Import bedrock.lang.bi.observe.
 Require Import bedrock.lang.bi.fractional.

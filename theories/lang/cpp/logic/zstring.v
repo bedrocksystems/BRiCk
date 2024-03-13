@@ -7,7 +7,7 @@
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Lists.List.
 
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 Require Import bedrock.prelude.base.
 Require Import bedrock.lang.bi.prelude.

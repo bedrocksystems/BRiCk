@@ -13,7 +13,7 @@ Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
 Require Import bedrock.lang.cpp.logic.heap_pred.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 Import ChargeNotation.
 

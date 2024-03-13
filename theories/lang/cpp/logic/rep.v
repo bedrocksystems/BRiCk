@@ -8,7 +8,7 @@
 For an introduction see
 [fmdeps/cpp2v-core/theories/noimport/doc/cpp/howto_sequential.v]. *)
 
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.fractional.
 
 Require Import bedrock.lang.bi.prelude.

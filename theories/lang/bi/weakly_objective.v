@@ -6,7 +6,7 @@
  *)
 
 Require Import iris.bi.monpred.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import iris.proofmode.monpred.
 
 Require Import bedrock.lang.bi.only_provable.

@@ -6,7 +6,7 @@
  *)
 Require Import iris.bi.embedding.
 Require Import bedrock.lang.bi.prelude.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Set Printing Coercions.
 
 (** * Internal inclusion

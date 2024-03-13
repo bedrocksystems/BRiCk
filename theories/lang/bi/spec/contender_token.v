@@ -7,7 +7,7 @@
 
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.big_op.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Import ChargeNotation.
 
 #[local] Set Primitive Projections.

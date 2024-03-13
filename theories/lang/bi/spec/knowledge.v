@@ -7,7 +7,7 @@
 
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.observe.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 #[local] Set Primitive Projections.
 

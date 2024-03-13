@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.prelude.base.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import iris.bi.lib.fractional.
 
 Require Import bedrock.lang.cpp.bi.cfractional.

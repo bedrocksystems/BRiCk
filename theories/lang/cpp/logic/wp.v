@@ -9,7 +9,7 @@ Require Import bedrock.prelude.base.
 
 Require Import stdpp.coPset.
 Require Import iris.bi.monpred.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import iris.proofmode.classes.
 
 Require Import bedrock.lang.cpp.ast.
