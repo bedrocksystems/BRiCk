@@ -11,7 +11,6 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/ExprCXX.h>
 #include <clang/AST/Mangle.h>
-#include <clang/Basic/Version.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <optional>
 

@@ -5,7 +5,6 @@
  */
 #pragma once
 #include <clang/Basic/Diagnostic.h>
-#include <llvm/ADT/Optional.h>
 #include <llvm/ADT/ArrayRef.h>
 #include "Trace.hpp"
 #include "Logging.hpp"

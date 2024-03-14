@@ -18,13 +18,14 @@ They must be run inside a clone of this repository.
 
 Our instructions are for Linux (Ubuntu) and OSX.
 
-- LLVM 15 (should be backwards compatibile with 14)
+- LLVM 16 or greater (we've tested against 16, 17)
 - cmake
 - [opam 2](https://opam.ocaml.org/)
 
 ### Native dependencies: Linux (Ubuntu)
 
 ```sh
+# NOTE: This is out of date.
 # For Ubuntu 22.04 LTS:
 sudo apt install llvm-14 llvm-14-dev clang-14 libclang-14-dev libclang-cpp14-dev
 # For Ubuntu 22.10 (tested 1 Nov 2022):
@@ -37,8 +38,8 @@ sudo apt install cmake opam
 For OSX we recommend clang 11 due to issues linking with clang 12:
 
 ```sh
-brew install llvm@11 cmake opam
-export PATH=/usr/local/opt/llvm@11/bin:${PATH}
+brew install llvm@16 cmake opam
+export PATH=/usr/local/opt/llvm@16/bin:${PATH}
 ```
 
 ### Build

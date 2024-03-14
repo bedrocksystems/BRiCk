@@ -8,7 +8,6 @@
 #include <clang/AST/ASTConsumer.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/ASTMutationListener.h>
-#include <llvm/ADT/Optional.h>
 #include <optional>
 #include <string>
 

@@ -11,6 +11,7 @@
 #include "Template.hpp"
 #include "config.hpp"
 #include <clang/AST/Type.h>
+#include <clang/Basic/Version.inc>
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecordLayout.h"
 #include "clang/Basic/Builtins.h"
@@ -129,10 +130,8 @@ recoverPattern(const Decl& decl) {
     } else if (auto d = dyn_cast<FunctionDecl>(&decl)) {
         if (auto pat = d->getInstantiatedFromMemberFunction())
             return pat;
-        #if CLANG_VERSION_MAJOR >= 15
-            if (auto pat = d->getInstantiatedFromDecl())
-                return pat;
-        #endif
+        if (auto pat = d->getInstantiatedFromDecl())
+            return pat;
         return d->getTemplateInstantiationPattern();
     } else if (auto d = dyn_cast<EnumDecl>(&decl)) {
         if (auto pat = d->getInstantiatedFromMemberEnum())
@@ -942,7 +941,7 @@ struct EnumConst {
             }
             case Kchar: {
                 auto c = toBRiCkCharacter(bitsize, val.getExtValue());
-                return print.output() << "(inl " << c << ")%N";
+                return print.output() << "(inl " << c << "%N)";
             }
             }
         }
@@ -1028,6 +1027,18 @@ printEnumConst(const EnumConst &c, CoqPrinter &print, ClangPrinter &cprint,
 
 static const DeclPrinter Denum("Denum", printEnum, /*ast2_only*/ true);
 static const DeclPrinter Denum_constant("Denum_constant", printEnumConst, /*ast2_only*/ true);
+
+// Static asserts
+namespace {
+static const StringLiteral*
+staticAssertMessage(const StaticAssertDecl& decl) {
+    #if CLANG_VERSION_MAJOR <= 16
+        return decl.getMessage();
+    #else
+        return dyn_cast_or_null<StringLiteral>(decl.getMessage());
+    #endif
+}
+}
 
 class PrintDecl :
     public ConstDeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
@@ -1215,7 +1226,12 @@ public:
         */
         if (auto e = decl->getAssertExpr()) {
             guard::ctor _(print, "Dstatic_assert");
-            if (auto msg = decl->getMessage()) {
+            /*
+            TODO: We insist on a StringLiteral message (the historical
+            type). Consider dropping that requirement and using
+            Stmt::printPretty.
+            */
+            if (auto msg = staticAssertMessage(*decl)) {
                 guard::some _(print);
                 print.str(msg->getString());
             } else {

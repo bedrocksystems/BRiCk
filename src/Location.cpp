@@ -5,7 +5,6 @@
  */
 #include "Location.hpp"
 #include "Logging.hpp"
-#include <clang/Basic/Version.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/ExprCXX.h>
@@ -149,29 +148,19 @@ Loc::describe(raw_ostream& os, const ASTContext& context) const {
     }
 }
 
-template<typename T>
-void
-dump_ctx(raw_ostream& os, const T* t, const ASTContext& context) {
-    #if CLANG_VERSION_MAJOR >= 11
-        t->dump(os, context);
-    #else
-        t->dump(os);
-    #endif
-}
-
 raw_ostream&
 Loc::dump(raw_ostream& os, const ASTContext& context) const {
     auto qualtype = [&](QualType qt) -> auto& {
-        dump_ctx(os, &qt, context);
+        qt.dump(os, context);
         return os;
     };
     switch (kind) {
     case Kind::Decl:	u.decl->dump(os); return os;
-    case Kind::Stmt:	dump_ctx(os, u.stmt, context); return os;
+    case Kind::Stmt:	u.stmt->dump(os, context); return os;
     case Kind::TypeLoc:	return qualtype(u.typeloc->getType());
     case Kind::Tsi:	return qualtype(u.tsi->getType());
     case Kind::QualType:	return qualtype(*u.qualtype);
-    case Kind::Type:	dump_ctx(os, u.type, context); return os;
+    case Kind::Type:	u.type->dump(os, context); return os;
     case Kind::Tal:	u.tal->getArgument().dump(os); return os;
     }
 }

@@ -1,5 +1,5 @@
 ##
-## Copyright (c) 2020-2022 BedRock Systems, Inc.
+## Copyright (c) 2020-2024 BedRock Systems, Inc.
 ## This software is distributed under the terms of the BedRock Open-Source License.
 ## See the LICENSE-BedRock file in the repository root for details.
 ##
@@ -50,15 +50,10 @@ variables:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-.llvm14:
-  extends: .base
-  variables:
-    LLVM_MAJ_VER: 14
-
-.llvm15:
-  extends: .base
-  variables:
-    LLVM_MAJ_VER: 15
+#.llvm17:
+#  extends: .base
+#  variables:
+#    LLVM_MAJ_VER: 17
 
 .public:
   extends: .base
@@ -94,7 +89,7 @@ stages:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 #This is a template job that's extended below by the real jobs
-# build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
+# build_{latest,llvmNN,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
   stage: build
   needs: []
@@ -415,15 +410,10 @@ dune-build:
     - .dune-build
     - .latest
 
-dune-build-llvm15:
-  extends:
-    - .dune-build-aux
-    - .llvm15
-
-dune-build-llvm14:
-  extends:
-    - .dune-build-aux
-    - .llvm14
+#dune-build-llvm17:
+#  extends:
+#    - .dune-build-aux
+#    - .llvm17
 
 # TODO FM-4156 Reenable
 # dune-build-public:
@@ -438,19 +428,12 @@ dune-test:
   needs:
     - dune-build
 
-dune-test-llvm15:
-  extends:
-    - .dune-test-aux
-    - .llvm15
-  needs:
-    - dune-build-llvm15
-
-dune-test-llvm14:
-  extends:
-    - .dune-test-aux
-    - .llvm14
-  needs:
-    - dune-build-llvm14
+#dune-test-llvm17:
+#  extends:
+#    - .dune-test-aux
+#    - .llvm17
+#  needs:
+#    - dune-build-llvm17
 
 # TODO FM-4156 Reenable
 # dune-test-public:

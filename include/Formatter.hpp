@@ -55,10 +55,31 @@ public:
 
 struct NBSP;
 extern const NBSP* nbsp;
-
-Formatter& operator<<(Formatter& out, const llvm::APSInt&);
-
 Formatter& operator<<(Formatter& out, const NBSP* _);
+
+struct NUM {
+    NUM() = delete;
+    const llvm::APInt& val;
+    const bool is_signed;
+    const bool is_negative;
+    const char* scope;
+};
+Formatter& operator<<(Formatter&, const NUM&);
+
+/// A Coq integer of type `Z` with optional `%Z`
+inline NUM
+Z(const llvm::APSInt& val, bool scope = true) {
+    return NUM{val, val.isSigned(), val.isNegative(), scope ? "Z" : nullptr};
+}
+
+/// A Coq natural of type `N` with optional `%N`
+inline NUM
+N(const llvm::APInt& val, bool scope = true) {
+    return NUM{val, false, false, scope ? "N" : nullptr};
+}
+
+/// Equivalent to `fmt::Z`
+Formatter& operator<<(Formatter&, const llvm::APSInt&);
 
 struct INDENT;
 extern const INDENT* indent;

@@ -14,7 +14,6 @@
 #include "clang/AST/Type.h"
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/TargetInfo.h"
-#include "clang/Basic/Version.inc"
 #include <bit>
 
 using namespace clang;
@@ -86,9 +85,9 @@ ClangPrinter::printOverloadableOperator(clang::OverloadedOperatorKind oo,
     }
 }
 
-#if CLANG_VERSION_MAJOR >= 15
+
 void
-printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
+printOptionalExpr(std::optional<const Expr*> expr, CoqPrinter& print,
                   ClangPrinter& cprint, OpaqueNames& li) {
     if (expr.has_value() && expr.value()) {
         print.some();
@@ -98,19 +97,6 @@ printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
         print.none();
     }
 }
-#else
-void
-printOptionalExpr(llvm::Optional<const Expr*> expr, CoqPrinter& print,
-                  ClangPrinter& cprint, OpaqueNames& li) {
-    if (expr.hasValue() && expr.getValue()) {
-        print.some();
-        cprint.printExpr(expr.getValue(), print, li);
-        print.end_ctor();
-    } else {
-        print.none();
-    }
-}
-#endif
 
 bool
 is_dependent(const Expr* expr) {
@@ -260,7 +246,6 @@ public:
     IGNORE(DependentScopeDeclRefExpr)
     IGNORE(SizeOfPackExpr)	// used in BHV
 
-#if CLANG_VERSION_MAJOR >= 11
     void VisitRecoveryExpr(const RecoveryExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext&,
                            OpaqueNames&) {
@@ -272,7 +257,6 @@ public:
         print.str(expr->getStmtClassName());
         done(expr, print, cprint, Done::VT);
     }
-#endif
 
     void printBinaryOperator(const BinaryOperator* expr, CoqPrinter& print,
                              ClangPrinter& cprint, const ASTContext& ctxt) {
@@ -1055,13 +1039,11 @@ public:
         done(expr, print, cprint, Done::VT);
     }
 
-#if CLANG_VERSION_MAJOR >= 8
     void VisitConstantExpr(const ConstantExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext& ctxt,
                            OpaqueNames& li) {
         this->Visit(expr->getSubExpr(), print, cprint, ctxt, li);
     }
-#endif
 
     void VisitParenExpr(const ParenExpr* e, CoqPrinter& print,
                         ClangPrinter& cprint, const ASTContext& ctxt,
@@ -1325,11 +1307,7 @@ public:
         }
 
         print.ctor("Ematerialize_temp");
-#if CLANG_VERSION_MAJOR >= 10
         cprint.printExpr(expr->getSubExpr(), print, li);
-#else
-        cprint.printExpr(expr->GetTemporaryExpr(), print);
-#endif
         done(expr, print, cprint, Done::V);
     }
 

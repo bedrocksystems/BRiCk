@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #include "CommentScanner.hpp"
-#include "clang/Basic/Version.inc"
 #include <Formatter.hpp>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclBase.h>
@@ -16,14 +15,7 @@ using namespace comment;
 static SourceLocation
 getStartSourceLocWithComment(clang::ASTContext *ctxt, const Decl *d) {
     auto comment = ctxt->getRawCommentForDeclNoCache(d);
-    return comment ?
-#if CLANG_VERSION_MAJOR >= 8
-               comment->getBeginLoc() :
-               d->getBeginLoc();
-#else
-               comment->getLocEnd() :
-               d->getLocStart();
-#endif
+    return comment ? comment->getBeginLoc() : d->getBeginLoc();
 }
 
 static Decl *
@@ -44,14 +36,8 @@ getPreviousDeclInContext(const Decl *d) {
 static SourceLocation
 getPrevSourceLoc(SourceManager &sm, const Decl *d) {
     auto pd = getPreviousDeclInContext(d);
-#if CLANG_VERSION_MAJOR >= 8
     return (pd && pd->getEndLoc().isValid()) ?
-               pd->getEndLoc()
-#else
-    return (pd && pd->getLocEnd().isValid()) ?
-               pd->getLocEnd()
-#endif
-               :
+               pd->getEndLoc() :
                sm.getLocForStartOfFile(
                    sm.getFileID(d->getSourceRange().getBegin()));
 }
