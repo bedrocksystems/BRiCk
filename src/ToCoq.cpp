@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -54,6 +54,32 @@ printDecl(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
         print.cons();
 }
 
+namespace name_test {
+static void
+bug(ClangPrinter& cprint, loc::loc loc, const std::string what) {
+    cprint.error_prefix(logging::fatal(), loc) << "BUG: " << what << "\n";
+    cprint.debug_dump(loc);
+    logging::die();
+}
+
+static void
+test(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
+    if (decl && decl->isImplicit() && isa<TypedefDecl>(decl))
+        // Suppress clang's implicit typedefs
+        return;
+    else if (decl) {
+        print.output() << fmt::line;
+        std::string cmt;
+        llvm::raw_string_ostream os{cmt};
+        os << loc::trace(loc::of(decl), cprint.getContext());
+        print.cmt(cmt) << fmt::nbsp;
+        cprint.printStructuredName(*decl, print);
+        print.output() << " ::" << fmt::line;
+    } else
+        bug(cprint, loc::none, "null declaration");
+}
+}
+
 void
 ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
                            clang::TranslationUnitDecl* decl) {
@@ -68,14 +94,14 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
     SpecCollector specs;
     Default filter(Filter::What::DEFINITION);
 
-    ::Module mod;
+    ::Module mod(trace_);
 
-    bool templates = templates_file_.has_value();
+    bool templates = ast2_ || templates_file_.has_value() || name_test_file_.has_value();
     build_module(decl, mod, filter, specs, compiler_, elaborate_, templates);
 
     with_open_file(output_file_, [this, &ctxt, &mod](Formatter& fmt) {
-        CoqPrinter print(fmt, false);
-        ClangPrinter cprint(compiler_, ctxt);
+        CoqPrinter print(fmt, false, false);
+        ClangPrinter cprint(compiler_, ctxt, trace_);
 
         fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line
             << fmt::line << "#[local] Open Scope bs_scope." << fmt::line;
@@ -111,9 +137,9 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
     });
 
     with_open_file(notations_file_, [this, &decl, &mod](Formatter& spec_fmt) {
+        CoqPrinter print(spec_fmt, false, false);
         auto& ctxt = decl->getASTContext();
-        ClangPrinter cprint(compiler_, &decl->getASTContext());
-        CoqPrinter print(spec_fmt, false);
+        ClangPrinter cprint(compiler_, &decl->getASTContext(), trace_);
         // PrintSpec printer(ctxt);
 
         NoInclude source(ctxt.getSourceManager());
@@ -133,10 +159,11 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
     });
 
     with_open_file(templates_file_, [this, &ctxt, &mod](Formatter& fmt) {
-        CoqPrinter print(fmt, true);
-        ClangPrinter cprint(compiler_, ctxt);
+        CoqPrinter print(fmt, true, ast2_);
+        ClangPrinter cprint(compiler_, ctxt, trace_);
 
-        fmt << "Require Import bedrock.auto.cpp.templates.mparser." << fmt::line
+        auto v = ast2_ ? "2" : "";
+        fmt << "Require Import bedrock.auto.cpp.templates.mparser" << v << "." << fmt::line
             << fmt::line << "#[local] Open Scope bs_scope." << fmt::line;
 
         fmt << fmt::line
@@ -155,5 +182,40 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
         print.end_list();
 
         print.output() << "." << fmt::outdent << fmt::line;
+    });
+
+    with_open_file(name_test_file_, [this, &ctxt, &mod](Formatter& fmt) {
+        CoqPrinter print(fmt, true, true);
+        ClangPrinter cprint(compiler_, ctxt, trace_);
+
+        auto testnames = [&](const std::string id, std::function<void()> k) -> auto& {
+            fmt << fmt::line
+                << "Definition " << id << " : list Mname :=" << fmt::indent
+                << fmt::line;
+            print.begin_list();
+            k();
+            print.end_list();
+            return print.output() << "." << fmt::outdent << fmt::line;
+        };
+
+        fmt << "Require Import bedrock.auto.cpp.templates.mparser2." << fmt::line
+            << fmt::line << "#[local] Open Scope bs_scope." << fmt::line;
+
+        testnames("module_names", [&]() {
+            for (auto decl : mod.declarations()) {
+                name_test::test(decl, print, cprint);
+            }
+            for (auto decl : mod.definitions()) {
+                name_test::test(decl, print, cprint);
+            }
+        });
+        testnames("template_names", [&]() {
+            for (auto decl : mod.template_declarations()) {
+                name_test::test(decl, print, cprint);
+            }
+            for (auto decl : mod.template_definitions()) {
+                name_test::test(decl, print, cprint);
+            }
+        });
     });
 }

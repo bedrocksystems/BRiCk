@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #pragma once
+#include "Trace.hpp"
 #include <clang/AST/Decl.h>
 #include <clang/AST/DeclCXX.h>
 #include <list>
@@ -27,9 +28,9 @@ public:
         bool none() const { return !in_template && !in_specialization; }
     };
 
-    void add_definition(const clang::NamedDecl* d, Flags);
-    void add_declaration(const clang::NamedDecl* d, Flags);
-    void add_assert(const clang::StaticAssertDecl* d);
+    void add_definition(const clang::NamedDecl&, Flags);
+    void add_declaration(const clang::NamedDecl&, Flags);
+    void add_assert(const clang::StaticAssertDecl&);
 
     using AssertList = std::list<const clang::StaticAssertDecl*>;
     using DeclList = std::list<const clang::NamedDecl*>;
@@ -54,9 +55,11 @@ public:
         return template_definitions_;
     }
 
-    Module() {}
+    Module() = delete;
+    Module(Trace::Mask trace) : trace_(trace & Trace::ModuleBuilder) {}
 
 private:
+    const bool trace_;
 
     DeclList declarations_;
     DeclList definitions_;
@@ -65,6 +68,9 @@ private:
     DeclList template_definitions_;
 
     AssertList asserts_;
+
+    void add_decl(llvm::StringRef, DeclList&, DeclList&,
+                  const clang::NamedDecl&, Flags);
 };
 
 class Filter;

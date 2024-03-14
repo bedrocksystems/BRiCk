@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -10,6 +10,7 @@
 #include "Formatter.hpp"
 #include "FromClang.hpp"
 #include "Logging.hpp"
+#include "Location.hpp"
 #include "SpecCollector.hpp"
 #include "clang/Basic/Builtins.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -19,10 +20,9 @@
 using namespace clang;
 
 static void
-unsupported_decl(const Decl *decl) {
-    using namespace logging;
-    debug() << "[DEBUG] unsupported declaration kind \""
-            << decl->getDeclKindName() << "\", dropping.\n";
+unsupported_decl(raw_ostream& os, const Decl *decl, const ASTContext& context) {
+    os << loc::prefix(loc::of(decl), context)
+        << "warning: ModuleBuilder dropping unsupported declaration\n";
 }
 
 using Flags = ::Module::Flags;
@@ -38,6 +38,11 @@ private:
     clang::ASTContext *const context_;
     std::set<int64_t> visited_;
 
+    const ASTContext&
+    getContext() const {
+        return *context_;
+    }
+
 private:
     Filter::What go(const NamedDecl *decl, Flags flags,
                     bool definition = true) {
@@ -45,14 +50,14 @@ private:
         switch (what) {
         case Filter::What::DEFINITION:
             if (definition) {
-                module_.add_definition(decl, flags);
+                module_.add_definition(*decl, flags);
                 return what;
             } else {
-                module_.add_declaration(decl, flags);
+                module_.add_declaration(*decl, flags);
                 return Filter::What::DECLARATION;
             }
         case Filter::What::DECLARATION:
-            module_.add_declaration(decl, flags);
+            module_.add_declaration(*decl, flags);
             return Filter::What::DECLARATION;
         default:
             return Filter::What::NOTHING;
@@ -74,28 +79,27 @@ public:
     }
 
     void VisitDecl(const Decl *d, Flags) {
-        unsupported_decl(d);
+        unsupported_decl(logging::debug(), d, getContext());
     }
 
-    void VisitBuiltinTemplateDecl(const BuiltinTemplateDecl *, Flags) {
-        // ignore
-    }
+#define IGNORE(D) void Visit##D(const D *, Flags) { }
 
-    void VisitVarTemplateDecl(const VarTemplateDecl *decl, Flags flags) {
-        if (templates_)
-            go(decl, flags.set_template());
+    IGNORE(EmptyDecl)
+    IGNORE(CXXDeductionGuideDecl)
+    IGNORE(UsingDecl)
+    IGNORE(UsingDirectiveDecl)
+    IGNORE(UsingShadowDecl)
+    IGNORE(AccessSpecDecl)
 
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
+    IGNORE(FieldDecl)
+    IGNORE(IndirectFieldDecl)
+
+    IGNORE(BuiltinTemplateDecl)
+    IGNORE(ClassTemplatePartialSpecializationDecl)
+    IGNORE(VarTemplatePartialSpecializationDecl)
 
     void VisitStaticAssertDecl(const StaticAssertDecl *decl, Flags) {
-        module_.add_assert(decl);
-    }
-
-    void VisitAccessSpecDecl(const AccessSpecDecl *, Flags) {
-        // ignore
+        module_.add_assert(*decl);
     }
 
     void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
@@ -108,19 +112,22 @@ public:
     }
 
     void VisitTypeDecl(const TypeDecl *type, Flags) {
-        /*
-        TODO: Consolidate code for complaining about and dumping
-        unsupported things.
-        */
-        logging::log() << "Error: Unsupported type declaration: "
-                       << type->getQualifiedNameAsString()
-                       << "(type = " << type->getDeclKindName() << ")\n";
+        unsupported_decl(logging::verbose(), type, getContext());
     }
 
-    void VisitEmptyDecl(const EmptyDecl *decl, Flags) {}
+    static bool
+    isCanonical(const TypedefNameDecl *decl) {
+        return decl && decl == decl->getCanonicalDecl();
+    }
 
-    void VisitTypedefNameDecl(const TypedefNameDecl *type, Flags flags) {
-        go(type, flags);
+    void VisitTypedefNameDecl(const TypedefNameDecl *decl, Flags flags) {
+        if (isCanonical(decl))
+            go(decl, flags);
+    }
+
+    void VisitTypeAliasTemplateDecl(const TypeAliasTemplateDecl *decl, Flags flags) {
+        if (templates_)
+            Visit(decl->getTemplatedDecl(), flags.set_template());
     }
 
     void VisitTagDecl(const TagDecl *decl, Flags flags) {
@@ -133,27 +140,24 @@ public:
     }
 
     void VisitDeclContext(const DeclContext *dc, Flags flags) {
-        // find any static functions or fields
+        // For namespaces: Find anything.
+        // For structures: Find static functions or fields.
         for (auto i : dc->decls()) {
             Visit(i, flags);
         }
     }
 
     void VisitCXXRecordDecl(const CXXRecordDecl *decl, Flags flags) {
-        if (decl->isImplicit()) {
+        if (decl->isImplicit())
             return;
-        }
+
         VisitTagDecl(decl, flags);
         VisitDeclContext(decl, flags);
     }
 
     void VisitClassTemplateDecl(const ClassTemplateDecl *decl, Flags flags) {
-        // Everything under this declaration is templated by the
-        // class template parameters, so we don't need to visit
-        // anything under this declaration.
-        if (templates_) {
-            this->Visit(decl->getTemplatedDecl(), flags.set_template());
-        }
+        if (templates_)
+            Visit(decl->getTemplatedDecl(), flags.set_template());
 
         for (auto i : decl->specializations()) {
             this->Visit(i, flags.set_specialization());
@@ -169,9 +173,8 @@ public:
     }
 
     void VisitFunctionDecl(const FunctionDecl *decl, Flags flags) {
-        if (!templates_ && decl->isDependentContext()) {
+        if (!templates_ && decl->isDependentContext())
             return;
-        }
 
         using namespace comment;
         auto defn = decl->getDefinition();
@@ -192,8 +195,18 @@ public:
                     }
                 }
             }
-        } else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
+        } else if (defn == nullptr && decl->getPreviousDecl() == nullptr)
             go(decl, flags, false);
+
+    }
+
+    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
+                                   Flags flags) {
+        if (templates_)
+            this->Visit(decl->getTemplatedDecl(), flags.set_template());
+
+        for (auto i : decl->specializations()) {
+            this->Visit(i, flags.set_specialization());
         }
     }
 
@@ -202,33 +215,22 @@ public:
     }
 
     void VisitVarDecl(const VarDecl *decl, Flags flags) {
-        if (decl->getDefinition()) {
-            if (decl->getDefinition() != decl)
+        if (auto defn = decl->getDefinition()) {
+            if (defn != decl)
                 return;
-        } else {
-            if (!decl->isCanonicalDecl())
-                return;
+        } else if (!decl->isCanonicalDecl())
+            return;
+
+        go(decl, flags);
+    }
+
+    void VisitVarTemplateDecl(const VarTemplateDecl *decl, Flags flags) {
+        if (templates_)
+            Visit(decl->getTemplatedDecl(), flags.set_template());
+
+        for (auto i : decl->specializations()) {
+            this->Visit(i, flags.set_specialization());
         }
-
-        if (templates_ || !decl->isTemplated()) {
-            go(decl, flags);
-        }
-    }
-
-    void VisitFieldDecl(const FieldDecl *, Flags) {
-        // ignore
-    }
-
-    void VisitUsingDecl(const UsingDecl *, Flags) {
-        // ignore
-    }
-
-    void VisitUsingDirectiveDecl(const UsingDirectiveDecl *, Flags) {
-        // ignore
-    }
-
-    void VisitIndirectFieldDecl(const IndirectFieldDecl *, Flags) {
-        // ignore
     }
 
     void VisitNamespaceDecl(const NamespaceDecl *decl, Flags flags) {
@@ -253,29 +255,10 @@ public:
         VisitDeclContext(decl, flags);
     }
 
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
-                                   Flags flags) {
-        if (templates_) {
-            this->Visit(decl->getTemplatedDecl(), flags.set_template());
-        }
-
-        for (auto i : decl->specializations()) {
-            this->Visit(i, flags.set_specialization());
-        }
-    }
-
     void VisitFriendDecl(const FriendDecl *decl, Flags flags) {
         if (decl->getFriendDecl()) {
             this->Visit(decl->getFriendDecl(), flags);
         }
-    }
-
-    void VisitTypeAliasTemplateDecl(const TypeAliasTemplateDecl *, Flags) {
-        // ignore
-    }
-
-    void VisitUsingShadowDecl(const UsingShadowDecl *, Flags) {
-        // ignore
     }
 };
 
@@ -288,29 +271,40 @@ build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
         .VisitTranslationUnitDecl(tu, {});
 }
 
-void ::Module::add_assert(const clang::StaticAssertDecl *d) {
-    asserts_.push_back(d);
+void ::Module::add_assert(const clang::StaticAssertDecl &d) {
+    asserts_.push_back(&d);
 }
 
 using DeclList = ::Module::DeclList;
 
-static void
-add_decl(DeclList &decls, DeclList &tdecls, const clang::NamedDecl *d,
-         Flags flags) {
+void ::Module::add_decl(StringRef indef, DeclList &decls, DeclList &tdecls,
+                        const NamedDecl &decl, Flags flags) {
+    auto save = [&](StringRef intemp, DeclList &list) {
+        if (trace_) {
+            auto loc = loc::of(decl);
+            if (loc::can_trace(loc)) {
+                auto &os = llvm::errs();
+                auto &context = decl.getASTContext();
+                os << "[ModuleBuilder] " << indef << intemp << " "
+                << loc::trace(loc, context) << "\n";
+            }
+        }
+        list.push_back(&decl);
+    };
     if (flags.in_template) {
-        tdecls.push_back(d);
+        save("1", tdecls);
     } else {
-        decls.push_back(d);
+        save("0", decls);
         if (flags.in_specialization) {
-            tdecls.push_back(d);
+            save("1", tdecls);
         }
     }
 }
 
-void ::Module::add_definition(const clang::NamedDecl *d, Flags flags) {
-    add_decl(definitions_, template_definitions_, d, flags);
+void ::Module::add_definition(const clang::NamedDecl &d, Flags flags) {
+    add_decl("1", definitions_, template_definitions_, d, flags);
 }
 
-void ::Module::add_declaration(const clang::NamedDecl *d, Flags flags) {
-    add_decl(declarations_, template_declarations_, d, flags);
+void ::Module::add_declaration(const clang::NamedDecl &d, Flags flags) {
+    add_decl("0", declarations_, template_declarations_, d, flags);
 }

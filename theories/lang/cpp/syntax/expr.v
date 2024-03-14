@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -8,6 +8,11 @@ Require Import bedrock.lang.cpp.syntax.names.
 Require Import bedrock.lang.cpp.syntax.types.
 
 Set Primitive Projections.
+
+#[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
+#[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
+#[local] Notation EqDecision3 T := (∀ (A : Set), EqDecision A -> EqDecision2 (T A)) (only parsing).
+#[local] Tactic Notation "solve_decision" := intros; solve_decision.
 
 (** Overloadable operators *)
 Variant OverloadableOperator : Set :=
@@ -253,7 +258,7 @@ Variant BuiltinFn : Set :=
 Proof. solve_decision. Defined.
 
 (** * Casts *)
-Inductive Cast' {type : Set} : Set :=
+Inductive Cast' {classname obj_name type : Set} : Set :=
 | Cdependent (* this doesn't have any semantics *)
 | Cbitcast	(** TODO (FM-3431): This explicit cast expression could carry the type as written *)
 | Clvaluebitcast	(** TODO (FM-3431): Drop this constructor? *)
@@ -278,8 +283,8 @@ Inductive Cast' {type : Set} : Set :=
      A cast from `A` to `C` will be [Cbase2derived ["::B";"::A"]] and
        the "::C" comes form the type of the expression.
    *)
-| Cderived2base (_ : list globname)
-| Cbase2derived (_ : list globname)
+| Cderived2base (_ : list classname)
+| Cbase2derived (_ : list classname)
 | Cintegral
 | Cint2bool
 | Cfloat2int
@@ -290,17 +295,17 @@ Inductive Cast' {type : Set} : Set :=
 | Cuser        (conversion_function : obj_name)	(** TODO (FM-3431): Consider just emitting the method call *)
 | Creinterpret (_ : type)
 | Cstatic      (_ : Cast')
-| Cdynamic     (from to : globname)
+| Cdynamic     (from to : classname)
 | Cconst       (_ : type).
-#[global] Arguments Cast' _ : clear implicits, assert.
+#[global] Arguments Cast' : clear implicits.
 (**
 TODO (FM-3431): For the explicit casts, we could embed the type as
 written and compute the value category (rather than annote `Ecast`
 with a value category).
 *)
-#[global] Instance Cast_eq_dec {type : Set} `{!EqDecision type} : EqDecision (Cast' type).
+#[global] Instance Cast_eq_dec : EqDecision3 Cast'.
 Proof. solve_decision. Defined.
-Notation Cast := (Cast' exprtype).	(** TODO (FM-3431): Should be [decltype] *)
+Notation Cast := (Cast' globname obj_name exprtype).	(** TODO (FM-3431): Should be [decltype] *)
 
 (** Dispatch *)
 Variant dispatch_type : Set := Virtual | Direct.
@@ -329,15 +334,15 @@ Proof.
 Defined.
 
 Module operator_impl.
-  Variant t {type : Set} : Set :=
+  Variant t {obj_name type : Set} : Set :=
     | Func (fn_name : obj_name) (fn_type : type)
     | MFunc (fn_name : obj_name) (_ : dispatch_type) (fn_type : type).
-  #[global] Arguments t _ : clear implicits.
+  #[global] Arguments t : clear implicits.
 
-  #[global] Instance: forall (type : Set), EqDecision type -> EqDecision (t type) :=
-    ltac:(solve_decision).
+  #[global] Instance t_eq_dec : EqDecision2 t.
+  Proof. solve_decision. Defined.
 End operator_impl.
-#[global] Notation operator_impl := (operator_impl.t functype).
+#[global] Notation operator_impl := (operator_impl.t obj_name functype).
 
 (**
 <<Nenum_const gn c>> names constant <<c>> in the enumeration with type
@@ -442,7 +447,9 @@ NOTE: Enumeration constants lack addresses (unlike other globals).
 | Eopaque_ref (name : N) (_ : ValCat) (_ : exprtype)
 | Eunsupported (_ : bs) (_ : ValCat) (_ : exprtype)
 .
-Notation MethodRef := ((obj_name * dispatch_type * functype) + Expr)%type (only parsing).
+Definition MethodRef' (obj_name functype Expr : Set) : Set :=
+  (obj_name * dispatch_type * functype) + Expr.
+Notation MethodRef := (MethodRef' obj_name functype Expr).
 
 #[global] Instance expr_inhabited : Inhabited Expr.
 Proof. exact (populate Enull). Qed.

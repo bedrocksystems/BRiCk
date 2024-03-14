@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #pragma once
-
+#include "Trace.hpp"
 #include <clang/AST/ASTConsumer.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/ASTMutationListener.h>
@@ -26,13 +26,18 @@ using namespace clang;
 
 class ToCoqConsumer : public clang::ASTConsumer, clang::ASTMutationListener {
 public:
+    using path = std::optional<std::string>;
     explicit ToCoqConsumer(clang::CompilerInstance *compiler,
-                           const std::optional<std::string> output_file,
-                           const std::optional<std::string> notations_file,
-                           const std::optional<std::string> templates_file,
+                           const path output_file,
+                           const path notations_file,
+                           const path templates_file,
+                           const path name_test_file,
+                           bool ast2, Trace::Mask trace,
                            bool elaborate = true)
         : compiler_(compiler), output_file_(output_file),
           notations_file_(notations_file), templates_file_(templates_file),
+          name_test_file_(name_test_file),
+          ast2_(ast2), trace_(trace),
           elaborate_(elaborate) {}
 
 public:
@@ -65,12 +70,15 @@ public:
 
 private:
     void toCoqModule(clang::ASTContext *ctxt, clang::TranslationUnitDecl *decl);
-    void elab(Decl *, bool = false);
+    void elab(Decl *, bool rec = false);
 
 private:
     clang::CompilerInstance *compiler_;
-    const std::optional<std::string> output_file_;
-    const std::optional<std::string> notations_file_;
-    const std::optional<std::string> templates_file_;
+    const path output_file_;
+    const path notations_file_;
+    const path templates_file_;
+    const path name_test_file_;
+    const bool ast2_;
+    const Trace::Mask trace_;
     bool elaborate_;
 };

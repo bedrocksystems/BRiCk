@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -304,11 +304,11 @@ private:
 static void
 begin_decl(const NamedDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
     print.output() << "Definition ";
-    cprint.printObjName(decl, print, true);
+    cprint.printMangledObjName(decl, print);
     print.output() << "_spec :=" << fmt::indent;
     print.begin_record();
     print.record_field("s_name");
-    cprint.printObjName(decl, print);
+    cprint.printMangledObjName(decl, print);
     print.output() << fmt::line << " ; ";
     print.record_field("s_spec") << fmt::indent;
 }
@@ -421,7 +421,7 @@ write_spec(clang::CompilerInstance *compiler, ::Module *mod,
                    << fmt::line << "make_signature" << fmt::nbsp;
     print.begin_list();
     for (auto d : internal_names) {
-        cprint.printObjName(d, print, true);
+        cprint.printMangledObjName(d, print);
         print.output() << "_spec";
         print.cons();
     }
@@ -432,7 +432,7 @@ write_spec(clang::CompilerInstance *compiler, ::Module *mod,
                    << fmt::line << "make_signature" << fmt::nbsp;
     print.begin_list();
     for (auto d : public_names) {
-        cprint.printObjName(d, print, true);
+        cprint.printMangledObjName(d, print);
         print.output() << "_spec";
         print.cons();
     }

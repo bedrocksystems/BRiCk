@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -39,6 +39,13 @@ Formatter::nobreak() {
     return out;
 }
 
+llvm::raw_ostream&
+Formatter::flush() {
+    auto& os = nobreak();
+    os.flush();
+    return os;
+}
+
 void
 Formatter::nbsp() {
     spaces++;
@@ -67,7 +74,6 @@ Formatter Formatter::default_output = Formatter();
 
 struct NBSP;
 const NBSP* nbsp;
-
 Formatter&
 operator<<(Formatter& out, const NBSP* _) {
     out.nbsp();
@@ -76,7 +82,6 @@ operator<<(Formatter& out, const NBSP* _) {
 
 struct INDENT;
 const INDENT* indent;
-
 Formatter&
 operator<<(Formatter& out, const INDENT* _) {
     out.indent();
@@ -85,7 +90,6 @@ operator<<(Formatter& out, const INDENT* _) {
 
 struct OUTDENT;
 const OUTDENT* outdent;
-
 Formatter&
 operator<<(Formatter& out, const OUTDENT* _) {
     out.outdent();
@@ -116,6 +120,20 @@ Formatter&
 operator<<(Formatter& out, const LINE* _) {
     out.line();
     return out;
+}
+
+struct TUPLESEP;
+const TUPLESEP* tuple_sep;
+Formatter&
+operator<<(Formatter& out, const TUPLESEP*) {
+    return out << "," << fmt::nbsp;
+}
+
+struct CONS;
+const CONS* cons;
+Formatter&
+operator<<(Formatter& out, const CONS*) {
+    return out << fmt::nbsp << "::" << fmt::nbsp;
 }
 
 Formatter&

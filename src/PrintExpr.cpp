@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -19,6 +19,72 @@
 
 using namespace clang;
 using namespace fmt;
+
+enum Done : unsigned {
+    NONE = 0,
+    V = 1,
+    T = 2,
+    O = 4,
+    VT = V | T,
+};
+
+static fmt::Formatter&
+done(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
+     Done want = Done::T) {
+    if (want & Done::V) {
+        print.output() << fmt::nbsp;
+        cprint.printValCat(expr, print);
+    }
+    if (want & Done::T) {
+        print.output() << fmt::nbsp;
+        cprint.printQualType(expr->getType(), print, loc::of(expr));
+    }
+    if (want & Done::O) {
+        print.output() << fmt::nbsp;
+        cprint.printQualTypeOption(expr->getType(), print, loc::of(expr));
+    }
+    return print.end_ctor();
+}
+
+static void
+unsupported_expr(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
+                 std::optional<StringRef> msg = std::nullopt,
+                 bool well_known = false) {
+    auto loc = loc::of(expr);
+    if (!well_known || ClangPrinter::warn_well_known) {
+        auto fullmsg = Twine("unsupported expression");
+        if (msg) {
+            fullmsg.concat(Twine(": "));
+            fullmsg.concat(Twine(*msg));
+        }
+        cprint.error_prefix(logging::unsupported(), loc)
+            << "warning: " << fullmsg << "\n";
+        cprint.debug_dump(loc);
+    }
+    print.ctor("Eunsupported");
+    std::string coqmsg;
+    llvm::raw_string_ostream os{coqmsg};
+    os << loc::describe(loc, cprint.getContext());
+    print.str(coqmsg);
+    done(expr, print, cprint, Done::VT);
+}
+
+fmt::Formatter&
+ClangPrinter::printOverloadableOperator(clang::OverloadedOperatorKind oo,
+                                        CoqPrinter& print, loc::loc loc) {
+    if (trace(Trace::Expr)) trace("printOverloadableOperator", loc);
+    switch (oo) {
+#define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly)  \
+    case OO_##Name:                                                           \
+        return print.output() << "OO" << #Name;
+#include "clang/Basic/OperatorKinds.def"
+#undef OVERLOADED_OPERATOR
+    default:
+        error_prefix(logging::fatal(), loc)
+            << "unknown overloadable operator " << oo << "\n";
+        logging::die();
+    }
+}
 
 #if CLANG_VERSION_MAJOR >= 15
 void
@@ -93,9 +159,9 @@ printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
     case CastKind::CK_UncheckedDerivedToBase: {
         print.ctor("Cderived2base");
         // note that [path] does *not* include the type of the argument
-        print.list(ce->path(), [&](auto print, auto i) {
+        print.list(ce->path(), [&](auto i) {
             if (const Type* t = i->getType().getTypePtrOrNull()) {
-                cprint.printTypeName(t->getAsRecordDecl(), print);
+                cprint.printTypeName(t->getAsRecordDecl(), print, loc::of(t));
             } else {
                 assert(false && "no type");
             }
@@ -106,9 +172,9 @@ printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
     case CastKind::CK_BaseToDerived:
         print.ctor("Cbase2derived");
         // note that [path] does *not* include the type of the argument
-        print.list(ce->path(), [&](auto print, auto i) {
+        print.list(ce->path(), [&](auto i) {
             if (const Type* t = i->getType().getTypePtrOrNull()) {
-                cprint.printTypeName(t->getAsRecordDecl(), print);
+                cprint.printTypeName(t->getAsRecordDecl(), print, loc::of(t));
             } else {
                 assert(false && "no type");
             }
@@ -123,60 +189,43 @@ printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
     }
 }
 
+fmt::Formatter&
+ClangPrinter::printValueDeclExpr(const ValueDecl* decl, CoqPrinter& print, OpaqueNames& on) {
+    if (trace(Trace::Expr)) trace("printValueDeclExpr", loc::of(decl));
+    auto check_static_local = [](const ValueDecl* decl) {
+        auto t = dyn_cast<VarDecl>(decl);
+        return t && t->isStaticLocal();
+    };
+    auto t = on.find_anon(decl);
+    if (t != -1) {
+        print.ctor("Evar", false) << "\"$" << t << "\"";
+    } else if (decl->getDeclContext()->isFunctionOrMethod() and
+                not(isa<FunctionDecl>(decl) or check_static_local(decl))) {
+        print.ctor("Evar", false);
+        if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
+            printParamName(pd, print);
+        } else {
+            printUnqualifiedName(*decl, print);
+        }
+    } else {
+        print.ctor("Eglobal", false);
+        printObjName(*decl, print);
+    }
+    print.output() << fmt::nbsp;
+    printQualType(decl->getType(), print, loc::of(decl));
+    return print.end_ctor();
+}
+
+fmt::Formatter&
+ClangPrinter::printValueDeclExpr(const ValueDecl* decl, CoqPrinter& print) {
+    OpaqueNames names;
+    return printValueDeclExpr(decl, print, names);
+}
+
 class PrintExpr :
     public ConstStmtVisitor<PrintExpr, void, CoqPrinter&, ClangPrinter&,
                             const ASTContext&, OpaqueNames&> {
 private:
-    enum Done : unsigned {
-        NONE = 0,
-        V = 1,
-        T = 2,
-        O = 4,
-        VT = V | T,
-    };
-
-    void done(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
-              Done want = Done::T) {
-        if (want & Done::V) {
-            print.output() << fmt::nbsp;
-            cprint.printValCat(expr, print);
-        }
-        if (want & Done::T) {
-            print.output() << fmt::nbsp;
-            cprint.printQualType(expr->getType(), print);
-        }
-        if (want & Done::O) {
-            print.output() << fmt::nbsp;
-            cprint.printQualTypeOption(expr->getType(), print);
-        }
-        print.end_ctor();
-    }
-
-    void printValueDecl(const ValueDecl* decl, CoqPrinter& print,
-                        ClangPrinter& cprint, OpaqueNames& on) {
-        auto check_static_local = [](const ValueDecl* decl) {
-            auto t = dyn_cast<VarDecl>(decl);
-            return t && t->isStaticLocal();
-        };
-        auto t = on.find_anon(decl);
-        if (t != -1) {
-            print.ctor("Evar", false) << "\"$" << t << "\"";
-        } else if (decl->getDeclContext()->isFunctionOrMethod() and
-                   not(isa<FunctionDecl>(decl) or check_static_local(decl))) {
-            print.ctor("Evar", false);
-            if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
-                cprint.printParamName(pd, print);
-            } else {
-                cprint.printDeclName(decl, print);
-            }
-        } else {
-            print.ctor("Eglobal", false);
-            cprint.printObjName(decl, print);
-        }
-        print.output() << fmt::nbsp;
-        cprint.printQualType(decl->getType(), print);
-        print.end_ctor();
-    }
 
 public:
     static PrintExpr printer;
@@ -189,27 +238,27 @@ public:
         logging::die();
     }
 
-    void unsupported_expr(const Expr* expr, CoqPrinter& print,
-                          ClangPrinter& cprint) {
-        using namespace logging;
-        unsupported() << cprint.sourceLocation(expr->getBeginLoc())
-                      << ": warning: unsupported expression ("
-                      << expr->getStmtClassName() << ")\n";
-#if CLANG_VERSION_MAJOR >= 11
-        expr->dump(debug(), cprint.getContext());
-#else
-        expr->dump(debug());
-#endif
-
-        print.ctor("Eunsupported");
-        print.str(expr->getStmtClassName());
-        done(expr, print, cprint, Done::VT);
-    }
-
     void VisitExpr(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
                    const ASTContext& ctxt, OpaqueNames&) {
         unsupported_expr(expr, print, cprint);
     }
+
+#define IGNORE(E)                                                              \
+    void Visit##E(const E *expr, CoqPrinter &print, ClangPrinter &cprint,      \
+                  const ASTContext &, OpaqueNames &) {                         \
+        unsupported_expr(expr, print, cprint, std::nullopt,                    \
+                         /*well_known*/ true);                                 \
+    }
+
+    IGNORE(StmtExpr)	// a GNU extension used in BHV
+
+    // TODO: Discuss
+    IGNORE(CXXRewrittenBinaryOperator)
+
+    // These are template TODOs
+    IGNORE(CXXUnresolvedConstructExpr)
+    IGNORE(DependentScopeDeclRefExpr)
+    IGNORE(SizeOfPackExpr)	// used in BHV
 
 #if CLANG_VERSION_MAJOR >= 11
     void VisitRecoveryExpr(const RecoveryExpr* expr, CoqPrinter& print,
@@ -271,6 +320,8 @@ public:
         print.ctor("Eassign_op") << #v << fmt::nbsp;                           \
         break;
 
+        [[maybe_unused]]
+        auto dependent = print.templates() && expr->getType()->isDependentType();
         switch (expr->getOpcode()) {
         case BinaryOperatorKind::BO_Comma:
             print.ctor("Ecomma");
@@ -278,7 +329,7 @@ public:
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
             // TODO: Can be overloaded
-            assert(expr->getRHS()->getType() == expr->getType() &&
+            assert(dependent || expr->getRHS()->getType() == expr->getType() &&
                    "types must match");
             print.end_ctor(); // no type information
             return;
@@ -288,7 +339,7 @@ public:
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
             // TODO: Can be overloaded
-            assert(expr->getType().getTypePtr()->isBooleanType() &&
+            assert(dependent || expr->getType().getTypePtr()->isBooleanType() &&
                    "&& is a bool");
             print.end_ctor(); // no type information
             return;
@@ -298,7 +349,7 @@ public:
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
             // TODO: Can be overloaded
-            assert(expr->getType().getTypePtr()->isBooleanType() &&
+            assert(dependent || expr->getType().getTypePtr()->isBooleanType() &&
                    "|| is a bool");
             print.end_ctor(); // no type information
             return;
@@ -326,16 +377,6 @@ public:
         print.output() << fmt::nbsp;
         cprint.printExpr(expr->getRHS(), print, li);
         done(expr, print, cprint, print.templates() ? Done::O : Done::T);
-    }
-
-    void VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr* expr,
-                                        CoqPrinter& print, ClangPrinter& cprint,
-                                        const ASTContext& ctxt,
-                                        OpaqueNames& li) {
-        ConstStmtVisitor<
-            PrintExpr, void, CoqPrinter&, ClangPrinter&, const ASTContext&,
-            OpaqueNames&>::VisitDependentScopeDeclRefExpr(expr, print, cprint,
-                                                          ctxt, li);
     }
 
     void printUnaryOperator(const UnaryOperator* expr, CoqPrinter& print,
@@ -403,6 +444,18 @@ public:
                           ClangPrinter& cprint, const ASTContext& ctxt,
                           OpaqueNames& on) {
         auto d = expr->getDecl();
+        if (!d) {
+            cprint.error_prefix(logging::fatal(), loc::of(expr))
+                << "DeclRefExpr missing Decl\n";
+            print.die();
+        }
+        if (ClangPrinter::debug && cprint.trace(Trace::Expr)) {
+            auto& os = cprint.trace("VisitDeclRefExpr", loc::of(expr));
+            auto loc = loc::of(d);
+            if (loc::can_describe(loc))
+                os << "Declaration: " << loc::describe(loc, cprint.getContext())
+                   << "\n";
+        }
         if (auto ecd = dyn_cast<EnumConstantDecl>(d)) {
             // References to `enum` constants are special because
             // they can be referenced both at the enumeration type
@@ -416,23 +469,37 @@ public:
             auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext());
             if (expr->getType()->isEnumeralType()) {
                 print.ctor("Eenum_const", false);
-                cprint.printTypeName(ed, print);
+                cprint.printTypeName(ed, print, loc::of(ecd));
                 print.output() << fmt::nbsp;
-                cprint.printDeclName(ecd, print);
+                cprint.printUnqualifiedName(*ecd, print);
                 print.end_ctor();
             } else {
                 // TODO: is it possible to determine the `DeclContext` that
                 // this expression occurs in? If so, then we could assert that
                 // this is in the scope of the enumeration.
                 print.ctor("Eenum_const_at", false);
-                cprint.printTypeName(ed, print);
+                cprint.printTypeName(ed, print, loc::of(ecd));
                 print.output() << fmt::nbsp;
-                cprint.printDeclName(ecd, print);
+                cprint.printUnqualifiedName(*ecd, print);
                 print.output() << fmt::nbsp;
                 done(expr, print, cprint);
             }
+        } else if (auto param = dyn_cast<NonTypeTemplateParmDecl>(d)) {
+            if (print.templates() && print.ast2()) {
+                // TODO: Add some tests
+                guard::ctor _(print, "Eparam");
+                cprint.printUnqualifiedName(*param, print);
+            } else {
+                /*
+                Warning: Invoking clang's Itanium mangler on
+                NonTypeTemplateParmDecl (via printValueDeclExpr) can
+                crash.
+                */
+                unsupported_expr(expr, print, cprint, std::nullopt,
+                                 /*well_known*/ true);
+            }
         } else {
-            printValueDecl(d, print, cprint, on);
+            cprint.printValueDeclExpr(d, print, on);
         }
     }
 
@@ -443,6 +510,9 @@ public:
             return unsupported_expr(expr, print, cprint);
 
         auto name = expr->getName();
+        auto printname = [&]() -> auto& {
+            return print.str(name.getAsString());
+        };
         switch (name.getNameKind()) {
         case DeclarationName::NameKind::Identifier:
             /*
@@ -450,7 +520,28 @@ public:
             argument depending on a template parameter.
             */
 
-            print.str(name.getAsString());
+            if (print.ast2()) {
+                auto atomic = [&]() -> fmt::Formatter& {
+                    guard::ctor _(print, "Nglobal", false);
+                    {
+                        guard::ctor _(print, "Nfunction", false);
+                        print.output() << "nil" << fmt::nbsp;
+                        {
+                            guard::ctor _(print, "Nf", false);
+                            printname();
+                        }
+                        return print.output() << fmt::nbsp << "nil";
+                    }
+                };
+                // TODO: This presumably needs work for scoped templates
+                if (expr->hasExplicitTemplateArgs()) {
+                    guard::ctor _(print, "Ninst");
+                    atomic() << fmt::nbsp;
+                    cprint.printTemplateArgumentList(expr->template_arguments(), print);
+                } else
+                    atomic();
+            } else
+                printname();
             break;
 
         default:
@@ -466,20 +557,18 @@ public:
             /*
             Either the function or an argument is dependent.
             */
-            print.ctor("Eunresolved_call");
-            cprint.printExpr(expr->getCallee(), print, li);
-            print.output() << fmt::line;
-            print.list(expr->arguments(), [&](auto print, auto i) {
+            guard::ctor ctor(print, "Eunresolved_call");
+            cprint.printExpr(expr->getCallee(), print, li) << fmt::line;
+            print.list(expr->arguments(), [&](auto i) {
                 cprint.printExpr(i, print, li);
             });
-            print.end_ctor();
         } else if (auto pd = dyn_cast<CXXPseudoDestructorExpr>(callee)) {
             // in the clang AST, pseudo destructors are represented as calls
             // but in the BRiCk AST, they are their own construct.
             assert(expr->arguments().empty());
             print.ctor("Epseudo_destructor")
                 << fmt::BOOL(pd->isArrow()) << fmt::nbsp;
-            cprint.printQualType(pd->getDestroyedType(), print);
+            cprint.printQualType(pd->getDestroyedType(), print, loc::of(pd));
             print.output() << fmt::nbsp;
             cprint.printExpr(pd->getBase(), print);
             print.end_ctor();
@@ -487,24 +576,10 @@ public:
             print.ctor("Ecall");
             cprint.printExpr(expr->getCallee(), print, li);
             print.output() << fmt::line;
-            print.list(expr->arguments(), [&](auto print, auto i) {
+            print.list(expr->arguments(), [&](auto i) {
                 cprint.printExpr(i, print, li);
             });
             done(expr, print, cprint, print.templates() ? Done::NONE : Done::T);
-        }
-    }
-
-    auto&& printOverloadableOperator(OverloadedOperatorKind oo,
-                                     CoqPrinter& print) {
-        switch (oo) {
-#define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly)  \
-    case OO_##Name:                                                            \
-        return print.output() << "OO" << #Name;
-#include "clang/Basic/OperatorKinds.def"
-#undef OVERLOADED_OPERATOR
-        default:
-            logging::fatal() << "Unknown operator: " << oo << "\n";
-            logging::die();
         }
     }
 
@@ -523,13 +598,13 @@ public:
             assert(!method->isStatic() &&
                    "operator overloads can not be static");
             print.ctor("Eoperator_member_call");
-            printOverloadableOperator(expr->getOperator(), print) << fmt::nbsp;
+            cprint.printOverloadableOperator(expr->getOperator(), print, loc::of(expr)) << fmt::nbsp;
 
-            cprint.printObjName(method, print);
+            cprint.printObjName(*method, print);
             print.output() << fmt::nbsp
                            << (method->isVirtual() ? "Virtual" : "Direct")
                            << fmt::nbsp;
-            cprint.printQualType(method->getType(), print);
+            cprint.printQualType(method->getType(), print, loc::of(method));
             print.output() << fmt::nbsp;
 
             cprint.printExpr(expr->getArg(0), print, li);
@@ -538,17 +613,17 @@ public:
             // note skip the first parameter because it is the object.
             print.list_range(
                 expr->arg_begin() + 1, expr->arg_end(),
-                [&](auto print, auto i) { cprint.printExpr(i, print, li); });
+                [&](auto i) { cprint.printExpr(i, print, li); });
 
         } else if (auto function = dyn_cast<FunctionDecl>(callee)) {
             print.ctor("Eoperator_call");
-            printOverloadableOperator(expr->getOperator(), print) << fmt::nbsp;
+            cprint.printOverloadableOperator(expr->getOperator(), print, loc::of(expr)) << fmt::nbsp;
 
-            cprint.printObjName(function, print);
+            cprint.printObjName(*function, print);
             print.output() << fmt::nbsp;
-            cprint.printQualType(function->getType(), print);
+            cprint.printQualType(function->getType(), print, loc::of(function));
             print.output() << fmt::nbsp;
-            print.list(expr->arguments(), [&](auto print, auto i) {
+            print.list(expr->arguments(), [&](auto i) {
                 cprint.printExpr(i, print, li);
             });
         } else {
@@ -572,7 +647,7 @@ public:
             assert(vd && "conversion function must be a [ValueDecl]");
             print.ctor("Ecast");
             print.ctor("Cuser");
-            cprint.printObjName(vd, print);
+            cprint.printObjName(*vd, print);
             print.end_ctor();
 
             print.output() << fmt::nbsp;
@@ -601,12 +676,12 @@ public:
             assert(is_builtin(ref->getDecl()));
             print.ctor("Ebuiltin", false);
             // assume that this is a builtin
-            cprint.printObjName(ref->getDecl(), print);
+            cprint.printObjName(ref->getDecl(), print, loc::of(ref));
             print.output() << fmt::nbsp;
             auto type = expr->getType();
             assert(type->isPointerType() &&
                    "builtin to pointer is not a pointer");
-            cprint.printQualType(type.getTypePtr()->getPointeeType(), print);
+            cprint.printQualType(type.getTypePtr()->getPointeeType(), print, loc::of(expr));
             print.end_ctor();
             return;
         }
@@ -619,11 +694,11 @@ public:
         print.ctor("Ecast");
         if (isa<CXXReinterpretCastExpr>(expr)) {
             print.ctor("Creinterpret", false);
-            cprint.printQualType(expr->getType(), print);
+            cprint.printQualType(expr->getType(), print, loc::of(expr));
             print.end_ctor();
         } else if (isa<CXXConstCastExpr>(expr)) {
             print.ctor("Cconst", false);
-            cprint.printQualType(expr->getType(), print);
+            cprint.printQualType(expr->getType(), print, loc::of(expr));
             print.end_ctor();
         } else if (isa<CXXStaticCastExpr>(expr)) {
             print.ctor("Cstatic", false);
@@ -631,9 +706,9 @@ public:
             print.end_ctor();
         } else if (isa<CXXDynamicCastExpr>(expr)) {
             print.ctor("Cdynamic", false);
-            cprint.printQualType(expr->getSubExpr()->getType(), print);
+            cprint.printQualType(expr->getSubExpr()->getType(), print, loc::of(expr));
             print.output() << fmt::nbsp;
-            cprint.printQualType(expr->getType(), print);
+            cprint.printQualType(expr->getType(), print, loc::of(expr));
             print.end_ctor();
         } else {
             using namespace logging;
@@ -674,7 +749,7 @@ public:
                                   ClangPrinter& cprint) {
         if (auto at = dyn_cast<ArrayType>(expr->getType().getTypePtr())) {
             print.output() << fmt::nbsp;
-            cprint.printType(at->getElementType().getTypePtr(), print);
+            cprint.printType(at->getElementType().getTypePtr(), print, loc::of(expr));
         } else {
             assert(false && "string literal does not have array type");
         }
@@ -767,12 +842,12 @@ public:
                    "variable referenced through member must be a static data "
                    "member");
             print.output() << "(inr ";
-            cprint.printObjName(vd, print);
+            cprint.printObjName(*vd, print);
             print.output() << ")" << fmt::nbsp;
             print.boolean(false);
         } else if (auto md = dyn_cast<CXXMethodDecl>(member)) {
             print.output() << "(inr ";
-            cprint.printObjName(md, print);
+            cprint.printObjName(*md, print);
             print.output() << ")" << fmt::nbsp;
             print.boolean(false);
         } else {
@@ -789,7 +864,7 @@ public:
         // 1/ if the field type is reference, or rv_reference, that is type
         // 2/ otherwise, taking the qualifiers of the object, remove [const]
         //    if the field is [mutable], and then use the type of the field.
-        cprint.printQualType(member->getType(), print);
+        cprint.printQualType(member->getType(), print, loc::of(member));
         print.end_ctor();
     }
 
@@ -820,10 +895,10 @@ public:
                                OpaqueNames& li) {
         print.ctor("Econstructor");
         // print.output() << expr->isElidable() << fmt::nbsp;
-        cprint.printObjName(expr->getConstructor(), print);
+        cprint.printObjName(expr->getConstructor(), print, loc::of(expr));
         print.output() << fmt::nbsp;
         print.list(expr->arguments(),
-                   [&](auto print, auto i) { cprint.printExpr(i, print, li); });
+                   [&](auto i) { cprint.printExpr(i, print, li); });
         //print.output() << fmt::nbsp << expr->isElidable();
         done(expr, print, cprint);
     }
@@ -834,7 +909,7 @@ public:
         print.ctor("Econstructor");
         // print.output() << expr->isElidable() << fmt::nbsp;
         auto ctor = expr->getConstructor();
-        cprint.printObjName(ctor, print);
+        cprint.printObjName(ctor, print, loc::of(expr));
         print.output() << fmt::nbsp;
         // NOTE clang does not include the arguments to the constructor here
         // they are forwarded from the function itself; however, with the
@@ -843,11 +918,11 @@ public:
         // object, but for now, we can get away with printing the variable references
         // directly.
         auto idx = 0;
-        print.list(ctor->parameters(), [&](auto print, auto i) {
+        print.list(ctor->parameters(), [&](auto i) {
             print.ctor("Evar", false);
             print.output() << "\"#" << idx << "\"";
             print.output() << fmt::nbsp;
-            cprint.printQualType(i->getType(), print);
+            cprint.printQualType(i->getType(), print, loc::of(i));
             print.end_ctor();
             ++idx;
         });
@@ -863,7 +938,7 @@ public:
         auto method = expr->getMethodDecl();
         if (auto me = dyn_cast<MemberExpr>(callee)) {
             print.ctor("inl") << fmt::lparen;
-            cprint.printObjName(method, print);
+            cprint.printObjName(method, print, loc::of(expr));
             print.output() << "," << fmt::nbsp;
             if (me->hasQualifier() or not method->isVirtual()) {
                 // not virtual call
@@ -875,7 +950,7 @@ public:
 
             if (const CXXMethodDecl* const md =
                     dyn_cast<CXXMethodDecl>(me->getMemberDecl())) {
-                cprint.printQualType(md->getType(), print);
+                cprint.printQualType(md->getType(), print, loc::of(md));
             } else {
                 assert(false &&
                        "MemberDecl in MemberCall must be a MethodDecl");
@@ -892,17 +967,16 @@ public:
                 cprint.printQualType(expr->getImplicitObjectArgument()
                                          ->getType()
                                          ->getPointeeType(),
-                                     print);
+                                     print, loc::of(expr));
                 print.end_ctor();
             } else {
                 cprint.printExpr(expr->getImplicitObjectArgument(), print, li);
             }
         } else if (auto bo = dyn_cast<BinaryOperator>(callee)) {
-            assert(bo != nullptr && "expecting a binary operator");
-            logging::unsupported()
-                << "member pointers are currently not "
-                   "supported in the logic."
-                << " (at " << cprint.sourceRange(bo->getSourceRange()) << ")\n";
+            if (ClangPrinter::warn_well_known) {
+                cprint.error_prefix(logging::unsupported(), loc::of(bo))
+                    << "warning: member pointers are currently not supported\n";
+            }
             print.ctor("inr");
             cprint.printExpr(bo->getRHS(), print, li);
             print.end_ctor() << fmt::nbsp;
@@ -916,7 +990,7 @@ public:
                 cprint.printQualType(expr->getImplicitObjectArgument()
                                          ->getType()
                                          ->getPointeeType(),
-                                     print);
+                                     print, loc::of(expr));
                 print.end_ctor();
                 break;
             case BinaryOperatorKind::BO_PtrMemD:
@@ -931,7 +1005,7 @@ public:
         }
         print.output() << fmt::nbsp;
         print.list(expr->arguments(),
-                   [&](auto print, auto i) { cprint.printExpr(i, print, li); });
+                   [&](auto i) { cprint.printExpr(i, print, li); });
 #if 0
         print.output() << fmt::nbsp << fmt::lparen;
         for (auto i : expr->arguments()) {
@@ -1004,7 +1078,7 @@ public:
 
         print.ctor("Eunresolved_parenlist");
 
-        cprint.printQualTypeOption(expr->getType(), print);
+        cprint.printQualTypeOption(expr->getType(), print, loc::of(expr));
         print.output() << fmt::nbsp;
 
         // `print.list` unavailable because there's no constant
@@ -1036,7 +1110,7 @@ public:
         } else {
             print.ctor("Einitlist");
 
-            print.list(expr->inits(), [&](auto print, auto i) {
+            print.list(expr->inits(), [&](auto i) {
                 cprint.printExpr(i, print, li);
             }) << fmt::nbsp;
 
@@ -1073,7 +1147,7 @@ public:
         auto do_arg = [&print, &cprint, &li, expr]() {
             if (expr->isArgumentType()) {
                 print.ctor("inl", false);
-                cprint.printQualType(expr->getArgumentType(), print);
+                cprint.printQualType(expr->getArgumentType(), print, loc::of(expr));
                 print.output() << fmt::rparen;
             } else if (expr->getArgumentExpr()) {
                 print.ctor("inr", false);
@@ -1107,27 +1181,25 @@ public:
     void VisitOffsetOfExpr(const OffsetOfExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext& ctxt,
                            OpaqueNames&) {
-        print.ctor("Eoffsetof");
-        assert(expr->getNumComponents() == 1);
+        auto unsupported = [&](const std::string what) {
+            unsupported_expr(expr, print, cprint, what);
+        };
+        if (expr->getNumComponents() != 1)
+            return unsupported("offsetof with no components, or multiple components");
+
         auto comm = expr->getComponent(0);
         switch (comm.getKind()) {
-        case OffsetOfNode::Kind::Field:
-            cprint.printInstantiatableRecordName(comm.getField()->getParent(),
-                                                 print);
+        case OffsetOfNode::Kind::Field: {
+            print.ctor("Eoffsetof");
+            cprint.printTypeName(comm.getField()->getParent(), print, loc::of(expr));
             print.output() << fmt::nbsp;
             print.str(comm.getField()->getName()) << fmt::nbsp;
-            break;
-
-        default:
-            using namespace logging;
-            unsupported()
-                << "offsetof() is only supported on fields and base classes: "
-                << expr->getSourceRange().printToString(ctxt.getSourceManager())
-                << "\n";
-            die();
-            break;
+            done(expr, print, cprint);
+            return;
         }
-        done(expr, print, cprint);
+        default:
+            return unsupported("offsetof only supported on fields and base classes");
+        }
     }
 
     void
@@ -1149,12 +1221,12 @@ public:
         print.ctor("Enew");
 
         print.begin_tuple();
-        cprint.printObjName(new_fn, print);
+        cprint.printObjName(*new_fn, print);
         print.next_tuple();
-        cprint.printQualType(new_fn->getType(), print);
+        cprint.printQualType(new_fn->getType(), print, loc::of(new_fn));
         print.end_tuple() << fmt::nbsp;
 
-        print.list(expr->placement_arguments(), [&](auto print, auto arg) {
+        print.list(expr->placement_arguments(), [&](auto arg) {
             cprint.printExpr(arg, print, li);
         }) << fmt::nbsp;
 
@@ -1170,7 +1242,7 @@ public:
             print.end_ctor() << fmt::nbsp;
         }
 
-        cprint.printQualType(expr->getAllocatedType(), print);
+        cprint.printQualType(expr->getAllocatedType(), print, loc::of(expr));
 
         print.output() << fmt::nbsp;
 
@@ -1199,9 +1271,9 @@ public:
                 logging::die();
             }
             print.begin_tuple();
-            cprint.printObjName(op, print);
+            cprint.printObjName(*op, print);
             print.next_tuple();
-            cprint.printQualType(op->getType(), print);
+            cprint.printQualType(op->getType(), print, loc::of(op));
             print.end_tuple();
         } else {
             logging::fatal() << "missing [delete] operator\n";
@@ -1213,7 +1285,7 @@ public:
 
         print.output() << fmt::nbsp;
 
-        cprint.printQualType(expr->getDestroyedType(), print);
+        cprint.printQualType(expr->getDestroyedType(), print, loc::of(expr));
 
         // no need to print the type information on [delete]
         print.end_ctor();
@@ -1226,12 +1298,13 @@ public:
         // our semantics cleans everything, so we don't need to
         // mark this explicitly.
         print.ctor("Eandclean");
-#ifdef DEBUG
-        llvm::errs() << "and_clean objects: " << expr->getNumObjects() << "\n";
-        for (const BlockDecl* i : expr->getObjects()) {
-            llvm::errs() << static_cast<const void*>(i) << "\n";
+        if (ClangPrinter::debug && cprint.trace(Trace::Expr)) {
+            auto& os = llvm::errs();
+            os << "and_clean objects: " << expr->getNumObjects() << "\n";
+            for (auto i : expr->getObjects()) {
+                os << i.getOpaqueValue() << "\n";
+            }
         }
-#endif /* DEBUG */
         cprint.printExpr(expr->getSubExpr(), print, li);
         print.end_ctor();
     }
@@ -1343,7 +1416,7 @@ public:
                                       CoqPrinter& print, ClangPrinter& cprint,
                                       const ASTContext& ctxt, OpaqueNames&) {
         print.ctor("Epseudo_destructor");
-        cprint.printQualType(expr->getDestroyedType(), print);
+        cprint.printQualType(expr->getDestroyedType(), print, loc::of(expr));
         print.output() << fmt::nbsp;
         cprint.printExpr(expr->getBase(), print);
         print.end_ctor();
@@ -1371,7 +1444,7 @@ public:
                                      CoqPrinter& print, ClangPrinter& cprint,
                                      const ASTContext&, OpaqueNames&) {
         print.ctor("Eimplicit_init");
-        cprint.printQualType(expr->getType(), print);
+        cprint.printQualType(expr->getType(), print, loc::of(expr));
         print.end_ctor();
     }
 
@@ -1408,9 +1481,11 @@ public:
 
 PrintExpr PrintExpr::printer;
 
-void
+fmt::Formatter&
 ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print,
                         OpaqueNames& li) {
+    if (trace(Trace::Expr)) trace("printExpr", loc::of(expr));
+
     auto depth = print.output().get_depth();
     PrintExpr::printer.Visit(expr, print, *this, *this->context_, li);
     if (depth != print.output().get_depth()) {
@@ -1419,10 +1494,11 @@ ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print,
                 << expr->getStmtClassName() << "\n";
         assert(false);
     }
+    return print.output();
 }
 
-void
+fmt::Formatter&
 ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
     OpaqueNames names;
-    printExpr(expr, print, names);
+    return printExpr(expr, print, names);
 }

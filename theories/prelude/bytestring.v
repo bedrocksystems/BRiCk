@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -110,23 +110,19 @@ Module Import BS.
     | l :: ls => l ++ sep ++ sepBy sep ls
     end.
 
-  Fixpoint take (n : nat) (acc b : bs) : bs * bs :=
+  #[local]
+  Fixpoint split_at_loop (n : nat) (acc b : bs) : bs * bs :=
     match n with
     | 0 => (BS.rev BS.EmptyString acc, b)
     | S n => match b with
-            | BS.String x y => take n (BS.String x acc) y
+            | BS.String x y => split_at_loop n (BS.String x acc) y
             | BS.EmptyString => (BS.rev BS.EmptyString acc, b)
             end
     end.
+  Definition split_at (n : nat) (s : bs) : bs * bs := split_at_loop n "" s.
 
-  Fixpoint drop (n : nat) (b : bs) : bs :=
-    match n with
-    | 0 => b
-    | S n => match b with
-            | BS.String _ b => drop n b
-            | _ => b
-            end
-    end.
+  Definition take (n : nat) (b : bs) : bs := fst $ split_at n b.
+  Definition drop (n : nat) (b : bs) : bs := snd $ split_at n b.
 
   Fixpoint last (b : bs) (o : option Byte.byte) : option Byte.byte :=
     match b with

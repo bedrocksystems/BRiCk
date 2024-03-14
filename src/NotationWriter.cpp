@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2021-2024 BedRock Systems, Inc.
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
+ */
 #include "ClangPrinter.hpp"
 #include "CommentScanner.hpp"
 #include "CoqPrinter.hpp"
@@ -79,6 +84,8 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
     print.output() << "Module _'." << fmt::indent << fmt::line;
 
     auto write_notations = [&](const clang::NamedDecl *def) {
+        if (!def->getIdentifier())
+            return;
         std::string s_notation;
         llvm::raw_string_ostream notation{s_notation};
         llvm::StringRef def_name = def->getName();
@@ -103,7 +110,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
                 print.output()
                     << "Notation \"'" << s_notation << "'\" :=" << fmt::nbsp;
 
-                cprint.printTypeName(rd, print);
+                cprint.printTypeName(*rd, print);
                 print.output()
                     << "%bs (in custom cppglobal at level 0)." << fmt::line;
             }
@@ -128,7 +135,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
             print.output() << "Notation \"'" << s_notation;
             print.output() << td->getNameAsString() << "'\" :=" << fmt::nbsp;
-            cprint.printQualType(td->getUnderlyingType(), print);
+            cprint.printQualType(td->getUnderlyingType(), print, loc::of(td));
             print.output() << " (only parsing, in custom cppglobal at level 0)."
                            << fmt::line;
         } else if (const auto *ta = dyn_cast<TypeAliasDecl>(def)) {
@@ -139,7 +146,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
             print.output() << "Notation \"'" << s_notation;
             print.output() << ta->getNameAsString() << "'\" :=" << fmt::nbsp;
-            cprint.printQualType(ta->getUnderlyingType(), print);
+            cprint.printQualType(ta->getUnderlyingType(), print, loc::of(ta));
             print.output() << " (only parsing, in custom cppglobal at level 0)."
                            << fmt::line;
         } else if (isa<VarDecl>(def) || isa<EnumDecl>(def) ||

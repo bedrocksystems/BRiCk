@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -307,10 +307,10 @@ Section ObjValue_ler.
     intros a b c.
     destruct a, b => //=; destruct c => //=; intros;
     repeat lazymatch goal with
-           | H : Func' _ _ |- _ => destruct H; simpl in *
-           | H : Method' _ _ _ |- _ => destruct H; simpl in *
-           | H : Ctor' _ _ _ |- _ => destruct H; simpl in *
-           | H : Dtor' _ _ _ |- _ => destruct H; simpl in *
+           | H : Func' _ _ _ |- _ => destruct H; simpl in *
+           | H : Method' _ _ _ _ |- _ => destruct H; simpl in *
+           | H : Ctor' _ _ _ _ |- _ => destruct H; simpl in *
+           | H : Dtor' _ _ _ _ |- _ => destruct H; simpl in *
            | H : false = true |- _ => inversion H
            | H : true = false |- _ => inversion H
            | H : bool_decide _ = true |- _ => apply bool_decide_eq_true_1 in H; subst
@@ -342,7 +342,7 @@ Lemma sym_table_le_equiv te1 te2 : sym_table_le te1 te2 <-> sym_table_le_alt te1
 Proof.
   apply iff_forall => i; unfold option_relation.
   (* XXX TC inference produces different results here. Hacky fix, as above. *)
-  unfold obj_name, symbol_table.
+  unfold symbol_table, globname, obj_name, ident.
   repeat case_match; naive_solver.
 Qed.
 

@@ -6,4 +6,5 @@
   (package coq-cpp2v)
   (package coq-cpp2v-bin)
   setup-project.sh
-  setup-cpp2v.sh))
+  setup-cpp2v.sh
+  setup-name-test.sh))

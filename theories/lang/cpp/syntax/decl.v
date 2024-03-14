@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -12,6 +12,7 @@ Require Import bedrock.lang.cpp.syntax.types.
 #[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
 #[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
 #[local] Notation EqDecision3 T := (∀ (A : Set), EqDecision A -> EqDecision2 (T A)) (only parsing).
+#[local] Notation EqDecision4 T := (∀ (A : Set), EqDecision A -> EqDecision3 (T A)) (only parsing).
 #[local] Tactic Notation "solve_decision" := intros; solve_decision.
 
 (** ** Type Declarations *)
@@ -23,7 +24,7 @@ Record LayoutInfo : Set :=
 Proof. solve_decision. Defined.
 
 Record Member' {type Expr : Set} : Set := mkMember
-{ mem_name : ident
+{ mem_name : ident	(** TODO: Number anonymous fields *)
 ; mem_type : type
 ; mem_mutable : bool
 ; mem_init : option Expr
@@ -34,7 +35,7 @@ Record Member' {type Expr : Set} : Set := mkMember
 Proof. solve_decision. Defined.
 Notation Member := (Member' type Expr).
 
-Record Union' {type Expr : Set} : Set := Build_Union
+Record Union' {obj_name type Expr : Set} : Set := Build_Union
 { u_fields : list (Member' type Expr)
   (* ^ fields with type, initializer, and layout information *)
 ; u_dtor : obj_name
@@ -48,11 +49,11 @@ Record Union' {type Expr : Set} : Set := Build_Union
 ; u_alignment : N
   (* ^ alignment of the union *)
 }.
-#[global] Arguments Union' _ _ : clear implicits, assert.
-#[global] Arguments Build_Union {_ _} &.
-#[global] Instance: EqDecision2 Union'.
+#[global] Arguments Union' _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Union {_ _ _} &.
+#[global] Instance: EqDecision3 Union'.
 Proof. solve_decision. Defined.
-Notation Union := (Union' type Expr).
+Notation Union := (Union' obj_name type Expr).
 
 
 Variant LayoutType : Set := POD | Standard | Unspecified.
@@ -60,7 +61,7 @@ Variant LayoutType : Set := POD | Standard | Unspecified.
 Proof. solve_decision. Defined.
 
 
-Record Struct' {classname type Expr : Set} : Set := Build_Struct
+Record Struct' {classname obj_name type Expr : Set} : Set := Build_Struct
 { s_bases : list (classname * LayoutInfo)
   (* ^ base classes *)
 ; s_fields : list (Member' type Expr)
@@ -89,11 +90,11 @@ Record Struct' {classname type Expr : Set} : Set := Build_Struct
 ; s_alignment : N
   (* ^ alignment of the structure *)
 }.
-#[global] Arguments Struct' _ _ _ : clear implicits, assert.
-#[global] Arguments Build_Struct {_ _ _} &.
-#[global] Instance: EqDecision3 Struct'.
+#[global] Arguments Struct' _ _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Struct {_ _ _ _} &.
+#[global] Instance: EqDecision4 Struct'.
 Proof. solve_decision. Defined.
-Notation Struct := (Struct' globname type Expr).
+Notation Struct := (Struct' globname obj_name type Expr).
 
 (** [has_vtable s] determines whether [s] has any <<virtual>> methods
     (or bases). Having a vtable is *not* a transitive property.
@@ -103,17 +104,18 @@ Notation Struct := (Struct' globname type Expr).
     Note that methods that override virtual methods are implicitly virtual.
     This includes destructor.
  *)
-Definition has_vtable {classname type Expr} (s : Struct' classname type Expr) : bool :=
+Definition has_vtable {classname obj_name type Expr} (s : Struct' classname obj_name type Expr) : bool :=
   match s.(s_virtuals) with
   | nil => false
   | _ :: _ => true
   end.
-#[global] Arguments has_vtable _ _ _ & _ : assert.
+#[global] Arguments has_vtable _ _ _ _ & _ : assert.
 
 (* [has_virtual_dtor s] returns true if the destructor is virtual. *)
-Definition has_virtual_dtor {classname type Expr} (s : Struct' classname type Expr) : bool :=
+Definition has_virtual_dtor {classname obj_name type Expr : Set} `{!EqDecision obj_name}
+    (s : Struct' classname obj_name type Expr) : bool :=
   List.existsb (fun '(a,_) => bool_decide (a = s.(s_dtor))) s.(s_virtuals).
-#[global] Arguments has_virtual_dtor _ _ _ & _ : assert.
+#[global] Arguments has_virtual_dtor _ _ _ _ _ & _ : assert.
 
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
 #[global] Instance: EqDecision Ctor_type.
@@ -123,51 +125,51 @@ Proof. solve_decision. Defined.
 (** ** Value Declarations *)
 
 (** *** Functions *)
-Variant FunctionBody' {type Expr : Set} : Set :=
-| Impl (_ : Stmt' type Expr)
+Variant FunctionBody' {obj_name type Expr : Set} : Set :=
+| Impl (_ : Stmt' obj_name type Expr)
 | Builtin (_ : BuiltinFn)
 .
-#[global] Arguments FunctionBody' _ _ : clear implicits, assert.
-#[global] Arguments Impl _ _ &.
-#[global] Instance: EqDecision2 FunctionBody'.
+#[global] Arguments FunctionBody' _ _ _ : clear implicits, assert.
+#[global] Arguments Impl _ _ _ &.
+#[global] Instance: EqDecision3 FunctionBody'.
 Proof. solve_decision. Defined.
-Notation FunctionBody := (FunctionBody' decltype Expr).
+Notation FunctionBody := (FunctionBody' obj_name decltype Expr).
 
-Record Func' {type Expr : Set} : Set := Build_Func
+Record Func' {obj_name type Expr : Set} : Set := Build_Func
 { f_return : type
 ; f_params : list (ident * type)
 ; f_cc     : calling_conv
 ; f_arity  : function_arity
-; f_body   : option (FunctionBody' type Expr)
+; f_body   : option (FunctionBody' obj_name type Expr)
 }.
-#[global] Arguments Func' _ _ : clear implicits, assert.
-#[global] Arguments Build_Func {_ _} &.
-#[global] Instance: EqDecision2 Func'.
+#[global] Arguments Func' _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Func {_ _ _} &.
+#[global] Instance: EqDecision3 Func'.
 Proof. solve_decision. Defined.
-#[global] Instance Func_inhabited {type Expr : Set} `{!Inhabited type} :
-  Inhabited (Func' type Expr).
+#[global] Instance Func_inhabited {obj_name type Expr : Set} `{!Inhabited type} :
+  Inhabited (Func' obj_name type Expr).
 Proof. solve_inhabited. Qed.
-Notation Func := (Func' decltype Expr).
+Notation Func := (Func' obj_name decltype Expr).
 
 (** *** Methods *)
 
-Record Method' {classname type Expr : Set} : Set := Build_Method
+Record Method' {classname obj_name type Expr : Set} : Set := Build_Method
 { m_return  : type
 ; m_class   : classname
 ; m_this_qual : type_qualifiers
 ; m_params  : list (ident * type)
 ; m_cc      : calling_conv
 ; m_arity   : function_arity
-; m_body    : option (OrDefault (Stmt' type Expr))
+; m_body    : option (OrDefault (Stmt' obj_name type Expr))
 }.
-#[global] Arguments Method' _ _ _ : clear implicits, assert.
-#[global] Arguments Build_Method {_ _ _} &.
-#[global] Instance: EqDecision3 Method'.
+#[global] Arguments Method' _ _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Method {_ _ _ _} &.
+#[global] Instance: EqDecision4 Method'.
 Proof. solve_decision. Defined.
-Notation Method := (Method' globname decltype Expr).
+Notation Method := (Method' globname obj_name decltype Expr).
 
-Definition static_method {classname type Expr : Set} (m : Method' classname type Expr)
-  : Func' type Expr :=
+Definition static_method {classname obj_name type Expr : Set} (m : Method' classname obj_name type Expr)
+  : Func' obj_name type Expr :=
   {| f_return := m.(m_return)
    ; f_params := m.(m_params)
    ; f_cc := m.(m_cc)
@@ -201,31 +203,31 @@ Record Initializer' {classname type Expr : Set} : Set := Build_Initializer
 Proof. solve_decision. Defined.
 Notation Initializer := (Initializer' globname decltype Expr).
 
-Record Ctor' {classname type Expr : Set} : Set := Build_Ctor
+Record Ctor' {classname obj_name type Expr : Set} : Set := Build_Ctor
 { c_class  : classname
 ; c_params : list (ident * type)
 ; c_cc     : calling_conv
 ; c_arity  : function_arity
-; c_body   : option (OrDefault (list (Initializer' classname type Expr) * Stmt' type Expr))
+; c_body   : option (OrDefault (list (Initializer' classname type Expr) * Stmt' obj_name type Expr))
 }.
-#[global] Arguments Ctor' _ _ _ : clear implicits, assert.
-#[global] Arguments Build_Ctor {_ _ _} &.
-#[global] Instance: EqDecision3 Ctor'.
+#[global] Arguments Ctor' _ _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Ctor {_ _ _ _} &.
+#[global] Instance: EqDecision4 Ctor'.
 Proof. solve_decision. Defined.
-Notation Ctor := (Ctor' globname decltype Expr).
+Notation Ctor := (Ctor' globname obj_name decltype Expr).
 
 (** *** Destructors *)
 
-Record Dtor' {classname type Expr : Set} : Set := Build_Dtor
+Record Dtor' {classname obj_name type Expr : Set} : Set := Build_Dtor
 { d_class  : classname
 ; d_cc     : calling_conv
-; d_body   : option (OrDefault (Stmt' type Expr))
+; d_body   : option (OrDefault (Stmt' obj_name type Expr))
 }.
-#[global] Arguments Dtor' _ _ _ : clear implicits, assert.
-#[global] Arguments Build_Dtor {_ _ _} &.
-#[global] Instance: EqDecision3 Dtor'.
+#[global] Arguments Dtor' _ _ _ _ : clear implicits, assert.
+#[global] Arguments Build_Dtor {_ _ _ _} &.
+#[global] Instance: EqDecision4 Dtor'.
 Proof. solve_decision. Defined.
-Notation Dtor := (Dtor' globname decltype Expr).
+Notation Dtor := (Dtor' globname obj_name decltype Expr).
 
 Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
 #[global] Instance: EqDecision Dtor_type.

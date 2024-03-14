@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -347,9 +347,11 @@ public:
 
 PrintStmt PrintStmt::printer;
 
-void
+fmt::Formatter&
 ClangPrinter::printStmt(const clang::Stmt *stmt, CoqPrinter &print) {
+    if (trace(Trace::Stmt)) trace("printStmt", loc::of(stmt));
     __attribute__((unused)) auto depth = print.output().get_depth();
     PrintStmt::printer.Visit(stmt, print, *this, *this->context_);
     assert(depth == print.output().get_depth());
+    return print.output();
 }

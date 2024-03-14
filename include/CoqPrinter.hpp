@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -9,11 +9,27 @@
 #include <clang/AST/Expr.h>
 #include <llvm/ADT/StringRef.h>
 
-class CoqPrinter {
-public:
-    CoqPrinter(fmt::Formatter& output, bool templates) : output_(output), templates_(templates) {}
+namespace logging {
+[[noreturn]] void die();
+}
 
+class CoqPrinter {
+private:
+    fmt::Formatter& output_;
+    const bool templates_;
+    const bool ast2_;
+
+public:
+    CoqPrinter(fmt::Formatter& output, bool templates, bool ast2) : output_(output), templates_(templates), ast2_(ast2) {}
+
+    fmt::Formatter& output() const { return output_; }
     bool templates() const { return templates_; }
+    bool ast2() const { return ast2_; }
+
+    [[noreturn]] void die() {
+        output().flush();
+        logging::die();
+    }
 
     fmt::Formatter& type() {
         return this->output_ << (templates() ? "Mtype" : "type");
@@ -26,10 +42,10 @@ public:
         return this->output_ << ")";
     }
     fmt::Formatter& next_tuple() {
-        return this->output_ << "," << fmt::nbsp;
+        return this->output_ << fmt::tuple_sep;
     }
 
-    fmt::Formatter& ctor(const char* ctor, bool line = true) {
+    fmt::Formatter& ctor(llvm::StringRef ctor, bool line = true) {
         if (line) {
             this->output_ << fmt::line;
         }
@@ -38,6 +54,7 @@ public:
     fmt::Formatter& end_ctor() {
         return this->output_ << fmt::rparen;
     }
+
     fmt::Formatter& begin_record(bool line = true) {
         if (line) {
             this->output_ << fmt::line;
@@ -50,7 +67,7 @@ public:
         }
         return this->output_ << fmt::nbsp << "|}";
     }
-    fmt::Formatter& record_field(const char* field, bool line = true) {
+    fmt::Formatter& record_field(llvm::StringRef field, bool line = true) {
         return this->output_ << field << fmt::nbsp << ":=" << fmt::nbsp;
     }
 
@@ -67,17 +84,11 @@ public:
         return this->output_;
     }
 
-    /** Print a "plain" string (no special characters) */
-    fmt::Formatter& str(const char* str) {
-        return this->output_ << "\"" << str << "\"";
-    }
+    /// Print str as a Coq string literal
+    fmt::Formatter& str(llvm::StringRef str);
 
-    /** Print a "complex" string (special characters will be escaped) */
-    fmt::Formatter& escaped_str(const clang::StringLiteral* lit);
-
-    fmt::Formatter& str(llvm::StringRef str) {
-        return this->output_ << "\"" << str << "\"";
-    }
+    /// `(* str *)` with `(*`, `*)` in str printed as `( *`, `* )`
+    fmt::Formatter& cmt(llvm::StringRef str);
 
     fmt::Formatter& boolean(bool b) {
         return this->output_ << (b ? "true" : "false");
@@ -91,15 +102,15 @@ public:
         }
         begin_list();
         while (begin != end) {
-            fn(*this, *begin);
+            fn(*begin);
             cons();
             ++begin;
         }
         return end_list();
     }
 
-    template<typename C, typename CLOSURE>
-    fmt::Formatter& list(const C &&list, CLOSURE fn) {
+    template<typename L, typename CLOSURE>
+    fmt::Formatter& list(L list, CLOSURE fn) {
         return list_range(list.begin(), list.end(), fn);
     }
 
@@ -111,7 +122,7 @@ public:
         }
         begin_list();
         while (begin != end) {
-            if (fn(*this, *begin))
+            if (fn(*begin))
                 cons();
             ++begin;
         }
@@ -131,15 +142,82 @@ public:
         return this->output_ << "nil" << fmt::rparen;
     }
     fmt::Formatter& cons() {
-        return this->output_ << fmt::nbsp << "::" << fmt::nbsp;
+        return this->output_ << fmt::cons;
+    }
+};
+
+namespace guard {
+
+class guard {
+protected:
+    CoqPrinter& print;
+    guard(CoqPrinter& p) : print{p} {}
+
+public:
+    guard(const guard&) = delete;
+    guard& operator=(const guard&) = delete;
+
+    fmt::Formatter& output() const {
+        return print.output();
+    }
+};
+
+struct ctor : public guard {
+    ctor(CoqPrinter& p, llvm::StringRef name, bool line = true) : guard{p} {
+        print.ctor(name, line);
+    }
+    ~ctor() {
+        print.end_ctor();
+    }
+};
+
+struct some : public ctor {
+    some(CoqPrinter& p, bool line = true) : ctor{p, "Some", line} {}
+};
+
+struct tuple : public guard {
+    tuple(CoqPrinter& p) : guard{p} {
+        print.begin_tuple();
+    }
+    ~tuple() {
+        print.end_tuple();
+    }
+};
+
+class record : public guard {
+public:
+    enum class Line : unsigned {
+        None = 0,
+        Begin = 1,
+        End = 2,
+        Both = Begin | End,
+    };
+
+private:
+    Line wantlines;
+
+    bool want(Line bit) const {
+        auto w = static_cast<std::underlying_type_t<Line>>(wantlines);
+        auto b = static_cast<std::underlying_type_t<Line>>(bit);
+        return w & b;
     }
 
 public:
-    fmt::Formatter& output() const {
-        return this->output_;
+    record(CoqPrinter& p, Line l = Line::Both) : guard{p}, wantlines{l} {
+        print.begin_record(want(Line::Begin));
     }
-
-private:
-    fmt::Formatter& output_;
-    const bool templates_;
+    ~record() {
+        print.end_record(want(Line::End));
+    }
 };
+
+struct list : public guard {
+    list(CoqPrinter& p) : guard(p) {
+        print.begin_list();
+    }
+    ~list() {
+        print.end_list();
+    }
+};
+
+} // namespace guard

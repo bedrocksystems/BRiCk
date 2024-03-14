@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -22,6 +22,7 @@
 #include "llvm/Support/CommandLine.h"
 
 #include "Logging.hpp"
+#include "Trace.hpp"
 #include "ToCoq.hpp"
 #include "Version.hpp"
 
@@ -36,15 +37,29 @@ static cl::OptionCategory Cpp2V("cpp2v options");
 // CommonOptionsParser declares HelpMessage with a description of the common
 // command-line options related to the compilation database and input files.
 // It's nice to have this help message in all tools.
-static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
+static cl::extrahelp CommonHelp("\nACTUAL USAGE: cpp2v [cpp2v options] <source> -- [clang options]\n");
 
-static cl::opt<std::string> NamesFile("names",
-                                      cl::desc("path to generate names"),
-                                      cl::Optional, cl::cat(Cpp2V));
+static cl::opt<std::string> NamesFile(
+    "names",
+    cl::desc("print notation for C++ names"),
+    cl::value_desc("filename"),
+    cl::Optional,
+    cl::cat(Cpp2V)
+);
 
-static cl::opt<std::string> VFileOutput("o",
-                                        cl::desc("path to generate the module"),
-                                        cl::Optional, cl::cat(Cpp2V));
+static cl::opt<std::string> VFileOutput(
+    "module",
+    cl::desc("print translation unit"),
+    cl::value_desc("filename"),
+    cl::Optional,
+    cl::cat(Cpp2V)
+);
+static cl::alias DashO(
+    "o",
+    cl::desc("alias for --module"),
+    cl::value_desc("filename"),
+    cl::aliasopt(VFileOutput)
+);
 
 static cl::opt<bool> Verbose("v", cl::desc("verbose"), cl::Optional,
                              cl::cat(Cpp2V));
@@ -53,17 +68,49 @@ static cl::opt<bool> Verboser("vv", cl::desc("verboser"), cl::Optional,
 static cl::opt<bool> Quiet("q", cl::desc("quiet"), cl::Optional,
                            cl::cat(Cpp2V));
 
+static cl::opt<bool> Version(
+    "cpp2v-version",
+    cl::desc("print version and exit"),
+    cl::Optional, cl::ValueOptional,
+    cl::cat(Cpp2V)
+);
+
+static cl::opt<std::string> Templates(
+    "templates",
+    cl::desc("print templates"),
+    cl::value_desc("filename"),
+    cl::Optional,
+    cl::cat(Cpp2V)
+);
+
 static cl::opt<bool>
-    Naked("n", cl::desc("naked"), cl::Optional,
-          cl::desc("do not elaborate defaulted definitions in the file."),
-          cl::cat(Cpp2V));
+    Ast2("ast2", cl::desc("print using AST2 (templates only)"),
+        cl::Optional, cl::cat(Cpp2V));
 
-static cl::opt<bool> Version("cpp2v-version", cl::Optional, cl::ValueOptional,
-                             cl::cat(Cpp2V));
+static cl::opt<std::string> NameTest(
+    "name-test",
+    cl::desc("print structured names"),
+    cl::value_desc("filename"),
+    cl::Optional, cl::cat(Cpp2V)
+);
 
-static cl::opt<std::string>
-    Templates("templates", cl::desc("generate AST for templated code"),
-              cl::Optional, cl::cat(Cpp2V));
+static cl::bits<Trace::Bit> TraceBits(
+    "trace",
+    cl::desc("print debug trace on fd 2 (can be repeated)"),
+    cl::ZeroOrMore, cl::CommaSeparated,
+    cl::values(
+        clEnumValN(Trace::Bit::Elaborate, "Elaborate", "trace definition of implicits"),
+        clEnumValN(Trace::Bit::ModuleBuilder, "ModuleBuilder", "trace declaration filter"),
+        clEnumValN(Trace::Bit::Decl, "Decl", "trace declaration printer"),
+        clEnumValN(Trace::Bit::Name, "Name", "trace name printer"),
+        clEnumValN(Trace::Bit::Type, "Type", "trace type printer"),
+        clEnumValN(Trace::Bit::Local, "Local", "trace local declaration printer"),
+        clEnumValN(Trace::Bit::Stmt, "Stmt", "trace statement printer"),
+        clEnumValN(Trace::Bit::Expr, "Expr", "trace expression printer"),
+        clEnumValN(Trace::Bit::ALL, "ALL", "trace everything")
+    ),
+    cl::cat(Cpp2V)
+);
 
 class ToCoqAction : public clang::ASTFrontendAction {
 public:
@@ -78,7 +125,9 @@ public:
         }
 #endif
         auto result = new ToCoqConsumer(&Compiler, to_opt(VFileOutput),
-                                        to_opt(NamesFile), to_opt(Templates));
+                                        to_opt(NamesFile), to_opt(Templates),
+                                        to_opt(NameTest), Ast2,
+                                        Trace::fromBits(TraceBits.getBits()));
         return std::unique_ptr<clang::ASTConsumer>(result);
     }
 
