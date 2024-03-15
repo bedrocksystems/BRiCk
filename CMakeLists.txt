@@ -3,7 +3,7 @@
 ## This software is distributed under the terms of the BedRock Open-Source License.
 ## See the LICENSE-BedRock file in the repository root for details.
 ##
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.12)
 project(cpp2v)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
@@ -13,6 +13,11 @@ set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
 find_package(Clang REQUIRED CONFIG)
+
+IF (${LLVM_VERSION} VERSION_LESS 16.0.0)
+  MESSAGE(FATAL_ERROR "LLVM version " ${LLVM_VERSION} " < 16.0.0 not supported")
+ENDIF()
+
 message(STATUS "Found LLVM: ${LLVM_INSTALL_PREFIX} (version ${LLVM_PACKAGE_VERSION})")
 message(STATUS "Using ClangConfig.cmake in: ${CLANG_CMAKE_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -51,107 +56,43 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 
 add_definitions( -DGIT_VERSION="${GIT_VERSION}")
+add_llvm_library(tocoq
+  STATIC
+  PARTIAL_SOURCES_INTENDED
+  src/Elaborate.cpp
+  src/Version.cpp
+  src/PrintName.cpp
+  src/PrintExpr.cpp
+  src/PrintStmt.cpp
+  src/PrintType.cpp
+  src/PrintDecl.cpp
+  src/PrintLocalDecl.cpp
+  src/ModuleBuilder.cpp
+  src/CommentScanner.cpp
+  src/SpecWriter.cpp
+  src/NotationWriter.cpp
+  src/Formatter.cpp
+  src/Logging.cpp
+  src/Location.cpp
+  src/Template.cpp
+  src/ClangPrinter.cpp
+  src/StringPrettyPrinter.cpp
+  src/ToCoq.cpp
+  src/FromClang.cpp
+)
 
-IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
-  MESSAGE(STATUS "LLVM version " ${LLVM_VERSION} " less than 11, partial sources not permitted")
-
-  add_llvm_library(tocoq
-    STATIC
-    src/Elaborate.cpp
-    src/Version.cpp
-    src/PrintName.cpp
-    src/PrintExpr.cpp
-    src/PrintStmt.cpp
-    src/PrintType.cpp
-    src/PrintDecl.cpp
-    src/PrintLocalDecl.cpp
-    src/ModuleBuilder.cpp
-    src/CommentScanner.cpp
-    src/SpecWriter.cpp
-    src/NotationWriter.cpp
-    src/Formatter.cpp
-    src/Logging.cpp
-    src/Location.cpp
-	src/Template.cpp
-    src/ClangPrinter.cpp
-    src/StringPrettyPrinter.cpp
-    src/ToCoq.cpp
-    src/FromClang.cpp
-  )
-
-  add_llvm_executable(cpp2v
-    src/cpp2v.cpp
-  )
-ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
-  add_llvm_library(tocoq
-    STATIC
-    PARTIAL_SOURCES_INTENDED
-    src/Elaborate.cpp
-    src/Version.cpp
-    src/PrintName.cpp
-    src/PrintExpr.cpp
-    src/PrintStmt.cpp
-    src/PrintType.cpp
-    src/PrintDecl.cpp
-    src/PrintLocalDecl.cpp
-    src/ModuleBuilder.cpp
-    src/CommentScanner.cpp
-    src/SpecWriter.cpp
-    src/NotationWriter.cpp
-    src/Formatter.cpp
-    src/Logging.cpp
-    src/Location.cpp
-	src/Template.cpp
-    src/ClangPrinter.cpp
-    src/StringPrettyPrinter.cpp
-    src/ToCoq.cpp
-    src/FromClang.cpp
-  )
-
-  add_llvm_executable(cpp2v
-    PARTIAL_SOURCES_INTENDED
-    src/cpp2v.cpp
-    )
-ENDIF(${LLVM_VERSION} VERSION_LESS 11.0.0)
+add_llvm_executable(cpp2v
+  PARTIAL_SOURCES_INTENDED
+  src/cpp2v.cpp
+)
 
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fno-rtti)
 
-# TODO(franta) Older versions of LLVM are affected with the following
-# bug in LLVM:
-#
-# https://bugs.llvm.org/show_bug.cgi?id=35245
-#
-# eventually, the bellow monolithic/component mapping should be replaced
-# with simple
-#
-# set(CPP2V_LLVM_COMPONENTS support core bitreader)
-# llvm_config(cpp2v USE_SHARED ${CPP2V_LLVM_COMPONENTS})
-#
-find_library(LLVM_MONO_LIB LLVM ${LLVM_LIBRARY_DIR})
-if(NOT LLVM_MONO_LIB)
-  message(STATUS "Monolithic LLVM library not found, gathering component libraries...")
-
-  llvm_map_components_to_libnames(llvm_libs ${CPP2V_LLVM_COMPONENTS})
-  foreach(lib_name ${llvm_libs})
-    find_library(${lib_name}_found ${lib_name} ${LLVM_LIBRARY_DIR})
-    if(NOT ${lib_name}_found)
-        message(FATAL_ERROR "Library (LLVM component) not found: ${lib_name}")
-    endif(NOT ${lib_name}_found)
-
-    message(STATUS "Linking against LLVM component: ${lib_name} (${${lib_name}_found})")
-  endforeach(lib_name ${llvm_libs})
-else(NOT LLVM_MONO_LIB)
-  set(llvm_libs)
-  message(STATUS "Linking against monolithic libLLVM (${LLVM_MONO_LIB})")
-endif(NOT LLVM_MONO_LIB)
-#
-# END TODO(franta)
-#
+llvm_config(cpp2v USE_SHARED ${CPP2V_LLVM_COMPONENTS})
 
 # Link against LLVM/Clang and tocoq libraries
 target_link_libraries(cpp2v PUBLIC ${llvm_libs} clang-cpp tocoq)
-
 
 target_compile_options(tocoq PUBLIC -Wall -Wimplicit-fallthrough)
 # This PUBLIC setting gets inherited by clients. That's good enough without

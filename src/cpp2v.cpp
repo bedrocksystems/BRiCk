@@ -147,12 +147,7 @@ public:
 
 int
 main(int argc, const char **argv) {
-#if CLANG_VERSION >= 13
     auto MaybeOptionsParser = CommonOptionsParser::create(argc, argv, Cpp2V);
-#else
-    auto MaybeOptionsParser = CommonOptionsParser::create(
-        argc, argv, Cpp2V, cl::NumOccurrencesFlag::Required);
-#endif
     if (not MaybeOptionsParser) {
         llvm::errs() << MaybeOptionsParser.takeError();
         return 1;

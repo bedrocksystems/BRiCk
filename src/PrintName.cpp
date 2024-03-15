@@ -12,7 +12,6 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/ExprCXX.h>
 #include <clang/AST/Mangle.h>
-#include <clang/Basic/Version.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <optional>
 
@@ -86,16 +85,6 @@ collectParameterLists(const Decl& decl, const ASTContext& context,
     return n;
 }
 
-static void
-printNamedDeclName(raw_ostream& os, const NamedDecl& decl,
-                   const PrintingPolicy& policy) {
-    #if CLANG_VERSION_MAJOR >= 16
-        decl.printName(os, policy);
-    #else
-        decl.printName(os);
-    #endif
-}
-
 static raw_ostream&
 printTemplateParameters(raw_ostream& os, const Decl& decl,
                         const ASTContext& context) {
@@ -106,7 +95,7 @@ printTemplateParameters(raw_ostream& os, const Decl& decl,
         os << '<';
         for (auto [params, loc] : lists) {
             for (auto param : params->asArray()) {
-                printNamedDeclName(os, *param, policy);
+                param->printName(os, policy);
                 if (--n)
                     os << ", ";
             }
@@ -220,7 +209,6 @@ for anonymous types which renders it largely unusable for
 modular verification purposes.
 */
 
-#if CLANG_VERSION_MAJOR >= 11
 static GlobalDecl
 to_gd(const NamedDecl* decl) {
     if (auto ct = dyn_cast<CXXConstructorDecl>(decl)) {
@@ -231,12 +219,6 @@ to_gd(const NamedDecl* decl) {
         return GlobalDecl(decl);
     }
 }
-#else
-static const NamedDecl*
-to_gd(const NamedDecl* decl) {
-    return decl;
-}
-#endif /* CLANG_VERSION_MAJOR >= 11 */
 
 static size_t
 printSimpleContext(const DeclContext* dc, CoqPrinter& print, ClangPrinter& cprint, size_t remaining = 0) {
@@ -767,7 +749,7 @@ printTemplateArgument(const TemplateArgument& arg, CoqPrinter& print,
     case TemplateArgument::ArgKind::Integral:
         return Avalue([&] () {
             guard::ctor _(print, "Eint", false);
-            print.output() << toString(arg.getAsIntegral(), 10) << fmt::nbsp;
+            print.output() << arg.getAsIntegral() << fmt::nbsp;
             return cprint.printQualType(arg.getIntegralType(), print, loc);
         });
 

@@ -43,7 +43,7 @@ public:
         return this->specifications_.end();
     }
 
-    llvm::Optional<const NamedDecl*> decl_for_comment(RawComment* cmt) const {
+    std::optional<const NamedDecl*> decl_for_comment(RawComment* cmt) const {
         auto result = comment_decl_.find(cmt);
         if (result == comment_decl_.end()) {
             return {};

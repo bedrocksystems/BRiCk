@@ -5,7 +5,6 @@
  */
 #pragma once
 #include <clang/Basic/Diagnostic.h>
-#include <llvm/ADT/Optional.h>
 #include <llvm/ADT/SmallVector.h>
 
 namespace clang {

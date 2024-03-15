@@ -143,10 +143,22 @@ operator<<(Formatter& out, BOOL b) {
 }
 
 Formatter&
-operator<<(Formatter& out, const llvm::APSInt& val) {
-    out.nobreak() << "(";
-    val.print(out.nobreak(), val.isSigned());
-    out.nobreak() << ")%Z";
+operator<<(Formatter& out, const NUM& n) {
+    auto& [val, is_signed, is_negative, scope] = n;
+    auto& os = out.nobreak();
+    if (is_negative)
+        os << '(';
+    val.print(os, is_signed);
+    if (is_negative)
+        os << ')';
+    if (scope)
+        os << '%' << scope;
     return out;
 }
+
+Formatter&
+operator<<(Formatter& out, const llvm::APSInt& n) {
+    return out << Z(n);
+}
+
 }

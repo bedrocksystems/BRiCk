@@ -10,10 +10,7 @@
 #include "clang/AST/Mangle.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/Type.h"
-#include "clang/Basic/Version.inc"
-#if CLANG_VERSION_MAJOR >= 10
 #include "clang/AST/Attr.h"
-#endif
 
 using namespace clang;
 
@@ -182,16 +179,14 @@ public:
         // note, this only occurs when printing the body of a switch statement
         print.ctor("Scase");
 
-        if (stmt->getRHS()) {
-            print.ctor("Range", false)
-                << "(" << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << ")%Z"
-                << fmt::nbsp << "("
-                << stmt->getRHS()->EvaluateKnownConstInt(ctxt) << ")%Z";
-            print.end_ctor();
+        auto lo = stmt->getLHS()->EvaluateKnownConstInt(ctxt);
+        if (auto rhs = stmt->getRHS()) {
+            auto hi = rhs->EvaluateKnownConstInt(ctxt);
+            guard::ctor _(print, "Range");
+            print.output() << lo << fmt::nbsp << hi;
         } else {
-            print.ctor("Exact", false)
-                << "(" << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << ")%Z";
-            print.end_ctor();
+            guard::ctor _(print, "Exact");
+            print.output() << lo;
         }
 
         print.end_ctor();

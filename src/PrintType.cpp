@@ -14,7 +14,6 @@
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Mangle.h"
 #include "clang/AST/Type.h"
-#include "clang/Basic/Version.inc"
 #include <Formatter.hpp>
 
 using namespace clang;
@@ -80,7 +79,6 @@ public:
     }
 
     static const char* getTransformName(UnaryTransformType::UTTKind k) {
-#if CLANG_VERSION_MAJOR >= 16
         switch (k) {
 #define TRANSFORM_TYPE_TRAIT_DEF(Enum, Str)                                    \
     case UnaryTransformType::UTTKind::Enum:                                    \
@@ -90,9 +88,6 @@ public:
         default:
             return "unknown";
         }
-#else
-        return "unknown";
-#endif
     }
 
     void VisitUnaryTransformType(const UnaryTransformType* type,
@@ -226,25 +221,6 @@ public:
             CASE(Double, "Tdouble")
             CASE(LongDouble, "Tlongdouble")
 #undef CASE
-#if CLANG_VERSION_MAJOR == 10
-        case BuiltinType::Kind::SveInt8:
-        case BuiltinType::Kind::SveInt16:
-        case BuiltinType::Kind::SveInt32:
-        case BuiltinType::Kind::SveInt64:
-        case BuiltinType::Kind::SveUint8:
-        case BuiltinType::Kind::SveUint16:
-        case BuiltinType::Kind::SveUint32:
-        case BuiltinType::Kind::SveUint64:
-        case BuiltinType::Kind::SveFloat16:
-        case BuiltinType::Kind::SveFloat32:
-        case BuiltinType::Kind::SveFloat64:
-        case BuiltinType::Kind::SveBool:
-            print.output() << fmt::lparen << "Tarch None \""
-                           << type->getNameAsCString(
-                                  PrintingPolicy(LangOptions()))
-                           << "\"" << fmt::rparen;
-            break;
-#endif
         case BuiltinType::Kind::Dependent:
             if (print.templates()) {
                 // TODO: Placeholder
@@ -268,7 +244,6 @@ public:
                 assert(false && "unexpected floating point type");
             } else if (type->isIntegerType()) {
                 assert(false);
-#if CLANG_VERSION_MAJOR >= 11
             } else if (type->isSizelessBuiltinType()) {
                 // TODO: This seems a bit random. Do we need
                 // another type constructor?
@@ -277,7 +252,6 @@ public:
                                       cprint.getContext().getPrintingPolicy())
                                << "\"" << fmt::rparen;
                 break;
-#endif
             } else {
                 unsupported_type(print, cprint, type);
             }
@@ -523,13 +497,11 @@ public:
         cprint.printQualType(type->getModifiedType(), print, loc::of(type));
     }
 
-#if CLANG_VERSION_MAJOR >= 14
     void VisitUsingType(const UsingType* type, CoqPrinter& print,
                         ClangPrinter& cprint) {
         assert(type->isSugared());
         cprint.printQualType(type->getUnderlyingType(), print, loc::of(type));
     }
-#endif
 };
 
 PrintType PrintType::printer;
