@@ -12,7 +12,7 @@ scrub() {
 	# The comments `(* kind name at loc *)` are useful when
 	# writing tests but interfere with CI. Name and loc vary
 	# across machines and llvm versions.
-	egrep -hv '^[ 	]+\(\*[^*]*\*\)$' ${1+"$@"} /dev/null
+	grep -E -hv '^[ 	]+\(\*[^*]*\*\)$' ${1+"$@"} /dev/null
 }
 
 name_test_versions() {
