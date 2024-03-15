@@ -23,8 +23,9 @@ check_cpp2v() {
     base="${input%.*}"
     ver="17"
 
-    echo "cpp2v -v -names ${base}_cpp_names.v -o ${base}_cpp.v ${input} -- -std=c++${ver}"
-    cpp2v -v -names ${base}_cpp_names.v -o ${base}_cpp.v ${input} -- -std=c++${ver}
+    # Normalize the output since llvm17 and later quote text with line numbers and a pipe symbol.
+    echo "cpp2v -v -names ${base}_cpp_names.v -o ${base}_cpp.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'"
+    cpp2v -v -names ${base}_cpp_names.v -o ${base}_cpp.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'
 
     echo "coqc -w -notation-overridden ${base}_cpp_names.v"
     coqc -w -notation-overridden "${base}_cpp_names.v"
