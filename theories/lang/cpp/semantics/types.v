@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -87,6 +87,7 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tnullptr => Some (pointer_size resolve)
   | Tfloat_ sz => Some (float_type.bytesN sz)
   | Tarch sz _ => bytesN <$> sz
+  | Tunsupported _ => None
   end%N.
 
 (* [size_of] result can overflow: *)

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-22 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -175,6 +175,7 @@ Definition promote_integral {σ : genv} (tu : translation_unit) (ty : type) : op
   | Tnullptr
   | Tarch _ _ => None
   | Tqualified _ _ => None (* unreachable *)
+  | Tunsupported _ => None
   end.
 
 Goal forall {σ : genv} tu, promote_integral tu Tchar = Some Tint.

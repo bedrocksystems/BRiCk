@@ -85,13 +85,6 @@ Definition mk_virtuals (methods : list (obj_name * option obj_name)) : list (obj
 Section type.
   Context {type : Set}.
 
-  (**
-  Unsupported types. [description] is meant to be only used for
-  documentation.
-  *)
-  Definition Tunsupported `{!Inhabited type} (description : bs) : type.
-  Proof. exact inhabitant. Qed.
-
   (*
   Indicate that [underlying] is used to represent alias type [name].
   Enums are treated similarly.

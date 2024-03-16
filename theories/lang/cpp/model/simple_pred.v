@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -462,6 +462,7 @@ Module SimpleCPP.
         | Tincomplete_array _
         | Tvariable_array _
         | Tnamed _ => False (* not directly encoded in memory *)
+        | Tunsupported _ => False
         end.
       Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred :=
         [| pure_encodes t v vs |].

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2022-2023 BedRock Systems, Inc.
+ * Copyright (c) 2022-2024 BedRock Systems, Inc.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -133,6 +133,7 @@ Section defs.
       | Tfunction _ _
       | Tarch _ _ => UNSUPPORTED Q
       | Tqualified cv ty' => False (* unreachable *)
+      | Tunsupported _ => False
       end%I.
 
   (* NOTE: we prefer an entailment ([|--]) to a bi-entailment ([-|-]) or an equality
