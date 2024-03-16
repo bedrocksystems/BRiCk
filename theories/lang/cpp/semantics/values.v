@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -586,6 +586,7 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
       admit.
       { simpl in G. tauto. }
       rewrite has_type_prop_nullptr; naive_solver.
+      admit.
       admit.
       all: fail.
     Abort.

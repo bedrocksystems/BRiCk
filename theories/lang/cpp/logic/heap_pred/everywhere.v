@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2023 BedRock Systems, Inc.
+ * Copyright (c) 2023-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -140,6 +140,7 @@ Section with_cpp.
 
       | Tqualified tq ty => typeR (qualify tq q) ty
       | Tfunction _ _ => False
+      | Tunsupported _ => False
       end%I.
 
     #[local] Instance typeR_timeless

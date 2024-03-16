@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -125,6 +125,7 @@ Definition default_initialize_body `{Σ : cpp_logic, σ : genv}
     if q_volatile q then UNSUPPORTED "default initialize volatile"
     else if q_const q then ERROR "default initialize const"
     else default_initialize ty p Q
+  | Tunsupported msg => UNSUPPORTED msg
   end%bs%I.
 
 mlock
@@ -422,6 +423,7 @@ magic wands.
 
     | Tqualified _ ty => |={top}=>?u False (* unreachable *)
     | Tarch _ _ => UNSUPPORTED (initializing_type ty init)
+    | Tunsupported _ => UNSUPPORTED (initializing_type ty init)
     end%I.
 
 mlock
@@ -876,6 +878,8 @@ Section wp_initialize.
                         wp_initialize_decomp_spec tu ρ ty addr init Q (
                             UNSUPPORTED (initializing_type ty' init)
                           )
+  | WpInitUnsupported cv msg : decompose_type ty = (cv, Tunsupported msg) ->
+                          wp_initialize_decomp_spec tu ρ ty addr init Q False
   .
 
   Lemma wp_initialize_decomp_ok tu ρ ty addr e Q :
@@ -898,9 +902,12 @@ Section wp_initialize.
       rewrite Hty; apply: drop_qualifiers_decompose_type.
     all: try by rewrite [decompose_type _]surjective_pairing=>[][Hq Hty]; econstructor;
       try solve [ done | rewrite //= [decompose_type _]surjective_pairing -Hq -Hty // | rewrite H // ].
-    rewrite [decompose_type _]surjective_pairing;
-      move: (is_qualified_decompose_type ty)=>/[swap][][] _ <-.
-    by simpl.
+    { (* Tqualified *)
+      rewrite [decompose_type _]surjective_pairing;
+        move: (is_qualified_decompose_type ty)=>/[swap][][] _ <-.
+      by simpl. }
+    { (* Tunsupported *)
+      intros. rewrite UNSUPPORTED.unlock. exact: WpInitUnsupported. }
   Qed.
 
   (** [wpi] *)

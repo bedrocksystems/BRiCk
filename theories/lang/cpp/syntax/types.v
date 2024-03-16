@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -273,6 +273,7 @@ Inductive type : Set :=
 (* architecture-specific types; currently unused.
    some [Tarch] types, e.g. ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
+| Tunsupported (_ : bs)
 .
 (**
 For documentation purposes, we often use the following aliases.
@@ -348,6 +349,8 @@ Section type_ind'.
   Hypothesis Tnullptr_ind' : P Tnullptr.
   Hypothesis Tarch_ind' : forall (osize : option bitsize) (name : bs),
     P (Tarch osize name).
+  Hypothesis Tunsupported' : forall (msg : bs),
+    P (Tunsupported msg).
 
   Fixpoint type_ind' (ty : type) : P ty :=
     match ty with
@@ -380,6 +383,7 @@ Section type_ind'.
     | Tqualified q ty         => Tqualified_ind' q ty (type_ind' ty)
     | Tnullptr                => Tnullptr_ind'
     | Tarch osize name        => Tarch_ind' osize name
+    | Tunsupported msg        => Tunsupported' msg
     end.
 End type_ind'.
 
@@ -426,6 +430,7 @@ Section type_countable.
       | Tarch (Some sz) gn => GenNode 14 [BITSIZE sz; BS gn]
       | Tenum gn => GenNode 15 [BS gn]
       | Tchar_ sz => GenNode 16 [CHAR_TYPE sz]
+      | Tunsupported msg => GenNode 19 [BS msg]
       end.
     set dec := fix go t :=
       match t with
@@ -448,10 +453,11 @@ Section type_countable.
       | GenNode 14 [BITSIZE sz; BS gn] => Tarch (Some sz) gn
       | GenNode 15 [BS gn] => Tenum gn
       | GenNode 16 [CHAR_TYPE sz] => Tchar_ sz
+      | GenNode 19 [BS msg] => Tunsupported msg
       | _ => Tvoid	(** dummy *)
       end.
     apply (inj_countable' enc dec). refine (fix go t := _).
-    destruct t as [| | | | | | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
+    destruct t as [| | | | | | | | | | |cc ar ret args| | | | | |[]|]; simpl; f_equal; try done.
     induction args; simpl; f_equal; done.
   Defined.
 End type_countable.
@@ -723,7 +729,7 @@ Lemma decompose_type_unfold t :
     else (QM, t).
 Proof.
   rewrite /decompose_type qual_norm_unfold.
-  destruct t as [| | | | | | | | | | | | | | |q t| |]; try done. set pair := fun x y => (x, y).
+  destruct t as [| | | | | | | | | | | | | | |q t| | |]; try done. set pair := fun x y => (x, y).
   move: q. induction t=>q; cbn; try by rewrite right_id_L.
   rewrite left_id_L !IHt /=. f_equal. by rewrite assoc_L.
 Qed.
@@ -852,6 +858,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tqualified _ t => erase_qualifiers t
   | Tnullptr => Tnullptr
   | Tarch sz nm => Tarch sz nm
+  | Tunsupported msg => Tunsupported msg
   end.
 
 Lemma is_qualified_erase_qualifiers ty : ~~ is_qualified (erase_qualifiers ty).
@@ -871,7 +878,7 @@ Proof. by rewrite erase_qualifiers_qual_norm qual_norm_decompose_type. Qed.
 Lemma erase_qualifiers_idemp t : erase_qualifiers (erase_qualifiers t) = erase_qualifiers t.
 Proof.
   move: t. fix IHt 1=>t.
-  destruct t as [| | | | | | | | | | |cc ar ret args| | | | | |]; cbn; auto with f_equal.
+  destruct t as [| | | | | | | | | | |cc ar ret args| | | | | | |]; cbn; auto with f_equal.
   { (* functions *) rewrite IHt. f_equal. induction args; cbn; auto with f_equal. }
 Qed.
 
@@ -1255,6 +1262,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Tnullptr => t
   | Tfloat_ _ => t
   | Tarch _ _ => t
+  | Tunsupported _ => t
   end.
 
 Section normalize_type_idempotent.

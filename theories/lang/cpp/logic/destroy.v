@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -560,6 +560,7 @@ Section body.
 
     | Tfunction _ _ => |={top}=> UNSUPPORTED ("wp_destroy_val: function type", rty)
     | Tarch _ _ => |={top}=> UNSUPPORTED ("wp_destroy_val: arch type", rty)
+    | Tunsupported msg => |={top}=> UNSUPPORTED ("wp_destroy_val: arch type", msg)
     end.
 End body.
 
@@ -836,6 +837,7 @@ Section val_array.
       | Tvariable_array _ => False
       | Tfunction _ _
       | Tarch _ _ => False
+      | Tunsupported _ => False
       end.
 
     Lemma wp_destroy_val_intro rty tu cv this Q :
