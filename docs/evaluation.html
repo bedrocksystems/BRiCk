@@ -322,6 +322,7 @@ To capture this, BRiCk <em>defines</em> <code class="code highlight coq docutils
 
     | Tqualified _ ty =&gt; |={top}=&gt;?u False (* unreachable *)
     | Tarch _ _ =&gt; UNSUPPORTED (initializing_type ty init)
+    | Tunsupported _ =&gt; UNSUPPORTED (initializing_type ty init)
     end%I.
 
 mlock
