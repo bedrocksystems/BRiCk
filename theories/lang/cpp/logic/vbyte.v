@@ -37,7 +37,7 @@ Module Type PHANTDATA.
     [phantdata_at] with a virtual points-to fact to get a C++-level
     points-to.*)
   Parameter phantdata_at :
-    forall `{Σ:cpp_logic} {σ:genv} (ty : type) (q : Qp) (p : ptr), mpred.
+    forall `{Σ:cpp_logic} {σ:genv} (ty : Rtype) (q : Qp) (p : ptr), mpred.
   #[global] Notation phantbyte_at := (phantdata_at W8).
   #[global] Notation phantshort_at := (phantdata_at W16).
   #[global] Notation phantword_at := (phantdata_at W32).

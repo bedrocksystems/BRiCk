@@ -12,32 +12,15 @@
  * Another option would be to completely pre-process the
  * AST and remove these nodes.
  *)
-Require Import Stdlib.ZArith.ZArith_base.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 
-(* this function determines whether the type is an aggregate type, i.e.
- * arrays and objects.
- *)
-Fixpoint is_aggregate (t : type) : bool :=
-  match t with
-  | Tnamed _
-  | Tarray _ _ => true
-  | Tqualified _ t => is_aggregate t
-  | _ => false
-  end.
-
-Fixpoint is_void (t : type) : bool :=
-  match t with
-  | Tqualified _ t => is_void t
-  | Tvoid => true
-  | _ => false
-  end.
+(* TODO: this should probably be moved to syntax/types *)
 
 (* this determines whether a type is initializable from a primitive.
  *)
-Fixpoint prim_initializable (t : type) : bool :=
+Fixpoint prim_initializable {lang} (t : type' lang) : bool :=
   match t with
-  | Tpointer _
+  | Tptr _
   | Tnum _ _
   | Tchar_ _
   | Tbool

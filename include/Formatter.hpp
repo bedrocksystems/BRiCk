@@ -34,6 +34,10 @@ public:
 	void indent();
 	void outdent();
 
+	void clear_spaces() {
+		spaces = 0;
+	}
+
 	void ascii(int c);
 
 	template<typename T>
@@ -65,6 +69,30 @@ struct NUM {
 	const char* scope;
 };
 Formatter& operator<<(Formatter&, const NUM&);
+
+template<typename T>
+struct ByDump {
+	ByDump(T& val) : value{val} {}
+	T& value;
+};
+template<typename T>
+inline Formatter&
+operator<<(Formatter& fmt, ByDump<T> obj) {
+	obj.value.dump(fmt.nobreak());
+	return fmt;
+}
+template<typename T>
+inline llvm::raw_ostream&
+operator<<(llvm::raw_ostream& out, ByDump<T> obj) {
+	obj.value.dump(out);
+	return out;
+}
+
+template<typename T>
+ByDump<T>
+dump(T& val) {
+	return ByDump<T>{val};
+}
 
 /// A Coq integer of type `Z` with optional `%Z`
 inline NUM

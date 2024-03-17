@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
+#include "Assert.hpp"
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/Support/raw_ostream.h"
@@ -32,9 +33,8 @@ Formatter::nobreak() {
 		}
 		blank = false;
 	}
-	while (spaces > 0) {
+	for (; spaces > 0; --spaces) {
 		out << " ";
-		spaces--;
 	}
 	return out;
 }
@@ -48,7 +48,7 @@ Formatter::flush() {
 
 void
 Formatter::nbsp() {
-	spaces++;
+	spaces = 1;
 }
 
 void
@@ -57,7 +57,7 @@ Formatter::indent() {
 }
 void
 Formatter::outdent() {
-	assert(this->depth >= 2);
+	always_assert(this->depth >= 2);
 	this->depth -= 2;
 }
 
@@ -110,6 +110,7 @@ const RPAREN* rparen;
 Formatter&
 operator<<(Formatter& out, const RPAREN* _) {
 	out.outdent();
+	out.clear_spaces();
 	out.nobreak() << ")";
 	return out;
 }

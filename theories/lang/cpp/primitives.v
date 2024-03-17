@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.
 
 Notation boolR q v := (primR Tbool q (Vbool v)).
@@ -51,6 +51,6 @@ Notation char32R q v := (primR Tchar32 q (Vchar v)).
 Notation char16R q v := (primR Tchar16 q (Vchar v)).
 Notation char8R q v := (primR Tchar8 q (Vchar v)).
 
-Notation "'ptrR<' ty '>' q p" := (primR (Tpointer ty) q (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'ptrR<' ty '>'  q  p").
+Notation "'ptrR<' ty '>' q p" := (primR (Tptr ty) q (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'ptrR<' ty '>'  q  p").
 
 Notation "'refR<' ty '>' q p" := (primR (Tref ty) q (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'refR<' ty '>'  q  p").

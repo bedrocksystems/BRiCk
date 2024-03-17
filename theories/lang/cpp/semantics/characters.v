@@ -8,7 +8,7 @@ Require Import elpi.apps.locker.locker.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.numbers.
 Require Import bedrock.lang.cpp.arith.operator.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.values.
 
 #[local] Open Scope Z_scope.

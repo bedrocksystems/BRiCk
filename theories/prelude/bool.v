@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-2023
+ * Copyright (C) BedRock Systems Inc. 2020-2024
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -7,6 +7,8 @@
 Require Export bedrock.prelude.base.
 
 #[local] Set Printing Coercions.
+
+#[global] Instance bool_compare : Compare bool := Bool.compare.
 
 Infix "<=" := Bool.le : bool_scope.
 Notation "(<=)" := Bool.le (only parsing) : bool_scope.

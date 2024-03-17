@@ -185,7 +185,7 @@ Section with_prop.
   Qed.
 
 End with_prop.
-#[global,deprecated(since="2022-02-28",note="use [wp_specD_frame]")]
+#[global,deprecated(since="2022-02-28",note="use [wp_specD_frame].")]
 Notation wpp_frame := (wp_specD_frame) (only parsing).
 
 Arguments WpSpec : clear implicits.

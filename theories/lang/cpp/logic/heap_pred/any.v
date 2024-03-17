@@ -28,7 +28,7 @@ Definition primitiveR `{Σ : cpp_logic} {σ : genv} q ty :=
     uninitialized.
  *)
 mlock
-Definition anyR `{Σ : cpp_logic} {σ : genv} (ty : type) (q : cQp.t) : Rep :=
+Definition anyR `{Σ : cpp_logic} {σ : genv} (ty : Rtype) (q : cQp.t) : Rep :=
   everywhereR σ.(genv_tu) primitiveR q ty.
 #[global] Arguments anyR {_ _ Σ σ} _ _ : assert.
 
@@ -112,6 +112,20 @@ Section with_cpp.
   Lemma anyR_Tqualified t tq q : anyR (Tqualified tq t) q -|- anyR t (qualify tq q).
   Proof. by rewrite anyR.unlock everywhereR_Tqualified. Qed.
 
+  #[local] Lemma not_heap_type {lang} (t : type' lang) :
+    (if t is Tqualified _ _ then false else
+       is_value_type t || match t with
+                        | Tref _ => true
+                        | _ => false
+                        end) = false ->
+    Is_true (is_heap_type t) -> False.
+  Proof.
+    rewrite /is_heap_type.
+    destruct t; try (move => ->; rewrite andb_false_r; inversion 1).
+    intros. case_bool_decide; try inversion H0.
+    by symmetry in H1; apply unqual_erase_qualifiers in H1.
+  Qed.
+
   (**
   For value types and reference types, [anyR] coincides with
   [tptstoR].
@@ -119,13 +133,13 @@ Section with_cpp.
   Lemma tptstoR_anyR_val : ∀ t q v,
       tptstoR t q v |-- anyR t q.
   Proof.
-    induction t; simpl; try tauto;
-      try solve
-        [ intros; rewrite anyR.unlock everywhereR_unfold/primitiveR/=; eauto
-        | intros;
-          iIntros "H"; iDestruct (observe [| is_heap_type _ |] with "H") as "%H";
-          exfalso; revert H;
-          rewrite /is_heap_type /=; by rewrite andb_false_r ].
+    induction t; simpl; try tauto.
+    all: try solve [
+             intros;
+             iIntros "H"; iDestruct (observe [| is_heap_type _ |] with "H") as "%H";
+             exfalso; revert H;
+             apply not_heap_type; reflexivity
+           | intros; rewrite anyR.unlock everywhereR_unfold/primitiveR/=; eauto ].
     { (* pointers *)
       iIntros (??) "H".
       iDestruct (observe [| is_heap_type _ |] with "H") as "%H".
@@ -147,11 +161,6 @@ Section with_cpp.
       iExists v; iStopProof. f_equiv.
       rewrite /is_heap_type in H.
       case_bool_decide; auto. exfalso; done. }
-    { (* qualified *)
-      intros.
-      intros;
-        iIntros "H"; iDestruct (observe [| is_heap_type _ |] with "H") as "%H".
-      exfalso; eauto using heap_type_not_qualified. }
   Qed.
 
   Lemma anyR_tptstoR_val : ∀ t q,
@@ -293,7 +302,7 @@ Section with_cpp.
 
   (** decompose a union into the classical disjunction of the alternatives
    *)
-  Lemma anyR_union : forall (cls : globname) un q,
+  Lemma anyR_union : forall cls un q,
     glob_def σ cls = Some (Gunion un) ->
         anyR (Tnamed cls) q
     -|- Reduce (union_defR anyR cls un q).
@@ -350,4 +359,4 @@ Section with_cpp.
 
 End with_cpp.
 
-#[deprecated(since="20231127",note="use [tptstoR_anyR_val]")] Notation anyR_tptstoR_val_2 := tptstoR_anyR_val (only parsing).
+#[deprecated(since="20231127",note="use [tptstoR_anyR_val].")] Notation anyR_tptstoR_val_2 := tptstoR_anyR_val (only parsing).

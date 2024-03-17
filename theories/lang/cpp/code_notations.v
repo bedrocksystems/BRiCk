@@ -5,7 +5,7 @@
  *)
 Require Import Stdlib.ZArith.ZArith.
 
-Require bedrock.lang.cpp.ast.
+Require bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.syntax.type_notations.
 Require Import bedrock.lang.cpp.syntax.expr_notations.
 Require Import bedrock.lang.cpp.syntax.stmt_notations.

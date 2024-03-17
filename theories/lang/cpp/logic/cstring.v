@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019-2022
+ * Copyright (C) BedRock Systems Inc. 2019-2024
 
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -11,7 +11,7 @@ Require Export Stdlib.Strings.Ascii.
 Require Import bedrock.lang.proofmode.proofmode.
 
 Require Import bedrock.prelude.stdpp_ssreflect.
-Require bedrock.prelude.bytestring.
+Require Import bedrock.prelude.bytestring.
 Require Import bedrock.prelude.base.
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.observe.
@@ -24,7 +24,16 @@ Require Import bedrock.lang.cpp.logic.zstring.
 Import ChargeNotation.
 #[local] Open Scope Z_scope.
 
+#[local] Set Printing Coercions.
+
+(**
+TODO: Why does <<ascii>> come up, as opposed to <<Byte.byte>> or
+<<N>>? We no longer need <<ascii>> to relate byte strings to <<list
+N>>.
+*)
+
 Section Cruft.
+  (** TODO: Use <<Inj>> *)
   Lemma N_of_ascii_inj:
     forall a a',
       N_of_ascii a = N_of_ascii a' <->
@@ -35,6 +44,7 @@ Section Cruft.
          | subst].
   Qed.
 
+  (** TODO: Use <<fmap_take>> *)
   Lemma map_take :
     forall {A B} (f : A -> B) (l : list A) (n : nat),
       map f (take n l) = take n (map f l).
@@ -45,6 +55,7 @@ Section Cruft.
     simpl; f_equal; by apply IHl.
   Qed.
 
+  (** TODO: Can we eliminate reliance on <<nth_error>>? *)
   Lemma lookup_nth_error :
     forall {A} (l : list A) (n : nat),
       l !! n = nth_error l n.
@@ -68,7 +79,10 @@ Module cstring.
   Bind Scope bs_scope with t.
 
   (* TODO: Prove equivalent to
-  [BS.bytes_to_string (take (List.length zs - 1) zs)] *)
+  [BS.bytes_to_string (take (List.length zs - 1) zs)]
+
+  TODO: <<ascii> here seems to be a detour.
+  *)
   Definition _from_zstring (zs : zstring.t) : cstring.t :=
     BS.parse (map (byte_of_ascii ∘ ascii_of_N)
                   (take (List.length zs - 1) zs)).
@@ -239,8 +253,8 @@ Module cstring.
         to_zstring (cstr ++ cstr') =
         to_zstring' cstr [] ++ to_zstring cstr'.
     Proof.
-      move=> cstr; induction cstr; intros *; simpl;
-        [| rewrite -IHcstr]; reflexivity.
+      intros. rewrite /to_zstring/_to_zstring'.
+      by rewrite BS.print_append !map_app right_id_L !assoc_L.
     Qed.
 
     Lemma from_zstring_to_zstring_swap {σ : genv} :
@@ -505,14 +519,20 @@ Module cstring.
       induction n; simpl; try lia.
     Qed.
 
+    Lemma size_app cstr cstr' : size (cstr ++ cstr') = size cstr + size cstr' - 1.
+    Proof.
+      have aux : ∀ cstr, zstring.size (to_zstring cstr) = zstring.size (to_zstring' cstr []) + 1.
+      { clear=>cstr. rewrite /to_zstring/_to_zstring'. rewrite !map_app map_cons.
+        rewrite !size_app size_cons. lia. }
+      rewrite /size. rewrite to_zstring_append zstring.size_app.
+      rewrite (aux cstr). lia.
+    Qed.
+
     Lemma strlen_app :
       forall (cstr cstr' : t),
         strlen (cstr ++ cstr') = (strlen cstr + strlen cstr').
     Proof.
-      intros cstr; induction cstr as [| b cstr'' IHcstr'']; intros *.
-      - rewrite /BS.append strlen_EmptyString; by lia.
-      - rewrite /BS.append; fold (BS.append cstr'' cstr').
-        rewrite !strlen_String IHcstr''; by lia.
+      intros. rewrite !strlen_size size_app. lia.
     Qed.
 
     Lemma strlen_nonneg : forall (cstr : t), 0 <= strlen cstr.
@@ -582,16 +602,6 @@ Module cstring.
         by lia.
       generalize (length (BS.print cstr')).
       induction n; simpl; try lia.
-    Qed.
-
-    Lemma size_app :
-      forall (cstr cstr' : t),
-        size (cstr ++ cstr') = size cstr + size cstr' - 1.
-    Proof.
-      intros cstr; induction cstr as [| b cstr'' IHcstr'']; intros *.
-      - rewrite /BS.append size_EmptyString; by lia.
-      - rewrite /BS.append; fold (BS.append cstr'' cstr').
-        rewrite !size_String IHcstr''; by lia.
     Qed.
 
     Lemma size_nonneg : forall (cstr : t), 0 <= size cstr.

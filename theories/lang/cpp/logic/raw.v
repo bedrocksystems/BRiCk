@@ -10,7 +10,7 @@ Require Import iris.bi.lib.fractional.
 Require Import bedrock.lang.cpp.bi.cfractional.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.arith.builtins.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.arr.
 Require Import bedrock.lang.cpp.logic.builtins.

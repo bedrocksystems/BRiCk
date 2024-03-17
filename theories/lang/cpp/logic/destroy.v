@@ -7,7 +7,7 @@
 Require Import elpi.apps.locker.locker.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.errors.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.wp.
@@ -241,7 +241,7 @@ invoking the destructor [dtor] for type [ty] on [this].
   destructors to have C calling convention. Arguments [this :: nil] is
   correct for member functions taking no arguments.
   *)
-  letI* p := wp_mfptr tu.(types) ty (Tfunction Tvoid nil) dtor (this :: nil) in
+  letI* p := wp_mfptr tu.(types) ty (Tfunction $ FunctionType Tvoid nil) dtor (this :: nil) in
   (**
   We inline [operand_receive] (which could be hoisted and shared).
   *)
@@ -467,7 +467,8 @@ Section named.
     intros Htu. move: (Htu)=>/types_compat Htt. wp_destroy_named_unfold.
     destruct (_ !! _) as [v1|] eqn:Hv1; last first.
     { case_match; auto. case_match; eauto using fupd_wp_destructor. }
-    destruct (Htt cls _ Hv1) as (v2 & -> & Hle). destruct v1, v2; try done.
+    destruct (Htt cls _ Hv1) as (v2 & Heq & Hle). rewrite Heq; clear Heq.
+    destruct v1, v2; try done.
     all: try solve [ eauto using fupd_wp_destructor ].
     all: cbn in Hle; case_bool_decide; [subst|done].
     all: by apply wp_destructor_frame.
@@ -537,7 +538,7 @@ Section body.
     | Tarray ety sz =>
       |={top}=> |> wp_destroy_array tu cv ety sz this Q
     | Tincomplete_array ety => |={top}=> False
-    | Tvariable_array ety => |={top}=> False
+    | Tvariable_array ety _ => |={top}=> False
 
     | Tref r_ty
     | Trv_ref r_ty =>
@@ -558,9 +559,10 @@ Section body.
     | Tvoid =>
       wp_destroy_prim tu cv rty this Q
 
-    | Tfunction _ _ => |={top}=> UNSUPPORTED ("wp_destroy_val: function type", rty)
+    | Tfunction _ => |={top}=> UNSUPPORTED ("wp_destroy_val: function type", rty)
     | Tarch _ _ => |={top}=> UNSUPPORTED ("wp_destroy_val: arch type", rty)
     | Tunsupported msg => |={top}=> UNSUPPORTED ("wp_destroy_val: arch type", msg)
+    | _ => |={top}=> UNSUPPORTED ("wp_destroy_val: template type")
     end.
 End body.
 
@@ -834,10 +836,11 @@ Section val_array.
       | Tvoid =>
         wp_destroy_prim tu cv rty this Q
       | Tincomplete_array _ => False
-      | Tvariable_array _ => False
-      | Tfunction _ _
+      | Tvariable_array _ _ => False
+      | Tfunction _
       | Tarch _ _ => False
       | Tunsupported _ => False
+      | _ => False
       end.
 
     Lemma wp_destroy_val_intro rty tu cv this Q :
@@ -922,7 +925,7 @@ Section val_array.
   Lemma wp_destroy_val_intro_ref tu cv ty (this : ptr) Q :
     is_reference_type ty ->
     let c := qual_norm' (fun cv _ => q_const cv) cv ty in
-    (Exists v, this |-> tptstoR (Tref $ erase_qualifiers $ as_ref ty) (cQp.mk c 1) v) ** Q
+    (Exists v, this |-> tptstoR (Tref $ erase_qualifiers $ syntax.types.as_ref ty) (cQp.mk c 1) v) ** Q
     |-- wp_destroy_val tu cv ty this Q.
   Proof.
     cbn. rewrite is_reference_type_decompose_type as_ref_decompose_type.

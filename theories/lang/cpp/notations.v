@@ -5,6 +5,7 @@
  *)
 Require bedrock.lang.cpp.code_notations.
 Require bedrock.lang.cpp.logic.wp_notations.
+Require Export bedrock.lang.cpp.syntax.notations.
 
 (* NOTE: we intentionally avoid [Export]ing [code_notations] since the printing-only
    notations might break existing clients. Clients can use [Import code_notations] to

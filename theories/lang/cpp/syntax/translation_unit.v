@@ -6,80 +6,258 @@
 Require Import stdpp.fin_maps.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.avl.
-Require Import bedrock.lang.cpp.syntax.names.
-Require Import bedrock.lang.cpp.syntax.expr.
-Require Import bedrock.lang.cpp.syntax.stmt.
+Require Import bedrock.lang.cpp.syntax.core.
 Require Import bedrock.lang.cpp.syntax.types.
 Require Import bedrock.lang.cpp.syntax.decl.
+Require Import bedrock.lang.cpp.syntax.namemap.
 Export decl.
 
 #[local] Set Primitive Projections.
 
-#[local] Notation EqDecision1 T := (∀ (A : Set), EqDecision A -> EqDecision (T A)) (only parsing).
-#[local] Notation EqDecision2 T := (∀ (A : Set), EqDecision A -> EqDecision1 (T A)) (only parsing).
-#[local] Notation EqDecision3 T := (∀ (A : Set), EqDecision A -> EqDecision2 (T A)) (only parsing).
-#[local] Notation EqDecision4 T := (∀ (A : Set), EqDecision A -> EqDecision3 (T A)) (only parsing).
-
 #[local] Tactic Notation "solve_decision" := intros; solve_decision.
 
-(* Values in Object files. These can be externed. *)
-Variant ObjValue' {classname obj_name type Expr : Set} : Set :=
-| Ovar         (_ : type) (_ : option Expr)
-| Ofunction    (_ : Func' obj_name type Expr)
-| Omethod      (_ : Method' classname obj_name type Expr)
-| Oconstructor (_ : Ctor' classname obj_name type Expr)
-| Odestructor  (_ : Dtor' classname obj_name type Expr).
-#[global] Arguments ObjValue' : clear implicits.
-#[global] Arguments Ovar _ _ _ _ & _ _ : assert.
-#[global] Arguments Ofunction _ _ _ _ & _ : assert.
-#[global] Arguments Omethod _ _ _ _ & _ : assert.
-#[global] Arguments Oconstructor _ _ _ _ & _ : assert.
-#[global] Arguments Odestructor _ _ _ _ & _ : assert.
-#[global] Instance: EqDecision4 ObjValue'.
+(** ** Type Declarations *)
+Variant GlobDecl' {lang} : Set :=
+  | Gtype     (* this is a type declaration, but not a definition *)
+  | Gunion    (_ : Union' lang) (* union body *)
+  | Gstruct   (_ : Struct' lang) (* struct body *)
+  | Genum     (_ : type' lang) (_ : list ident) (* *)
+  | Gconstant (_ : type' lang) (init : option (Expr' lang)) (* used for enumerator constants*)
+  | Gtypedef  (_ : type' lang).
+#[global] Arguments GlobDecl' : clear implicits.
+#[global] Arguments Gunion _ & _ : assert.
+#[global] Arguments Gstruct _ & _ : assert.
+#[global] Arguments Genum _ & _ _ : assert.
+#[global] Arguments Gconstant _ & _ _ : assert.
+#[global] Arguments Gtypedef _ & _ : assert.
+#[global] Instance: forall {lang}, EqDecision (GlobDecl' lang).
 Proof. solve_decision. Defined.
-Notation ObjValue := (ObjValue' globname obj_name type Expr).
+Notation GlobDecl := (GlobDecl' lang.cpp).
+
+(** *** The Type Table *)
+Definition type_table : Type := NM.t GlobDecl.
+
+(** ** Value Declarations *)
+
+Module global_init.
+  Variant t {lang : lang.t} : Set :=
+  | Init (_ : Expr' lang)
+  | ImplicitInit
+    (* ^^ This arises because template instantiations are only carried out
+          as much as they are needed. For example,
+       <<
+       template<typename T, T v>
+       struct integral_constant {
+         static constexpr T value = v;
+       };
+       void test() {
+         // this line forces the declaration, but not the initialization.
+         auto x = sizeof(integral_constant<bool, true>::value);
+         // this line forces the initialization of the value.
+         auto y = integral_constant<bool, true>::value;
+       }
+       >>
+     *)
+  | NoInit
+  | Delayed (* for <<static>> variables declared in functions.
+               These are initialized during the first call to the function *)
+  | Extern.
+  #[global] Arguments t _ : clear implicits.
+  #[global] Instance t_eq {lang} : EqDecision (t lang).
+  Proof. solve_decision. Defined.
+
+  Import UPoly.
+  #[universes(polymorphic)]
+  Definition fmap {lang lang' : lang.t} `{FMap M} (f : Expr' lang -> Expr' lang')
+    (gi : global_init.t lang) : global_init.t lang' :=
+    match gi with
+    | global_init.Init e => global_init.Init $ f e
+    | global_init.ImplicitInit => global_init.ImplicitInit
+    | global_init.NoInit => global_init.NoInit
+    | global_init.Delayed => global_init.Delayed
+    | global_init.Extern => global_init.Extern
+    end.
+
+  #[universes(polymorphic)]
+  Definition traverse {lang lang' : lang.t} `{MRet M, Ap M} (f : Expr' lang -> M (Expr' lang'))
+    (gi : global_init.t lang) : M (global_init.t lang') :=
+    match gi with
+    | global_init.Init e => global_init.Init <$> f e
+    | global_init.ImplicitInit => mret global_init.ImplicitInit
+    | global_init.NoInit => mret global_init.NoInit
+    | global_init.Delayed => mret global_init.Delayed
+    | global_init.Extern => mret global_init.Extern
+    end.
+End global_init.
+
+(* Values in Object files. These can be externed. *)
+Variant ObjValue' {lang} : Set :=
+| Ovar         (_ : type' lang) (_ : global_init.t lang)
+| Ofunction    (_ : Func' lang)
+| Omethod      (_ : Method' lang)
+| Oconstructor (_ : Ctor' lang)
+| Odestructor  (_ : Dtor' lang).
+#[global] Arguments ObjValue' : clear implicits.
+#[global] Arguments Ovar _ & _ _ : assert.
+#[global] Arguments Ofunction _ & _ : assert.
+#[global] Arguments Omethod _ & _ : assert.
+#[global] Arguments Oconstructor _ & _ : assert.
+#[global] Arguments Odestructor _ & _ : assert.
+#[global] Instance: forall {lang}, EqDecision (ObjValue' lang).
+Proof. solve_decision. Defined.
+Notation ObjValue := (ObjValue' lang.cpp).
 
 (**
 TODO: [Tmember_func], [type_of_value] seem misplaced
 *)
 
+Definition type_of_classname {lang} : classname' lang -> type' lang :=
+  match lang with
+  | lang.cpp => Tnamed
+  | lang.temp => fun x => x
+  end.
+
 (** [type_of_value o] returns the type of the given [ObjValue] *)
-Definition type_of_value (o : ObjValue) : type :=
+Definition type_of_value {lang} (o : ObjValue' lang) : type' lang :=
   normalize_type
   match o with
   | Ovar t _ => t
-  | Ofunction f => Tfunction (cc:=f.(f_cc)) (ar:=f.(f_arity)) f.(f_return) $ snd <$> f.(f_params)
+  | Ofunction f => Tfunction {| ft_cc := f.(f_cc) ; ft_arity := f.(f_arity) ; ft_return := f.(f_return) ; ft_params := snd <$> f.(f_params) |}
   | Omethod m =>
-    Tmember_func (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) $ Tfunction (cc:=m.(m_cc)) (ar:=m.(m_arity)) m.(m_return) $ snd <$> m.(m_params)
+    Tmember_func (Tqualified m.(m_this_qual) (type_of_classname m.(m_class)))
+                 $ Tfunction {| ft_cc := m.(m_cc) ; ft_arity := m.(m_arity) ; ft_return := m.(m_return) ; ft_params := snd <$> m.(m_params) |}
+
   | Oconstructor c =>
-    Tmember_func (Tnamed c.(c_class)) $ Tfunction (cc:=c.(c_cc)) (ar:=c.(c_arity)) Tvoid $ snd <$> c.(c_params)
+    Tmember_func (type_of_classname c.(c_class)) $ Tfunction {| ft_cc := c.(c_cc) ; ft_arity := c.(c_arity) ; ft_return := Tvoid ; ft_params := snd <$> c.(c_params) |}
   | Odestructor d =>
-    Tmember_func (Tnamed d.(d_class)) $ Tfunction (cc:=d.(d_cc)) Tvoid nil
+    Tmember_func (type_of_classname d.(d_class)) $ Tfunction {| ft_cc := d.(d_cc) ; ft_arity := Ar_Definite ; ft_return := Tvoid ; ft_params := nil |}
   end.
 
-Variant GlobDecl' {classname obj_name type Expr : Set} : Set :=
-| Gtype     (* this is a type declaration, but not a definition *)
-| Gunion    (_ : Union' obj_name type Expr) (* union body *)
-| Gstruct   (_ : Struct' classname obj_name type Expr) (* struct body *)
-| Genum     (_ : type) (_ : list ident) (* *)
-| Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
-| Gtypedef  (_ : type).
-#[global] Arguments GlobDecl' : clear implicits.
-#[global] Arguments Gunion _ _ _ _ & _ : assert.
-#[global] Arguments Gstruct _ _ _ _ & _ : assert.
-#[global] Arguments Genum _ _ _ _ & _ _ : assert.
-#[global] Arguments Gconstant _ _ _ _ & _ _ : assert.
-#[global] Arguments Gtypedef _ _ _ _ & _ : assert.
-#[global] Instance: EqDecision4 GlobDecl'.
+(** *** The Value Declaration Table *)
+
+Definition symbol_table : Type := NM.t ObjValue.
+
+(** ** Initializers *)
+Variant GlobalInit' {lang} : Set :=
+  (* initialization by an expression *)
+| ExprInit (_ : Expr' lang)
+  (* zero initialization *)
+| ZeroInit
+  (* declaration will be initialized from within a function.
+     The C++ standard states that these need to be initialized
+     in a concurrency-safe way; however, in practice it is common
+     to disable this functionality in embedded code using
+     [-fno-threadsafe-statics]. The boolean attached to this
+     determines whether *the compiler* guarantees there is at most
+     a single call to this constructor.
+
+     See https://eel.is/c++draft/stmt.dcl#3
+   *)
+| FunctionInit (at_most_once : bool).
+#[global] Arguments GlobalInit' : clear implicits.
+#[global] Arguments ExprInit _ & _ : assert.
+#[global] Instance: forall {lang}, EqDecision (GlobalInit' lang).
 Proof. solve_decision. Defined.
-Notation GlobDecl := (GlobDecl' globname obj_name type Expr).
+Notation GlobalInit := (GlobalInit' lang.cpp).
 
-Definition symbol_table : Type := IM.t ObjValue.
+(** [GlobalInitializer] represents an initializer for a
+    global variable.
+ *)
+Record GlobalInitializer' {lang} : Set := Build_GlobalInitializer
+  { g_name : obj_name' lang
+  ; g_type : type' lang
+  ; g_init : GlobalInit' lang
+  }.
+#[global] Arguments GlobalInitializer' : clear implicits.
+#[global] Arguments Build_GlobalInitializer _ & _ _ _ : assert.
+#[global] Instance: forall {lang}, EqDecision (GlobalInitializer' lang).
+Proof. solve_decision. Defined.
+Notation GlobalInitializer := (GlobalInitializer' lang.cpp).
 
-Definition type_table : Type := IM.t GlobDecl.
+(** An initialization block is a sequence of variable initializers
+    that will be run when the compilation unit is loaded.
 
-#[global] Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
-#[global] Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
+    Note that C++ guarantees the order of some initialization, but
+    the order of template initialized global types is not specified by the
+    standard.
+
+    This means that, to be completely precise, this type needs to be
+    something a bit more exotic that permits concurrent initialization.
+ *)
+Definition InitializerBlock' lang : Set :=
+  list (GlobalInitializer' lang).
+Notation InitializerBlock := (InitializerBlock' lang.cpp).
+#[global] Instance InitializerBlock_empty {lang} : Empty (InitializerBlock' lang) :=
+  nil.
+
+(** ** Aliases *)
+
+Definition alias_table : Type := NM.t type.
+
+(** ** Translation units *)
+(**
+A [translation_unit] represents all the statically known
+information about a C++ translation unit, that is, a source file.
+
+TOOD: add support for symbols with _internal_ linkage.
+
+TODO: does linking induce a (non-commutative) monoid on object files?
+Is then a translation unit a "singleton" value in this monoid?
+*)
+
+
+Record translation_unit : Type := {
+  symbols : symbol_table;
+  types : type_table;
+  aliases : alias_table;	(* we eschew <<Gtypedef>> for now *)
+  initializer : InitializerBlock;
+  byte_order  : endian;
+}.
+
+(*
+(** These [Lookup] instances come with no theory; use instead the unfolding
+    lemmas below and the `fin_maps` theory. *)
+#[global] Instance global_lookup : Lookup globname GlobDecl translation_unit :=
+  fun k m => m.(types) !! k.
+#[global] Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
+  fun k m => m.(symbols) !! k.
+
+Lemma tu_lookup_globals (t : translation_unit) (n : globname) :
+  t !! n = t.(types) !! n.
+Proof. done. Qed.
+
+Lemma tu_lookup_symbols (t : translation_unit) (n : obj_name) :
+  t !! n = t.(symbols) !! n.
+Proof. done. Qed.
+*)
+
+(** [is_trivially_destructible tu ty] returns [true] if [ty] is trivially destructible.
+
+    This classifies references as trivially destructible.
+ *)
+Fixpoint is_trivially_destructible (tu : translation_unit) (ty : type) {struct ty} : bool :=
+  qual_norm (fun _ t =>
+               match t with
+               | Tref _ | Trv_ref _
+               | Tnum _ _ | Tchar_ _
+               | Tvoid | Tbool | Tptr _
+               | Tenum _
+               | Tmember_pointer _ _
+               | Tfloat_ _
+               | Tnullptr => true
+               | Tnamed nm =>
+                   match tu.(types) !! nm with
+                   | Some (Gunion u) => u.(u_trivially_destructible)
+                   | Some (Gstruct s) => s.(s_trivially_destructible)
+                   | _ => false
+                   end
+               | Tarray ety _ => is_trivially_destructible tu ety
+               | _ => false
+               end) ty.
+
+
+(* #[global] Remove Hints IM_lookup : typeclass_instances. (* TODO: structurd name lookup *) *)
+
 
 (**
 TODO: The following work on complete types seems misplaced.
@@ -124,8 +302,8 @@ Section with_type_table.
   (* We intentionally omit Krebbers' clauses checking the aggregate is not
   empty: empty aggregates are legal in full C/C++ (see
   [cpp2v-tests/test_translation_unit_validity.cpp]). *)
-  | complete_Struct {st}
-              (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
+  | complete_Struct {st : Struct}
+              (_ : forall (b : name) li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
               (_ : forall m, In m st.(s_fields) -> complete_type m.(mem_type))
     : complete_decl (Gstruct st)
   | complete_Union {u}
@@ -190,7 +368,7 @@ Section with_type_table.
   | complete_pt_function {cc ret args}
       (_ : wellscoped_type ret)
       (_ : wellscoped_types args)
-    : complete_pointee_type (Tfunction (cc:=cc) ret args)
+    : complete_pointee_type (Tfunction $ FunctionType (ft_cc:=cc) ret args)
   | complete_pt_basic t :
     complete_basic_type t ->
     complete_pointee_type t
@@ -219,15 +397,15 @@ Section with_type_table.
   | complete_member_pointer {n t} (_ : not_ref_type t)
       (_ : complete_pointee_type (Tnamed n))
       (_ : complete_pointee_type t)
-    : complete_type (Tmember_pointer n t)
+    : complete_type (Tmember_pointer (Tnamed n) t)
   | complete_function {cc ar ret args} :
     (*
     We could probably omit this constructor, and consider function types as not
     complete; "complete function types" do not exist in the standard, and
     [complete_symbol_table] does not use the concept.
      *)
-    complete_pointee_type (Tfunction (cc:=cc) (ar:=ar) ret args) ->
-    complete_type (Tfunction (cc:=cc) (ar:=ar) ret args)
+    complete_pointee_type (Tfunction $ FunctionType (ft_cc:=cc) (ft_arity:=ar) ret args) ->
+    complete_type (Tfunction $ FunctionType (ft_cc:=cc) (ft_arity:=ar) ret args)
   | complete_basic t :
     complete_basic_type t ->
     complete_type t
@@ -335,104 +513,3 @@ Question: do we need [complete_symbol_table]? This is not expected.
 Goal: enable recursion on proofs of [complete_type_table], e.g. for defining
 [anyR] (FM-215).
 *)
-
-Variant GlobalInit' {Expr : Set} : Set :=
-  (* initialization by an expression *)
-| ExprInit (_ : Expr)
-  (* zero initialization *)
-| ZeroInit
-  (* declaration will be initialized from within a function.
-     The C++ standard states that these need to be initialized
-     in a concurrency-safe way; however, in practice it is common
-     to disable this functionality in embedded code using
-     [-fno-threadsafe-statics]. The boolean attached to this
-     determines whether *the compiler* guarantees there is at most
-     a single call to this constructor.
-
-     See https://eel.is/c++draft/stmt.dcl#3
-   *)
-| FunctionInit (at_most_once : bool).
-#[global] Arguments GlobalInit' : clear implicits.
-#[global] Arguments ExprInit _ & _ : assert.
-#[global] Instance: EqDecision1 GlobalInit'.
-Proof. solve_decision. Defined.
-Notation GlobalInit := (GlobalInit' Expr).
-
-(** [GlobalInitializer] represents an initializer for a
-    global variable.
- *)
-Record GlobalInitializer' {obj_name type Expr : Set} : Set := Build_GlobalInitializer
-  { g_name : obj_name
-  ; g_type : type
-  ; g_init : GlobalInit' Expr
-  }.
-#[global] Arguments GlobalInitializer' : clear implicits.
-#[global] Arguments Build_GlobalInitializer {_ _ _} & _ _ _ : assert.
-#[global] Instance: EqDecision3 GlobalInitializer'.
-Proof. solve_decision. Defined.
-Notation GlobalInitializer := (GlobalInitializer' obj_name type Expr).
-
-(** An initialization block is a sequence of variable initializers
-    that will be run when the compilation unit is loaded.
-
-    Note that C++ guarantees the order of some initialization, but
-    the order of template initialized global types is not specified by the
-    standard.
-
-    This means that, to be completely precise, this type needs to be
-    something a bit more exotic that permits concurrent initialization.
- *)
-Definition InitializerBlock' (obj_name type Expr : Set) : Set :=
-  list (GlobalInitializer' obj_name type Expr).
-Notation InitializerBlock := (InitializerBlock' obj_name type Expr).
-#[global] Instance InitializerBlock_empty {obj_name type Expr} : Empty (InitializerBlock' obj_name type Expr) :=
-  nil.
-
-(**
-A [translation_unit] value represents all the statically known information
-about a C++ translation unit, that is, a source file.
-TOOD: add support for symbols with _internal_ linkage.
-TODO: does linking induce a (non-commutative) monoid on object files? Is then
-a translation unit a "singleton" value in this monoid? *)
-Record translation_unit : Type :=
-{ symbols     : symbol_table
-; types       : type_table
-; initializer : InitializerBlock
-; byte_order  : endian
-}.
-
-(** These [Lookup] instances come with no theory; use instead the unfolding
-    lemmas below and the `fin_maps` theory. *)
-#[global] Instance global_lookup : Lookup globname GlobDecl translation_unit :=
-  fun k m => m.(types) !! k.
-#[global] Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
-  fun k m => m.(symbols) !! k.
-
-Lemma tu_lookup_globals (t : translation_unit) (n : globname) :
-  t !! n = t.(types) !! n.
-Proof. done. Qed.
-
-Lemma tu_lookup_symbols (t : translation_unit) (n : obj_name) :
-  t !! n = t.(symbols) !! n.
-Proof. done. Qed.
-
-(** [is_trivially_destructible tu ty] returns [true] if [ty] is trivially destructible.
-
-    This classifies references as trivially destructible.
- *)
-Fixpoint is_trivially_destructible (tu : translation_unit) (ty : type) {struct ty} : bool :=
-  qual_norm (fun _ t =>
-               match t with
-               | Tref _ | Trv_ref _
-               | Tnum _ _ | Tchar_ _
-               | Tvoid | Tbool | Tptr _
-               | Tenum _ => true
-               | Tnamed nm =>
-                   match tu.(types) !! nm with
-                   | Some (Gunion u) => u.(u_trivially_destructible)
-                   | Some (Gstruct s) => s.(s_trivially_destructible)
-                   | _ => false
-                   end
-               | Tarray ety _ => is_trivially_destructible tu ety
-               | _ => false
-               end) ty.

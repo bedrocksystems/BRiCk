@@ -2,80 +2,45 @@
   $ name_test test.cpp
   # cpp2v --name-test=test_17_name_test.v test.cpp -- -std=c++17
   # scrub test_17_name_test.v
-  Require Import bedrock.auto.cpp.templates.mparser2.
+  Require Import bedrock.lang.cpp.mparser.
   
   #[local] Open Scope bs_scope.
   
   Definition module_names : list Mname :=
     (
-      (Nscoped
-        (Nglobal (Nanon 0)) (Nid "inhabit_ns")) ::
+      (* CXXRecord (anonymous namespace)::inhabit_ns at $TESTCASE_ROOT/test.cpp:9:5 *) (Nscoped (Nglobal Nanonymous) (Nid "inhabit_ns")) ::
   
-      (Nscoped
-        (Nglobal (Nid "container")) (Nfunction (nil) Nctor nil)) ::
+      (* CXXConstructor container::container() at $TESTCASE_ROOT/test.cpp:12:5 *) (Nscoped (Nglobal (Nid "container")) (Nfunction function_qualifiers.N Nctor nil)) ::
   
-      (Nscoped
-        (Nglobal (Nid "container")) (Nfunction (nil) Ndtor nil)) ::
+      (* CXXDestructor container::~container() at $TESTCASE_ROOT/test.cpp:13:5 *) (Nscoped (Nglobal (Nid "container")) (Nfunction function_qualifiers.N Ndtor nil)) ::
   
-      (Nglobal (Nid "container")) ::
+      (* CXXRecord container at $TESTCASE_ROOT/test.cpp:11:1 *) (Nglobal (Nid "container")) ::
   
-      (Nscoped
-        (Nglobal (Nid "container")) (Nanon 0)) ::
+      (* CXXRecord container::(anonymous struct at $TESTCASE_ROOT/test.cpp:19:5) at $TESTCASE_ROOT/test.cpp:19:5 *) (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 0)) (Nfunction (nil) Nctor nil)) ::
+      (* CXXConstructor container::(anonymous struct)::(anonymous struct at $TESTCASE_ROOT/test.cpp:19:5)() at $TESTCASE_ROOT/test.cpp:19:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")) (Nfunction function_qualifiers.N Nctor nil)) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 0)) (Nfunction (nil) Nctor ((Tref (Qconst (Tnamed
-                  (Nscoped
-                    (Nglobal (Nid "container")) (Nanon 0))))) :: nil))) ::
+      (* CXXConstructor container::(anonymous struct)::(anonymous struct at $TESTCASE_ROOT/test.cpp:19:5)(const (anonymous struct at $TESTCASE_ROOT/test.cpp:19:5) &) at $TESTCASE_ROOT/test.cpp:19:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")) (Nfunction function_qualifiers.N Nctor ((Tref (Qconst (Tnamed (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s"))))) :: nil))) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 0)) (Nfunction (nil) (Nop OOEqual) ((Tref (Qconst (Tnamed
-                  (Nscoped
-                    (Nglobal (Nid "container")) (Nanon 0))))) :: nil))) ::
+      (* CXXMethod container::(anonymous struct)::operator=(const (anonymous struct at $TESTCASE_ROOT/test.cpp:19:5) &) at $TESTCASE_ROOT/test.cpp:19:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")) (Nfunction function_qualifiers.N (Nop OOEqual) ((Tref (Qconst (Tnamed (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s"))))) :: nil))) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 0)) (Nfunction (nil) Nctor ((Trv_ref (Tnamed
-                (Nscoped
-                  (Nglobal (Nid "container")) (Nanon 0)))) :: nil))) ::
+      (* CXXConstructor container::(anonymous struct)::(anonymous struct at $TESTCASE_ROOT/test.cpp:19:5)((anonymous struct at $TESTCASE_ROOT/test.cpp:19:5) &&) at $TESTCASE_ROOT/test.cpp:19:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")) (Nfunction function_qualifiers.N Nctor ((Trv_ref (Tnamed (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")))) :: nil))) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 0)) (Nfunction (nil) (Nop OOEqual) ((Trv_ref (Tnamed
-                (Nscoped
-                  (Nglobal (Nid "container")) (Nanon 0)))) :: nil))) ::
+      (* CXXMethod container::(anonymous struct)::operator=((anonymous struct at $TESTCASE_ROOT/test.cpp:19:5) &&) at $TESTCASE_ROOT/test.cpp:19:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")) (Nfunction function_qualifiers.N (Nop OOEqual) ((Trv_ref (Tnamed (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")))) :: nil))) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 0)) (Nfunction (nil) Ndtor nil)) ::
+      (* CXXDestructor container::(anonymous struct)::~(anonymous struct at $TESTCASE_ROOT/test.cpp:19:5)() at $TESTCASE_ROOT/test.cpp:19:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_s")) (Nfunction function_qualifiers.N Ndtor nil)) ::
   
-      (Nscoped
-        (Nglobal (Nid "container")) (Nanon 1)) ::
+      (* CXXRecord container::(anonymous union at $TESTCASE_ROOT/test.cpp:23:5) at $TESTCASE_ROOT/test.cpp:23:5 *) (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_u")) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 1)) (Nfunction (nil) Nctor ((Tref (Qconst (Tnamed
-                  (Nscoped
-                    (Nglobal (Nid "container")) (Nanon 1))))) :: nil))) ::
+      (* CXXConstructor container::(anonymous union)::(anonymous union at $TESTCASE_ROOT/test.cpp:23:5)(const (anonymous union at $TESTCASE_ROOT/test.cpp:23:5) &) at $TESTCASE_ROOT/test.cpp:23:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_u")) (Nfunction function_qualifiers.N Nctor ((Tref (Qconst (Tnamed (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_u"))))) :: nil))) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 1)) (Nfunction (nil) Nctor ((Trv_ref (Tnamed
-                (Nscoped
-                  (Nglobal (Nid "container")) (Nanon 1)))) :: nil))) ::
+      (* CXXConstructor container::(anonymous union)::(anonymous union at $TESTCASE_ROOT/test.cpp:23:5)((anonymous union at $TESTCASE_ROOT/test.cpp:23:5) &&) at $TESTCASE_ROOT/test.cpp:23:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_u")) (Nfunction function_qualifiers.N Nctor ((Trv_ref (Tnamed (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_u")))) :: nil))) ::
   
-      (Nscoped
-        (Nscoped
-          (Nglobal (Nid "container")) (Nanon 1)) (Nfunction (nil) Ndtor nil)) ::
+      (* CXXDestructor container::(anonymous union)::~(anonymous union at $TESTCASE_ROOT/test.cpp:23:5)() at $TESTCASE_ROOT/test.cpp:23:5 *) (Nscoped (Nscoped (Nglobal (Nid "container")) (Nrecord_by_field "inhabit_u")) (Nfunction function_qualifiers.N Ndtor nil)) ::
   
-      (Nglobal (Nanon 1)) ::
+      (* Enum (unnamed enum at $TESTCASE_ROOT/test.cpp:27:1) at $TESTCASE_ROOT/test.cpp:27:1 *) (Nglobal (Nenum_by_enumerator "inhabit_e")) ::
   
-      (Nglobal (Nid "inhabit_e")) ::
+      (* EnumConstant inhabit_e at $TESTCASE_ROOT/test.cpp:27:8 *) (Nscoped (Nglobal (Nenum_by_enumerator "inhabit_e")) (Nid "inhabit_e")) ::
       nil).
   
   Definition template_names : list Mname :=

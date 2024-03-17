@@ -16,14 +16,14 @@ Set Printing Universes.
 
 #[global] Instance val_HasVoid : HasVoid val := { _void := Vvoid }.
 
-#[deprecated(since="2022-02-13",note="use [WpSpec]")]
+#[deprecated(since="2022-02-13",note="use [WpSpec].")]
 Notation WithPrePostG := WpSpec (only parsing).
 Bind Scope pre_spec_scope with WpSpec.
 
 Notation WpSpec_cpp_val := (WpSpec mpredI val val) (only parsing).
 Notation WpSpec_cpp_ptr := (WpSpec mpredI ptr ptr) (only parsing).
 
-#[deprecated(since="2022-02-13",note="use [WpSpec_cpp_ptr]")]
+#[deprecated(since="2022-02-13",note="use [WpSpec_cpp_ptr].")]
 Notation WithPrePost PROP := (WpSpec PROP ptr ptr) (only parsing).
 
 (* These two classes provide automatic coercions between [ptr] and [val] and [Z] and [val]

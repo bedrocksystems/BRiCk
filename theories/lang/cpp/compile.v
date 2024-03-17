@@ -12,7 +12,7 @@
 
  *)
 
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.cpp.semantics.
 

@@ -9,7 +9,7 @@ Require Import bedrock.prelude.list.
 Require Import bedrock.lang.proofmode.proofmode.
 
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
 Require Import bedrock.lang.cpp.logic.heap_pred.
@@ -35,7 +35,7 @@ Section with_Σ.
           Exists rs, [| rss !! FieldOrBase.Base b.1 = Some rs |] ** _base cls b.1 |-> rawsR q rs) **
        ([∗ list] fld ∈ st.(s_fields),
           Exists rs, [| rss !! FieldOrBase.Field fld.(mem_name) = Some rs |] **
-            _field {| f_name := fld.(mem_name) ; f_type := cls |} |-> rawsR q rs)
+            _field (Field cls fld.(mem_name)) |-> rawsR q rs)
     -|- type_ptrR (Tnamed cls) **
       Exists rs, rawsR q rs ** [| raw_bytes_of_struct σ cls rss rs |].
 

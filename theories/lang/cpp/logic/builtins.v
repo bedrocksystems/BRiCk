@@ -7,7 +7,7 @@ Require Import bedrock.prelude.base.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.logic.pred.
@@ -53,6 +53,9 @@ Section wp_builtin.
   Proof. repeat intro. exact: wp_builtin_mono. Qed.
   #[global] Instance wp_builtin_proper : PROPER equiv.
   Proof. intros * Q1 Q2 HQ. by split'; apply: wp_builtin_mono=>?; rewrite HQ. Qed.
+
+  #[local] Notation Tfunction ret args :=
+    (Tfunction $ FunctionType ret args).
 
   Lemma wp_unreachable : forall Q,
       False |-- wp_builtin Bin_unreachable (Tfunction Tvoid nil) nil Q.
@@ -242,7 +245,7 @@ Definition wp_builtin_func' `{Σ : cpp_logic, σ : genv} (u : bool)
     (b : BuiltinFn) (fty : functype) (args : list ptr) (Q : ptr -> epred) : mpred :=
   |={top}=>?u
   match fty with
-  | Tfunction rty targs =>
+  | Tfunction (FunctionType rty targs) =>
     let* vs := read_args targs args in
     let* v := wp_builtin b fty vs in
     Forall p : ptr, p |-> primR rty (cQp.mut 1) v -* |={top}=>?u Q p

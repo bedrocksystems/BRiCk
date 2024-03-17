@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #include "ModuleBuilder.hpp"
+#include "Assert.hpp"
 #include "CommentScanner.hpp"
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
@@ -104,7 +105,7 @@ public:
 
 	void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
 								  Flags flags) {
-		assert(flags.none());
+		always_assert(flags.none());
 
 		for (auto i : decl->decls()) {
 			this->Visit(i, flags);
@@ -148,9 +149,8 @@ public:
 	}
 
 	void VisitCXXRecordDecl(const CXXRecordDecl *decl, Flags flags) {
-		if (decl->isImplicit())
+		if (decl->isImplicit() and not decl->isLambda())
 			return;
-
 		VisitTagDecl(decl, flags);
 		VisitDeclContext(decl, flags);
 	}
@@ -189,9 +189,11 @@ public:
 				// static local variables, classes, functions, etc.
 				for (auto i : decl->decls()) {
 					if (auto d = dyn_cast<VarDecl>(i)) {
-						if (d->isStaticLocal()) {
-							go(d, flags);
+						if (d->isStaticLocal() or d->hasExternalStorage()) {
+							Visit(d, flags);
 						}
+					} else {
+						Visit(i, flags);
 					}
 				}
 			}
@@ -215,12 +217,10 @@ public:
 
 	void VisitVarDecl(const VarDecl *decl, Flags flags) {
 		if (auto defn = decl->getDefinition()) {
-			if (defn != decl)
-				return;
-		} else if (!decl->isCanonicalDecl())
-			return;
-
-		go(decl, flags);
+			if (defn == decl)
+				go(decl, flags);
+		} else if (decl == decl->getCanonicalDecl())
+			go(decl, flags);
 	}
 
 	void VisitVarTemplateDecl(const VarTemplateDecl *decl, Flags flags) {
@@ -233,7 +233,8 @@ public:
 	}
 
 	void VisitNamespaceDecl(const NamespaceDecl *decl, Flags flags) {
-		assert(flags.none());
+		// namespaces can not be located inside of templates
+		always_assert(flags.none());
 
 		VisitDeclContext(decl, flags);
 	}
@@ -249,7 +250,7 @@ public:
 	}
 
 	void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, Flags flags) {
-		assert(flags.none());
+		always_assert(flags.none());
 
 		VisitDeclContext(decl, flags);
 	}

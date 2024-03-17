@@ -108,7 +108,7 @@ which takes as argument the mangled name of the class/struct.
 We can use the notations defined in the names file to write
 unmangled names. More about this in the next chapters.
 *)
-Example eptr3 : Rep := ptrR<Tnamed "listZ5"> q p.
+Example eptr3 : Rep := ptrR<Tnamed (Nglobal $ Nid "list")> q p.
 
 (** * Separation
 *)

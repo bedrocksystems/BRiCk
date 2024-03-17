@@ -101,22 +101,16 @@ Module Import BS.
   Qed.
   (* TODO: [string_to_bytes (bytes_to_string bs) = bs], but it only holds for "valid" [bs]. *)
 
-  (* [sepBy sep ls] concatenates the elements in [ls] using
-    the separator [sep] *)
-  Fixpoint sepBy (sep : bs) (ls : list bs) : bs :=
-    match ls with
-    | nil => ""
-    | l :: nil => l
-    | l :: ls => l ++ sep ++ sepBy sep ls
-    end.
+  #[deprecated(since="20240521", note="Use [BS.concat].")]
+  Notation sepBy := BS.concat (only parsing).
 
   #[local]
   Fixpoint split_at_loop (n : nat) (acc b : bs) : bs * bs :=
     match n with
-    | 0 => (BS.rev BS.EmptyString acc, b)
+    | 0 => (BS.rev acc, b)
     | S n => match b with
             | BS.String x y => split_at_loop n (BS.String x acc) y
-            | BS.EmptyString => (BS.rev BS.EmptyString acc, b)
+            | BS.EmptyString => (BS.rev acc, b)
             end
     end.
   Definition split_at (n : nat) (s : bs) : bs * bs := split_at_loop n "" s.
@@ -149,14 +143,5 @@ Notation "N .@@ x" := (ndot (A := bs) N x%bs)
   (at level 19, left associativity, format "N .@@ x") : stdpp_scope.
 Notation "(.@@)" := (ndot (A := bs)) (only parsing) : stdpp_scope.
 
-(* [sepBy sep ls] concatenates the elements in [ls] using
-   the separator [sep] *)
-Fixpoint sepBy (b : bs) (ls : list bs) : bs :=
-  match ls with
-  | nil => ""
-  | l :: ls =>
-    match ls with
-    | nil => l
-    | _ :: _ => l ++ b ++ sepBy b ls
-    end
-  end.
+#[deprecated(since="20240521", note="Use [BS.concat].")]
+Notation sepBy := BS.concat (only parsing).

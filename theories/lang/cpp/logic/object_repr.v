@@ -213,7 +213,7 @@ Section raw_type_ptrs.
       Qed.
 
       Lemma raw_type_ptrs_Tarray_elem (i : N) :
-        forall (p : ptr) (ty : types.type) (cnt sz : N)
+        forall (p : ptr) ty (cnt sz : N)
           (Hcnt : (cnt <> 0)%N) (Hsz : types.size_of σ ty = Some sz) (Hi : N.lt i cnt),
           raw_type_ptrs (Tarray ty cnt) p |-- raw_type_ptrs ty (p .[Tu8 ! sz * i]).
       Proof.
@@ -233,7 +233,7 @@ Section raw_type_ptrs.
 
       #[global]
       Instance raw_type_ptrs_Tarray_elem_observe (i : N) :
-        forall (p : ptr) (ty : types.type) (cnt sz : N)
+        forall (p : ptr) ty (cnt sz : N)
           (Hcnt : (cnt <> 0)%N) (Hsz : types.size_of σ ty = Some sz) (Hi : N.lt i cnt),
           Observe (raw_type_ptrs ty (p .[Tu8 ! sz * i])) (raw_type_ptrs (Tarray ty cnt) p).
       Proof. intros **; rewrite (raw_type_ptrs_Tarray_elem i); eauto; by apply: _. Qed.
@@ -275,8 +275,7 @@ Section raw_type_ptrs.
   End Instances.
 
   Section equivalences.
-    Lemma _at_raw_type_ptrsR_equiv :
-      forall (p : ptr) (ty : type),
+    Lemma _at_raw_type_ptrsR_equiv : forall (p : ptr) ty,
         p |-> raw_type_ptrsR ty -|- raw_type_ptrs ty p.
     Proof. by intros p ty; rewrite raw_type_ptrsR_eq/raw_type_ptrsR_def _at_as_Rep. Qed.
 

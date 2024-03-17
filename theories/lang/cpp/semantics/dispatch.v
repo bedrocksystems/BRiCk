@@ -4,7 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import stdpp.decidable.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.genv.
 Require Import bedrock.lang.cpp.semantics.subtyping.
 
@@ -27,7 +27,7 @@ Require Import bedrock.lang.cpp.semantics.subtyping.
 Section dispatch.
   Context (σ : genv).
 
-  Definition list_get {T} (t : obj_name) (l : list (obj_name * T)) : option T :=
+  Definition list_get {T} (t : name) (l : list (name * T)) : option T :=
     snd <$> List.find (fun '(t',_) => bool_decide (t = t')) l.
 
   (** [dispatch path fn = Some (impl_class, impl_path, impl_fn)]
@@ -90,7 +90,7 @@ Section dispatch.
           else None
       | next :: rest =>
           tu_dispatch base rest fn ≫= fun rr =>
-            match tu !! next with
+            match tu.(types) !! next with
             | Some (Gstruct st) =>
                 let '(_, _, override) := rr in
                 match list_get override st.(s_overrides) with

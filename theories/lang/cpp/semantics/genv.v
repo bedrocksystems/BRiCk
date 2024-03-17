@@ -1,13 +1,10 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.prelude.base.
-Require Export bedrock.lang.cpp.syntax.names.
-Require Export bedrock.lang.cpp.syntax.types.
-Require Export bedrock.lang.cpp.syntax.stmt.
-Require Export bedrock.lang.cpp.syntax.translation_unit.
+Require Export bedrock.lang.cpp.syntax.
 Require Export bedrock.lang.cpp.semantics.sub_module.
 
 (* NOTE:
@@ -60,7 +57,7 @@ Definition genv_type_table (g : genv) : type_table :=
 
 Module integral_type.
   Record t : Set := mk { size : int_type.t ; signedness : signed }.
-  Coercion to_type (v : t) : type :=
+  Coercion to_type {lang} (v : t) : type' lang :=
     Tnum v.(size) v.(signedness).
 End integral_type.
 Coercion integral_type.to_type : integral_type.t >-> type.
@@ -142,7 +139,7 @@ Infix "⊧" := genv_compat (at level 1).
 
 Theorem genv_byte_order_tu tu g :
     tu ⊧ g ->
-    genv_byte_order g = translation_unit.byte_order tu.
+    genv_byte_order g = byte_order tu.
 Proof. intros. apply byte_order_flip_proper, tu_compat. Qed.
 
 Theorem genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
@@ -192,31 +189,33 @@ Proof.
 Qed.
 
 (** TODO deprecate this in favor of inlining it *)
-Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
-  g.(genv_tu) !! gn.
+Definition glob_def (σ : genv) (gn : name) : option GlobDecl :=
+  σ.(genv_tu).(types) !! gn.
 
+(*
 Lemma glob_def_alt σ gn :
   glob_def σ gn = genv_type_table σ !! gn.
 Proof. done. Qed.
+*)
 
 (* Supersedes glob_def_submodule *)
 Lemma glob_def_genv_compat_struct {σ gn tu} {Hσ : tu ⊧ σ} st
-  (Hl : tu !! gn = Some (Gstruct st)) :
+  (Hl : tu.(types) !! gn = Some (Gstruct st)) :
   glob_def σ gn = Some (Gstruct st).
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gstruct. Qed.
 
 Lemma glob_def_genv_compat_union {σ gn tu} {Hσ : tu ⊧ σ} st
-  (Hl : tu !! gn = Some (Gunion st)) :
+  (Hl : tu.(types) !! gn = Some (Gunion st)) :
   glob_def σ gn = Some (Gunion st).
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gunion. Qed.
 
 Lemma glob_def_genv_compat_enum {σ gn tu} {Hσ : tu ⊧ σ} ty brs
-  (Hl : tu !! gn = Some (Genum ty brs)) :
+  (Hl : tu.(types) !! gn = Some (Genum ty brs)) :
   exists brs', glob_def σ gn = Some (Genum ty brs').
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_genum. Qed.
 
 Lemma glob_def_genv_compat_constant {σ gn tu} {Hσ : tu ⊧ σ} ty e
-  (Hl : tu !! gn = Some (Gconstant ty (Some e))) :
+  (Hl : tu.(types) !! gn = Some (Gconstant ty (Some e))) :
   glob_def σ gn = Some (Gconstant ty (Some e)).
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gconstant. Qed.
 
@@ -224,11 +223,12 @@ Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gcons
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
 Proof. by intros ? ->. Qed.
 
+(* TODO: [type_of_field] -- only needed in one place?
 (** compute the type of a [class] or [union] field *)
 Section type_of_field.
   Context {σ: genv}.
 
-  Definition type_of_field (cls : globname) (f : ident) : option type :=
+  Definition type_of_field (cls : globname) (f : field_name) : option type :=
     match σ.(genv_tu) !! cls with
     | None => None
     | Some (Gstruct st) =>
@@ -261,3 +261,4 @@ Section type_of_field.
     end.
 
 End type_of_field.
+*)

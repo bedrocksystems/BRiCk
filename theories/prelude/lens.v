@@ -16,7 +16,7 @@ Require Import bedrock.prelude.finite.
 Require Import bedrock.prelude.functions.
 Require Export Lens.Lens.
 
-Import LensNotations.
+Export LensNotations.
 #[local] Open Scope lens_scope.
 
 Definition _bit (n : N) : N -l> bool :=

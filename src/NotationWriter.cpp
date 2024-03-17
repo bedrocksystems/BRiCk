@@ -108,7 +108,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 			notation << fd->getNameAsString();
 			print.output() << "Notation \"'" << s_notation;
 			print.output() << fd->getNameAsString() << "'\" :=" << fmt::nbsp;
-			cprint.printField(fd, print);
+			cprint.printField(print, fd);
 			print.output() << " (in custom cppglobal at level 0)." << fmt::line;
 		} else if (const RecordDecl *rd = dyn_cast<RecordDecl>(def)) {
 			if (not print_path(notation, rd, false))
@@ -119,7 +119,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 				print.output()
 					<< "Notation \"'" << s_notation << "'\" :=" << fmt::nbsp;
 
-				cprint.printTypeName(*rd, print);
+				cprint.printName(print, *rd);
 				print.output()
 					<< "%bs (in custom cppglobal at level 0)." << fmt::line;
 			}
@@ -129,7 +129,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 					print.output() << "Notation \"'" << s_notation << "::";
 					print.output()
 						<< fd->getNameAsString() << "'\" :=" << fmt::nbsp;
-					cprint.printField(fd, print);
+					cprint.printField(print, fd);
 					print.output()
 						<< " (in custom cppglobal at level 0)." << fmt::line;
 				}
@@ -144,7 +144,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
 			print.output() << "Notation \"'" << s_notation;
 			print.output() << td->getNameAsString() << "'\" :=" << fmt::nbsp;
-			cprint.printQualType(td->getUnderlyingType(), print, loc::of(td));
+			cprint.printQualType(print, td->getUnderlyingType(), loc::of(td));
 			print.output() << " (only parsing, in custom cppglobal at level 0)."
 						   << fmt::line;
 		} else if (const auto *ta = dyn_cast<TypeAliasDecl>(def)) {
@@ -155,7 +155,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
 			print.output() << "Notation \"'" << s_notation;
 			print.output() << ta->getNameAsString() << "'\" :=" << fmt::nbsp;
-			cprint.printQualType(ta->getUnderlyingType(), print, loc::of(ta));
+			cprint.printQualType(print, ta->getUnderlyingType(), loc::of(ta));
 			print.output() << " (only parsing, in custom cppglobal at level 0)."
 						   << fmt::line;
 		} else if (isa<VarDecl>(def) || isa<EnumDecl>(def) ||

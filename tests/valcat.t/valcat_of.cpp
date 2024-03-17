@@ -41,6 +41,11 @@ void test() {
   CHECK_VALCAT(c);
   CHECK_VALCAT(static_cast<C&&>(c));
   CHECK_VALCAT(static_cast<C&>(c));
+  CHECK_VALCAT(static_cast<C>(c));
+  CHECK_VALCAT(static_cast<const C>(c));
+  CHECK_VALCAT(static_cast<int>(1));
+  CHECK_VALCAT(static_cast<const int>(2));
+
   CHECK_VALCAT(C().x);
   CHECK_VALCAT(c.x);
   CHECK_VALCAT(c.a[3]);
@@ -77,6 +82,12 @@ void test() {
   CHECK_VALCAT(static_cast<C&>(c).r);
   CHECK_VALCAT(static_cast<C&>(c).rr);
   CHECK_VALCAT(static_cast<C&>(c).x);
+  CHECK_VALCAT(static_cast<C>(c).r);
+  CHECK_VALCAT(static_cast<C>(c).rr);
+  CHECK_VALCAT(static_cast<C>(c).x);
+  CHECK_VALCAT(static_cast<const C>(c).r);
+  CHECK_VALCAT(static_cast<const C>(c).rr);
+  CHECK_VALCAT(static_cast<const C>(c).x);
   CHECK_VALCAT(c = c);
   CHECK_VALCAT(x[3] = 3);
   CHECK_VALCAT(x[3] = 3);

@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2020 BedRock Systems, Inc.
+ * Copyright (C) 2020-2024 BedRock Systems, Inc.
  * All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -9,6 +9,7 @@ Import cQp_compat.
 #[local] Set Warnings "-non-recursive". (* disable warning about [llistR] *)
 
 #[local] Open Scope Z_scope.
+#[local] Open Scope bs_scope.
 
 (** * Sequential Specs *)
 
@@ -76,15 +77,13 @@ Now let's write the representation predicate. It will refer to the
 by cpp2v as:
 *)
 
-Notation "'::Range::_begin'" :=
-{| f_type := "_Z5Range" ; f_name := "_begin"
- |} (in custom cppglobal at level 0).
-Notation "'::Range::_size'" :=
-{| f_type := "_Z5Range" ; f_name := "_size"
- |} (in custom cppglobal at level 0).
+Notation "'::Range::_begin'" := (Nscoped (Nglobal $ Nid "Range") (Nid "_begin"))
+                                (in custom cppglobal at level 0).
+Notation "'::Range::_size'" := (Nscoped (Nglobal $ Nid "Range") (Nid "_size"))
+                               (in custom cppglobal at level 0).
 
-Definition _begin := _field `::Range::_begin`.
-Definition _size := _field `::Range::_size`.
+Definition _begin := _field "Range::_begin".
+Definition _size := _field "Range::_size".
 
 (** Here's the first version, which follows the style
 discussed in the first chapter.

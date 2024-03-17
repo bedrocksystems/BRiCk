@@ -12,7 +12,7 @@
  *   http://gallium.inria.fr/~tramanan/cpp/thesis/thesis.pdf
  *)
 Require Import stdpp.fin_maps.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.genv.
 
 Section extends.
@@ -33,13 +33,13 @@ Section extends.
       - [class_derives "::B" ["::A"]], [class_derives "::C" ["::B"]]
       - [class_derives "::C" ["::B","::A"]]
    *)
-  Inductive class_derives (derived : globname) : forall (path : list globname), Prop :=
+  Inductive class_derives (derived : name) : forall (path : list name), Prop :=
   | Derives_here {st}
-      {_ : σ.(genv_tu) !! derived = Some (Gstruct st)}
+      {_ : σ.(genv_tu).(types) !! derived = Some (Gstruct st)}
     : class_derives derived []
 
   | Derives_base base st li rest
-      {_ : σ.(genv_tu) !! derived = Some (Gstruct st)}
+      {_ : σ.(genv_tu).(types) !! derived = Some (Gstruct st)}
       {_ : (base, li) ∈ st.(s_bases)}
       (_ : class_derives base rest)
     : class_derives derived (base :: rest)
@@ -70,8 +70,8 @@ Existing Class class_derives.
 Section tu.
   Variable tu : translation_unit.
 
-  Fixpoint tu_class_derives (derived : globname) (path : list globname) : bool :=
-    match tu !! derived with
+  Fixpoint tu_class_derives (derived : name) (path : list name) : bool :=
+    match tu.(types) !! derived with
     | Some (Gstruct st) =>
         match path with
         | nil => true

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -10,7 +10,7 @@
 Require Import bedrock.prelude.numbers.
 Require Import iris.proofmode.tactics.
 
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
@@ -173,66 +173,208 @@ Module Type Expr.
           read_decl (_global x) ty (fun p => Q p FreeTemps.id)
       |-- wp_lval (Eglobal x ty) Q.
 
+    (* [Eglobal_member (Nscoped cls nm)] represents a member pointer
+       on class [cls] to member [nm]. It is always a pr-value.
+     *)
+    Axiom wp_operand_global_member : forall ty cls nm Q,
+          Q (Vmember_ptr cls $ Some nm) FreeTemps.id
+      |-- wp_operand (Eglobal_member (Nscoped cls nm) ty) Q.
+
+    Definition read_arrow (arrow : bool) (e : Expr) (Q : ptr -> FreeTemps.t -> mpred) : mpred :=
+      (if arrow then
+         match unptr $ drop_qualifiers $ type_of e with
+         | Some t =>
+             letI* base, free := wp_operand e in
+             match base with
+             | Vptr p => reference_to (erase_qualifiers t) p ** Q p free
+             | _ => False
+             end
+         | _ => False
+         end
+       else
+         wp_glval e Q)%I.
+
+    Lemma read_arrow_frame arrow e Q Q' :
+      Forall p free, Q p free -* Q' p free
+      |-- read_arrow arrow e Q -* read_arrow arrow e Q'.
+    Proof.
+      rewrite /read_arrow.
+      iIntros "K".
+      case_match.
+      { case_match; try iIntros "[]".
+        iApply wp_operand_frame. reflexivity.
+        iIntros (??); case_match; eauto.
+        iIntros "[$ X]"; iApply "K"; iApply "X". }
+      { iApply wp_glval_frame; eauto. reflexivity. }
+    Qed.
+
+    Definition arrow_aggregate_type (arrow : bool) (t : decltype) : option (ValCat * type_qualifiers * name) :=
+      if arrow then
+        match drop_qualifiers t with
+        | Tptr pt =>
+            match decompose_type pt with
+            | (cv, Tnamed n) => Some (Lvalue, cv, n)
+            | _ => None
+            end
+        | _ => None
+        end
+      else
+        let '(vc, et) := decltype.to_exprtype t in
+        if bool_decide (vc = Prvalue)
+        then None
+        else
+          match decompose_type et with
+          | (cv, Tnamed nm) => Some (vc, cv, nm)
+          | _ => None
+          end.
+
     (* [Emember a f mut ty] is an lvalue by default except when
      * - where [m] is a member enumerator or a non-static member function, or
      * - where [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
-    Axiom wp_lval_member : forall ty a m mut Q,
-        match valcat_of a , drop_qualifiers (type_of a) with
-        | Lvalue , Tnamed nm =>
-          letI* base, free := wp_lval a in
-          letI* p := read_decl (base ,, _field {| f_type := nm ; f_name := m |}) ty in
-          Q p free
-        | _ , _ => False
-          (* NOTE If the object is a temporary, then the field access will also be a
-             temporary. Being conservative is sensible in our semantic style.
-          *)
-        end
-      |-- wp_lval (Emember a m mut ty) Q.
+    Axiom wp_lval_member : forall arrow ty a m mut vc cv nm Q,
+        arrow_aggregate_type arrow (decltype_of_expr a) = Some (vc, cv, nm) ->
+          (letI* base, free := read_arrow arrow a in
+          letI* p := read_decl (base ,, _field (Field nm m)) ty in
+          Q p free)
+      |-- wp_lval (Emember arrow a m mut ty) Q.
 
     (* [Emember a m mut ty] is an xvalue if
      * - [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
-    Axiom wp_xval_member : forall ty a m mut Q,
-        match valcat_of a , drop_qualifiers (type_of a) with
-        | Xvalue , Tnamed nm =>
-          letI* base, free := wp_xval a in
-          letI* p := read_decl (base ,, _field {| f_type := nm ; f_name := m |}) ty in
-          Q p free
-        | _ , _ => False
-          (* This does not occur because our AST explicitly contains [Cl2r] casts.
-           *)
-        end%I
-      |-- wp_xval (Emember a m mut ty) Q.
+    Axiom wp_xval_member : forall ty a m mut cv nm Q,
+        arrow_aggregate_type false (decltype_of_expr a) = Some (Xvalue, cv, nm) ->
+          match decltype.to_valcat ty with
+          | Prvalue =>
+            letI* base, free := wp_xval a in
+            letI* p := read_decl (base ,, _field (Field nm m)) ty in
+            Q p free
+          | _ => False
+          end
+      |-- wp_xval (Emember false a m mut ty) Q.
+    (* <<e->f>> is never an xvalue because <<e>> must be a pointer *)
 
-    (* [Esubscript e i _ _] when one operand is an array lvalue
-     *   (in clang's syntax tree, this value is converted to an rvalue via
-     *    an array2pointer cast)
+    (**
+       [Emember_ignore arrow obj e] represents:
+       - <<obj->e>> if <<arrow = true>>, or
+       - <<obj.e>> if <<arrow = false>>
+       in both cases, <<e>> is a global object, e.g. [Eenum_const] or [Eglobal].
+       The <<obj>> argument is evaluated but the value is not consumed.
      *)
-    Axiom wp_lval_subscript : forall e i t Q,
-      nd_seq (wp_operand e) (wp_operand i) (fun '(ev, iv) free =>
-         let '(base, idx) :=
-           if is_pointer (type_of e) then (ev,iv) else (iv,ev)
-         in
-         Exists i, [| idx = Vint i |] **
-         let addr := _eqv base .[ erase_qualifiers t ! i ] in
-         valid_ptr addr ** Q addr free)
+
+    Definition wp_ignore_obj (arrow : bool) (e : Expr) (Q : FreeTemps.t -> mpred) : mpred :=
+      read_arrow arrow e (fun _ => Q).
+
+    Axiom wp_operand_member_ignore : forall arrow obj e Q,
+            (letI* free1 := wp_ignore_obj arrow obj in
+             letI* v , free2 := wp_operand e in
+             Q v (free2 >*> free1))
+        |-- wp_operand (Emember_ignore arrow obj e) Q.
+
+    Axiom wp_lval_member_ignore : forall arrow obj e Q,
+        (letI* free1 := wp_ignore_obj arrow obj in
+         letI* p , free2 := wp_lval e in
+         Q p (free2 >*> free1))
+     |-- wp_lval (Emember_ignore arrow obj e) Q.
+
+    Axiom wp_xval_member_ignore : forall arrow obj e Q,
+        (letI* free1 := wp_ignore_obj arrow obj in
+         letI* p , free2 := wp_lval e in
+         Q p (free2 >*> free1))
+    |-- wp_xval (Emember_ignore arrow obj e) Q.
+
+    (** *** Subscripting
+        The BRiCk semantics *directly* supports subscripting on array types in
+        order to make value category computation composable. Because of this,
+        the "pointer" arguments to [Esubscript] can be any of:
+        - a pointer (of value category Prvalue)
+        - any array type (of value category GLvalue)
+     *)
+
+    Definition subscript_scheme (e1 e2 : Expr) : option (bool * ValCat * type) :=
+      let array_type :=
+        qual_norm (fun cv ty =>
+            match ty with
+            | Tarray ety _
+            | Tincomplete_array ety
+            | Tvariable_array ety _ => Some $ tqualified cv ety
+            | _ => mfail
+            end)
+      in
+      let guard_arithmetic ty v := if is_arithmetic ty then v else None in
+      match drop_qualifiers $ decltype_of_expr e1 , drop_qualifiers $ decltype_of_expr e2 with
+      | Tref aty , ity => guard_arithmetic ity $ (fun t => (true, Lvalue, t)) <$> array_type aty
+      | Trv_ref aty , ity => guard_arithmetic ity $ (fun t => (true, Xvalue, t)) <$> array_type aty
+      | Tptr ety , ity => guard_arithmetic ity $ Some (true, Prvalue, ety)
+      | ity , Tref aty => guard_arithmetic ity $ (fun t => (false, Lvalue, t)) <$> array_type aty
+      | ity , Trv_ref aty => guard_arithmetic ity $ (fun t => (false, Xvalue, t)) <$> array_type aty
+      | ity , Tptr ety => guard_arithmetic ity $ Some (false, Prvalue, ety)
+      | _ , _ => None
+      end.
+
+    Definition wp_ptr (vc : ValCat) (e : Expr) (Q : ptr -> FreeTemps.t -> epred) : mpred :=
+      match vc with
+      | Prvalue => wp_operand e $ fun v free => Exists p, [| v = Vptr p |] ** Q p free
+      | Lvalue => wp_lval e Q
+      | Xvalue => wp_xval e Q
+      end.
+
+    Lemma wp_ptr_frame vc e Q Q' :
+      Forall p free, Q p free -* Q' p free |-- wp_ptr vc e Q -* wp_ptr vc e Q'.
+    Proof.
+      rewrite /wp_ptr.
+      case_match; iIntros "X";
+        [ iApply wp_lval_frame
+        | iApply wp_operand_frame
+        | iApply wp_xval_frame ]; try reflexivity; eauto.
+      { iIntros (??) "Y"; iDestruct "Y" as (?) "[% Y]".
+        iExists _; iFrame "%". iApply "X"; eauto. }
+    Qed.
+
+    (* TOOD: This should be extended to support [Vchar] when <<e>> is a
+       character type. In this case, the result should be the result of
+       integral promotion.
+     *)
+    Definition wp_int (e : Expr) (Q : Z -> FreeTemps.t -> epred) : mpred :=
+      letI* v, free := wp_operand e in
+      Exists z, [| v = Vint z |] ** Q z free.
+
+    Lemma wp_int_frame e Q Q' :
+      Forall p free, Q p free -* Q' p free |-- wp_int e Q -* wp_int e Q'.
+    Proof.
+      rewrite /wp_int.
+      iIntros "X"; iApply wp_operand_frame; try reflexivity.
+      { iIntros (??) "Y"; iDestruct "Y" as (?) "[% Y]".
+        iExists _; iFrame "%". iApply "X"; eauto. }
+    Qed.
+
+    (* [Esubscript e i _] when one operand is an array lvalue or pointer.
+     * Technically, [vc] is not permitted to be [Xvalue] in this rule.
+     *)
+    Axiom wp_lval_subscript : forall e side vc i t Q,
+      subscript_scheme e i = Some (side, vc, t) ->
+      (if side then
+         let* '(base, idx), free := nd_seq (wp_ptr vc e) (wp_int i) in
+         let addr := base .[ erase_qualifiers t ! idx ] in
+         reference_to t addr ** Q addr free
+       else
+         let* '(idx, base), free := nd_seq (wp_int e) (wp_ptr vc i) in
+         let addr := base .[ erase_qualifiers t ! idx ] in
+         reference_to t addr ** Q addr free)
       |-- wp_lval (Esubscript e i t) Q.
 
-    (* [Esubscript e i _ _] when one operand is an array xvalue
+    (* [Esubscript e i _] when one operand is an array xvalue
      *)
-    Axiom wp_xval_subscript : forall e i t Q,
-      nd_seq (wp_operand e) (wp_operand i) (fun '(ev, iv) free =>
-         let '(base, idx) :=
-           if is_pointer (type_of e) then (ev,iv) else (iv,ev)
-         in
-          (* TODO: here and elsewhere, consider avoiding locations and switching to *)
-          (* (Exists i basep, [| idx = Vint i /\ base = Vptr basep |] **
-            ((valid_ptr (basep .,, o_sub resolve (erase_qualifiers t) i) ** True) //\\
-            Q (Vptr (basep .,, o_sub resolve (erase_qualifiers t) i)) (free' ** free)))) *)
-          (Exists i, [| idx = Vint i |] **
-           let addr := _eqv base .[ erase_qualifiers t ! i ] in
-           valid_ptr addr ** Q addr free))
+    Axiom wp_xval_subscript : forall e side i t Q,
+        subscript_scheme e i = Some (side, Xvalue, t) ->
+        (if side then
+           let* '(base, idx), free := nd_seq (wp_xval e) (wp_int i) in
+           let addr := base .[ erase_qualifiers t ! idx ] in
+           reference_to t addr ** Q addr free
+         else
+           let* '(idx, base), free := nd_seq (wp_int e) (wp_xval i) in
+           let addr := base .[ erase_qualifiers t ! idx ] in
+           reference_to t addr ** Q addr free)
       |-- wp_xval (Esubscript e i t) Q.
 
     (** * Unary Operators
@@ -242,7 +384,7 @@ Module Type Expr.
         (see [wp_operand_cast_l2r] instead).
 
         We check pointer [p] is strictly valid and aligned.
-        The official standard says (https://eel.is/c++draft/expr.unary.op#1):
+        The standard says (<https://eel.is/c++draft/expr.unary.op#1>?):
 
         > The unary * operator performs indirection: the expression to which it is applied
         > shall be a pointer to an object type, or a pointer to a function type and the
@@ -362,7 +504,8 @@ Module Type Expr.
        P0145R3 (C++17).
      *)
     Axiom wp_lval_assign : forall ty l r Q,
-        nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
+        (letI* '(la, rv), free :=
+           eval2 (evaluation_order.order_of OOEqual) (wp_lval l) (wp_operand r) in
             la |-> anyR (erase_qualifiers ty) (cQp.mut 1) **
            (la |-> primR (erase_qualifiers ty) (cQp.mut 1) rv -* Q la free))
         |-- wp_lval (Eassign l r ty) Q.
@@ -370,7 +513,9 @@ Module Type Expr.
     Axiom wp_lval_bop_assign : forall ty o l r Q,
             match convert_type_op tu o (type_of l) (type_of r) with
             | Some (tl, tr, resultT) =>
-              nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free => Exists v cv v',
+              letI* '(la, rv), free :=
+                eval2 (evaluation_order.order_of OOEqual) (wp_lval l) (wp_operand r) in
+              Exists v cv v',
                     ((* cast and perform the computation *)
                       [| convert tu (type_of l) tl v cv |] **
                       [| (* ensured by the AST *) tr = type_of r |] **
@@ -378,7 +523,7 @@ Module Type Expr.
                         (* convert the value back to the target type so it can be stored *)
                         [| convert tu resultT ty cv v' |] ** True) //\\
                     (la |-> primR (erase_qualifiers ty) (cQp.mut 1) v **
-                      (la |-> primR (erase_qualifiers ty) (cQp.mut 1) v' -* Q la free)))
+                      (la |-> primR (erase_qualifiers ty) (cQp.mut 1) v' -* Q la free))
             | _ => False%I
             end
         |-- wp_lval (Eassign_op o l r ty) Q.
@@ -438,38 +583,37 @@ Module Type Expr.
     This counts as an _access_, so it must happen at one of the types listed in
     https://eel.is/c++draft/basic.lval#11.
     *)
-    Axiom wp_operand_cast_l2r : forall ty e Q,
+    Axiom wp_operand_cast_l2r : forall e Q,
         (
           letI* a, free := wp_glval e in
           Exists v,
-          (Exists q, a |-> tptsto_fuzzyR (erase_qualifiers ty) q v ** True) //\\
+          (Exists q, a |-> tptsto_fuzzyR (erase_qualifiers $ type_of e) q v ** True) //\\
           Q v free
-        ) |-- wp_operand (Ecast Cl2r e Prvalue ty) Q.
+        ) |-- wp_operand (Ecast Cl2r e) Q.
 
-    Lemma wp_operand_cast_l2r_prim ty e Q :
+    Lemma wp_operand_cast_l2r_prim e Q :
         (
           letI* a, free := wp_glval e in
           Exists v,
-          (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\
+          (Exists q, a |-> primR (erase_qualifiers $ type_of e) q v ** True) //\\
           Q v free
-        ) |-- wp_operand (Ecast Cl2r e Prvalue ty) Q.
+        ) |-- wp_operand (Ecast Cl2r e) Q.
     Proof.
       intros. rewrite -wp_operand_cast_l2r. iIntros "wp".
       iApply (wp_glval_wand with "wp"). iIntros (p f) "?".
       by setoid_rewrite primR_tptsto_fuzzyR.
     Qed.
 
-    Lemma wp_operand_cast_l2r_raw : forall e Q,
-        (
-          letI* a, free := wp_glval e in
-          Exists r,
-          (Exists q, a |-> rawR q r ** True) //\\
-          Q (Vraw r) free
-        ) |-- wp_operand (Ecast Cl2r e Prvalue Tu8) Q.
+    Lemma wp_operand_cast_l2r_raw : forall (e : Expr) Q,
+        type_of e = Tuchar ->
+        (letI* a, free := wp_glval e in
+         Exists r,
+         (Exists q, a |-> rawR q r ** True) //\\ Q (Vraw r) free)
+      |-- wp_operand (Ecast Cl2r e) Q.
     Proof.
       intros. rewrite -wp_operand_cast_l2r /=. iIntros "wp".
       iApply (wp_glval_wand with "wp"). iIntros (p f) "(%r & ?)".
-      iExists (Vraw r). by rewrite rawR.unlock.
+      iExists (Vraw r). rewrite H. by rewrite rawR.unlock.
     Qed.
 
     (** No-op casts [Cnoop] are casts that only affect the type and not the value.
@@ -500,8 +644,8 @@ Module Type Expr.
 
     Record unsupported_init_noop_cast (e : Expr) (from to : type) : Set := {}.
 
-    (* When [const]ness changes in an initialization expression, it changes the
-       [const]ness of the object that is being initialized. *)
+    (* When <<const>>ness changes in an initialization expression, it changes the
+       <<const>>ness of the object that is being initialized. *)
     Axiom wp_init_cast_noop : forall ty e p Q,
         (let from := type_of e in
         match classify_cast from ty with
@@ -514,71 +658,42 @@ Module Type Expr.
               end)
         | None => UNSUPPORTED (unsupported_init_noop_cast e from ty)
         end)
-      |-- wp_init ty p (Ecast Cnoop e Prvalue ty) Q.
+      |-- wp_init ty p (Ecast (Cnoop ty) e) Q.
     Axiom wp_operand_cast_noop : forall ty e Q,
             wp_operand e (fun v free => has_type v ty ** Q v free)
-        |-- wp_operand (Ecast Cnoop e Prvalue ty) Q.
+        |-- wp_operand (Ecast (Cnoop ty) e) Q.
 
     Axiom wp_lval_cast_noop : forall ty e Q,
           (letI* p, free := wp_glval e in
            reference_to ty p ** Q p free)
-      |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
+      |-- wp_lval (Ecast (Cnoop $ Tref ty) e) Q.
 
     Axiom wp_xval_cast_noop : forall ty e Q,
           (letI* p, free := wp_glval e in
            reference_to ty p ** Q p free)
-      |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
-
-    (*
-    Lemma wp_lval_cast_noop ty e Q :
-        valcat_of e = Lvalue ->
-            wp_glval e Q
-        |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
-    Proof. intros. by rewrite -wp_lval_cast_noop wp_glval_lval. Qed.
-
-    (* note: this is the cast that occurs for the implementation of
-     * [std::move]
-     *)
-    Lemma wp_lval_xval_cast_noop ty e Q :
-        valcat_of e = Xvalue ->
-        wp_xval e Q
-        |-- wp_lval (Ecast Cnoop e Lvalue ty) Q.
-    Proof. intros. by rewrite -wp_lval_cast_noop wp_glval_xval. Qed.
-
-    Lemma wp_xval_xval_cast_noop ty e Q :
-        valcat_of e = Xvalue ->
-        wp_xval e Q
-        |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
-    Proof. intros. by rewrite -wp_xval_cast_noop wp_glval_xval. Qed.
-
-    Lemma wp_xval_lval_cast_noop ty e Q :
-        valcat_of e = Lvalue ->
-        wp_lval e Q
-        |-- wp_xval (Ecast Cnoop e Xvalue ty) Q.
-    Proof. intros. by rewrite -wp_xval_cast_noop wp_glval_lval. Qed.
-     *)
+      |-- wp_xval (Ecast (Cnoop $ Trv_ref ty) e) Q.
 
     Definition int2bool_not_num (v : val) : Set.
     Proof. exact unit. Qed.
 
-    Axiom wp_operand_cast_int2bool : forall ty e Q,
+    Axiom wp_operand_cast_int2bool : forall e Q,
          (letI* v, free := wp_operand e in
           match v with
           | Vint n => Q (Vbool (bool_decide (n <> 0))) free
           | _ => ERROR (int2bool_not_num v)
           end)
-      |-- wp_operand (Ecast Cint2bool e Prvalue ty) Q.
+      |-- wp_operand (Ecast Cint2bool e) Q.
 
     Definition ptr2bool_not_ptr (v : val) : Set.
     Proof. exact unit. Qed.
 
-    Axiom wp_operand_cast_ptr2bool : forall ty e Q,
+    Axiom wp_operand_cast_ptr2bool : forall e Q,
          (letI* v, free := wp_operand e in
           match v with
           | Vptr p => Q (Vbool (bool_decide (p <> nullptr))) free
           | _ => ERROR (ptr2bool_not_ptr v)
           end)
-      |-- wp_operand (Ecast Cptr2bool e Prvalue ty) Q.
+      |-- wp_operand (Ecast Cptr2bool e) Q.
 
     (** [Cfun2ptr] is a cast from a function to a pointer.
 
@@ -589,44 +704,47 @@ Module Type Expr.
        We cannot write a rule for C functions without extending our
        treatment of value categories to account for this difference.
      *)
-    Axiom wp_operand_cast_fun2ptr_cpp : forall cc ar ret args g Q,
-        let ty := Tfunction (cc:=cc) (ar:=ar) ret args in
-        let e := Eglobal g ty in
+    Axiom wp_operand_cast_fun2ptr_cpp : forall e Q,
             wp_lval e (fun v => Q (Vptr v))
-        |-- wp_operand (Ecast Cfun2ptr e Prvalue (Tptr ty)) Q.
+        |-- wp_operand (Ecast Cfun2ptr e) Q.
 
-    (** [Cbuiltin2ptr] is a cast from a builtin to a pointer.
+    (** [Cbuiltin2fun] is a cast from a builtin to a pointer.
      *)
     Axiom wp_operand_cast_builtin2fun_cpp : forall cc ar ret args g Q,
-        let ty := Tfunction (cc:=cc) (ar:=ar) ret args in
+        let ty := Tfunction $ FunctionType (ft_cc:=cc) (ft_arity:=ar) ret args in
         let e := Eglobal g ty in
             wp_lval e (fun v => Q (Vptr v))
-        |-- wp_operand (Ecast Cbuiltin2fun e Prvalue (Tptr ty)) Q.
+        |-- wp_operand (Ecast (Cbuiltin2fun $ Tptr ty) e) Q.
 
     (** Known places that bitcasts occur
-        - casting between [void*] and [T*] for some [T].
+        - casting between <<void*>> and <<T*>> for some <<T>>.
      *)
     Axiom wp_operand_cast_bitcast : forall e ty Q,
            (letI* v, free := wp_operand e in
              has_type v ty ** Q v free)
-        |-- wp_operand (Ecast Cbitcast e Prvalue ty) Q.
+        |-- wp_operand (Ecast (Cbitcast ty) e) Q.
 
     (** [Cintegral] casts represent casts between integral types, e.g.
-        - [int] -> [short]
-        - [short] -> [long]
-        - [int] -> [unsigned int]
-        - [enum Xxx] -> [int]
+        - <<int>> -> <<short>>
+        - <<short>> -> <<long>>
+        - <<int>> -> <<unsigned int>>
+        - <<enum Xxx>> -> <<int>>
      *)
     Axiom wp_operand_cast_integral : forall e t Q,
         wp_operand e (fun v free =>
            Exists v', [| conv_int tu (type_of e) t v v' |] ** Q v' free)
-        |-- wp_operand (Ecast Cintegral e Prvalue t) Q.
+        |-- wp_operand (Ecast (Cintegral t) e) Q.
 
     Axiom wp_operand_cast_null : forall e ty Q,
         type_of e = Tnullptr ->
         is_pointer ty ->
             wp_operand e Q (* note: [has_type v Tnullptr |-- has_type v (Tptr ty)] *)
-        |-- wp_operand (Ecast Cnull2ptr e Prvalue ty) Q.
+        |-- wp_operand (Ecast (Cnull2ptr ty) e) Q.
+
+    Axiom wp_operand_cast_null2memberptr : forall cls e ty Q,
+        type_of e = Tnullptr ->
+            wp_operand e (fun _ free => Q (Vmember_ptr cls None) free)
+        |-- wp_operand (Ecast (Cnull2memberptr $ Tmember_pointer (Tnamed cls) ty) e) Q.
 
     (* Determine if a 0-constant of this type can be used as a pseudonym for <<nullptr>> *)
     Definition can_represent_null (ty : type) : bool :=
@@ -648,24 +766,30 @@ Module Type Expr.
         is_pointer ty ->
             (letI* v, free := wp_operand e in
              [| v = Vint 0 |] ** Q (Vptr nullptr) free)
-        |-- wp_operand (Ecast Cnull2ptr e Prvalue ty) Q.
+        |-- wp_operand (Ecast (Cnull2ptr ty) e) Q.
 
     (* note(gmm): in the clang AST, the subexpression is the call.
-     * in essence, [Ecast (Cuser ..)] is a syntax annotation.
+     * in essence, [Ecast Cuser] is a syntax annotation.
      *)
-    Axiom wp_init_cast_user : forall e p ty Z Q,
-        type_of e = ty ->
-            wp_init ty p e Q
-        |-- wp_init ty p (Ecast (Cuser Z) e Prvalue ty) Q.
+    Axiom wp_init_cast_user : forall e p ty Q,
+        wp_init ty p e Q |-- wp_init ty p (Ecast Cuser e) Q.
 
-    Axiom wp_operand_cast_user : forall e ty Z Q,
-        type_of e = ty ->
-            wp_operand e Q
-        |-- wp_operand (Ecast (Cuser Z) e Prvalue ty) Q.
+    Axiom wp_operand_cast_user : forall e Q,
+        wp_operand e Q |-- wp_operand (Ecast Cuser e) Q.
+
+    (** [Cctor] casts are just syntactic sugar *)
+    Axiom wp_operand_cast_ctor : forall t e Q,
+        wp_operand e Q |-- wp_operand (Ecast (Cctor t) e) Q.
+
+    (* TODO NAMES: does this need to check the types [t] and [t'] are
+       consistent? *)
+    Axiom wp_init_cast_ctor : forall p t' t e Q,
+        wp_init t p e Q |-- wp_init t p (Ecast (Cctor t') e) Q.
 
     Definition UNSUPPORTED_reinterpret_cast (ty1 ty2 : type) : mpred.
     Proof. exact False%I. Qed.
 
+    (*
     (** https://eel.is/c++draft/expr.reinterpret.cast
 
         NOTE there is a lot of subtlety around [reinterpret_cast]
@@ -677,14 +801,14 @@ Module Type Expr.
              A pointer can be explicitly converted to any integral type large
              enough to hold all values of its type. The mapping function is
              implementation-defined. *)
-          wp_operand (Ecast Cptr2int e Prvalue ty) Q
+          wp_operand (Ecast (Cptr2int ty) e) Q
         | Tnum _ _ , Tptr _ =>
           (* A value of integral type or enumeration type can be explicitly
              converted to a pointer. A pointer converted to an integer of sufficient
              size (if any such exists on the implementation) and back to the same
              pointer type will have its original value; mappings between pointers
              and integers are otherwise implementation-defined. *)
-          wp_operand (Ecast Cint2ptr e Prvalue ty) Q
+          wp_operand (Ecast (Cint2ptr ty) e) Q
         | Tnullptr , Tnum _ _ =>
           (* A value of type [std​::​nullptr_t] can be converted to an integral type;
              the conversion has the same meaning and validity as a conversion of
@@ -700,32 +824,37 @@ Module Type Expr.
             wp_operand e Q
         | ty1 , ty2 => UNSUPPORTED_reinterpret_cast ty1 ty2
         end
-        |-- wp_operand (Ecast (Creinterpret qt) e Prvalue ty) Q.
+        |-- wp_operand (Ecast (Creinterpret qt) e) Q.
+    *)
 
-    (** [Cstatic c] represents a use of `static_cast` to perform the underlying
-        cast.
-     *)
-    Axiom wp_operand_static_cast : forall c e ty Q,
-          wp_operand (Ecast c e Prvalue ty) Q
-      |-- wp_operand (Ecast (Cstatic c) e Prvalue ty) Q.
+    (** Explicit casts are just sugar, the real cast is in the subexpression. *)
+    Axiom wp_operand_explicit_cast : forall s t e Q,
+          wp_operand e Q
+      |-- wp_operand (Eexplicit_cast s t e) Q.
 
-    Axiom wp_lval_static_cast : forall c e ty Q,
-          wp_lval (Ecast c e Lvalue ty) Q
-      |-- wp_lval (Ecast (Cstatic c) e Lvalue ty) Q.
+    Axiom wp_lval_explicit_cast : forall s t e Q,
+          wp_lval e Q
+      |-- wp_lval (Eexplicit_cast s t e) Q.
 
-    Axiom wp_xval_static_cast : forall c e ty Q,
-          wp_xval (Ecast c e Xvalue ty) Q
-      |-- wp_xval (Ecast (Cstatic c) e Xvalue ty) Q.
+    Axiom wp_xval_explicit_cast : forall s t e Q,
+          wp_xval e Q
+      |-- wp_xval (Eexplicit_cast s t e) Q.
+
+    (* TODO NAMES: does this need to check the types [t] and [t'] are
+       consistent? *)
+    Axiom wp_init_explicit_cast : forall p s t e Q,
+          wp_init t p e Q
+      |-- wp_init t p (Eexplicit_cast s t e) Q.
 
     (** You can cast anything to void, but an expression of type
         [void] can only be a pr_value *)
     Axiom wp_operand_cast_tovoid : forall e Q,
           wp_discard e (fun free => Q Vundef free)
-      |-- wp_operand (Ecast C2void e Prvalue Tvoid) Q.
+      |-- wp_operand (Ecast C2void e) Q.
 
-    Axiom wp_operand_cast_array2ptr : forall e t Q,
+    Axiom wp_operand_cast_array2ptr : forall e Q,
         wp_glval e (fun p => Q (Vptr p))
-        |-- wp_operand (Ecast Carray2ptr e Prvalue t) Q.
+        |-- wp_operand (Ecast Carray2ptr e) Q.
 
     (** [Cptr2int] exposes the pointer, which is expressed with [pinned_ptr]
      *)
@@ -739,7 +868,7 @@ Module Type Expr.
                                                     end (Z.of_N va))) free))
         | _ , _ => False
         end
-        |-- wp_operand (Ecast Cptr2int e Prvalue ty) Q.
+        |-- wp_operand (Ecast (Cptr2int ty) e) Q.
 
     (** [Cint2ptr] uses "angelic non-determinism" to allow the developer to
         pick any pointer that was previously exposed as the given integer.
@@ -756,7 +885,7 @@ Module Type Expr.
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
         end
-        |-- wp_operand (Ecast Cint2ptr e Prvalue ty) Q.
+        |-- wp_operand (Ecast (Cint2ptr ty) e) Q.
 
     (** * [Cderived2base]
         casts from a derived class to a base class. Casting is only permitted
@@ -774,88 +903,112 @@ Module Type Expr.
     Axiom wp_lval_cast_derived2base : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base =>
-          wp_glval e (fun addr free =>
-            let addr' := addr ,, derived_to_base derived path in
-            reference_to ty addr' ** Q addr' free)
+          match derived_to_base_ty derived (path ++ [Tnamed base]) with
+          | Some off =>
+            wp_glval e (fun addr free =>
+              let addr' := addr ,, off in
+              reference_to ty addr' ** Q addr' free)
+          | _ => False
+          end
       | _, _ => False
       end
-      |-- wp_lval (Ecast (Cderived2base path) e Lvalue ty) Q.
+      |-- wp_lval (Ecast (Cderived2base path (Tref ty)) e) Q.
 
     Axiom wp_xval_cast_derived2base : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base =>
-          wp_glval e (fun addr free =>
-            let addr' := addr ,, derived_to_base derived path in
-            reference_to ty addr' ** Q addr' free)
+          match derived_to_base_ty derived (path ++ [Tnamed base]) with
+          | Some off =>
+              wp_glval e (fun addr free =>
+                let addr' := addr ,, off in
+                reference_to ty addr' ** Q addr' free)
+          | _ => False
+          end
       | _, _ => False
       end
-      |-- wp_xval (Ecast (Cderived2base path) e Xvalue ty) Q.
+      |-- wp_xval (Ecast (Cderived2base path (Trv_ref ty)) e) Q.
 
     Axiom wp_operand_cast_derived2base : forall e ty path Q,
-      match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
-      | Some (Tnamed derived) , Some (Tnamed base) =>
-          wp_operand e (fun addr free =>
-            let addr' := _eqv addr ,, derived_to_base derived path in
-            has_type (Vptr addr') ty ** Q (Vptr addr') free)
+      match drop_qualifiers <$> unptr (type_of e), drop_qualifiers ty with
+      | Some (Tnamed derived) , Tnamed base =>
+          match derived_to_base_ty derived (path ++ [Tnamed base]) with
+          | Some off =>
+            wp_operand e (fun addr free =>
+              let addr' := _eqv addr ,, off in
+              has_type (Vptr addr') (Tptr ty) ** Q (Vptr addr') free)
+          | _ => False
+          end
       | _, _ => False
       end
-      |-- wp_operand (Ecast (Cderived2base path) e Prvalue ty) Q.
+      |-- wp_operand (Ecast (Cderived2base path (Tptr ty)) e) Q.
 
     (* [Cbase2derived] casts from a base class to a derived class.
      *)
     Axiom wp_lval_cast_base2derived : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed base , Tnamed derived =>
-          wp_glval e (fun addr free =>
-            let addr' := addr ,, base_to_derived derived path in
-            reference_to ty addr' ** Q addr' free)
+          match base_to_derived_ty derived (path ++ [Tnamed base]) with
+          | Some off =>
+            wp_glval e (fun addr free =>
+              let addr' := addr ,, off in
+              reference_to ty addr' ** Q addr' free)
+          | _ => False
+          end
       | _, _ => False
       end
-      |-- wp_lval (Ecast (Cbase2derived path) e Lvalue ty) Q.
+      |-- wp_lval (Ecast (Cbase2derived path (Tref ty)) e) Q.
 
     Axiom wp_xval_cast_base2derived : forall e ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed base , Tnamed derived =>
-          wp_glval e (fun addr free =>
-            let addr' := addr ,, base_to_derived derived path in
-            reference_to ty addr' ** Q addr' free)
+          match base_to_derived_ty derived (path ++ [Tnamed base]) with
+          | Some off =>
+              wp_glval e (fun addr free =>
+                let addr' := addr ,, off in
+                reference_to ty addr' ** Q addr' free)
+          | _ => False
+          end
       | _, _ => False
       end
-      |-- wp_xval (Ecast (Cbase2derived path) e Xvalue ty) Q.
+      |-- wp_xval (Ecast (Cbase2derived path (Trv_ref ty)) e) Q.
 
     Axiom wp_operand_cast_base2derived : forall e ty path Q,
-         match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
-         | Some (Tnamed base), Some (Tnamed derived) =>
-          wp_operand e (fun addr free =>
-            let addr' := _eqv addr ,, base_to_derived derived path in
-            has_type (Vptr addr') ty ** Q (Vptr addr') free)
+         match drop_qualifiers <$> unptr (type_of e), drop_qualifiers ty with
+         | Some (Tnamed base), Tnamed derived =>
+             match base_to_derived_ty derived (path ++ [Tnamed base]) with
+             | Some off =>
+                wp_operand e (fun addr free =>
+                  let addr' := _eqv addr ,, off in
+                  has_type (Vptr addr') (Tptr ty) ** Q (Vptr addr') free)
+             | _ => False
+             end
          | _, _ => False
         end
-      |-- wp_operand (Ecast (Cbase2derived path) e Prvalue ty) Q.
+      |-- wp_operand (Ecast (Cbase2derived path (Tptr ty)) e) Q.
 
     (** the ternary operator [_ ? _ : _] has the value category
      * of the "then" and "else" expressions (which must be the same).
      * We express this with 4 rules, one for each of [wp_lval],
      * [wp_operand], [wp_xval], and [wp_init].
      *)
-    Definition wp_cond {T} (vc : ValCat) (wp : Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
+    Definition wp_cond {T} (wp : Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
       forall ty tst th el (Q : T -> FreeTemps -> mpred),
         Unfold WPE.wp_test (wp_test tst (fun c free =>
            if c
            then wp th (fun v free' => Q v (free' >*> free))
            else wp el (fun v free' => Q v (free' >*> free))))
-        |-- wp (Eif tst th el vc ty) Q.
+        |-- wp (Eif tst th el ty) Q.
 
-    Axiom wp_lval_condition : Reduce (wp_cond Lvalue wp_lval).
-    Axiom wp_xval_condition : Reduce (wp_cond Xvalue wp_xval).
-    Axiom wp_operand_condition : Reduce (wp_cond Prvalue wp_operand).
+    Axiom wp_lval_condition : Reduce (wp_cond wp_lval).
+    Axiom wp_xval_condition : Reduce (wp_cond wp_xval).
+    Axiom wp_operand_condition : Reduce (wp_cond wp_operand).
 
     Axiom wp_init_condition : forall ty addr tst th el Q,
         Unfold WPE.wp_test (wp_test tst (fun c free =>
            if c
            then wp_init ty addr th (fun frees => Q (frees >*> free))
            else wp_init ty addr el (fun frees => Q (frees >*> free))))
-        |-- wp_init ty addr (Eif tst th el Prvalue ty) Q.
+        |-- wp_init ty addr (Eif tst th el ty) Q.
 
     Axiom wp_operand_implicit : forall e Q,
         wp_operand e Q |-- wp_operand (Eimplicit e) Q.
@@ -909,10 +1062,10 @@ Module Type Expr.
         since C++17 (implemented in Clang >= 4):
         to evaluate [f(args)], [f] is evaluated before [args].
 
-        Summary of the change: https://stackoverflow.com/a/38798487/53974.
-        Official references (from http://clang.llvm.org/cxx_status.html):
-        http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0400r0.html
-        http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0145r3.pdf
+        Summary of the change: <https://stackoverflow.com/a/38798487/53974>.
+        Official references (from <http://clang.llvm.org/cxx_status.html>):
+        <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0400r0.html>
+        <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0145r3.pdf>
      *)
 
     (** [wp_call ooe pfty f es Q] calls [f] taking the arguments from the
@@ -929,13 +1082,15 @@ Module Type Expr.
      *)
     Definition wp_call (ooe : evaluation_order.t) (pfty : type) (f : Expr) (es : list Expr)
       (Q : ptr -> FreeTemps -> epred) : mpred :=
+      [| tu ⊧ resolve |] -*
       match unptr pfty with
       | Some fty =>
         let fty := normalize_type fty in
-        match arg_types fty with
+        match as_function fty with
         | Some targs =>
             let eval_f Q := wp_operand f (fun v fr => Exists fp, [| v = Vptr fp |] ** Q fp fr) in
-            letI* fps, vs, ifree, free := wp_args ooe [eval_f] targs es in
+            letI* fps, vs, ifree, free :=
+               wp_args ooe [eval_f] (targs.(ft_params), targs.(ft_arity)) es in
             match fps with
             | [fp] => |> wp_fptr fty fp vs (fun v => interp ifree $ Q v free)
             | _ => UNREACHABLE ("wp_args did not return a singleton list for pre", fps)
@@ -951,7 +1106,8 @@ Module Type Expr.
       rewrite /wp_call.
       case_match; eauto.
       case_match; eauto.
-      iIntros "K".
+      iIntros "K X Y".
+      iSpecialize ("X" with "Y"); iRevert "X".
       iApply wp_args_frame.
       { simpl. iSplit; eauto.
         iIntros (??) "K". iApply wp_operand_frame. reflexivity.
@@ -964,25 +1120,25 @@ Module Type Expr.
         iIntros (?). iApply interp_frame; iApply "K". }
     Qed.
 
-    Axiom wp_lval_call : forall f (es : list Expr) Q (ty : type),
+    Axiom wp_lval_call : forall f (es : list Expr) Q (ty := type_of (Ecall f es)),
         wp_call (evaluation_order.order_of OOCall) (type_of f) f es (fun res free =>
            Reduce (lval_receive ty res $ fun v => Q v free))
-        |-- wp_lval (Ecall f es ty) Q.
+        |-- wp_lval (Ecall f es) Q.
 
-    Axiom wp_xval_call : forall f (es : list Expr) Q (ty : type),
+    Axiom wp_xval_call : forall f (es : list Expr) Q (ty := type_of (Ecall f es)),
         wp_call (evaluation_order.order_of OOCall) (type_of f) f es (fun res free =>
            Reduce (xval_receive ty res $ fun v => Q v free))
-        |-- wp_xval (Ecall f es ty) Q.
+        |-- wp_xval (Ecall f es) Q.
 
-    Axiom wp_operand_call : forall ty f es Q,
+    Axiom wp_operand_call : forall f es Q (ty := type_of (Ecall f es)),
         wp_call (evaluation_order.order_of OOCall) (type_of f) f es (fun res free =>
            operand_receive ty res $ fun v => Q v free)
-       |-- wp_operand (Ecall f es ty) Q.
+       |-- wp_operand (Ecall f es) Q.
 
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
         (letI* res, free := wp_call (evaluation_order.order_of OOCall) (type_of f) f es in
              Reduce (init_receive addr res $ Q free))
-      |-- wp_init ty addr (Ecall f es ty) Q.
+      |-- wp_init ty addr (Ecall f es) Q.
 
     (** * Member calls *)
 
@@ -1034,13 +1190,14 @@ Module Type Expr.
              int]). the issue with type-level qualifiers is addressed through
              the use of [normalize_type] below. *)
 
-    Definition wp_mcall (invoke : ptr -> list ptr -> (ptr -> epred) -> mpred)
+    Definition wp_mcall (arrow : bool) (invoke : ptr -> list ptr -> (ptr -> epred) -> mpred)
       ooe (obj : Expr) (fty : functype) (es : list Expr)
       (Q : ptr -> FreeTemps -> epred) : mpred :=
+      [| tu ⊧ resolve |] -*
       let fty := normalize_type fty in
-      match arg_types fty with
+      match args_for <$> as_function fty with
       | Some targs =>
-        letI* this, args, ifree, free := wp_args ooe [wp_glval obj] targs es in
+        letI* this, args, ifree, free := wp_args ooe [read_arrow arrow obj] targs es in
         match this with
         | [this] => invoke this args (fun v => interp ifree $ Q v free)
         | _ => False
@@ -1048,53 +1205,66 @@ Module Type Expr.
       | _ => False
       end.
 
-    Lemma wp_mcall_frame f this this_type fty es Q Q' :
+    Lemma wp_mcall_frame arrow f this this_type fty es Q Q' :
       Forall p free, Q p free -* Q' p free
       |-- (Forall p ps Q Q', (Forall p, Q p -* Q' p) -* f p ps Q -* f p ps Q') -*
-          wp_mcall f this this_type fty es Q -* wp_mcall f this this_type fty es Q'.
+          wp_mcall arrow f this this_type fty es Q -* wp_mcall arrow f this this_type fty es Q'.
     Proof.
       rewrite /wp_mcall.
       case_match; eauto.
-      iIntros "Q f".
+      iIntros "Q f X Y".
+      iSpecialize ("X" with "Y"); iRevert "X".
       iApply wp_args_frame.
       { simpl. iSplitL; eauto. rewrite /wp.WPE.Mframe.
-        iIntros (??) "X". iApply wp_glval_frame. reflexivity. eauto. }
+        iIntros (??) "X". iApply read_arrow_frame. eauto. }
       iIntros (????).
       case_match; try iIntros "[]".
       case_match; try iIntros "[]".
       iApply "f". iIntros (?); iApply interp_frame; iApply "Q".
     Qed.
 
-    Axiom wp_lval_member_call : forall ct ty fty f obj es Q,
-        wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es (fun res free =>
-           lval_receive ty res $ fun v => Q v free)
-        |-- wp_lval (Emember_call (inl (f, ct, fty)) obj es ty) Q.
+    Axiom wp_lval_member_call : forall arrow ct fty f obj es vc cv nm Q,
+        arrow_aggregate_type arrow (decltype_of_expr obj) = Some (vc, cv, nm) ->
+        (let ty := type_of $ Emember_call arrow (inl (f, ct, fty)) obj es in
+         let* res, free :=
+           wp_mcall arrow (dispatch ct fty f $ tqualified cv (Tnamed nm)) (evaluation_order.order_of OOCall) obj fty es in
+         lval_receive ty res $ fun v => Q v free)
+        |-- wp_lval (Emember_call arrow (inl (f, ct, fty)) obj es) Q.
 
-    Axiom wp_xval_member_call : forall ct ty fty f obj es Q,
-        wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es (fun res free =>
-           xval_receive ty res $ fun v => Q v free)
-        |-- wp_xval (Emember_call (inl (f, ct, fty)) obj es ty) Q.
+    Axiom wp_xval_member_call : forall arrow ct fty f obj es vc cv nm Q,
+       arrow_aggregate_type arrow (decltype_of_expr obj) = Some (vc, cv, nm) ->
+       (let ty := type_of $ Emember_call arrow (inl (f, ct, fty)) obj es in
+        let* res, free :=
+          wp_mcall arrow (dispatch ct fty f $ tqualified cv (Tnamed nm)) (evaluation_order.order_of OOCall) obj fty es in
+        xval_receive ty res $ fun v => Q v free)
+      |-- wp_xval (Emember_call arrow (inl (f, ct, fty)) obj es) Q.
 
-    Axiom wp_operand_member_call : forall ct ty fty f obj es Q,
-        wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es (fun res free =>
-           operand_receive ty res $ fun v => Q v free)
-        |-- wp_operand (Emember_call (inl (f, ct, fty)) obj es ty) Q.
+    Axiom wp_operand_member_call : forall arrow ct fty f obj es vc cv nm Q,
+        arrow_aggregate_type arrow (decltype_of_expr obj) = Some (vc, cv, nm) ->
+        (let ty := type_of $ Emember_call arrow (inl (f, ct, fty)) obj es in
+         let* res, free :=
+           wp_mcall arrow (dispatch ct fty f $ tqualified cv (Tnamed nm)) (evaluation_order.order_of OOCall) obj fty es in
+         operand_receive ty res $ fun v => Q v free)
+      |-- wp_operand (Emember_call arrow (inl (f, ct, fty)) obj es) Q.
 
-    Axiom wp_init_member_call : forall ct f fty es (addr : ptr) ty obj Q,
-        (letI* res, free := wp_mcall (dispatch ct fty f (type_of obj)) (evaluation_order.order_of OOCall) obj fty es in
-           init_receive addr res $ Q free)
-        |-- wp_init ty addr (Emember_call (inl (f, ct, fty)) obj es ty) Q.
+    Axiom wp_init_member_call : forall arrow ct f fty es (addr : ptr) vc cv nm obj ty Q,
+        arrow_aggregate_type arrow (decltype_of_expr obj) = Some (vc, cv, nm) ->
+        (let* res, free :=
+           wp_mcall arrow (dispatch ct fty f $ tqualified cv (Tnamed nm)) (evaluation_order.order_of OOCall) obj fty es in
+         init_receive addr res $ Q free)
+     |-- wp_init ty addr (Emember_call arrow (inl (f, ct, fty)) obj es) Q.
 
     (** * Operator Calls
-        These are calls or member calls that are written as operators and
-        therefore have (potentially) different order-of-evaluation than
-        regular function or member calls.
+        These are calls (or member calls) that are written as operators
+        and therefore have (potentially) different order-of-evaluation
+        than regular function or member calls.
      *)
     Definition wp_operator_call oo oi es Q :=
+      [| tu ⊧ resolve |] -*
       match oi with
       | operator_impl.Func f fty =>
           let fty := normalize_type fty in
-          match arg_types fty with
+          match args_for <$> as_function fty with
           | Some targs =>
             letI* fps, vs, ifree, free := wp_args (evaluation_order.order_of oo) [] targs es in
             |> wp_fptr fty (_global f) vs (fun v => interp ifree $ Q v free)
@@ -1103,29 +1273,43 @@ Module Type Expr.
        | operator_impl.MFunc fn ct fty =>
            match es with
            | eobj :: es =>
-               wp_mcall (dispatch ct fty fn (type_of eobj)) (evaluation_order.order_of oo) eobj fty es Q
+               wp_mcall false (dispatch ct fty fn (type_of eobj)) (evaluation_order.order_of oo) eobj fty es Q
            | _ => False
            end
       end%I.
 
-    (* TODO: prove [wp_operator_call_frame] *)
+    Lemma wp_operator_call_frame oo oi es Q Q' :
+      (Forall p free, Q p free -* Q' p free) |-- wp_operator_call oo oi es Q -* wp_operator_call oo oi es Q'.
+    Proof.
+      rewrite /wp_operator_call.
+      iIntros "F X Y".
+      iSpecialize ("X" with "Y"); iRevert "X".
+      repeat case_match; try solve [ iIntros "[]" ].
+      { iApply wp_args_frame; eauto.
+        iIntros (????) "W !>"; iRevert "W";
+          iApply wp_fptr_frame; iIntros (?); iApply interp_frame.
+        iApply "F". }
+      { iApply (wp_mcall_frame with "F").
+        iIntros (????) "F".
+        by iApply dispatch_frame. }
+    Qed.
 
-    Axiom wp_operand_operator_call : forall oo oi es ty Q,
+    Axiom wp_operand_operator_call : forall oo oi es (ty := type_of $ Eoperator_call oo oi es) Q,
         (letI* res, free := wp_operator_call oo oi es in
          operand_receive ty res $ fun v => Q v free)
-     |-- wp_operand (Eoperator_call oo oi es ty) Q.
-    Axiom wp_lval_operator_call : forall oo oi es ty Q,
+     |-- wp_operand (Eoperator_call oo oi es) Q.
+    Axiom wp_lval_operator_call : forall oo oi es (ty := type_of $ Eoperator_call oo oi es) Q,
         (letI* res, free := wp_operator_call oo oi es in
          lval_receive ty res $ fun v => Q v free)
-     |-- wp_lval (Eoperator_call oo oi es ty) Q.
-    Axiom wp_xval_operator_call : forall oo oi es ty Q,
+     |-- wp_lval (Eoperator_call oo oi es) Q.
+    Axiom wp_xval_operator_call : forall oo oi es (ty := type_of $ Eoperator_call oo oi es) Q,
         (letI* res, free := wp_operator_call oo oi es in
          xval_receive ty res $ fun v => Q v free)
-     |-- wp_xval (Eoperator_call oo oi es ty) Q.
-    Axiom wp_init_operator_call : forall addr oo oi es ty Q,
+     |-- wp_xval (Eoperator_call oo oi es) Q.
+    Axiom wp_init_operator_call : forall addr oo oi es (ty := type_of $ Eoperator_call oo oi es) Q,
         (letI* res, free := wp_operator_call oo oi es in
          init_receive addr res $ Q free)
-     |-- wp_init ty addr (Eoperator_call oo oi es ty) Q.
+     |-- wp_init ty addr (Eoperator_call oo oi es) Q.
 
     (* null *)
     Axiom wp_null : forall Q,
@@ -1134,8 +1318,8 @@ Module Type Expr.
 
     (** The lifetime of an object can be ended at an arbitrary point
         without calling the destructor
-        (http://eel.is/c++draft/basic.life#5). According to
-        http://eel.is/c++draft/basic.life#5, a program has UB if it
+        (<http://eel.is/c++draft/basic.life#5>). According to
+        <http://eel.is/c++draft/basic.life#5>, a program has UB if it
         depends on the side effects of the destructor if it is not
         explicitly called before the storage is reused. This is
         reflected here by not doing the ownership manipulation that
@@ -1143,7 +1327,7 @@ Module Type Expr.
     Axiom end_provides_storage : forall storage_ptr obj_ptr aty sz,
        size_of aty = Some sz ->
        provides_storage storage_ptr obj_ptr aty ** obj_ptr |-> anyR aty (cQp.mut 1)
-         ={⊤}=∗ (storage_ptr |-> blockR sz (cQp.m 1)).
+       |-- |={⊤}=> (storage_ptr |-> blockR sz (cQp.m 1)).
 
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
@@ -1258,17 +1442,18 @@ Module Type Expr.
       eapply has_type_prop_drop_qualifiers; revert H.
       destruct (drop_qualifiers ty) eqn:Heq; simpl; try inversion 1; subst.
       - apply has_nullptr_type.
-      - apply has_int_type. rewrite /bound. destruct size, signed; compute; intuition congruence.
+      - apply has_int_type. rewrite /bound.
+        destruct sz, sgn; compute; intuition congruence.
       - apply has_type_prop_char_0.
       - eapply has_type_prop_enum.
         clear H1. revert H.
         rewrite /underlying_type/=.
-        destruct (tu.(types) !! g) eqn:Hglobal => /= //.
-        destruct g0 => /=//.
-        intros. do 3 eexists; split; eauto. split; eauto.
+        destruct (tu.(types) !! gn) eqn:Hglobal => /= //; rewrite Hglobal /= //.
+        destruct g => /=//.
+        intros. do 3 eexists; split; eauto; split; eauto.
         case_match; try congruence; inversion H; subst; simpl; split; try tauto.
         + apply has_nullptr_type.
-        + apply has_int_type. rewrite /bound; destruct size,signed; compute; intuition congruence.
+        + apply has_int_type. rewrite /bound; destruct sz,sgn; compute; intuition congruence.
         + apply has_type_prop_char_0.
         + apply has_type_prop_bool; eauto.
         + eapply has_type_prop_nullptr; eauto.
@@ -1287,7 +1472,7 @@ Module Type Expr.
 
     Definition marg_types (t : functype) : option (list type * function_arity) :=
       match t with
-      | @Tfunction cc ar _ (_ :: args) =>
+      | Tfunction {| ft_cc:=cc ; ft_arity:=ar ; ft_params := _ :: args |} =>
           (* we drop the first argument which is for [this] *)
           Some (args, ar)
       | _ => None
@@ -1324,6 +1509,10 @@ Module Type Expr.
            | _ => ERROR ("Constructor not found.", cnd)
            end
       |-- wp_init ty this (Econstructor cnd es ty) Q.
+
+    Axiom wp_init_lambda : forall ty cls (this : ptr) es Q,
+          wp_init ty this (Einitlist es None (Tnamed cls)) Q
+      |-- wp_init ty this (Elambda cls es) Q.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z)
       (Q : FreeTemps -> mpred) : mpred :=
@@ -1400,7 +1589,7 @@ Module Type Expr.
     Definition is_array_of (aty ety : type) : Prop :=
       match aty with
       | Tincomplete_array ety' => ety = ety'
-      | Tvariable_array ety' => ety = ety'
+      | Tvariable_array ety' _ => ety = ety'
       | Tarray ety' _ => ety = ety'
       | _ => False
       end.
@@ -1459,11 +1648,9 @@ Module Type Expr.
 
     Definition struct_inits (s : Struct) (es : list Expr) : option (list Initializer) :=
       let info :=
-          map (fun b e => {| init_path := InitBase b.1
-                        ; init_type := Tnamed b.1
+          map (fun b e => {| init_path := InitBase (lang:=lang.cpp) b.1
                         ; init_init := e |}) s.(s_bases) ++
           map (fun m e => {| init_path := InitField m.(mem_name)
-                        ; init_type := m.(mem_type)
                         ; init_init := e |}) s.(s_fields)
       in
       if bool_decide (length info = length es) then
@@ -1485,7 +1672,7 @@ Module Type Expr.
            wp_each ((fun '(b, e) => (this ,, _base cls b.1, Tnamed b.1, e)) <$> combine s.(s_bases) es) FreeTemps.id in
          let* := wp_init_identity this tu cls in
          let* free :=
-           wp_each ((fun '(m, e) => (this ., {| f_type := cls ; f_name := m.(mem_name) |}, m.(mem_type), e)) <$> (combine s.(s_fields) $ skipn (length s.(s_bases)) es)) free in
+           wp_each ((fun '(m, e) => (this ., (Field cls m.(mem_name)), m.(mem_type), e)) <$> (combine s.(s_fields) $ skipn (length s.(s_bases)) es)) free in
          this |-> structR cls (cQp.m 1) -* Q free
        else False)%I.
 
@@ -1494,7 +1681,7 @@ Module Type Expr.
        See <https://eel.is/c++draft/dcl.init.aggr#5>. However, the cpp2v
        frontend desugars all of these to initialize exactly one element.
      *)
-    Fixpoint find_member (fld : ident) (ls : list Member) {struct ls} : option (nat * Member) :=
+    Fixpoint find_member (fld : field_name.t lang.cpp) (ls : list Member) {struct ls} : option (nat * Member) :=
       match ls with
       | nil => None
       | m :: ms =>
@@ -1504,12 +1691,13 @@ Module Type Expr.
             first S <$> find_member fld ms
       end.
 
-    Definition wp_union_initlist (cls : globname) (u : decl.Union) (fld : ident) (e : option Expr) (this : ptr)
-                                 (Q : FreeTemps.t -> epred) : mpred :=
+    Definition wp_union_initlist (cls : globname) (u : decl.Union)
+      (fld : field_name.t lang.cpp) (e : option Expr) (this : ptr)
+      (Q : FreeTemps.t -> epred) : mpred :=
       match find_member fld u.(u_fields) with
       | None => False (* UNSUPPORTED *)
       | Some (n, m) =>
-          let field_ptr : ptr := this ., {| f_type := cls ; f_name := fld |} in
+          let field_ptr : ptr := this ., (Field cls fld) in
           letI* free :=
             match e with
             | Some init => wp_initialize m.(mem_type) field_ptr init
@@ -1601,33 +1789,21 @@ Module Type Expr.
        [2] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitIndexExpr.html#details
      *)
 
-    (* A very simple mangling of numbers to strings. Soundness only requires this to be
-       injective and we don't expect the [N] to be very large in practice so we pick
-       a very naive encoding.
-     *)
-    Definition N_to_bs (n : N) : bs :=
-      N.peano_rect (fun _ => bs)
-                   BS.EmptyString
-                   (fun _ x => BS.String "1" x) n.
-
-    Definition arrayloop_loop_index (n : N) : bs := "!loop_index" ++ N_to_bs n.
-    Definition opaque_val (n : N) : bs := "%opaque" ++ N_to_bs n.
-
     (* Maybe we can `Rbind (opaque n) p`, and then add `_opaque` to encapsulate looking this up in the region;
        the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
 
     Axiom wp_lval_opaque_ref : forall n ρ ty Q,
-          wp_lval tu ρ (Evar (opaque_val n) ty) Q
-      |-- wp_lval tu ρ (Eopaque_ref n Lvalue ty) Q.
+          wp_lval tu ρ (Evar (localname.opaque n) ty) Q
+      |-- wp_lval tu ρ (Eopaque_ref n (Tref ty)) Q.
 
     Axiom wp_xval_opaque_ref : forall n ρ ty Q,
-          wp_lval tu ρ (Evar (opaque_val n) ty) Q
-      |-- wp_xval tu ρ (Eopaque_ref n Xvalue ty) Q.
+          wp_lval tu ρ (Evar (localname.opaque n) ty) Q
+      |-- wp_xval tu ρ (Eopaque_ref n (Trv_ref ty)) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
     Axiom wp_operand_arrayloop_index : forall ρ level ty Q,
           Exists v,
-            ((Exists q, _local ρ (arrayloop_loop_index level)
+            ((Exists q, _local ρ (localname.arrayloop_index level)
                                |-> primR (erase_qualifiers ty) q v) **
               True) //\\ Q v FreeTemps.id
       |-- wp_operand tu ρ (Earrayloop_index level ty) Q.
@@ -1666,7 +1842,7 @@ Module Type Expr.
                 *)
                (sz : N) (idx : N)
       : mpred :=
-      let loop_index := _local ρ (arrayloop_loop_index level) in
+      let loop_index := _local ρ (localname.arrayloop_index level) in
       N.peano_rect (fun _ : N => N -> mpred)
                    (fun _ => Q)
                    (fun _ rest idx =>
@@ -1687,8 +1863,8 @@ Module Type Expr.
                    (fun p free =>
                       Forall idxp,
                       trg |-> validR -*
-                      _arrayloop_init (Rbind (opaque_val oname) p
-                                             (Rbind (arrayloop_loop_index level) idxp ρ))
+                      _arrayloop_init (Rbind (localname.opaque oname) p
+                                             (Rbind (localname.arrayloop_index level) idxp ρ))
                                       level trg init ety
                                       (trg |-> type_ptrR (Tarray ety sz) -* Q free)
                                       sz 0)
@@ -1701,21 +1877,21 @@ Module Type Expr.
        terms of the opaque value, but, it does not seem possible for the opaque value to
        be used in this expression.
      *)
-    Definition wp_cond2 {T} (vc : ValCat) (wp : translation_unit -> region -> Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
+    Definition wp_cond2 {T} (wp : translation_unit -> region -> Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
       forall tu ρ n ty common tst th el (Q : T -> FreeTemps -> mpred),
         Forall p,
            wp_initialize tu ρ (type_of common) p common (fun free =>
-           let ρ' := Rbind (opaque_val n) p ρ in
+           let ρ' := Rbind (localname.anon n) p ρ in
            wp_test tu ρ' tst (fun c free'' =>
              let free := (free'' >*> FreeTemps.delete ty p >*> free)%free in
              if c
              then wp tu ρ' th (fun v free' => Q v (free' >*> free))
              else wp tu ρ' el (fun v free' => Q v (free' >*> free))))
-        |-- wp tu ρ (Eif2 n common tst th el vc ty) Q.
+        |-- wp tu ρ (Eif2 n common tst th el ty) Q.
 
-    Axiom wp_lval_condition2 : Reduce (wp_cond2 Lvalue wp_lval).
-    Axiom wp_xval_condition2 : Reduce (wp_cond2 Xvalue wp_xval).
-    Axiom wp_operand_condition2 : Reduce (wp_cond2 Prvalue wp_operand).
+    Axiom wp_lval_condition2 : Reduce (wp_cond2 wp_lval).
+    Axiom wp_xval_condition2 : Reduce (wp_cond2 wp_xval).
+    Axiom wp_operand_condition2 : Reduce (wp_cond2 wp_operand).
 
     (* Note: This one is more subtle because the [free] from the [wp_initialize]
        could (in theory) be the [free] for the then branch. This happens if the
@@ -1732,16 +1908,16 @@ Module Type Expr.
        end of the full expression because (in this trace), `C(1)` would be
        constructing a temporary.
      *)
-    Axiom wp_init_condition2 : forall tu ρ n ty common tst th el vc p Q,
+    Axiom wp_init_condition2 : forall tu ρ n ty common tst th el p Q,
         Forall p,
            wp_initialize tu ρ (type_of common) p common (fun free =>
-           let ρ' := Rbind (opaque_val n) p ρ in
+           let ρ' := Rbind (localname.opaque n) p ρ in
            wp_test tu ρ' tst (fun c free'' =>
              let free := (free'' >*> FreeTemps.delete ty p >*> free)%free in
              if c
              then wp_init tu ρ' ty p th (fun free' => Q (free' >*> free))
              else wp_init tu ρ' ty p el (fun free' => Q (free' >*> free))))
-        |-- wp_init tu ρ ty p (Eif2 n common tst th el vc ty) Q.
+        |-- wp_init tu ρ ty p (Eif2 n common tst th el ty) Q.
 
   End with_resolve__arrayloop.
 End Expr.
@@ -1749,4 +1925,5 @@ End Expr.
 Declare Module E : Expr.
 
 Export E.
+
 Export cfrac.

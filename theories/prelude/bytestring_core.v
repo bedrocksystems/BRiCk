@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -8,10 +8,15 @@ Require Import Stdlib.NArith.NArith.
 Require Import Stdlib.Structures.OrderedType.
 Require Import Stdlib.micromega.Lia.
 Require Stdlib.Strings.Byte.
+Require Import bedrock.prelude.base.
 Import ListNotations.
 
 (** Bytestring core definitions. Depends only on the stdlib, and could in
-principle be upstreamed. *)
+principle be upstreamed.
+
+TODO: Some stdpp dependencies have crept in. Move them out, making
+this file compile without <<bedrock.prelude.base>>.
+*)
 #[local] Set Default Proof Using "Type".
 
 Definition byte_parse (b : Byte.byte) : Byte.byte := b.
@@ -20,6 +25,7 @@ Definition byte_print (b : Byte.byte) : Byte.byte := b.
 (** comparison *)
 Definition byte_cmp (a b : Byte.byte) : comparison :=
   N.compare (Byte.to_N a) (Byte.to_N b).
+#[global] Instance byte_compare : Compare Byte.byte := byte_cmp.
 
 Delimit Scope byte_scope with byte.
 String Notation Byte.byte byte_parse byte_print : byte_scope.
@@ -137,10 +143,56 @@ Module Import BS.
     f_equal; auto.
   Qed.
 
-  Fixpoint append (x y : t) : t :=
-    match x with
-    | EmptyString => y
-    | String x xs => String x (append xs y)
+  Lemma print_empty : print EmptyString = [].
+  Proof. done. Qed.
+  Lemma parse_nil : parse [] = EmptyString.
+  Proof. done. Qed.
+
+  Lemma print_string b s : print (String b s) = b :: print s.
+  Proof. done. Qed.
+  Lemma parse_cons b l : parse (b :: l) = String b (parse l).
+  Proof. done. Qed.
+
+  Lemma print_nil_inv s : print s = [] -> s = EmptyString.
+  Proof. by destruct s. Qed.
+  Lemma parse_nil_inv l : parse l = EmptyString -> l = [].
+  Proof. by destruct l. Qed.
+
+  Lemma print_cons_inv s b l :
+    print s = b :: l -> exists t, s = String b t /\ l = print t.
+  Proof.
+    destruct s as [|b' t]; [done|]. cbn. move=>[]<- ?. by eexists.
+  Qed.
+  Lemma parse_string_inv l b s :
+    parse l = String b s -> exists k, l = b :: k /\ s = parse k.
+  Proof.
+    destruct l as [|b' k]; [done|]. cbn. move=>[]<- ?. by eexists.
+  Qed.
+
+  #[global] Instance print_inj : Inj (=) (=) print.
+  Proof.
+    move=>s t. elim: t s=>[|b t IH] s /=.
+    { apply print_nil_inv. }
+    { intros (u & -> & ?)%print_cons_inv. by rewrite (IH u). }
+  Qed.
+  #[global] Instance parse_inj : Inj (=) (=) parse.
+  Proof.
+    move=>l k. elim: k l=>[|b k IH] l /=.
+    { apply parse_nil_inv. }
+    { intros (k' & -> & ?)%parse_string_inv. by rewrite (IH k'). }
+  Qed.
+
+  Fixpoint rev_append (s t : BS.t) {struct s} : BS.t :=
+    match s with
+    | EmptyString => t
+    | String b s => rev_append s (String b t)
+    end.
+  Definition rev (s : BS.t) : BS.t := rev_append s EmptyString.
+  Definition append_tailrec (s t : BS.t) : BS.t := rev_append (rev s) t.
+  Fixpoint append (s t : BS.t) {struct s} : BS.t :=
+    match s with
+    | EmptyString => t
+    | String b s => String b (append s t)
     end.
 
   (** Module [Bytestring_notations] is exported below, and contains
@@ -155,13 +207,105 @@ Module Import BS.
     Notation "x ++ y" := (append x y) : bs_scope.
 
     String Notation bs BS.parse BS.print : bs_scope.
-  End Bytestring_notations.
 
-  Fixpoint rev (acc s : bs) : bs :=
-    match s with
-    | EmptyString => acc
-    | String s ss => rev (String s acc) ss
+  End Bytestring_notations.
+  #[local] Notation Byte b := (String b EmptyString) (only parsing).
+
+  Lemma print_rev_append s t :
+    print (rev_append s t) = List.rev_append (print s) (print t).
+  Proof. by elim: s t; cbn. Qed.
+
+  Lemma print_rev s : print (rev s) = reverse (print s).
+  Proof. by rewrite /rev print_rev_append. Qed.
+
+  Lemma print_append_tailrec s t : print (append_tailrec s t) = print s ++ print t.
+  Proof.
+    rewrite /append_tailrec print_rev_append print_rev.
+    rewrite rev_append_rev rev_alt.
+    by rewrite -/(reverse (reverse (print s))) reverse_involutive.
+  Qed.
+
+  Lemma print_append s t : print (s ++ t) = print s ++ print t.
+  Proof. elim: s t=>//= b s IH t. by f_equiv. Qed.
+
+  Lemma append_alt s t : (s ++ t)%bs = append_tailrec s t.
+  Proof. apply (inj print). by rewrite print_append print_append_tailrec. Qed.
+
+  #[global] Instance append_left_id : LeftId (=) EmptyString append.
+  Proof. done. Qed.
+  #[global] Instance append_right_id : RightId (=) EmptyString append.
+  Proof.
+    intros s. apply (inj print).
+    by rewrite print_append print_empty right_id_L.
+  Qed.
+
+  Lemma rev_empty : rev "" = ""%bs.
+  Proof. done. Qed.
+
+  Lemma rev_string b s : rev (String b s) = (rev s ++ Byte b)%bs.
+  Proof.
+    apply (inj print). rewrite !(print_rev, print_append, print_string).
+    by rewrite reverse_cons print_empty.
+  Qed.
+
+  Lemma rev_involutive s : rev (rev s) = s.
+  Proof. apply (inj print). by rewrite !print_rev reverse_involutive. Qed.
+
+  Lemma rev_app s t : rev (s ++ t) = (rev t ++ rev s)%bs.
+  Proof.
+    apply (inj print). by rewrite !(print_rev, print_append, reverse_app).
+  Qed.
+
+  Definition concat_aux (rsep : bs) :=
+    fix concat_aux (rl : list bs) (acc : bs) {struct rl} : bs :=
+    match rl with
+    | nil => acc
+    | s :: nil => append s acc
+    | s :: (_ :: _) as rl =>
+      let acc := append_tailrec s acc in
+      let acc := rev_append rsep acc in
+      concat_aux rl acc
     end.
+  Definition concat (sep : bs) (l : list bs) : bs :=
+    concat_aux (rev sep) (reverse l) EmptyString.
+
+  (** Building strings in linear time  *)
+  Module Buf.
+    Inductive t : Set :=
+    | Empty
+    | Byte (_ : Byte.byte)
+    | String (_ : bs)
+    | Append (_ _ : t)
+    | Concat (_ : t) (_ : list t).
+
+    Definition concat_aux (contents_aux : t -> bs -> bs) (sep : t) :=
+      fix concat_aux (l : list t) (acc : bs) : bs :=
+      match l with
+      | nil => acc
+      | b :: nil => contents_aux b acc
+      | b :: (_ :: _) as l =>
+        let acc := concat_aux l acc in
+        let acc := contents_aux sep acc in
+        contents_aux b acc
+      end.
+    Fixpoint contents_aux (b : t) (acc : bs) {struct b} : bs :=
+      match b with
+      | Empty => acc
+      | Byte b => BS.String b acc
+      | String s => BS.append_tailrec s acc
+      | Append b1 b2 =>
+        let acc := contents_aux b2 acc in
+        contents_aux b1 acc
+      | Concat sep bufs => concat_aux contents_aux sep bufs acc
+      end.
+    Definition contents (b : t) : bs := contents_aux b BS.EmptyString.
+
+    #[global] Instance empty : base.Empty t := Empty.
+    #[global] Instance monoid : monoid.Monoid t := {
+      monoid.monoid_unit := Empty;
+      monoid.monoid_op := Append;
+    }.
+  End Buf.
 
   Fixpoint prefix (s1 s2 : bs) {struct s1} : bool :=
     match s1 with
@@ -240,7 +384,7 @@ Module Import BS.
   Definition eqb (a b : bs) : bool :=
     if eq_dec a b then true else false.
 
-  #[deprecated(since="2021-09-21", note="Use [byte_to_N_inj]")]
+  #[deprecated(since="2021-09-21", note="Use [byte_to_N_inj].")]
   Notation to_N_inj := byte_to_N_inj.
 End BS.
 Export Bytestring_notations.
@@ -256,6 +400,7 @@ Fixpoint bs_cmp (xs ys : bs) : comparison :=
     | x => x
     end
   end%bs.
+#[global] Instance bs_compare : Compare bs := bs_cmp.
 
 Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
   Definition t := bs.

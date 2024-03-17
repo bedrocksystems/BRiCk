@@ -18,7 +18,7 @@ Require Import bedrock.prelude.addr.
 Require Import bedrock.prelude.option.
 Require Import bedrock.prelude.numbers.
 
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Export bedrock.lang.cpp.semantics.types.
 Require Export bedrock.lang.cpp.semantics.genv.
 
@@ -29,8 +29,9 @@ Require Import iris.algebra.ofe.
 #[local] Open Scope Z_scope.
 Implicit Types (σ : genv).
 
-(** ** Allocation IDs. We use them to model pointer provenance, following
-Cerberus. *)
+(** ** Allocation IDs.
+    We use them to model pointer provenance, following Cerberus.
+ *)
 Record alloc_id := MkAllocId { alloc_id_car : N }.
 
 #[global] Instance MkAllocId_inj : Inj (=) (=) MkAllocId.
@@ -74,16 +75,16 @@ Module Type PTRS.
   This is the abstract model of pointers in C++ — more precisely, of their
   values. Pointers describe paths that might identify objects, which might be
   alive. Hence they must be understood relative to the C++ object model
-  (https://eel.is/c++draft/intro.object). We also use pointers to represent the
+  (<https://eel.is/c++draft/intro.object>). We also use pointers to represent the
   values of references, even if those are restricted to point to objects or
-  functions (https://eel.is/c++draft/dcl.ref#5).
+  functions (<https://eel.is/c++draft/dcl.ref#5>).
 
   - Not all of our pointers have concrete addresses.
     In C++, pointers to some objects are never created, and typical compilers
     might choose to not store such objects in memory; nevertheless, for
     uniformity our semantics identifies such objects via pointers, but
     our pointers need not represent an address
-    (https://eel.is/c++draft/basic.compound#def:represents_the_address).
+    (<https://eel.is/c++draft/basic.compound#def:represents_the_address>).
     Function [ptr_vaddr] maps a pointer to the address it represents, if any.
     See also documentation of [tptsto] and [pinned_ptr].
     (Compilers might temporarily store objects elsewhere, but only as a
@@ -94,11 +95,11 @@ Module Type PTRS.
       > An object exists, has a constant address^33
       > [33]: The term ‘‘constant address’’ means that two pointers to the object
       constructed at possibly different times will compare equal.
-    - for C++, from https://eel.is/c++draft/intro.object#8:
+    - for C++, from <https://eel.is/c++draft/intro.object#8>:
 
       > an object with nonzero size shall occupy one or more bytes of storage
 
-      and https://eel.is/c++draft/intro.memory#1:
+      and <https://eel.is/c++draft/intro.memory#1>:
 
       > every byte has a unique address.
 
@@ -108,11 +109,11 @@ Module Type PTRS.
   under the name of "object ID". Allocation ID of deallocated regions are never
   reused for new regions.
   - C++ objects form a forest of _complete objects_, and subobjects contained
-    within (https://eel.is/c++draft/intro.object#2).
+    within (<https://eel.is/c++draft/intro.object#2>).
     All subobjects of the same complete object share the same allocation
     ID.
   - Character array objects can _provide storage_ to other objects.
-    (http://eel.is/c++draft/intro.object#def:provides_storage)
+    (<http://eel.is/c++draft/intro.object#def:provides_storage>)
     In particular, when memory allocators allocate an object [o] out of a
     character array [arr], then [arr] provides storage to [o].
     Following Cerberus, a pointer to [arr] and a pointer to [o] are
@@ -183,7 +184,7 @@ Module Type PTRS.
 
   (** C++ provides a distinguished pointer [nullptr] that is *never
       dereferenceable*
-      (https://eel.is/c++draft/basic.compound#3)
+      (<https://eel.is/c++draft/basic.compound#3>)
    *)
   Parameter nullptr : ptr.
 
@@ -194,8 +195,8 @@ Module Type PTRS.
 
   (* Pointer to a C++ "complete object" with external or internal linkage, or
      to "functions"; even if they are distinct in C/C++ standards (e.g.
-     https://eel.is/c++draft/basic.pre#:object
-     https://eel.is/c++draft/basic.compound#3.1), we represent them in the same
+     <https://eel.is/c++draft/basic.pre#:object>
+     <https://eel.is/c++draft/basic.compound#3.1>), we represent them in the same
      way.
 
      Since function pointers cannot be offset, offsetting function pointers
@@ -203,7 +204,7 @@ Module Type PTRS.
    *)
   (* ^ the address of global variables & functions *)
   Parameter global_ptr :
-    translation_unit -> obj_name -> ptr.
+    translation_unit -> name -> ptr.
     (* Dynamic loading might require adding some abstract [translation_unit_id]. *)
     (* Might need deferring, as it needs designing a [translation_unit_id];
      since loading the same translation unit twice can give different
@@ -213,15 +214,15 @@ Module Type PTRS.
   (* Other constructors exist, but they are internal to C++ model.
      They include:
      - pointers to local variables (objects with automatic linkage/storage
-       duration, https://eel.is/c++draft/basic.memobj#basic.stc.auto).
-     - pointers to this (https://eel.is/c++draft/expr.prim.this) are just normal
+       duration, <https://eel.is/c++draft/basic.memobj#basic.stc.auto>).
+     - pointers to this (<https://eel.is/c++draft/expr.prim.this>) are just normal
        pointers naming the receiver of a method invocation.
    *)
 
   (** ** Concrete pointer offsets.
 
       They correspond to the kind of aggregate objects described in e.g.
-      https://eel.is/c++draft/basic.compound.
+      <https://eel.is/c++draft/basic.compound>.
    *)
 
   (* If [p : cls*] points to an object with type [cls] and field [f],
@@ -242,17 +243,17 @@ Module Type PTRS.
   #[global] Notation ".[ t ! n ]" := (o_sub _ t n) (at level 11, no associativity, format ".[  t  !  n  ]") : stdpp_scope.
 
   (* [o_sub_0] axiom is required because any object is a 1-object array
-     (https://eel.is/c++draft/expr.add#footnote-80).
+     (<https://eel.is/c++draft/expr.add#footnote-80>).
    *)
-  Axiom o_sub_0 : ∀ σ ty, is_Some (size_of σ ty) -> .[ty ! 0] = o_id.
+  Axiom o_sub_0 : ∀ {σ : genv} ty, is_Some (size_of σ ty) -> .[ty ! 0] = o_id.
   (* TODO: drop (is_Some (size_of σ ty)) via
      `displacement (o_sub σ ty i) = if (i = 0) then 0 else i * size_of σ ty`
    *)
 
   (** going up and down the class hierarchy, one step at a time;
   these offsets are only for non-virtual inheritance. *)
-  Parameter o_base : genv -> forall (derived base : globname), offset.
-  Parameter o_derived : genv -> forall (base derived : globname), offset.
+  Parameter o_base : genv -> forall (derived base : name), offset.
+  Parameter o_derived : genv -> forall (base derived : name), offset.
 
   (* We're ignoring virtual inheritance here, since we have no plans to
   support it for now, but this might hold there too. *)
@@ -277,16 +278,16 @@ Module Type PTRS.
     ptr_alloc_id (p ,, o) = ptr_alloc_id p.
 
   (** Map pointers to the address they represent,
-      (https://eel.is/c++draft/basic.compound#def:represents_the_address).
+      (<https://eel.is/c++draft/basic.compound#def:represents_the_address>).
       Not defined on all valid pointers; defined on pointers existing in C++ (
-      https://eel.is/c++draft/basic.compound#3).
+      <https://eel.is/c++draft/basic.compound#3>).
       See discussion above.
    *)
   Parameter ptr_vaddr : ptr -> option vaddr.
 
   (** [ptr_vaddr_nullptr] is not mandated by the standard, but valid across
       compilers we are interested in.
-      The closest hint is in https://eel.is/c++draft/conv.ptr
+      The closest hint is in <https://eel.is/c++draft/conv.ptr>
    *)
   Axiom ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
 
@@ -322,10 +323,10 @@ Module Type PTRS.
   this axiom to POD/Standard-layout structures.
   *)
   Axiom eval_o_field : forall σ f n cls st,
-    f = {| f_name := n ; f_type := cls |} ->
+    f = Field cls n ->
     glob_def σ cls = Some (Gstruct st) ->
     st.(s_layout) = POD \/ st.(s_layout) = Standard ->
-    eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
+    eval_offset σ (o_field σ f) = offset_of σ cls n.
 
   (* [eval_offset] respects the monoidal structure of [offset]s *)
   Axiom eval_offset_dot : ∀ σ (o1 o2 : offset),

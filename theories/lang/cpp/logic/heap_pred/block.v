@@ -75,7 +75,7 @@ Section with_cpp.
    * it is a convenient short-hand since it happens frequently, but there is nothing
    * special about it.
    *)
-  Definition tblockR (ty : type) (q : cQp.t) : Rep :=
+  Definition tblockR (ty : Rtype) (q : cQp.t) : Rep :=
     match size_of σ ty , align_of ty with
     | Some sz , Some al => blockR (σ:=σ) sz q ** alignedR al
     | _ , _  => False
@@ -105,7 +105,7 @@ Section with_cpp.
     rewrite TCLt_N blockR_eq/blockR_def.
     destruct (N.to_nat n) eqn:Hn; [ lia | ] => {Hn} /=.
     rewrite o_sub_0 ?_offsetR_id; [ | by eauto].
-    assert (TCEq (zero_sized_array Tu8) false) by done.
+    assert (TCEq (zero_sized_array (lang:=lang.cpp) Tu8) false) by done.
     apply _.
   Qed.
   #[global] Instance blockR_valid_ptr sz q : Observe validR (blockR sz q).

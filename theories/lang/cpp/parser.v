@@ -1,226 +1,136 @@
 (*
- * Copyright (c) 2020-2024 BedRock Systems, Inc.
+ * Copyright (c) 2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Export bedrock.prelude.base.
-Require bedrock.prelude.option.
-Require Export bedrock.lang.cpp.ast.
 
-(** * Derived forms used by cpp2v *)
+Require Export bedrock.prelude.base.	(* for, e.g., <<::>> *)
+Require Export bedrock.prelude.bytestring.	(* for <<%bs>> *)
+Require Import bedrock.prelude.avl.
+Require Export bedrock.lang.cpp.syntax. (* NOTE: too much *)
+Require Export bedrock.lang.cpp.parser.stmt.
+Require Import bedrock.lang.cpp.parser.lang.
+Require Import bedrock.lang.cpp.parser.type.
+Require Import bedrock.lang.cpp.parser.name.
+Require Import bedrock.lang.cpp.parser.expr.
+Require Import bedrock.lang.cpp.parser.decl.
+Require Import bedrock.lang.cpp.parser.notation.
+Require Import bedrock.lang.cpp.parser.reduction.
 
-(**
-TODO: Most definitions in this file exists for use in cpp2v-generated
-code where they are immediately reduced away. They could be tucked
-into a module that only gets imported by cpp2v-generated files.
-*)
+#[local] Definition parser_lang : lang.t := lang.cpp.
+Include ParserName.
+Include ParserType.
+Include ParserExpr.
+Include ParserDecl.
 
-(** ** Notations *)
-(**
-TODO: These seem misplaced.
-*)
+Module Import translation_unit.
 
-Declare Custom Entry cppglobal.
-
-Declare Scope cpp_scope.
-Delimit Scope cpp_scope with cpp.
-
-Declare Scope cppfield_scope.
-Delimit Scope cppfield_scope with field.
-Bind Scope cppfield_scope with field.
-
-(* XXX This is only parsing to work around Coq misusing it outside
-[cppfield_scope]. See #235. *)
-Notation "` e `" := e (e custom cppglobal at level 200, at level 0,
-  only parsing) : cppfield_scope.
-
-(** Importing [cpp_notation] makes cpp2v-generated names generally
-available as, e.g., [``::MyClass``]. *)
-Module Export cpp_notation.
-  Notation "'``' e '``'" := e
-    (at level 0, e custom cppglobal at level 200,
-     format "`` e ``") : cpp_scope.
-  Open Scope cpp_scope.
-End cpp_notation.
-
-(** ** Names *)
-
-Fixpoint do_end (ty : globname) : obj_name :=
-  match ty with
-  | BS.String _ BS.EmptyString => "D0Ev"
-  | BS.String x v => BS.String x (do_end v)
-  | _ => BS.EmptyString
-  end.
-
-(** Build the name of a destructor for a type.
-    NOTE this can be improved if we essentially turn it into a
-    constructor of [obj_name]; however, that has some wider
-    implications that we should solve in a separate issue.
- *)
-Definition DTOR (ty : globname) : obj_name :=
-  match ty with
-  | BS.String _ (BS.String _ ((BS.String c _) as rest)) =>
-    if bool_decide (c = "N"%byte) then
-      "_Z" ++ do_end rest
-    else
-      "_ZN" ++ rest ++ "D0Ev"
-  | BS.String _ (BS.String _ v) => "_ZN" ++ do_end v
-  | _ => "OOPS"
-  end%bs.
-
-Definition Nanon (ty : globname) : ident :=
-  "#" ++ ty.
-
-Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
-  (x, None).
-Definition impl_virt (x : obj_name) : obj_name * option obj_name :=
-  (x, Some x).
-
-Definition mk_overrides (methods : list (obj_name * obj_name)) : list (obj_name * obj_name) := methods.
-
-Definition mk_virtuals (methods : list (obj_name * option obj_name)) : list (obj_name * option obj_name) := methods.
-
-(** ** Types *)
-
-Section type.
-  Context {type : Set}.
-
-  (*
-  Indicate that [underlying] is used to represent alias type [name].
-  Enums are treated similarly.
+  (**
+  We work with an exploded [translation_unit] and raw trees for
+  efficiency.
   *)
-  Definition Talias (name : globname) {underlying : type} : type :=
-    underlying.
-  Definition Tunderlying (enum : type) {underlying : type} : type :=
-    underlying.
-  Definition Tunary_xform (name : bs) (arg : type) {result : type} : type :=
-    result.
 
-End type.
-Notation Tdecay_type original adjusted := (adjusted) (only parsing).
-Notation Tvariable_array ty e := (types.Tvariable_array ty) (only parsing).
+  Definition raw_symbol_table : Type := NM.Raw.t ObjValue.
+  Definition raw_type_table : Type := NM.Raw.t GlobDecl.
+  Definition raw_alias_table : Type := NM.Raw.t type.
 
-(** ** Expressions *)
+  #[global] Instance raw_structured_insert : forall {T}, Insert globname T (NM.Raw.t T) := _.
 
-Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : dispatch_type) (ft : type) (obj : Expr) (es : list Expr) (ty : type) : Expr :=
-  Eoperator_call oo (operator_impl.MFunc nm ct ft) (obj :: es) ty.
+  Definition t : Type :=
+    raw_symbol_table -> raw_type_table -> raw_alias_table -> list name ->
+    (raw_symbol_table -> raw_type_table -> raw_alias_table -> list name -> translation_unit * list name) ->
+    translation_unit * list name.
 
-Definition Eoperator_call (oo : OverloadableOperator) (f : obj_name) (ft : type) (es : list Expr) (ty : type) : Expr :=
-  Eoperator_call oo (operator_impl.Func f ft) es ty.
+  Definition _symbols (n : name) (v : ObjValue) : t :=
+    fun s t a dups k =>
+      match s !! n with
+      | None => k (<[n := v]> s) t a dups
+      | _ => k s t a (n :: dups)
+      end.
+  Definition _types (n : name) (v : GlobDecl) : t :=
+    fun s t a dups k =>
+      match t !! n with
+      | None => k s (<[n := v]> t) a dups
+      | _ => k s t a (n :: dups)
+      end.
+  Definition _aliases (n : name) (v : type) : t :=
+    fun s t a dups k =>
+      match a !! n with
+      | None => k s t (<[n:=v]> a) dups
+      | _ => k s t a (n :: dups)
+      end.
+  Definition _skip : t :=
+    fun s t a dups k => k s t a dups.
 
-Definition Eenum_const_at (e : globname) (c : ident) (ty : exprtype) : Expr :=
-  Ecast Cintegral (Eenum_const e c) Prvalue ty.
+  Fixpoint decls' (ds : list t) : t :=
+    match ds with
+    | nil => fun s t a dups k => k s t a dups
+    | d :: ds => fun s t a dups k => d s t a dups (fun s t a dups' => decls' ds s t a dups' k)
+    end.
 
-Definition Ebuiltin (nm : obj_name) (ty : type) : Expr :=
-  Ecast Cbuiltin2fun (Eglobal nm ty) Prvalue (Tptr ty).
+  Definition decls (ds : list t) (e : endian) : translation_unit * list name :=
+    decls' ds ∅ ∅ ∅ [] $ fun s t a => pair {|
+      symbols := NM.from_raw s;
+      types := NM.from_raw t;
+      aliases := NM.from_raw a;
+      initializer := nil;	(** TODO *)
+      byte_order := e;
+    |}.
 
-Definition Emember (arrow : bool) (e : Expr) (f : ident + obj_name) (mut : bool) (ty : decltype) : _ :=
-  option.get_some $
-    let e :=
-      if arrow then
-        match drop_qualifiers $ type_of e with
-        | Tptr t => Some (Ederef e t)
-        | _ => None
-        end
-      else
-        Some e
-    in
-    (fun e => match f with
-           | inr nm => Ecomma e (Eglobal nm ty)
-           | inl f => Emember e f mut ty
-           end) <$> e.
+  Definition the_tu (result : translation_unit * list name)
+    : match result.2 with
+      | [] => translation_unit
+      | _ => unit
+      end :=
+    match result.2 as X return match X with [] => translation_unit | _ => unit end with
+    | [] => result.1
+    | _ => tt
+    end.
 
-Notation Allocating := new_form.Allocating (only parsing).
-Notation NonAllocating := new_form.NonAllocating (only parsing).
+End translation_unit.
+Export translation_unit(decls).
+#[local] Notation K := translation_unit.t (only parsing).
 
-(** ** Statements *)
+Definition Dvariable (n : obj_name) (t : type) (init : global_init.t lang.cpp) : K :=
+  _symbols n $ Ovar t init.
 
-Section stmt.
-  Context {obj_name type Expr : Set}.
-  #[local] Notation Stmt := (Stmt' obj_name type Expr).
+Definition Dfunction (n : obj_name) (f : Func) : K :=
+  _symbols n $ Ofunction f.
 
-  Definition Sreturn_void : Stmt := Sreturn None.
-  Definition Sreturn_val (e : Expr) : Stmt := Sreturn (Some e).
-  Definition Sforeach (range ibegin iend : Stmt)
-      (init : option Stmt) (cond : option Expr) (inc : option Expr)
-      (decl body : Stmt) : Stmt :=
-    Sseq $ option_list init
-      ++ [range; ibegin; iend; Sfor None cond inc (Sseq [decl; body])].
-End stmt.
+Definition Dmethod (n : obj_name) (static : bool) (f : Method) : K :=
+  _symbols n $ if static then Ofunction $ static_method f else Omethod f.
 
-(** ** Translation units *)
+Definition Dconstructor (n : obj_name) (f : Ctor) : K :=
+  _symbols n $ Oconstructor f.
 
-Definition translation_unitK : Type :=
-  symbol_table -> type_table -> (symbol_table -> type_table -> translation_unit) -> translation_unit.
+Definition Ddestructor (n : obj_name) (f : Dtor) : K :=
+  _symbols n $ Odestructor f.
 
-(** TODO FM-601 don't ignore this *)
-Definition Dstatic_assert (_ : option bs) (_ : Expr) : translation_unitK :=
-  fun syms tys k =>
-  k syms tys.
+Definition Dtype (n : globname) : K :=
+  _types n $ Gtype.
 
-Definition Dvariable (name : obj_name) (t : type) (init : option Expr) : translation_unitK :=
-  fun syms tys k =>
-  k (<[ name := Ovar t init ]> syms) tys.
+Definition Dstruct (n : globname) (f : option Struct) : K :=
+  _types n $ if f is Some f then Gstruct f else Gtype.
 
-Definition Dfunction (name : obj_name) (f : Func) : translation_unitK :=
-  fun syms tys k =>
-  k (<[ name := Ofunction f ]> syms) tys.
+Definition Dunion (n : globname) (f : option Union) : K :=
+  _types n $ if f is Some f then Gunion f else Gtype.
 
-Definition Dmethod (name : obj_name) (static : bool) (f : Method) : translation_unitK :=
-  fun syms tys k =>
-    let add := if static then Ofunction $ static_method f else Omethod f in
-      k (<[ name := add ]> syms) tys.
+Definition Denum (n : globname) (u : type) (cs : list ident) : K :=
+  _types n $ Genum u cs.
 
-Definition Dconstructor (name : obj_name) (f : Ctor) : translation_unitK :=
-  fun syms tys k =>
-  k (<[ name := Oconstructor f ]> syms) tys.
-
-Definition Ddestructor (name : obj_name) (f : Dtor) : translation_unitK :=
-  fun syms tys k =>
-  k (<[ name := Odestructor f ]> syms) tys.
-
-Definition Dunion (name : globname) (o : option Union) : translation_unitK :=
-  fun syms tys k =>
-  k syms (<[ name := from_option Gunion Gtype o ]> tys).
-
-Definition Dstruct (name : globname) (o : option Struct) : translation_unitK :=
-  fun syms tys k =>
-  k syms (<[ name := from_option Gstruct Gtype o ]> tys).
-
-Definition Denum (name : globname) (t : type) (branches : list ident) : translation_unitK :=
-  fun syms tys k =>
-  k syms $ <[ name := Genum t branches ]> tys.
-
-Definition Denum_constant (name : globname)
-    (gn : globname) (ut : exprtype) (v : N + Z) (init : option Expr) : translation_unitK :=
-  fun syms tys k =>
+Definition Denum_constant (n : globname)
+    (gn : globname) (ut : exprtype) (v : N + Z) (init : option Expr) : K :=
+  _types n $
   let v := match v with inl n => Echar n ut | inr z => Eint z ut end in
   let t := Tenum gn in
-  k syms $ <[ name := Gconstant t (Some (Ecast Cintegral v Prvalue t)) ]> tys.
+  Gconstant t $ Some $ Ecast (Cintegral t) v.
 
-Definition Dtypedef (name : globname) (t : type) : translation_unitK :=
-  fun syms tys k =>
-  k syms $ <[ name := Gtypedef t ]> tys.
+Definition Dtypedef (n : globname) (t : type) : K :=
+  _aliases n t.
 
-Definition Dtype (name : globname) : translation_unitK :=
-  fun syms tys k =>
-  k syms $ <[ name := Gtype ]> tys.
+Definition Dstatic_assert (msg : option bs) (e : Expr) : K :=
+  _skip.
 
-(* Definition translation_unit_canon (c : translation_unit) : translation_unit := *)
-(*   {| symbols := avl.map_canon c.(symbols) *)
-(*    ; types := avl.map_canon c.(types) |}. *)
-
-Fixpoint decls' (ls : list translation_unitK) : translation_unitK :=
-  match ls with
-  | nil => fun syms tys k => k syms tys
-  | m :: ms => fun syms tys k => m syms tys (fun s t => decls' ms s t k)
-  end.
-
-Definition decls ls (e : endian) : translation_unit :=
-  decls' ls ∅ ∅ $ fun a b =>
-  {| symbols := avl.map_canon a
-  ; types := avl.map_canon b
-  ; initializer := nil (* FIXME *)
-  ; byte_order := e |}.
-
-Declare Reduction reduce_translation_unit := vm_compute.
+Definition Qconst_volatile : type -> type := tqualified QCV.
+Definition Qconst : type -> type := tqualified QC.
+Definition Qvolatile : type -> type := tqualified QV.

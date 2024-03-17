@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
+#include "Assert.hpp"
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
 #include "Formatter.hpp"
@@ -114,7 +115,7 @@ public:
 
 	void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
 								  Flags flags) {
-		assert(flags.none());
+		always_assert(flags.none());
 
 		for (auto i : decl->decls()) {
 			this->Visit(i, flags);
@@ -178,7 +179,7 @@ public:
 	}
 
 	void VisitNamespaceDecl(const NamespaceDecl *decl, Flags flags) {
-		assert(flags.none());
+		always_assert(flags.none());
 
 		for (auto d : decl->decls()) {
 			this->Visit(d, flags);
@@ -188,7 +189,7 @@ public:
 	void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, Flags flags) {
 		// TODO: This assertion would be off should we wind up
 		// descending into function bodies.
-		assert(flags.none());
+		always_assert(flags.none());
 
 		for (auto i : decl->decls()) {
 			this->Visit(i, flags);
@@ -269,12 +270,14 @@ ToCoqConsumer::HandleTopLevelDecl(DeclGroupRef decl) {
 
 void
 ToCoqConsumer::HandleCXXImplicitFunctionInstantiation(FunctionDecl *decl) {
-	elab(decl);
+	if (elaborate_)
+		elab(decl);
 }
 
 void
 ToCoqConsumer::HandleInlineFunctionDefinition(FunctionDecl *decl) {
-	elab(decl);
+	if (elaborate_)
+		elab(decl);
 }
 
 void

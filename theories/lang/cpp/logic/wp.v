@@ -12,7 +12,7 @@ Require Import iris.bi.monpred.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import iris.proofmode.classes.
 
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.heap_pred.
@@ -40,6 +40,7 @@ Module FreeTemps.
   Inductive t : Set :=
   | id (* = fun x => x *)
   | delete (ty : decltype) (p : ptr) (* = delete_val ty p *)
+           (* ^^ this type has qualifiers but is otherwise a runtime type *)
   | delete_va (va : list (type * ptr)) (p : ptr)
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t) (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x) *)
@@ -616,7 +617,15 @@ Section with_cpp.
 
   (** *** evaluation by a scheme *)
 
-  (** [eval eo es] evaluates [es] according to the evaluation scheme [eo] *)
+  (** [eval eo e1 e2] evaluates [e1], [e2] according to the evaluation scheme [eo] *)
+  Definition eval2 (eo : evaluation_order.t) {T U} (e1 : M T) (e2 : M U) : M (T * U) :=
+    match eo with
+    | evaluation_order.nd => nd_seq e1 e2
+    | evaluation_order.l_nd => Mseq e1 e2
+    | evaluation_order.rl => Mmap (fun '(a,b) => (b,a)) $ Mseq e2 e1
+    end.
+
+  (** [evals eo es] evaluates [es] according to the evaluation scheme [eo] *)
   Definition eval (eo : evaluation_order.t) {T} (es : list (M T)) : M (list T) :=
     match eo with
     | evaluation_order.nd => nd_seqs es
@@ -1369,7 +1378,7 @@ Section with_cpp.
    * note: the [list ptr] will be related to the register set.
    *)
   Parameter wp_fptr
-    : forall (tt : type_table) (fun_type : functype)
+    : forall (tt : type_table) (fun_type : type) (* TODO: function type *)
         (addr : ptr) (ls : list ptr) (Q : ptr -> epred), mpred.
 
   (* (bind [n] last for consistency with [NonExpansive]). *)
@@ -1379,7 +1388,7 @@ Section with_cpp.
   Axiom wp_fptr_complete_type : forall te ft a ls Q,
       wp_fptr te ft a ls Q
       |-- wp_fptr te ft a ls Q **
-          [| exists cc ar tret targs, ft = Tfunction (cc:=cc) (ar:=ar) tret targs |].
+          [| exists cc ar tret targs, ft = Tfunction (@FunctionType _ cc ar tret targs) |].
 
   (* A type is callable against a type table if all of its arguments and return
      type are [complete_type]s.
@@ -1387,9 +1396,9 @@ Section with_cpp.
      This effectively means that there is enough information to determine the
      calling convention.
    *)
-  Definition callable_type (tt : type_table) (t : functype) : Prop :=
+  Definition callable_type (tt : type_table) (t : type) : Prop :=
     match t with
-    | Tfunction ret args => complete_type tt ret /\ List.Forall (complete_type tt) args
+    | Tfunction ft => complete_type tt ft.(ft_return) /\ List.Forall (complete_type tt) ft.(ft_params)
     | _ => False
     end.
 
@@ -1457,8 +1466,9 @@ Section with_cpp.
     Qed.
 
     Lemma wp_fptr_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
-    Proof. iIntros "Hwp HK".
-           iApply (wp_fptr_frame with "HK Hwp").
+    Proof.
+      iIntros "Hwp HK".
+      iApply (wp_fptr_frame with "HK Hwp").
     Qed.
   End wp_fptr.
 

@@ -12,7 +12,6 @@ Require Import bedrock.lang.bi.observe.
 Require Import bedrock.lang.cpp.semantics.values.
 Require Import bedrock.lang.cpp.logic.arr.
 Require Import bedrock.lang.cpp.logic.heap_pred.
-Require Import bedrock.lang.cpp.bi.spec.
 
 Import ChargeNotation.
 #[local] Open Scope Z_scope.

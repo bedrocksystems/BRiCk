@@ -31,7 +31,7 @@ Section defs.
     populate (Build_function_spec inhabitant inhabitant inhabitant inhabitant inhabitant).
 
   Definition type_of_spec (fs : function_spec) : type :=
-    normalize_type (Tfunction (cc:=fs.(fs_cc)) (ar:=fs.(fs_arity)) fs.(fs_return) fs.(fs_arguments)).
+    normalize_type (Tfunction {| ft_cc:=fs.(fs_cc) ; ft_arity:=fs.(fs_arity) ; ft_return := fs.(fs_return) ; ft_params := fs.(fs_arguments) |}).
 
   Lemma cc_type_of_spec fs1 fs2 :
     type_of_spec fs1 = type_of_spec fs2 →
@@ -276,6 +276,7 @@ Section with_cpp.
   Lemma cptrR_valid_observe (p : ptr) f : Observe (valid_ptr p) (_at p (cptrR f)).
   Proof. apply observe_strict_valid_valid; apply cptrR_strict_valid_observe. Qed.
 
+  #[local] Opaque type_of_spec.
   Lemma cptrR_fs_impl f g :
     pureR (fs_impl f g) |-- cptrR f -* cptrR g.
   Proof.
@@ -298,6 +299,7 @@ Section with_cpp.
     iApply "rest".
     by iApply "fs_impl".
   Qed.
+  #[local] Transparent type_of_spec.
 
 (* TODO: Proper wrt [genv_leq]. *)
   #[global] Instance cptrR_ne : NonExpansive cptrR.

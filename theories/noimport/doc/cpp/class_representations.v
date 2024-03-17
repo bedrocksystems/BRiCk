@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -7,7 +7,7 @@ Require Import bedrock.lang.cpp.
 Import cQp_compat.
 
 Section with_Sigma.
-
+  #[local] Open Scope bs_scope.
   Context `{Sigma: cpp_logic} {CU:genv}.
   Import primitives.
 
@@ -31,9 +31,9 @@ Section with_Sigma.
       you write predicates more conveniently.
  *)
 
-  Notation "`::Point::x`" :={| f_type := "Z4Point" ; f_name := "_Z4Pointx" |} (at level 0).
+  Notation "`::Point::x`" := (Nscoped (Nglobal $ Nid "Point") (Nid "x")) (at level 0).
 
-  Notation "`::Point::y`" :={| f_type := "Z4Point" ; f_name := "_Z4Pointy" |} (at level 0).
+  Notation "`::Point::y`" := (Nscoped (Nglobal $ Nid "Point") (Nid "y")) (at level 0).
 
   (**
 Just like [intR] defines the memory representation for the type [int],
@@ -41,7 +41,7 @@ we can define [PointR] to define the memory representation for the class [Point]
 The following says, that the field x contains the integer 1 and field y contains
 the integer value [5] *)
 
-    Example PointR15 (q : Qp) : Rep :=
+  Example PointR15 (q : Qp) : Rep :=
     _field `::Point::x`  |-> intR q 1 **
     _field `::Point::y`  |-> intR q 5.
 

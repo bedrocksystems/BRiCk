@@ -6,7 +6,7 @@
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.option.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.values.
 Require Import bedrock.lang.cpp.semantics.operator.
 Require Import bedrock.lang.cpp.logic.pred.
@@ -206,7 +206,7 @@ Section with_Σ.
 
   #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) ty p1 p2 res : mpred :=
     eval_binop_impure tu bo
-      (Tpointer ty) (Tpointer ty) Tbool
+      (Tptr ty) (Tptr ty) Tbool
       (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
   Axiom eval_ptr_eq : forall ty p1 p2 res,
@@ -237,7 +237,7 @@ Section with_Σ.
     forall ty p1 p2 res,
       ptr_ord_comparable p1 p2 f res ⊢
       eval_binop_impure tu bo
-        (Tpointer ty) (Tpointer ty) Tbool
+        (Tptr ty) (Tptr ty) Tbool
         (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
   Axiom eval_ptr_le :
@@ -264,7 +264,7 @@ Section with_Σ.
       p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure tu bo
-                (Tpointer ty) (Tnum w s) (Tpointer ty)
+                (Tptr ty) (Tnum w s) (Tptr ty)
                 (Vptr p1)     (Vint o)   (Vptr p2).
 
   #[local] Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
@@ -273,7 +273,7 @@ Section with_Σ.
       p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure tu bo
-                (Tnum w s) (Tpointer ty) (Tpointer ty)
+                (Tnum w s) (Tptr ty) (Tptr ty)
                 (Vint o)   (Vptr p1)     (Vptr p2).
 
   (**
@@ -321,6 +321,6 @@ Section with_Σ.
       has_type_prop (Vint (o1 - o2)) (Tnum w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure tu Bsub
-                (Tpointer ty) (Tpointer ty) (Tnum w Signed)
+                (Tptr ty) (Tptr ty) (Tnum w Signed)
                 (Vptr p1)     (Vptr p2)     (Vint (o1 - o2)).
 End with_Σ.

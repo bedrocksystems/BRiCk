@@ -19,7 +19,8 @@ Implicit Types (σ : genv) (p : ptr) (o : offset).
 
 NOTE [ty] *must* be a primitive type.
 *)
-mlock Definition primR `{Σ : cpp_logic, σ : genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
+mlock
+Definition primR `{Σ : cpp_logic, σ : genv} (ty : Rtype) (q : cQp.t) (v : val) : Rep :=
   [| ~~ is_raw v |] **
   (**
   NOTE: Clients use [primR (erase_qualifiers ty)] but we do not bake
@@ -33,7 +34,7 @@ mlock Definition primR `{Σ : cpp_logic, σ : genv} (ty : type) (q : cQp.t) (v :
 #[global] Arguments primR {_ _ _ _} _ _ _ : assert.	(* mlock bug *)
 
 (* TODO: documentation needed *)
-mlock Definition reference_toR `{Σ : cpp_logic, σ : genv} (ty : type) : Rep :=
+mlock Definition reference_toR `{Σ : cpp_logic, σ : genv} (ty : Rtype) : Rep :=
   as_Rep (reference_to ty).
 #[global] Arguments reference_toR {_ _ _ _} _ : assert.	(* mlock bug *)
 
@@ -232,6 +233,5 @@ Section with_cpp.
   #[global] Instance reference_to_valid_observe p ty :
     Observe (p |-> validR) (reference_to ty p).
   Proof. rewrite _at_validR reference_to_elim; refine _. Qed.
-
 
 End with_cpp.

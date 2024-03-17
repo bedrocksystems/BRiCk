@@ -4,6 +4,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import Coq.QArith.QArith.
+Require Import Coq.QArith.Qcanon.
 Require Export stdpp.numbers.
 Require Export bedrock.prelude.base.
 Require Import bedrock.prelude.reserved_notation.
@@ -24,6 +26,17 @@ https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
 
 (* TODO Maybe this should be removed *)
 #[global] Coercion Z.of_N : N >-> Z.
+
+(**
+NOTE: Deprecated
+*)
+#[global] Instance nat_compare : Compare nat := Nat.compare.
+#[global] Instance positive_compare : Compare positive := Pos.compare.
+#[global] Instance N_compare : Compare N := N.compare.
+#[global] Instance Z_compare : Compare Z := Z.compare.
+#[global] Instance Q_compare : Compare Q := Qcompare.
+#[global] Instance Qc_compare : Compare Qc := Qccompare.
+(* No [Qp.compare] *)
 
 (** * Natural numbers [nat] *)
 
@@ -70,7 +83,86 @@ https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
 #[global] Instance Nat2Z_id_cancel : Cancel eq Z.to_nat Z.of_nat := Nat2Z.id.
 #[global] Instance Zabs2Nat_id_cancel : Cancel eq Z.abs_nat Z.of_nat := Zabs2Nat.id.
 
+(** * Facts about [comparison] *)
+
+Definition Eq_Lt_discr : Eq <> Lt := ltac:(discriminate).
+Definition Eq_Gt_discr : Eq <> Gt := ltac:(discriminate).
+Definition Lt_Gt_discr : Lt <> Gt := ltac:(discriminate).
+Definition Lt_Eq_discr : Lt <> Eq := ltac:(discriminate).
+Definition Gt_Eq_discr : Gt <> Eq := ltac:(discriminate).
+Definition Gt_Lt_discr : Gt <> Lt := ltac:(discriminate).
+
+(** * Positives [positive] *)
+
+#[global] Instance positive_comparison : Comparison Pos.compare.
+Proof.
+  split.
+  { intros x y. apply Pos.compare_antisym. }
+  { intros x y z c. case: (Pos.compare_spec x y).
+    { by move=>-><-<-. }
+    all: move=>? <-; case: (Pos.compare_spec y z)=>// ? _.
+    all: rewrite (Pos.compare_lt_iff, Pos.compare_gt_iff).
+    all: by etrans. }
+Qed.
+
+Module Pos.
+  Export BinPos.Pos.	(* Shadows <<eq>>, <<eq_refl>> etc *)
+  Export stdpp.numbers.Pos.
+  #[local] Open Scope positive_scope.
+
+  (** Transparent [compare_eq] *)
+
+  Definition compare_cont_not_Eq_mono :
+      ∀ {c}, c <> Eq ->
+      ∀ {x y}, compare_cont c x y <> Eq :=
+    fix go {c} Hc x y {struct y} :=
+    match x, y with
+    | p~1, q~1 => fun EQ => go Hc p q EQ
+    | p~1, q~0 => fun EQ => go Gt_Eq_discr p q EQ
+    | p~1, 1 => Gt_Eq_discr
+    | p~0, q~1 => fun EQ => go Lt_Eq_discr p q EQ
+    | p~0, q~0 => fun EQ => go Hc p q EQ
+    | p~0, 1 => Gt_Eq_discr
+    | 1, q~1 | 1, q~0 => Lt_Eq_discr
+    | 1, 1 => Hc
+    end.
+  #[local] Notation compare_cont_Gt_Eq_discr :=
+    (compare_cont_not_Eq_mono Gt_Eq_discr).
+  #[local] Notation compare_cont_Lt_Eq_discr :=
+    (compare_cont_not_Eq_mono Lt_Eq_discr).
+
+  Definition compare_cont_eq :
+      ∀ {c}, c = Eq ->
+      ∀ x y, compare_cont c x y = Eq -> x = y :=
+    fix go {c} Hc x y {struct y} :=
+    match x, y with
+    | p~1, q~1 => fun EQ => f_equal xI (go Hc p q EQ)
+    | p~1, q~0 => fun EQ => False_ind _ (compare_cont_Gt_Eq_discr EQ)
+    | _~1, 1 => fun EQ => False_ind _ (Gt_Eq_discr EQ)
+    | p~0, q~1 => fun EQ => False_ind _ (compare_cont_Lt_Eq_discr EQ)
+    | p~0, q~0 => fun EQ => f_equal xO (go Hc p q EQ)
+    | _~0, 1 => fun EQ => False_ind _ (Gt_Eq_discr EQ)
+    | 1, _~1 => fun EQ => False_ind _ (Lt_Eq_discr EQ)
+    | 1, _~0 => fun EQ => False_ind _ (Lt_Eq_discr EQ)
+    | 1, 1 => fun EQ => Logic.eq_refl
+    end.
+
+  Definition compare_eq : ∀ x y, (x ?= y) = Eq -> x = y :=
+    compare_cont_eq (Logic.eq_refl _).
+End Pos.
+
 (** * Natural numbers [N] *)
+
+#[global] Instance N_comparison : Comparison N.compare.
+Proof.
+  split.
+  { intros x y. apply N.compare_antisym. }
+  { intros x y z c. case: (N.compare_spec x y).
+    { by move=>-><-<-. }
+    all: move=>? <-; case: (N.compare_spec y z)=>// ? _.
+    all: rewrite (N.compare_lt_iff, N.compare_gt_iff).
+    all: by etrans. }
+Qed.
 
 Arguments N.ones _ : simpl never, assert.
 
@@ -395,6 +487,17 @@ Lemma pow2N_spec n : pow2N n = (2 ^ n)%N.
 Proof. by rewrite pow2N_eq. Qed.
 
 (** * Integers *)
+
+#[global] Instance Z_comparison : Comparison Z.compare.
+Proof.
+  split.
+  { intros x y. apply Z.compare_antisym. }
+  { intros x y z c. case: (Z.compare_spec x y).
+    { by move=>-><-<-. }
+    all: move=>? <-; case: (Z.compare_spec y z)=>// ? _.
+    all: rewrite (Z.compare_lt_iff, Z.compare_gt_iff).
+    all: by etrans. }
+Qed.
 
 Infix "`lor`" := Z.lor : Z_scope.
 Infix "`land`" := Z.land : Z_scope.
@@ -728,11 +831,11 @@ Module Qp.
   End Qp_all.
 
 End Qp.
-#[deprecated(since="20221223", note="use [Qp.mul_left_id]")]
+#[deprecated(since="20221223", note="use [Qp.mul_left_id].")]
 Notation Qp_mul_left_id := Qp.mul_left_id (only parsing).
-#[deprecated(since="20221223", note="use [Qp.mul_right_id]")]
+#[deprecated(since="20221223", note="use [Qp.mul_right_id].")]
 Notation Qp_mul_right_id := Qp.mul_right_id (only parsing).
-#[deprecated(since="20221223", note="use [Qp.div_right_id]")]
+#[deprecated(since="20221223", note="use [Qp.div_right_id].")]
 Notation Qp_div_right_id := Qp.div_right_id (only parsing).
 
 #[global] Typeclasses Opaque Qp.le Qp.lt.

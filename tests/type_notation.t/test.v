@@ -3,12 +3,15 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.lang.cpp.ast.
+Require Import Coq.Numbers.BinNums.
+Require Import Coq.NArith.BinNat.
+Require Import bedrock.prelude.bytestring_core.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.notations.
 Require Import bedrock.lang.cpp.code_notations.
 
 Section TestTypeNotations.
-  Context (ty rty aty1 aty2 : type) (n : N) (nm : bs).
+  Context (ty rty aty1 aty2 : type) (n : BinNums.N) (nm : name).
 
   #[local] Definition Notation_Tptr_1 : type := Tptr Tbool.
   #[local] Definition Notation_Tptr_2 : type := Tptr ty.
@@ -29,62 +32,69 @@ Section TestTypeNotations.
   #[local] Definition Notation_void : type := Tvoid.
   Print Notation_void.
 
-  #[local] Definition Notation_Tarray_1 : type := Tarray Tnullptr 100.
+  #[local] Definition Notation_Tarray_1 : type := Tarray Tnullptr 100%N.
   #[local] Definition Notation_Tarray_2 : type := Tarray ty n.
   Print Notation_Tarray_1. Print Notation_Tarray_2.
 
-  #[local] Definition Notation_Tnamed_1 : type := Tnamed "foobarbaz".
+  #[local] Definition Notation_Tnamed_1 : type := Tnamed (Nglobal (Nid "foobarbaz")).
   #[local] Definition Notation_Tnamed_2 : type := Tnamed nm.
   Print Notation_Tnamed_1. Print Notation_Tnamed_2.
 
-  #[local] Definition Notation_Tfunction_novariadic_noargs_1 : type := Tfunction Tvoid nil.
-  #[local] Definition Notation_Tfunction_novariadic_noargs_2 : type := Tfunction rty nil.
+  #[local] Definition Notation_Tfunction_novariadic_noargs_1 : type :=
+    Tfunction (FunctionType Tvoid nil).
+  #[local] Definition Notation_Tfunction_novariadic_noargs_2 : type :=
+    Tfunction (FunctionType rty nil).
   Print Notation_Tfunction_novariadic_noargs_1. Print Notation_Tfunction_novariadic_noargs_2.
 
-  #[local] Definition Notation_Tfunction_novariadic_args_nowrap_1 : type := Tfunction Tvoid (cons Tbool (cons Tnullptr nil)).
-  #[local] Definition Notation_Tfunction_novariadic_args_nowrap_2 : type := Tfunction rty (cons aty1 (cons Tvoid (cons aty2 nil))).
+  #[local] Definition Notation_Tfunction_novariadic_args_nowrap_1 : type :=
+    Tfunction (FunctionType Tvoid (cons Tbool (cons Tnullptr nil))).
+  #[local] Definition Notation_Tfunction_novariadic_args_nowrap_2 : type :=
+    Tfunction (FunctionType rty (cons aty1 (cons Tvoid (cons aty2 nil)))).
   Print Notation_Tfunction_novariadic_args_nowrap_1.
   Print Notation_Tfunction_novariadic_args_nowrap_2.
 
-  #[local] Definition Notation_Tfunction_novariadic_args_wrap : type := Tfunction Tvoid (cons (Tnamed "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")
-                          (cons (Tnamed "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") nil)).
+  #[local] Definition Notation_Tfunction_novariadic_args_wrap : type :=
+    Tfunction (FunctionType Tvoid (cons (Tnamed (Nglobal (Nid "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")))
+                          (cons (Tnamed (Nglobal (Nid "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk"))) nil))).
   Print Notation_Tfunction_novariadic_args_wrap.
 
-  #[local] Definition Notation_Tfunction_variadic_noargs_1 : type := Tfunction (ar:=Ar_Variadic) Tvoid nil.
-  #[local] Definition Notation_Tfunction_variadic_noargs_2 : type := Tfunction (ar:=Ar_Variadic) rty nil.
+  #[local] Definition Notation_Tfunction_variadic_noargs_1 : type := Tfunction (FunctionType (ft_arity:=Ar_Variadic) Tvoid nil).
+  #[local] Definition Notation_Tfunction_variadic_noargs_2 : type := Tfunction (FunctionType (ft_arity:=Ar_Variadic) rty nil).
   Print Notation_Tfunction_variadic_noargs_1. Print Notation_Tfunction_variadic_noargs_2.
 
-  #[local] Definition Notation_Tfunction_variadic_args_nowrap_1 : type := Tfunction (ar:=Ar_Variadic) Tvoid (cons Tbool (cons Tnullptr nil)).
-  #[local] Definition Notation_Tfunction_variadic_args_nowrap_2 : type := Tfunction (ar:=Ar_Variadic) rty (cons aty1 (cons Tvoid (cons aty2 nil))).
+  #[local] Definition Notation_Tfunction_variadic_args_nowrap_1 : type :=
+    Tfunction (FunctionType (ft_arity:=Ar_Variadic) Tvoid (cons Tbool (cons Tnullptr nil))).
+  #[local] Definition Notation_Tfunction_variadic_args_nowrap_2 : type :=
+    Tfunction (FunctionType (ft_arity:=Ar_Variadic) rty (cons aty1 (cons Tvoid (cons aty2 nil)))).
   Print Notation_Tfunction_variadic_args_nowrap_1.
   Print Notation_Tfunction_variadic_args_nowrap_2.
 
-  #[local] Definition Notation_Tfunction_variadic_args_wrap : type := Tfunction (ar:=Ar_Variadic)
-              Tvoid (cons (Tnamed "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")
-                          (cons (Tnamed "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") nil)).
+  #[local] Definition Notation_Tfunction_variadic_args_wrap : type := Tfunction (FunctionType (ft_arity:=Ar_Variadic)
+              Tvoid (cons (Tnamed (Nglobal (Nid "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")))
+                          (cons (Tnamed (Nglobal (Nid "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk"))) nil))).
   Print Notation_Tfunction_variadic_args_wrap.
 
   #[local] Definition Notation_Tbool : type := Tbool.
   Print Notation_Tbool.
 
-  #[local] Definition Notation_Tmember_pointer_1 : type := Tmember_pointer "foobarbaz" Ti8.
+  #[local] Definition Notation_Tmember_pointer_1 : type := Tmember_pointer (Tnamed (Nglobal (Nid "foobarbaz"))) Tchar.
   Print Notation_Tmember_pointer_1.
 
   Section Qualifiers.
-    #[local] Definition Notation_mut_1 : type := Qmut Tbool.
-    #[local] Definition Notation_mut_2 : type := Qmut (Qmut Tbool).
+    #[local] Definition Notation_mut_1 : type := Tmut Tbool.
+    #[local] Definition Notation_mut_2 : type := Tmut (Tmut Tbool).
     Print Notation_mut_1. Print Notation_mut_2.
 
-    #[local] Definition Notation_const_1 : type := Qconst Tbool.
-    #[local] Definition Notation_const_2 : type := Qconst (Tptr (Qconst Tvoid)).
+    #[local] Definition Notation_const_1 : type := Tconst Tbool.
+    #[local] Definition Notation_const_2 : type := Tconst (Tptr (Tconst Tvoid)).
     Print Notation_const_1. Print Notation_const_2.
 
-    #[local] Definition Notation_volatile_1 : type := Qmut_volatile Tbool.
-    #[local] Definition Notation_volatile_2 : type := Qmut_volatile (Tptr (Qconst Tvoid)).
+    #[local] Definition Notation_volatile_1 : type := Tmut_volatile Tbool.
+    #[local] Definition Notation_volatile_2 : type := Tmut_volatile (Tptr (Tconst Tvoid)).
     Print Notation_volatile_1. Print Notation_volatile_2.
 
-    #[local] Definition Notation_const_volatile_1 : type := Qconst_volatile Tbool.
-    #[local] Definition Notation_const_volatile_2 : type := Qconst_volatile (Tptr (Qconst_volatile Tvoid)).
+    #[local] Definition Notation_const_volatile_1 : type := Tconst_volatile Tbool.
+    #[local] Definition Notation_const_volatile_2 : type := Tconst_volatile (Tptr (Tconst_volatile Tvoid)).
     Print Notation_const_volatile_1. Print Notation_const_volatile_2.
   End Qualifiers.
 End TestTypeNotations.
@@ -162,20 +172,20 @@ Section TestTypeNotationsParsing.
   Print Notation_Tmember_pointer_1.
 
   Section Qualifiers.
-    #[local] Definition Notation_mut_1 : Qmut Tbool = {(t: mut bool)}%cpp_type := eq_refl.
-    #[local] Definition Notation_mut_2 : Qmut (Qmut Tbool) = {(t: mut (mut bool))}%cpp_type := eq_refl.
+    #[local] Definition Notation_mut_1 : Tmut Tbool = {(t: mut bool)}%cpp_type := eq_refl.
+    #[local] Definition Notation_mut_2 : Tmut (Tmut Tbool) = {(t: mut (mut bool))}%cpp_type := eq_refl.
     Print Notation_mut_1. Print Notation_mut_2.
 
-    #[local] Definition Notation_const_1 : Qconst Tbool = {(t: const bool)}%cpp_type := eq_refl.
-    #[local] Definition Notation_const_2 : Qconst (Tptr (Qconst Tvoid)) = {(t: const ptr<const void>)}%cpp_type := eq_refl.
+    #[local] Definition Notation_const_1 : Tconst Tbool = {(t: const bool)}%cpp_type := eq_refl.
+    #[local] Definition Notation_const_2 : Tconst (Tptr (Tconst Tvoid)) = {(t: const ptr<const void>)}%cpp_type := eq_refl.
     Print Notation_const_1. Print Notation_const_2.
 
-    #[local] Definition Notation_volatile_1 : Qmut_volatile Tbool = {(t: volatile bool)}%cpp_type := eq_refl.
-    #[local] Definition Notation_volatile_2 : Qmut_volatile (Tptr (Qconst Tvoid)) = {(t: volatile ptr<const void>)}%cpp_type := eq_refl.
+    #[local] Definition Notation_volatile_1 : Tmut_volatile Tbool = {(t: volatile bool)}%cpp_type := eq_refl.
+    #[local] Definition Notation_volatile_2 : Tmut_volatile (Tptr (Tconst Tvoid)) = {(t: volatile ptr<const void>)}%cpp_type := eq_refl.
     Print Notation_volatile_1. Print Notation_volatile_2.
 
-    #[local] Definition Notation_const_volatile_1 : Qconst_volatile Tbool = {(t: const volatile bool)}%cpp_type := eq_refl.
-    #[local] Definition Notation_const_volatile_2 : Qconst_volatile (Tptr (Qconst_volatile Tvoid)) = {(t: const volatile ptr<const volatile void>)}%cpp_type := eq_refl.
+    #[local] Definition Notation_const_volatile_1 : Tconst_volatile Tbool = {(t: const volatile bool)}%cpp_type := eq_refl.
+    #[local] Definition Notation_const_volatile_2 : Tconst_volatile (Tptr (Tconst_volatile Tvoid)) = {(t: const volatile ptr<const volatile void>)}%cpp_type := eq_refl.
     Print Notation_const_volatile_1. Print Notation_const_volatile_2.
   End Qualifiers.
 End TestTypeNotationsParsing.

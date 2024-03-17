@@ -248,7 +248,7 @@ Module cQp.
   #[local] Lemma scale_combine' q1 q2 cq :
     scale q1 cq + scale q2 cq = scale (q1 + q2) cq.
   Proof. by rewrite scale_add_l. Qed.
-  #[deprecated(since="20230106", note="use [cQp.scale_add_l]")]
+  #[deprecated(since="20230106", note="use [cQp.scale_add_l].")]
   Notation scale_combine := scale_combine'.
 
 End cQp.

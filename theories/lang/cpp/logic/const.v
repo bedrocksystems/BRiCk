@@ -10,7 +10,7 @@ Require Import iris.proofmode.monpred.
 Require Import bedrock.prelude.base.
 
 Require Import bedrock.lang.cpp.semantics.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
 Require Import bedrock.lang.cpp.logic.wp.
@@ -85,7 +85,7 @@ Section defs.
                     (seqN 0 sz) Q
       | Tincomplete_array _ =>
           False
-      | Tvariable_array _ =>
+      | Tvariable_array _ _ =>
           False
 
       | Tnamed cls =>
@@ -102,7 +102,7 @@ Section defs.
                                 if m.(mem_mutable)
                                 then Q
                                 else
-                                  wp_const from to (addr ,, _field {| f_type := cls ; f_name := m.(mem_name) |}) m.(mem_type) Q
+                                  wp_const from to (addr ,, _field (Field cls m.(mem_name))) m.(mem_type) Q
                             end
                 end)
               | Gstruct st =>
@@ -119,7 +119,7 @@ Section defs.
                                 if m.(mem_mutable)
                                 then Q
                                 else wp_const from to
-                                        (addr ,, _field {| f_type := cls; f_name := m.(mem_name) |})
+                                        (addr ,, _field (Field cls m.(mem_name)))
                                         m.(mem_type) Q)
                     (s_fields st)
                     (addr |-> structR cls from ** (addr |-> structR cls to -* do_identity Q))
@@ -130,10 +130,20 @@ Section defs.
               end
           | None => UNSUPPORTED Q
           end
-      | Tfunction _ _
+      | Tfunction _
       | Tarch _ _ => UNSUPPORTED Q
       | Tqualified cv ty' => False (* unreachable *)
       | Tunsupported _ => False
+      | Tparam _ | Tresult_param _
+      | Tresult_global _
+      | Tresult_unop _ _
+      | Tresult_binop _ _ _
+      | Tresult_call _ _
+      | Tresult_member_call _ _ _
+      | Tresult_member _ _
+      | Tdecltype _
+      | Texprtype _
+      | Tresult_parenlist _ _ => False
       end%I.
 
   (* NOTE: we prefer an entailment ([|--]) to a bi-entailment ([-|-]) or an equality

@@ -19,12 +19,8 @@ Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.option.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.algebra.cfrac.
-Require Import bedrock.lang.cpp.syntax.names.
-Require Import bedrock.lang.cpp.syntax.types.
-Require Import bedrock.lang.cpp.syntax.typing.
-Require Import bedrock.lang.cpp.syntax.translation_unit.
-Require Import bedrock.lang.cpp.semantics.values.
-Require Import bedrock.lang.cpp.semantics.subtyping.
+Require Import bedrock.lang.cpp.syntax.
+Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.mpred.
 Require Import bedrock.lang.cpp.logic.pred.
 
@@ -436,7 +432,7 @@ Module SimpleCPP.
           vs = cptr 0 /\ v = Vptr nullptr
         | Tfloat_ _ => False
         | Tarch _ _ => False
-        | Tpointer _ =>
+        | Tptr _ =>
           match v with
           | Vptr p =>
             if decide (p = nullptr) then
@@ -445,7 +441,7 @@ Module SimpleCPP.
               vs = aptr p
           | _ => False
           end
-        | Tfunction _ _
+        | Tfunction _
         | Tref _
         | Trv_ref _ =>
           match v with
@@ -460,9 +456,11 @@ Module SimpleCPP.
         | Tvoid
         | Tarray _ _
         | Tincomplete_array _
-        | Tvariable_array _
+        | Tvariable_array _ _
         | Tnamed _ => False (* not directly encoded in memory *)
         | Tunsupported _ => False
+        | Tdecltype _ => False
+        | _ => False
         end.
       Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred :=
         [| pure_encodes t v vs |].
@@ -486,8 +484,8 @@ Module SimpleCPP.
           | Tbool => 1
           | Tnum sz _ => bytesNat sz
 
-          | Tmember_pointer _ _ | Tnullptr | Tpointer _
-          | Tfunction _ _ | Tref _ | Trv_ref _ =>
+          | Tmember_pointer _ _ | Tnullptr | Tptr _
+          | Tfunction _ | Tref _ | Trv_ref _ =>
             POINTER_BYTES
 
           | _ => 1	(* dummy for absurd case, but useful for length_encodes_pos. *)
@@ -1158,7 +1156,7 @@ Module SimpleCPP.
       ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tu8 q p1 v -* tptsto (σ:=σ) Tu8 q p2 v.
     Proof. Admitted.
 
-    Definition strict_valid_if_not_empty_array ty : ptr -> mpred :=
+    Definition strict_valid_if_not_empty_array (ty : type) : ptr -> mpred :=
       if zero_sized_array ty then valid_ptr else strict_valid_ptr.
     #[global] Instance stict_valid_if_not_empty_array_persistent ty p :
       Persistent (strict_valid_if_not_empty_array ty p).
@@ -1170,13 +1168,13 @@ Module SimpleCPP.
       Timeless (strict_valid_if_not_empty_array ty p).
     Proof. rewrite /strict_valid_if_not_empty_array. case_match; refine _. Qed.
 
-    Lemma zero_size_array_erase_qualifiers ty :
+    Lemma zero_size_array_erase_qualifiers (ty : type) :
       zero_sized_array (erase_qualifiers ty) = zero_sized_array ty.
     Proof.
       induction ty; rewrite /= /qual_norm /=; eauto.
       - rewrite IHty. done.
       - rewrite IHty. clear.
-        generalize (merge_tq QM t).
+        generalize (merge_tq QM q).
         clear. induction ty; rewrite /= /qual_norm/=; eauto.
         intros.
         rewrite -!IHty. done.
@@ -1274,7 +1272,7 @@ Module SimpleCPP.
       Qed.
 
       Lemma has_type_ptr' p ty :
-        has_type (Vptr p) (Tpointer ty) -|- valid_ptr p ** [| aligned_ptr_ty ty p |].
+        has_type (Vptr p) (Tptr ty) -|- valid_ptr p ** [| aligned_ptr_ty ty p |].
       Proof.
         rewrite /has_type/= has_type_prop_pointer.
         rewrite only_provable_True ?(left_id emp) //. eauto.
@@ -1464,7 +1462,7 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
       glob_def σ cls = Some (Gstruct st) ->
       fld ∈ s_fields st →
       type_ptr (Tnamed cls) p ⊢ type_ptr fld.(mem_type) (p .,
-        {| f_name := fld.(mem_name) ; f_type := cls |}).
+        Field cls fld.(mem_name)).
 
     Axiom type_ptr_o_sub : forall p (m n : N) ty,
       (m < n)%N ->

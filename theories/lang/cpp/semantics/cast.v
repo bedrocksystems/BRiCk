@@ -12,7 +12,7 @@ Require Import elpi.apps.locker.locker.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.numbers.
 Require Export bedrock.lang.cpp.arith.operator.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.values.
 Require Import bedrock.lang.cpp.semantics.genv.
 Require Import bedrock.lang.cpp.semantics.promotion.
@@ -154,8 +154,8 @@ Section conv_int.
       destruct H2 as [[?[??]] | [?[??]]]; congruence. }
     { eapply has_int_type.
       red; rewrite /=/max_val/trim.
-      generalize (Z_mod_lt z (2 ^ bitsN size0) ltac:(lia)).
-      destruct size0 => /=; try lia. }
+      generalize (Z_mod_lt z (2 ^ bitsN sz0) ltac:(lia)).
+      destruct sz0 => /=; try lia. }
     { eapply has_type_prop_char.
       eexists; split; eauto.
       rewrite to_char.unlock.
@@ -165,8 +165,8 @@ Section conv_int.
     { eapply has_int_type.
       eapply has_type_prop_char' in H0.
       red.
-      generalize (of_char_bounded (char_type.bitsN t) (signedness_of_char σ t) (bitsN size) signed n
-                    ltac:(destruct size; simpl; lia)
+      generalize (of_char_bounded (char_type.bitsN t) (signedness_of_char σ t) (bitsN sz) sgn n
+                    ltac:(destruct sz; simpl; lia)
                     ltac:(destruct t; simpl; lia)).
       rewrite /min_val/max_val. repeat case_match; simpl; lia. }
     { apply has_type_prop_char; eexists; split; eauto.
@@ -174,7 +174,7 @@ Section conv_int.
       destruct H0 as [?[Hinv?]]; inversion Hinv; subst.
       generalize (to_char_bounded (char_type.bitsN t) Unsigned (char_type.bitsN t0) (Z.of_N x)); eauto. }
     { eapply has_bool_type; case_match; lia. }
-    { eapply has_int_type. red; destruct size, signed, b => /=; lia. }
+    { eapply has_int_type. red; destruct sz, sgn, b => /=; lia. }
     { eapply has_type_prop_char'. destruct t => /=; lia. }
     { eapply has_type_prop_char; eexists; split; eauto. destruct t => /=; lia. }
     { eapply has_type_prop_bool in H0.
@@ -214,7 +214,7 @@ End conv_int.
    pointer casts require side-conditions that are only expressible in
    separation logic.
  *)
-Definition convert {σ : genv} (tu : translation_unit) (from to : type) (v : val) (v' : val) : Prop :=
+Definition convert {σ : genv} (tu : translation_unit) (from to : Rtype) (v : val) (v' : val) : Prop :=
   if is_pointer from && bool_decide (erase_qualifiers from = erase_qualifiers to) then
     (* TODO: this conservative *)
     has_type_prop v from /\ has_type_prop v' to /\ v' = v

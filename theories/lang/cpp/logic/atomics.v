@@ -7,7 +7,7 @@
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.atomic1.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
@@ -43,7 +43,7 @@ Section with_Σ.
 
   Definition pointee_type (t : type) : option type :=
     match t with
-    | Tpointer t => Some t
+    | Tptr t => Some t
     | _ => None
     end.
 

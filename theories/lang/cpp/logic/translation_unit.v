@@ -8,7 +8,7 @@
     units.
  *)
 Require Import bedrock.prelude.base.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
@@ -95,14 +95,14 @@ Section with_cpp.
   Definition initSymbol (n : obj_name) (o : ObjValue) : mpred :=
     _at (_global n)
         match o with
-        | Ovar t (Some e) =>
+        | Ovar t (global_init.Init e) =>
           emp (*
       Exists Q : FreeTemps -> mpred,
       □ (_at (_eq a) (uninitR (resolve:=resolve) t 1) -*
          Forall ρ ti, wp_init (resolve:=resolve) ti ρ t (Vptr a) e Q) ** Q emp
 *)
       (* ^^ todo(gmm): static initialization is not yet supported *)
-        | Ovar t None =>
+        | Ovar t global_init.NoInit =>
           uninitR t (cQp.m 1)
         | _ => emp
         end.
@@ -132,7 +132,7 @@ Section with_cpp.
   Proof.
     rewrite denoteModule_eq/denoteModule_def.
     iIntros (Hlookup) "[M _]".
-    move: (avl.map_to_list_elements _ _ _ Hlookup) => [l1][l2] ->.
+    move: (NM.map_to_list_elements _ _ _ Hlookup) => [l1][l2] ->.
     rewrite big_opL_app big_opL_cons.
     by iDestruct "M" as "[_ [M _]]".
   Qed.

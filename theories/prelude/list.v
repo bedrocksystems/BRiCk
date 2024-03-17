@@ -394,7 +394,7 @@ Section list_difference.
 
 End list_difference.
 
-#[deprecated(note="Use list_difference_singleton_not_in")]
+#[deprecated(note="Use [list_difference_singleton_not_in].")]
 Notation list_difference_id := list_difference_singleton_not_in.
 
 Lemma tail_length {A} (l : list A):
@@ -522,13 +522,13 @@ Section ap.
     { rewrite [(_ :: _) ++ _]/=. by rewrite !ap_cons_r_p IH assoc. }
   Qed.
 End ap.
-#[deprecated(since="2023-09-03", note="Use [ap_nil_l]")]
+#[deprecated(since="2023-09-03", note="Use [ap_nil_l].")]
 Notation list_ap_nil_l := ap_nil_l (only parsing).
-#[deprecated(since="2023-09-03", note="Use [ap_nil_r]")]
+#[deprecated(since="2023-09-03", note="Use [ap_nil_r].")]
 Notation list_ap_nil_r := ap_nil_r (only parsing).
-#[deprecated(since="2023-09-03", note="Use [ap_cons_l]")]
+#[deprecated(since="2023-09-03", note="Use [ap_cons_l].")]
 Notation list_ap_cons_l := ap_cons_l (only parsing).
-#[deprecated(since="2023-09-03", note="Use [ap_cons_r_p]")]
+#[deprecated(since="2023-09-03", note="Use [ap_cons_r_p].")]
 Notation list_ap_cons_r_p := ap_cons_r_p (only parsing).
 
 #[universes(polymorphic)]

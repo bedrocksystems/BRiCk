@@ -14,12 +14,12 @@ Implicit Types (σ : genv) (p : ptr) (o : offset).
 mlock
 Definition structR `{Σ : cpp_logic} {σ : genv} (cls : globname) (q : cQp.t) : Rep :=
   as_Rep (fun p => struct_padding p cls q).
-#[global] Arguments structR {_ _ Σ σ} cls q : assert.
+#[global] Arguments structR {_ _ Σ σ} cls%_cpp_name q%_cQp : assert.
 
 mlock
 Definition unionR `{Σ : cpp_logic} {σ : genv} (cls : globname) (q : cQp.t) (i : option nat) : Rep :=
   as_Rep (fun p => union_padding p cls q i).
-#[global] Arguments unionR {_ _ Σ σ} cls q i : assert.
+#[global] Arguments unionR {_ _ Σ σ} cls%_cpp_name q%_cQp i : assert.
 
 Section aggregate.
   Context `{Σ : cpp_logic} {σ : genv}.

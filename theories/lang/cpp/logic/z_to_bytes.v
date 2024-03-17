@@ -24,7 +24,7 @@ Section with_σ.
     lia.
   Qed.
 
-  Lemma _Z_from_bytes_unsigned_le_has_type_prop (sz : int_type) :
+  Lemma _Z_from_bytes_unsigned_le_has_type_prop (sz : int_type.t) :
     forall (bytes : list N),
       lengthN bytes = bytesN sz ->
       has_type_prop (_Z_from_bytes_unsigned_le bytes) (Tnum sz Unsigned).
@@ -35,7 +35,7 @@ Section with_σ.
     destruct sz=> /=; lia.
   Qed.
 
-  Lemma _Z_from_bytes_le_has_type_prop (bytes : list N) (sz : int_type) (sgn : signed) :
+  Lemma _Z_from_bytes_le_has_type_prop (bytes : list N) (sz : int_type.t) (sgn : signed) :
     lengthN bytes = bytesN sz ->
     has_type_prop (_Z_from_bytes_le sgn bytes) (Tnum sz sgn).
   Proof.
@@ -53,7 +53,7 @@ Section with_σ.
   Qed.
 
   Lemma _Z_from_bytes_has_type_prop :
-    forall (endianness : endian) (sz : int_type) (sgn : signed) (bytes : list N),
+    forall (endianness : endian) (sz : int_type.t) (sgn : signed) (bytes : list N),
       lengthN bytes = bytesN sz ->
       has_type_prop (Vint (_Z_from_bytes endianness sgn bytes)) (Tnum sz sgn).
   Proof.
