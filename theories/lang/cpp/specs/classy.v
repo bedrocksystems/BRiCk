@@ -56,7 +56,12 @@ Module Binder.
     refine (to_bs (Ident.to_string id)).
 End Binder.
 
-Class Binder {P : Type} (p : P) := binder : BS.t.
+Section Binder.
+  #[local] Set Typeclasses Unique Instances.
+  #[local] Set Typeclasses Strict Resolution.
+  Class Binder {P : Type} (p : P) := binder : BS.t.
+End Binder.
+
 Hint Opaque Binder : typeclass_instances.
 Ltac binder p :=
   let f := ltac2:(p |- Binder.binder p) in
