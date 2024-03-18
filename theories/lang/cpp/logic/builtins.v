@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.prelude.base.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.ast.
@@ -15,7 +15,7 @@ Require Import bedrock.lang.cpp.logic.path_pred.
 Require Import bedrock.lang.cpp.logic.heap_pred.
 Require Import bedrock.lang.cpp.logic.wp.
 
-#[local] Arguments ERROR {_ _} _%bs : assert.
+#[local] Arguments ERROR {_ _} _%_bs : assert.
 
 (** ** Wp Semantics for builtins *)
 (**

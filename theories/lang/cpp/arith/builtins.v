@@ -820,7 +820,7 @@ Section Bswap.
   Section test.
     Local Definition bytes (ls : list Z) :=
       fold_left (fun a b => a * 256 + b)%Z ls 0%Z.
-    Arguments bytes _%Z.
+    Arguments bytes _%_Z.
 
     Local Definition _bswap16_test : bswap W16 (bytes (1::2::nil)%Z) = bytes (2::1::nil)%Z := eq_refl.
     Local Definition _bswap32_test :

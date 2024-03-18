@@ -99,7 +99,7 @@ where they are partially applied.
   (at level 15, r at level 20, right associativity) : stdpp_scope.
 
 Module INTERNAL.
-  Ltac unfold_at := rewrite __at.unlock /AT_at/= 1?at_aux.unlock 1?offsetR_aux.unlock.
+  Ltac unfold_at := rewrite __at.unlock /AT_at/(AT_at _ _ _ _)/= 1?at_aux.unlock 1?offsetR_aux.unlock.
   Lemma _at_eq `{Σ : cpp_logic} p R : p |-> R = R.(monPred_at) p.
   Proof. by unfold_at. Qed.
   Lemma _offsetR_eq `{Σ : cpp_logic} o R : o |-> R =

@@ -28,7 +28,7 @@ Require Export bedrock.lang.cpp.bi.cfractional.
 Require Export iris.base_logic.lib.iprop.
 (* TODO: ^^ only needed to export uPredI, should be removed. *)
 Require Import iris.bi.lib.fractional.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 Require Import bedrock.lang.bi.na_invariants.
 Require Import bedrock.lang.bi.cancelable_invariants.

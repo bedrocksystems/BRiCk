@@ -57,7 +57,7 @@ Reserved Notation "'(⊢@{' PROP , n } Q )".
 Class EntailsN (PROP : Type) : Type := entailsN (n : nat) : relation PROP.
 #[global] Instance : Params (@entailsN) 3 := {}.
 #[global] Hint Mode EntailsN ! : typeclass_instances.
-#[global] Arguments entailsN {_}%type_scope {_} _%nat_scope (_ _)%bi_scope : assert.
+#[global] Arguments entailsN {_}%_type_scope {_} _%_nat_scope (_ _)%_bi_scope : assert.
 
 Notation "P '⊢{' n } Q" := (entailsN n P Q) : stdpp_scope.
 Notation "P '⊢@{' PROP , n } Q" :=
@@ -141,7 +141,7 @@ End properties.
 
 Definition emp_validN `{BiEntailsN PROP} (n : nat) (P : PROP) : Prop :=
   emp ⊢{n} P.
-#[global] Arguments emp_validN {_ _} _%nat_scope _%I : simpl never, assert.
+#[global] Arguments emp_validN {_ _} _%_nat_scope _%_I : simpl never, assert.
 #[global] Hint Opaque emp_validN : typeclass_instances.
 
 Notation "'⊢{' n } Q" := (emp_validN n Q) : stdpp_scope.

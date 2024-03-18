@@ -29,7 +29,7 @@ Section with_cpp.
   Definition blockR_aux : seal (@blockR_def). Proof. by eexists. Qed.
   Definition blockR := blockR_aux.(unseal).
   Definition blockR_eq : @blockR = _ := blockR_aux.(seal_eq).
-  #[global] Arguments blockR {_} _%N _%Qp.
+  #[global] Arguments blockR {_} _%_N _%_Qp.
 
   #[global] Instance blockR_timeless sz q :
     Timeless (blockR sz q).

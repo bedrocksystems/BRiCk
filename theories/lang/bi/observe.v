@@ -6,7 +6,7 @@
 Require Import elpi.apps.locker.
 Require Import bedrock.lang.bi.prelude.
 Require Import iris.bi.bi iris.bi.monpred.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 (** * Observations *)
 (** We define type classes for making observations and a few instances
@@ -17,16 +17,16 @@ defined elsewhere. *)
 Such observations do not consume [P]. *)
 Class Observe {PROP : bi} (Q P : PROP) := observe : P ⊢ <pers> Q.
 #[global] Instance: Params (@observe) 1 := {}.
-Arguments observe {_} (_ _)%I {_} : assert.
-Arguments Observe {_} (_ _)%I : simpl never, assert.
+Arguments observe {_} (_ _)%_I {_} : assert.
+Arguments Observe {_} (_ _)%_I : simpl never, assert.
 #[global] Hint Mode Observe + ! ! : typeclass_instances.
 
 (** [Observe Q P1 P2] means we can observe [Q] (persistently) given
 [P1 ** P2]. Such observations do not consume the [P_i]. *)
 Class Observe2 {PROP : bi} (Q P1 P2 : PROP) := observe_2 : P1 ⊢ P2 -∗ <pers> Q.
 #[global] Instance: Params (@observe_2) 1 := {}.
-Arguments observe_2 {_} (_ _ _)%I {_} : assert.
-Arguments Observe2 {_} (_ _ _)%I : simpl never, assert.
+Arguments observe_2 {_} (_ _ _)%_I {_} : assert.
+Arguments Observe2 {_} (_ _ _)%_I : simpl never, assert.
 #[global] Hint Mode Observe2 + ! ! ! : typeclass_instances.
 
 (**

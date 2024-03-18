@@ -30,5 +30,5 @@ Class Constant {A} {PROP : bi} (I : PROP) (P : A → PROP) : Prop := {
   #[global] constant_knowledge x :: Knowledge (P x);
   #[global] constant_timeless x :: Timeless (P x);
 }.
-Arguments constant_exist {_ _} (_ _)%I {_} : assert.
-Arguments constant_unique {_ _} (_ _)%I {_} _ _ : assert.
+Arguments constant_exist {_ _} (_ _)%_I {_} : assert.
+Arguments constant_unique {_ _} (_ _)%_I {_} _ _ : assert.

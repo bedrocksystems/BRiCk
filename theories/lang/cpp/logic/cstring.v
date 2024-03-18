@@ -8,7 +8,7 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.Lists.List.
 Require Export Coq.Strings.Ascii.
 
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 Require Import bedrock.prelude.stdpp_ssreflect.
 Require bedrock.prelude.bytestring.
@@ -72,7 +72,7 @@ Module cstring.
   Definition _from_zstring (zs : zstring.t) : cstring.t :=
     BS.parse (map (byte_of_ascii ∘ ascii_of_N)
                   (take (List.length zs - 1) zs)).
-  #[global] Arguments ascii_of_pos _%positive_scope /.
+  #[global] Arguments ascii_of_pos _%_positive_scope /.
   #[global] Arguments _from_zstring !zs /.
   Notation from_zstring zs := (_from_zstring zs%Z).
 
@@ -82,7 +82,7 @@ Module cstring.
    *)
   Definition _to_zstring' (cstr : cstring.t) (l : list Byte.byte) : zstring.t :=
     map (N_of_ascii ∘ ascii_of_byte) (BS.print cstr ++ l).
-  #[global] Arguments BS.print !b%bs /.
+  #[global] Arguments BS.print !b%_bs /.
 
   #[global] Arguments _to_zstring' !cstr !l /.
   Notation to_zstring' cstr l := (_to_zstring' cstr l%byte).

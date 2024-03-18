@@ -7,7 +7,7 @@
 
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.observe.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 #[local] Set Primitive Projections.
 
@@ -17,7 +17,7 @@ Class Knowledge {PROP : bi} (P : PROP) : Prop := {
   #[global] knowledge_persistent :: Persistent P;
   #[global] knowledge_affine     :: Affine P;
 }.
-Arguments Knowledge {_} _%I.
+Arguments Knowledge {_} _%_I.
 
 Ltac solve_knowledge := solve [intros; split; apply _].
 

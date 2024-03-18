@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import iris.bi.lib.fractional.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
@@ -94,7 +94,7 @@ Module Type Expr__newdelete.
       := (d.(storage_ptr) .[ Tuchar ! - d.(overhead) ]).
 
     Parameter R : forall `{Σ : cpp_logic} {σ : genv} (q : Qp) (data : t), Rep.
-    #[global] Arguments R {_ _ _ σ} _%Qp _%N.
+    #[global] Arguments R {_ _ _ σ} _%_Qp _%_N.
 
     Section with_cpp_logic.
       Context `{Σ : cpp_logic} {σ : genv}.

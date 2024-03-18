@@ -149,6 +149,7 @@ Module Type SimpleFiniteTest.
   Proof. by rewrite feature.of_to_N. Qed.
 End SimpleFiniteTest.
 
+(* TODO: this cannot work due to the synterp phase. *)
 Module Type FiniteTest.
   Variant feature := A | B | C | D.
   #[local] Instance: ToN feature (fun (x : feature) =>
@@ -158,7 +159,7 @@ Module Type FiniteTest.
     | C => 3
     | D => 5
     end)%N := {}.
-  #[only(finite_type)] derive feature.
+  #[only(finite_type_to_N)] derive feature.
   #[export] Instance feature_to_N_inj : Inj eq eq feature.to_N.
   Proof. case; case => //. Qed.
   Goal feature.of_N (feature.to_N C) = Some C.
@@ -189,7 +190,7 @@ Module Type BitsetTest.
     | C => 3
     | D => 5
     end)%N := {}.
-  #[only(bitset)] derive feature.
+  #[only(bitset_to_bit)] derive feature.
   Goal feature_set.to_bits {[ A ]} = 1%N.
   Proof. reflexivity. Qed.
   Goal feature_set.to_bits {[ C ]} = 8%N.

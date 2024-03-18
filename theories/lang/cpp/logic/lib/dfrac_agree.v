@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.algebra.dfrac_agree.
 Require Import bedrock.lang.bi.spec.frac_splittable.
 Require Import bedrock.lang.bi.spec.knowledge.

@@ -24,7 +24,7 @@ Require Import stdpp.coPset.
 Require Import stdpp.namespaces.
 Require Import iris.bi.lib.fixpoint.
 Require Import iris.proofmode.coq_tactics.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import iris.proofmode.reduction.
 Require Import iris.prelude.options.
 Require Import iris.bi.lib.atomic.
@@ -647,7 +647,7 @@ Section coq_tactic.
     iIntros "[#P [#Q R]]". iStopProof. apply: aupd1_intro.
     iIntros "[#P Q]". iApply HAU.
     iSplit; first iDestruct "P" as "[$ _]".
-    iSplit; last done.
+    iSplit; last done. iClear "Q".
     iDestruct "P" as "[_ $]".
   Qed.
 End coq_tactic.

@@ -12,8 +12,8 @@ Require Export elpi.apps.derive.
 
 (* Patch for the driver of the derive command. *)
 Elpi Accumulate derive lp:{{
-  derivation (const C) Prefix D :-
+  derivation (const C) Prefix HasSynterp D :-
     coq.env.const C (some (global T)) Ty_,
-    derivation T Prefix D.
+    derivation T Prefix HasSynterp D.
 }}.
 Elpi Typecheck derive.

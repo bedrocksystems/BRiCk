@@ -425,9 +425,7 @@ Section with_cpp.
               iExists (S f); simpl.
               rewrite H /union_defR.
               iExists o. subst.
-              iFrame. iExists m.
-              iFrame "%".
-              iStopProof. iApply everywhereR_f_mono'. lia. }
+              by iFrame. }
             { iExists 1. simpl.
               rewrite H /union_defR.
               iExists None. iFrame. } }

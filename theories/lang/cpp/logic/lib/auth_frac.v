@@ -6,7 +6,7 @@
  *)
 
 Require Import iris.algebra.agree.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.spec.frac_splittable.
 Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.algebra.frac_auth.

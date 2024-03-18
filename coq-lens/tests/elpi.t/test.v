@@ -39,12 +39,12 @@ End prim_projs.
 
 Print prim_projs.
 
-derive Inductive tickle A := stop | more : A -> tickle-> tickle.
-derive Record State : Set := MkState
+#[module] derive Inductive tickle A := stop | more : A -> tickle-> tickle.
+#[module] derive Record State : Set := MkState
   { value' : N
   }.
 Module Import bar.
-  #[verbose] derive Record State : Set := MkState
+  #[verbose,module] derive Record State : Set := MkState
     { value : N
     }.
   Record State2 : Set := MkState2

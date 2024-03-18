@@ -28,6 +28,10 @@ Elpi Db derive.stdpp.eq_dec.db lp:{{
 Elpi Accumulate derive Db derive.stdpp.eq_dec.db.
 Elpi Typecheck derive.
 
+#[synterp] Elpi Accumulate derive lp:{{
+  derivation _ _ (derive "eq_dec" (cl\ cl = []) true).
+}}.
+
 Elpi Accumulate derive lp:{{
   /* [derive.eqdec.main TyGR Prefix Clauses] creates a global instance
    * of type [EqDecision lp:{{global TyGR}}].
@@ -77,7 +81,7 @@ Example #3:
   }
 
   derivation
-    (indt T) Prefix                         % inputs
+    (indt T) Prefix ff                      % inputs
     (derive "eq_dec"                        % name (for dep1)
        (derive.eqdec.main (indt T) Prefix)  % code to run
        (eqdec-done (indt T))                % idempotency test

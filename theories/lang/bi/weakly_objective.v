@@ -6,7 +6,7 @@
  *)
 
 Require Import iris.bi.monpred.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Require Import iris.proofmode.monpred.
 
 Require Import bedrock.lang.bi.only_provable.
@@ -22,8 +22,8 @@ Set Suggest Proof Using.
   the same everywhere (recall that the bi-indexes only have a partial order). *)
 Class WeaklyObjective {I} {PROP} (P: monPred I PROP) :=
   weakly_objective i j : j ⊑ i → P i ⊢ P j.
-Arguments WeaklyObjective {_ _} _%I.
-Arguments weakly_objective {_ _} _%I {_}.
+Arguments WeaklyObjective {_ _} _%_I.
+Arguments weakly_objective {_ _} _%_I {_}.
 #[global] Hint Mode WeaklyObjective ! + ! : typeclass_instances.
 #[global] Instance : Params (@WeaklyObjective) 2 := {}.
 

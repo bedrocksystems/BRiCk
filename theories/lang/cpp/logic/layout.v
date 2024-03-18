@@ -6,7 +6,7 @@
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.numbers.
 Require Import bedrock.prelude.list.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.ast.

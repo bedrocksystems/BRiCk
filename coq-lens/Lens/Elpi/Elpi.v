@@ -38,8 +38,12 @@ Elpi Accumulate lp:{{
 Elpi Typecheck.
 
 (* hook into derive *)
+#[synterp] Elpi Accumulate derive lp:{{
+  derivation _ _ (derive "lens" (cl\ cl = []) true).
+}}.
+
 Elpi Accumulate derive Db derive.lens.db.
 Elpi Accumulate derive File lens.
 Elpi Accumulate derive lp:{{
-  derivation (indt T) _Prefix (derive "lens" (derive.lens.main T N) (lens-db T _ _)) :- N is "_".
+  derivation (indt T) _Prefix ff (derive "lens" (derive.lens.main T N) (lens-db T _ _)) :- N is "_".
 }}.

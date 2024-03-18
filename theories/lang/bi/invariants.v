@@ -28,7 +28,7 @@
 
 Require Export iris.base_logic.lib.invariants. (* << export [invGS] *)
 
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 
 Set Default Proof Using "Type".
 Set Suggest Proof Using.
@@ -63,7 +63,7 @@ Section defs.
   Proof. rewrite inv_eq. apply _. Qed.
 End defs.
 
-Arguments inv {_ _} N P%I.
+Arguments inv {_ _} N P%_I.
 #[global] Instance : Params (@inv) 3 := {}.
 
 (* TODO: allocation rules are missing. These rely on the specific model of PROP,

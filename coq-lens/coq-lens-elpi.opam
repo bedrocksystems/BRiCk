@@ -8,8 +8,9 @@ bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
 depends: [
   "dune" {>= "3.8"}
   "coq-lens"
-  "coq" {>= "8.18.0" & < "8.19~"}
-  "coq-elpi" {= "1.19.3"}
+  "coq" {>= "8.19.0" & < "8.20~"}
+  "elpi" {= "1.18.2"}
+  "coq-elpi" {= "2.0.2+bedrock+vanilla-coq"}
   "odoc" {with-doc}
 ]
 build: [

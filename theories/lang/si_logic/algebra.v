@@ -16,7 +16,7 @@ Require Import bedrock.lang.si_logic.bi.
 Require Import bedrock.lang.bi.own.
 Require Import bedrock.lang.bi.includedI.
 Require Import bedrock.lang.bi.embedding.
-Require Import iris.proofmode.proofmode.
+Require Import bedrock.lang.proofmode.proofmode.
 Set Printing Coercions.
 
 Implicit Types (p q : Qp) (dp dq : dfrac).
@@ -648,7 +648,7 @@ Section theory.
   Section gmap_view.
     Context `{Countable K} {V : ofe}.
     Implicit Types (k : K) (v : V).
-    Implicit Types (m : gmap K V).
+    Implicit Types (m : gmap K (agreeR V)).
 
     Lemma gmap_view_auth_validN n m q : ✓{n} gmap_view_auth (DfracOwn q) m ↔ (q ≤ 1)%Qp.
     Proof.
@@ -661,21 +661,28 @@ Section theory.
 
     Lemma gmap_view_auth_op_validI q1 q2 m1 m2 :
       ✓ (gmap_view_auth (DfracOwn q1) m1 ⋅ gmap_view_auth (DfracOwn q2) m2) ⊣⊢
-      [! q1 + q2 ≤ 1 !]%Qp ∧ m1 ≡ m2.
+        [! q1 + q2 ≤ 1 !]%Qp ∧ m1 ≡ m2.
     Proof.
       rewrite -embed_pure -embed_internal_eq -embed_and.
       solve_equiv gmap_view_auth_dfrac_op_validN.
     Qed.
 
-    Lemma gmap_view_frag_validI k dq v : ✓ gmap_view_frag k dq v ⊣⊢ [! ✓ dq !].
-    Proof. rewrite -embed_pure. solve_equiv gmap_view_frag_validN. Qed.
+    Lemma gmap_view_frag_validI k dq v : ✓ gmap_view_frag k dq (to_agree v) ⊣⊢ [! ✓ dq !].
+    Proof.
+      rewrite -embed_pure.
+      apply embed_proper; unseal.
+      rewrite gmap_view_frag_validN; naive_solver.
+    Qed.
 
     Lemma gmap_view_frag_op_validI k dq1 dq2 v1 v2 :
-      ✓ (gmap_view_frag k dq1 v1 ⋅ gmap_view_frag k dq2 v2) ⊣⊢
-      [! ✓ (dq1 ⋅ dq2) !] ∧ v1 ≡ v2.
+      ✓ (gmap_view_frag k dq1 (to_agree v1) ⋅ gmap_view_frag k dq2 (to_agree v2)) ⊣⊢
+        [! ✓ (dq1 ⋅ dq2) !] ∧ v1 ≡ v2.
     Proof.
       rewrite -embed_pure -embed_internal_eq -embed_and.
-      solve_equiv gmap_view_frag_op_validN.
+      apply embed_proper; unseal.
+      rewrite gmap_view_frag_op_validN.
+      rewrite to_agree_op_validN.
+      done.
     Qed.
 
   End gmap_view.

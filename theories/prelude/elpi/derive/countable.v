@@ -92,6 +92,14 @@ Elpi Db derive.countable.db lp:{{
   }
 }}.
 
+#[phase="both"] Elpi Accumulate derive lp:{{
+  dep1 "countable" "eq_dec".
+}}.
+
+#[synterp] Elpi Accumulate derive lp:{{
+  derivation _ _ (derive "countable" (cl\ cl = []) true).
+}}.
+
 Elpi Accumulate derive Db derive.countable.db.
 Elpi Accumulate derive lp:{{
   namespace derive.countable {
@@ -129,9 +137,8 @@ Example #3:
 
   }
 
-  dep1 "countable" "eq_dec".
   derivation
-    (indt T) Prefix
+    (indt T) Prefix ff
     (derive "countable"
       (derive.countable.main (indt T) Prefix)
       (countable-done (indt T))
