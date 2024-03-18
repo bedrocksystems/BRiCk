@@ -331,7 +331,7 @@ Definition wp_initialize_unqualified `{Σ : cpp_logic, σ : genv} :
     (cv : type_qualifiers) (ty : decltype)
     (addr : ptr) (init : Expr) (Q : FreeTemps -&gt; epred), mpred :=
   Cbn (Reduce (wp_initialize_unqualified_body fupd_compatible)).
-#[global] Arguments wp_initialize_unqualified {_ _ _ _} _ _ _ _ _ _ _%I : assert.	(* mlock bug *)
+#[global] Arguments wp_initialize_unqualified {_ _ _ _} _ _ _ _ _ _ _%_I : assert.	(* mlock bug *)
 
 Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ : region)
     (qty : decltype) (addr : ptr) (init : Expr) (Q : FreeTemps -&gt; epred) : mpred :=

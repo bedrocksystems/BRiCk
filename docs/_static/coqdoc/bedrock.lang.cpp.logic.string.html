@@ -52,20 +52,20 @@
 </div>
 
 <div class="doc">
-<a id="lab267"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cstring.html#cstring"><span class="id" title="module">cstring</span></a></span>s and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring"><span class="id" title="module">zstring</span></a></span>s</h1>
+<a id="lab274"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cstring.html#cstring"><span class="id" title="module">cstring</span></a></span>s and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring"><span class="id" title="module">zstring</span></a></span>s</h1>
 
 
 <div class="paragraph"> </div>
 
     In C++, strings are backed by character arrays; it is easiest to bootstrap our
-    string theory by using *null-terminated* <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.big_op.html#big_op.list"><span class="id" title="section">list</span></a></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span>s as the Coq model type - which
+    string theory by using *null-terminated* <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.big_op.html#big_op.list"><span class="id" title="section">list</span></a></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span>s as the Coq model type - which
     is what the <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring"><span class="id" title="module">zstring</span></a></span> module does. Atop these <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring"><span class="id" title="module">zstring</span></a></span>s we can derive the
     concept of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cstring.html#cstring"><span class="id" title="module">cstring</span></a></span>s which re-express the same <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring"><span class="id" title="module">zstring</span></a></span> representation predicates,
     utilities and theory in terms of a <span class="inlinecode"><span class="id" title="var">BS.t</span></span> (bytestring) Coq model carrier type. You
     should *almost always* use a <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cstring.html#cstring"><span class="id" title="module">cstring</span></a></span> concept instead of a <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring"><span class="id" title="module">zstring</span></a></span> concept
     if possible, as the automation has been tuned to work best for the former; there are
     sufficient reasoning principles for converting between the two if necessary.
- <a id="lab268"></a><h2 class="section">Notes</h2>
+ <a id="lab275"></a><h2 class="section">Notes</h2>
 
 <ul class="doclist">
 <li> We omit discussion of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring"><span class="id" title="module">zstring</span></a></span>s from here on out due to their aforementioned
@@ -73,7 +73,7 @@
 
 </li>
 <li> Whereas <span class="inlinecode"><span class="id" title="var">cstring.t</span></span> <span class="inlinecode">:=</span> <span class="inlinecode"><span class="id" title="var">BS.t</span></span> *does not* contain a null-terminator,
-      <span class="inlinecode"><span class="id" title="var">zstring.t</span></span> <span class="inlinecode">:=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.big_op.html#big_op.list"><span class="id" title="section">list</span></a></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span> *does* contain a null-terminator; the conversion
+      <span class="inlinecode"><span class="id" title="var">zstring.t</span></span> <span class="inlinecode">:=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.big_op.html#big_op.list"><span class="id" title="section">list</span></a></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span> *does* contain a null-terminator; the conversion
       utilities deal with appropriately inserting/stripping this null-terminator.
 
 </li>
@@ -91,7 +91,7 @@
 
 </li>
 </ul>
- <a id="lab269"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">cstring.t</span></span> and <span class="inlinecode"><span class="id" title="var">cstring.WF</span></span> - Well Formed <span class="inlinecode"><span class="id" title="var">BS.t</span></span>s (bytestrings) as a Carrier Type for C++ Strings</h1>
+ <a id="lab276"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">cstring.t</span></span> and <span class="inlinecode"><span class="id" title="var">cstring.WF</span></span> - Well Formed <span class="inlinecode"><span class="id" title="var">BS.t</span></span>s (bytestrings) as a Carrier Type for C++ Strings</h1>
 
 
 <div class="paragraph"> </div>
@@ -116,12 +116,12 @@
       well-formedness of <span class="inlinecode"><span class="id" title="var">cstring.t</span></span>s.
 
 </li>
-<li> <span class="inlinecode"><span class="id" title="var">cstring.size</span></span> <span class="inlinecode">(<span class="id" title="var">cstr</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cstring.t</span>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span>
-         <span class="inlinecode">:=</span> <span class="inlinecode">&lt;<a class="idref" href="bedrock.prelude.bytestring_core.html#BS.length"><span class="id" title="definition">length</span></a></span> <span class="inlinecode"><span class="id" title="keyword">of</span></span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a></span> <span class="inlinecode">*<span class="id" title="var">including</span>*</span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><span class="id" title="library">null</span>-<span class="id" title="var">terminator</span>&gt;</span>
+<li> <span class="inlinecode"><span class="id" title="var">cstring.size</span></span> <span class="inlinecode">(<span class="id" title="var">cstr</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cstring.t</span>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span>
+         <span class="inlinecode">:=</span> <span class="inlinecode">&lt;<a class="idref" href="bedrock.prelude.bytestring_core.html#BS.length"><span class="id" title="definition">length</span></a></span> <span class="inlinecode"><span class="id" title="keyword">of</span></span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a></span> <span class="inlinecode">*<span class="id" title="var">including</span>*</span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><span class="id" title="library">null</span>-<span class="id" title="var">terminator</span>&gt;</span>
 
 </li>
-<li> <span class="inlinecode"><span class="id" title="var">cstring.strlen</span></span> <span class="inlinecode">(<span class="id" title="var">cstr</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cstring.t</span>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span>
-         <span class="inlinecode">:=</span> <span class="inlinecode">&lt;<a class="idref" href="bedrock.prelude.bytestring_core.html#BS.length"><span class="id" title="definition">length</span></a></span> <span class="inlinecode"><span class="id" title="keyword">of</span></span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.18.0/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a></span> <span class="inlinecode">*<span class="id" title="var">excluding</span>*</span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><span class="id" title="library">null</span>-<span class="id" title="var">terminator</span>&gt;</span>
+<li> <span class="inlinecode"><span class="id" title="var">cstring.strlen</span></span> <span class="inlinecode">(<span class="id" title="var">cstr</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cstring.t</span>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a></span>
+         <span class="inlinecode">:=</span> <span class="inlinecode">&lt;<a class="idref" href="bedrock.prelude.bytestring_core.html#BS.length"><span class="id" title="definition">length</span></a></span> <span class="inlinecode"><span class="id" title="keyword">of</span></span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a></span> <span class="inlinecode">*<span class="id" title="var">excluding</span>*</span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><span class="id" title="library">null</span>-<span class="id" title="var">terminator</span>&gt;</span>
 <ul class="doclist">
 <li> This function mirrors the behavior of `std::strlen` in C++
 
@@ -136,7 +136,7 @@
 
 </li>
 </ul>
- <a id="lab270"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">cstring.R</span></span> - Fixed Sized Strings</h1>
+ <a id="lab277"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">cstring.R</span></span> - Fixed Sized Strings</h1>
 
 
 <div class="paragraph"> </div>
@@ -149,7 +149,7 @@
     while it would be reasonably straightforward to add theory for modifying characters
     in a random-access way, the <span class="inlinecode"><span class="id" title="var">BS.t</span></span> theory for this is somewhat lacking and so
     the use-case languishes for now.
- <a id="lab271"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">cstring.bufR</span></span> - Dynamic Sized Strings Backed by Fixed Sized Character Arrays</h1>
+ <a id="lab278"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">cstring.bufR</span></span> - Dynamic Sized Strings Backed by Fixed Sized Character Arrays</h1>
 
 
 <div class="paragraph"> </div>

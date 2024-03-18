@@ -43,7 +43,7 @@
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">stdpp.finite</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.finite.html#"><span class="id" title="library">stdpp.finite</span></a>.<br/>
 
 <br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">elpi.elpi</span>.<br/>
@@ -174,6 +174,16 @@
 }}.<br/>
 
 <br/>
+#[<span class="id" title="var">phase</span>="both"] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">dep1</span> "finite" "eq_dec".<br/>
+}}.<br/>
+
+<br/>
+#[<span class="id" title="var">synterp</span>] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">derivation</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> (<span class="id" title="var">derive</span> "finite" (<span class="id" title="var">cl</span>\ <span class="id" title="var">cl</span> = []) <span class="id" title="var">true</span>).<br/>
+}}.<br/>
+
+<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.finite.db</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">namespace</span> <span class="id" title="var">derive.finite</span> {<br/>
@@ -213,9 +223,8 @@ Example #3:
 <br/>
 &nbsp;&nbsp;}<br/>
 <br/>
-&nbsp;&nbsp;<span class="id" title="var">dep1</span> "finite" "eq_dec".<br/>
 &nbsp;&nbsp;<span class="id" title="var">derivation</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">Prefix</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">Prefix</span> <span class="id" title="var">ff</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">derive</span> "finite"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">derive.finite.main</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">Prefix</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">finite</span>-<span class="id" title="var">done</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>))<br/>

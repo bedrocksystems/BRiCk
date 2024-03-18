@@ -86,10 +86,15 @@
 
 <br/>
 <span class="comment">(*&nbsp;hook&nbsp;into&nbsp;derive&nbsp;*)</span><br/>
+#[<span class="id" title="var">synterp</span>] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">derivation</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> (<span class="id" title="var">derive</span> "lens" (<span class="id" title="var">cl</span>\ <span class="id" title="var">cl</span> = []) <span class="id" title="var">true</span>).<br/>
+}}.<br/>
+
+<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.lens.db</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">lens</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
-&nbsp;&nbsp;<span class="id" title="var">derivation</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">_Prefix</span> (<span class="id" title="var">derive</span> "lens" (<span class="id" title="var">derive.lens.main</span> <span class="id" title="var">T</span> <span class="id" title="var">N</span>) (<span class="id" title="var">lens</span>-<span class="id" title="var">db</span> <span class="id" title="var">T</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)) :- <span class="id" title="var">N</span> <span class="id" title="keyword">is</span> "_".<br/>
+&nbsp;&nbsp;<span class="id" title="var">derivation</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">_Prefix</span> <span class="id" title="var">ff</span> (<span class="id" title="var">derive</span> "lens" (<span class="id" title="var">derive.lens.main</span> <span class="id" title="var">T</span> <span class="id" title="var">N</span>) (<span class="id" title="var">lens</span>-<span class="id" title="var">db</span> <span class="id" title="var">T</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)) :- <span class="id" title="var">N</span> <span class="id" title="keyword">is</span> "_".<br/>
 }}.<br/>
 </div>
 <!--
