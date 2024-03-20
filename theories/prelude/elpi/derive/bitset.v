@@ -26,10 +26,10 @@ Elpi Db derive.bitset.db lp:{{
   pred bitset-done o:gref.
 
   namespace derive.bitset {
-    pred mk-simple-bitset i:string, i:gref.
-    mk-simple-bitset TypeName TyGR :- std.do! [
-      derive.if-verbose (coq.say "[derive.bitset][mk-simple-bitset]" TypeName),
-      derive.finite_type.mk-finite-prelim TypeName TyGR,
+    pred mk-simple-bitset i:string, i:gref, i:gref.
+    mk-simple-bitset Prefix TyGR OrigGR :- std.do! [
+      derive.if-verbose (coq.say "[derive.bitset][mk-simple-bitset]" TyGR),
+      derive.finite_type.mk-finite-prelim Prefix TyGR OrigGR,
       coq.env.include-module-type {coq.locate-module-type "simple_finite_bitmask_type_mixin"} coq.inline.default,
       coq.env.end-module MP,
 
@@ -37,16 +37,17 @@ Elpi Db derive.bitset.db lp:{{
       %But coq-elpi doesn't seem to have an API for Remove Hints
       %(cf. https://bedrocksystems.atlassian.net/browse/FM-3019).
 
-      %Module TypeName_set := simple_finite_bits TypeName.
-      ModName is TypeName ^ "_set",
+      %Module Prefix_set := simple_finite_bits TyGR.
+      ModName is Prefix ^ "_set",
       coq.env.apply-module-functor ModName none {coq.locate-module "simple_finite_bits"} [MP] coq.inline.default _,
     ].
 
-    pred mk-bitset i:string, i:gref, i:term.
-    mk-bitset TypeName TyGR ToBit :- std.do! [
-      derive.if-verbose (coq.say "[derive.bitset][mk-bitset]" TypeName),
-      derive.finite_type.mk-finite-prelim TypeName TyGR,
+    pred mk-bitset i:string, i:gref, i:gref, i:term.
+    mk-bitset Prefix TyGR OrigGR ToBit :- std.do! [
+      derive.if-verbose (coq.say "[derive.bitset][mk-bitset]" TyGR),
+      derive.finite_type.mk-finite-prelim Prefix TyGR OrigGR,
 
+      % locating "t" seems like a very bad idea. We could find literally anything if something goes wrong.
       coq.locate "t" GRTy,
       Ty is global GRTy,
       coq.env.add-const "to_bit" ToBit {{ lp:Ty -> N }} @transparent! CToBit_,
@@ -54,7 +55,7 @@ Elpi Db derive.bitset.db lp:{{
       coq.env.include-module-type {coq.locate-module-type "finite_bitmask_type_mixin"} coq.inline.default,
       coq.env.end-module MP,
 
-      ModName is TypeName ^ "_set",
+      ModName is Prefix ^ "_set",
       coq.env.apply-module-functor ModName none {coq.locate-module "finite_bits"} [MP] coq.inline.default _,
     ].
   }
@@ -107,14 +108,15 @@ Elpi Accumulate derive Db derive.bitset.db.
 Elpi Accumulate derive lp:{{
   namespace derive.finset {
     pred main i:gref, i:string, i:bool, o:list prop.
-    main TyGR Prefix UseToBit Clauses :- std.do! [
-      remove-final-underscore Prefix Variant,
+    main TyGR _Prefix UseToBit Clauses :- std.do! [
+      derive-original-gref TyGR OrigGR,
+      coq.gref->id TyGR TypeName,
       if (UseToBit is tt)
         (std.do! [
           derive.bitset.to-bits (global TyGR) ToBit,
-          derive.bitset.mk-bitset Variant TyGR ToBit,
+          derive.bitset.mk-bitset TypeName TyGR OrigGR ToBit,
         ])
-        (derive.bitset.mk-simple-bitset Variant TyGR),
+        (derive.bitset.mk-simple-bitset TypeName TyGR OrigGR),
       Clauses = [bitset-done TyGR],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.bitset.db" (clause _ _ x)

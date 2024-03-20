@@ -12,9 +12,99 @@ Module Type Alias.
   Variant T := A | B.
   Definition t1 := T.
   Definition t2 := t1.
-  #[only(eq_dec)] derive T.
-  #[only(eq_dec)] derive t1.
-  #[only(eq_dec)] derive t2.
+
+  Module Import Cmd.
+    Elpi Command assert_type.
+    Elpi Accumulate lp:{{/*(*/
+      pred main i:argument list.
+      main [trm (global (const C)), (trm Ty)] :- std.do! [
+        coq.env.const C _ CTy,
+        Ty = CTy
+      ].
+    /*)*/}}.
+    Elpi Typecheck.
+    Elpi Export assert_type.
+  End Cmd.
+
+  Module Eq_Dec.
+    Module Type OnVariant.
+      #[only(eq_dec)] derive T.
+      assert_type (T_eq_dec) (EqDecision T).
+    End OnVariant.
+
+    Module Type OnAliasDirect.
+      #[only(eq_dec)] derive t1.
+      Fail assert_type (t1_eq_dec) (EqDecision T).
+      assert_type (t1_eq_dec) (EqDecision t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(eq_dec)] derive t2.
+      Fail assert_type (t2_eq_dec) (EqDecision T).
+      Fail assert_type (t2_eq_dec) (EqDecision t1).
+      assert_type (t2_eq_dec) (EqDecision t2).
+    End OnAliasIndirect.
+  End Eq_Dec.
+
+  Module Inhabited.
+    Module Type OnVariant.
+      #[only(inhabited)] derive T.
+      assert_type (T_inhabited) (Inhabited T).
+    End OnVariant.
+
+    Module Type OnAliasDirect.
+      #[only(inhabited)] derive t1.
+      Fail assert_type (t1_inhabited) (Inhabited T).
+      assert_type (t1_inhabited) (Inhabited t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(inhabited)] derive t2.
+      Fail assert_type (t2_inhabited) (Inhabited T).
+      Fail assert_type (t2_inhabited) (Inhabited t1).
+      assert_type (t2_inhabited) (Inhabited t2).
+    End OnAliasIndirect.
+  End Inhabited.
+
+  Module Countable.
+    Module Type OnVariant.
+      #[only(countable)] derive T.
+      assert_type (T_countable) (Countable T).
+    End OnVariant.
+
+    Module Type OnAliasDirect.
+      #[only(countable)] derive t1.
+      Fail assert_type (t1_countable) (Countable T).
+      assert_type (t1_countable) (Countable t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(countable)] derive t2.
+      Fail assert_type (t2_countable) (Countable T).
+      Fail assert_type (t2_countable) (Countable t1).
+      assert_type (t2_countable) (Countable t2).
+    End OnAliasIndirect.
+  End Countable.
+
+  Module Finite.
+    Module Type OnVariant.
+      #[only(finite)] derive T.
+      assert_type (T_finite) (Finite T).
+    End OnVariant.
+
+    Module Type OnAliasDirect.
+      #[only(finite)] derive t1.
+      Fail assert_type (t1_finite) (Finite T).
+      assert_type (t1_finite) (Finite t1).
+    End OnAliasDirect.
+
+    Module Type OnAliasIndirect.
+      #[only(finite)] derive t2.
+      Fail assert_type (t2_finite) (Finite T).
+      Fail assert_type (t2_finite) (Finite t1).
+      assert_type (t2_finite) (Finite t2).
+    End OnAliasIndirect.
+  End Finite.
 End Alias.
 
 Module Type BasicTests.
@@ -24,10 +114,8 @@ Module Type BasicTests.
   #[only(countable)] derive T1.
   #[only(finite)] derive T1.
 
-  (*TODO: Potential derive bug; the following produces:
-    Anomaly: Uncaught exception Failure("split dirpath")*)
-  (*#[only(finite)] derive
-   Variant T2 := A2 | B2 | C2.*)
+  Succeed #[only(finite)] derive
+  Variant T2 := A2 | B2 | C2.
 
   #[only(eq_dec,inhabited)] derive
   Variant T2 := A2 | B2 | C2.
@@ -139,8 +227,9 @@ Module Type Deriving2Test.
 End Deriving2Test.
 
 Module Type SimpleFiniteTest.
-  (*#[only(finite_type)] derive
-    Variant feature := A | B | C | D.*) (*TODO: potential derive bug? Anomaly/split_dirpath*)
+  Succeed #[only(finite_type)] derive
+  Variant feature := A | B | C | D.
+
   Variant feature := A | B | C | D.
   #[only(finite_type)] derive feature.
   Goal feature.of_N (feature.to_N A) = Some A.

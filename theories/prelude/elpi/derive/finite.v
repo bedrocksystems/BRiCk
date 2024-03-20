@@ -83,9 +83,10 @@ Elpi Db derive.finite.db lp:{{
         mk-finite-constructor Ctor RestValues T CtorsValues
       ].
 
-      pred mk-finite i:string, i:list term, i:gref, o:constant.
-      mk-finite InstanceName Ctors VariantGR C :- std.do![
+      pred mk-finite i:string, i:list term, i:gref, i:gref, o:constant.
+      mk-finite InstanceName Ctors VariantGR OrigGR C :- std.do![
         VariantTy = global VariantGR,
+        OriginalTy = global OrigGR,
         derive.finite.mk-finite-constructors Ctors VariantTy CtorList,
         std.assert-ok! (coq.elaborate-skeleton CtorList _ ECtorList) "[mk-finite] failed to elaborate ctors",
 
@@ -101,7 +102,7 @@ Elpi Db derive.finite.db lp:{{
         @using! "Type" =>
         coq.env.add-const {calc (InstanceName ^ "_subproof_nodup")} BoNoDup ETyNoDup @opaque! CNoDup,
 
-        std.assert-ok! (coq.elaborate-skeleton {{ ∀ x : lp:{{VariantTy}}, x ∈ lp:{{ECtorList}} }} _ ETyElemOf) "[mk-finite] [TyElemOf]",
+        std.assert-ok! (coq.elaborate-skeleton {{ ∀ x : lp:{{OriginalTy}}, x ∈ lp:{{ECtorList}} }} _ ETyElemOf) "[mk-finite] [TyElemOf]",
         std.assert-ok! (coq.typecheck {{ lp:{{BoElemOf}} : lp:{{ETyElemOf}} }} _) "typechecking [ElemOf] failed",
         coq.ltac.collect-goals BoElemOf [SealedGoalElemOf] [],
         % TODO AUTO (FM-2732) : Elpi disables vm_compute here
@@ -109,7 +110,7 @@ Elpi Db derive.finite.db lp:{{
         @using! "Type" =>
         coq.env.add-const {calc (InstanceName ^ "_subproof_elem_of")} BoElemOf ETyElemOf @opaque! CElemOf,
 
-        std.assert-ok! (coq.elaborate-skeleton {{ Finite lp:{{VariantTy}} }} _ ETyFinite) "[mk-finite] [TyFinite]",
+        std.assert-ok! (coq.elaborate-skeleton {{ Finite lp:{{OriginalTy}} }} _ ETyFinite) "[mk-finite] [TyFinite]",
         std.assert-ok! (coq.elaborate-skeleton
         {{ @Build_Finite _ _ lp:{{ECtorList}}
             lp:{{ global (const CNoDup) }} lp:{{ global (const CElemOf) }}}}
@@ -135,12 +136,13 @@ Elpi Accumulate derive lp:{{
   namespace derive.finite {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
-      remove-final-underscore Prefix Variant,
-      bedrock.get-ctors Variant Ctors,
+      bedrock.get-indt TyGR VariantI,
+      derive-original-gref TyGR OrigGR,
+      coq.env.indt VariantI _ _ _ _ Ctors _,
       std.map Ctors (c\ c'\ c' = global (indc c)) CTerms,
-      FiniteName is Variant ^ "_finite",
-      derive.finite.mk-finite FiniteName CTerms TyGR C,
-      Clauses = [finite-done TyGR, finite TyGR (const C)],
+      FiniteName is Prefix ^ "finite",
+      derive.finite.mk-finite FiniteName CTerms TyGR OrigGR C,
+      Clauses = [finite-done OrigGR, finite OrigGR (const C)],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.stdpp.finite.db" (clause _ _ x)
       ),

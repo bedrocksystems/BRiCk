@@ -9,6 +9,7 @@ Require Import stdpp.countable.
 
 Require Import elpi.elpi.
 Require Export bedrock.prelude.elpi.derive.common.
+Require Export bedrock.prelude.elpi.derive.eq_dec.
 
 Require Import bedrock.prelude.elpi.basis.
 
@@ -72,8 +73,8 @@ Elpi Db derive.countable.db lp:{{
     to-positive CtorList S Ty RTy Match :-
       coq.build-match S Ty (rty RTy) (to-positive-branch CtorList) Match.
 
-    pred mk-countable i:list term, i:string, i:gref, o:constant.
-    mk-countable Ctors Name VariantGR C :- std.do![
+    pred mk-countable i:list term, i:string, i:gref, i:gref, o:constant.
+    mk-countable Ctors Name VariantGR OrigGR C :- std.do![
       bedrock.elpi-list->list Ctors CtorList,
       std.assert-ok! (coq.elaborate-skeleton CtorList _ ECtorList) "[mk-countable] failed to elaborate ctors",
       VariantTy = global VariantGR,
@@ -84,9 +85,13 @@ Elpi Db derive.countable.db lp:{{
       std.assert-ok! (coq.typecheck {{ lp:Bo : lp:ELem }} _) "[mk-countable] failed to typecheck lem",
       coq.ltac.collect-goals Bo [SealedGoal] [],
       coq.ltac.open (coq.ltac.call "derive_solve_countable" []) SealedGoal [],
-      Inst = {{ @Build_Countable lp:VariantTy _ lp:Encode lp:Decode lp:Bo }},
-      std.assert-ok! (coq.elaborate-skeleton Inst _ EInst) "[mk-countable] failed to elaborate instance",
-      coq.env.add-const Name EInst _ ff C,
+      eqdec OrigGR GrEqdec,
+      EqDec = global GrEqdec,
+      Inst = {{ @Build_Countable lp:VariantTy lp:EqDec lp:Encode lp:Decode lp:Bo }},
+      std.assert-ok!
+        (coq.elaborate-skeleton Inst _ EInst)
+        "[mk-countable] failed to elaborate instance",
+      coq.env.add-const Name EInst {{ @Countable lp:{{global OrigGR}} lp:EqDec }} ff C,
       @global! => coq.TC.declare-instance (const C) 0, %%TODO: previously level 5; was there a reason?
     ].
   }
@@ -105,11 +110,12 @@ Elpi Accumulate derive lp:{{
   namespace derive.countable {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
-      remove-final-underscore Prefix Variant,
-      bedrock.get-ctors Variant Ctors,
+      bedrock.get-indt TyGR VariantI,
+      derive-original-gref TyGR OrigGR,
+      coq.env.indt VariantI _ _ _ _ Ctors _,
       std.map Ctors (c\ c'\ c' = global (indc c)) CTerms,
-      CountableName is Variant ^ "_countable",
-      derive.countable.mk-countable CTerms CountableName TyGR C,
+      CountableName is Prefix ^ "countable",
+      derive.countable.mk-countable CTerms CountableName TyGR OrigGR C,
       Clauses = [countable-done TyGR, countable TyGR (const C)],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.stdpp.countable.db" (clause _ _ x)

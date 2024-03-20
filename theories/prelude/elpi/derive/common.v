@@ -11,9 +11,25 @@ Require Export elpi.apps.derive.
 #[global] Unset Uniform Inductive Parameters.
 
 (* Patch for the driver of the derive command. *)
-Elpi Accumulate derive lp:{{
+Elpi Accumulate derive lp:{{/*(*/
+  pred derive-original-gref i:gref, o:gref.
+  derive-original-gref TyGR OrigGR :- OrigGR = TyGR.
+
+  pred unfold-constants i:gref, i:string, i:bool, i:gref, o:derive.
+  unfold-constants OrigGR Prefix HasSynterp GR D :-
+    P = derive-original-gref GR OrigGR,
+    derivation GR Prefix HasSynterp (derive Name Do Done),
+    D = (derive Name (cl\ P => Do cl) (P => Done)).
+  unfold-constants OrigGR Prefix HasSynterp (const C) D :-
+    coq.env.const C (some (global C')) _,
+    unfold-constants OrigGR Prefix HasSynterp C' D.
+
+  pred constant-adapter-active.
+
   derivation (const C) Prefix HasSynterp D :-
-    coq.env.const C (some (global T)) Ty_,
-    derivation T Prefix HasSynterp D.
-}}.
+    not(constant-adapter-active),
+    coq.env.const C (some (global C')) _,
+    constant-adapter-active =>
+      unfold-constants (const C) Prefix HasSynterp C' D.
+/*)*/}}.
 Elpi Typecheck derive.
