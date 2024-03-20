@@ -54,11 +54,27 @@
 
 <br/>
 <span class="comment">(*&nbsp;Patch&nbsp;for&nbsp;the&nbsp;driver&nbsp;of&nbsp;the&nbsp;derive&nbsp;command.&nbsp;*)</span><br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
-&nbsp;&nbsp;<span class="id" title="var">derivation</span> (<span class="id" title="var">const</span> <span class="id" title="var">C</span>) <span class="id" title="var">Prefix</span> <span class="id" title="var">HasSynterp</span> <span class="id" title="var">D</span> :-<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.env.const</span> <span class="id" title="var">C</span> (<span class="id" title="var">some</span> (<span class="id" title="var">global</span> <span class="id" title="var">T</span>)) <span class="id" title="var">Ty_</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">derivation</span> <span class="id" title="var">T</span> <span class="id" title="var">Prefix</span> <span class="id" title="var">HasSynterp</span> <span class="id" title="var">D</span>.<br/>
-}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{/*<span class="comment">(*/<br/>
+&nbsp;&nbsp;pred&nbsp;derive-original-gref&nbsp;i:gref,&nbsp;o:gref.<br/>
+&nbsp;&nbsp;derive-original-gref&nbsp;TyGR&nbsp;OrigGR&nbsp;:-&nbsp;OrigGR&nbsp;=&nbsp;TyGR.<br/>
+<br/>
+&nbsp;&nbsp;pred&nbsp;unfold-constants&nbsp;i:gref,&nbsp;i:string,&nbsp;i:bool,&nbsp;i:gref,&nbsp;o:derive.<br/>
+&nbsp;&nbsp;unfold-constants&nbsp;OrigGR&nbsp;Prefix&nbsp;HasSynterp&nbsp;GR&nbsp;D&nbsp;:-<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;P&nbsp;=&nbsp;derive-original-gref&nbsp;GR&nbsp;OrigGR,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;derivation&nbsp;GR&nbsp;Prefix&nbsp;HasSynterp&nbsp;(derive&nbsp;Name&nbsp;Do&nbsp;Done),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;D&nbsp;=&nbsp;(derive&nbsp;Name&nbsp;(cl\&nbsp;P&nbsp;=&gt;&nbsp;Do&nbsp;cl)&nbsp;(P&nbsp;=&gt;&nbsp;Done)).<br/>
+&nbsp;&nbsp;unfold-constants&nbsp;OrigGR&nbsp;Prefix&nbsp;HasSynterp&nbsp;(const&nbsp;C)&nbsp;D&nbsp;:-<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;coq.env.const&nbsp;C&nbsp;(some&nbsp;(global&nbsp;C'))&nbsp;_,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;unfold-constants&nbsp;OrigGR&nbsp;Prefix&nbsp;HasSynterp&nbsp;C'&nbsp;D.<br/>
+<br/>
+&nbsp;&nbsp;pred&nbsp;constant-adapter-active.<br/>
+<br/>
+&nbsp;&nbsp;derivation&nbsp;(const&nbsp;C)&nbsp;Prefix&nbsp;HasSynterp&nbsp;D&nbsp;:-<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;not(constant-adapter-active),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;coq.env.const&nbsp;C&nbsp;(some&nbsp;(global&nbsp;C'))&nbsp;_,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;constant-adapter-active&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;unfold-constants&nbsp;(const&nbsp;C)&nbsp;Prefix&nbsp;HasSynterp&nbsp;C'&nbsp;D.<br/>
+/*)</span>*/}}.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span> <span class="id" title="var">derive</span>.<br/>
 </div>
 <!--
