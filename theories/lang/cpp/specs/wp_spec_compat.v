@@ -485,7 +485,7 @@ Section post_val.
 
   Fixpoint _postD (p : _post) (ls : list (RESULT -> PROP)) (K : RESULT -> PROP) : PROP :=
     match p with
-    | WITH f name => ∀ x : NamedBinder _ name, _postD (f x) ls K
+    | WITH f _name => ∀ x, _postD (f x) ls K (* TODO: using the name here gets in the way of proofs. *)
     | DONE r P => list_sep_into ((fun p => p r) <$> ls) P -∗ K r
     end.
   #[global] Coercion _postD : _post >-> Funclass.
