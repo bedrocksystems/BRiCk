@@ -5,6 +5,7 @@
  *)
 Require Import iris.proofmode.tactics.
 Require Import bedrock.prelude.bytestring.
+Require Import bedrock.prelude.named_binder.
 Require Import bedrock.lang.algebra.telescopes.
 Require Import bedrock.lang.bi.telescopes.
 Require Import bedrock.lang.cpp.logic.entailsN.
@@ -275,7 +276,7 @@ Section with_AR.
 
   (** [add_with T wpp] adds [T] as logical variable to [wpp] *)
   #[program] Definition add_with {T : Type@{universes.Quant}} (wpp : T -> WPP) (name : BS.t) : WPP :=
-    {| spec_internal := funI args' P Q args K => ∃ x : T, (wpp x).(spec_internal) args' P Q args K |}.
+    {| spec_internal := funI args' P Q args K => ∃ x : NamedBinder T name, (wpp x).(spec_internal) args' P Q args K |}.
   Next Obligation.
     intros. simpl.
     iIntros "A B"; iDestruct "B" as (b) "B"; iExists b; iRevert "B"; iApply spec_internal_frame; iAssumption.
@@ -484,7 +485,7 @@ Section post_val.
 
   Fixpoint _postD (p : _post) (ls : list (RESULT -> PROP)) (K : RESULT -> PROP) : PROP :=
     match p with
-    | WITH f _name => ∀ x, _postD (f x) ls K (* TODO: how to keep [_name] around? *)
+    | WITH f name => ∀ x : NamedBinder _ name, _postD (f x) ls K
     | DONE r P => list_sep_into ((fun p => p r) <$> ls) P -∗ K r
     end.
   #[global] Coercion _postD : _post >-> Funclass.
@@ -778,7 +779,7 @@ Lemma add_with_equiv {PROP : bi} {ARG RESULT : Type} : forall T name (PQ : T -> 
     add_with PQ name args K ⊣⊢ (∃ x, wp_specD (PQ x) args K).
 Proof. split'; intros; iIntros "A"; iDestruct "A" as (x) "A"; iExists x; iApply "A". Qed.
 Lemma spec_add_with {PROP : bi} {ARG RESULT : Type} : forall T name (PQ : T -> WpSpec PROP ARG RESULT) args K,
-    (∃ x, wp_specD (PQ x) args K) ⊢ add_with PQ name args K.
+    (∃ x : NamedBinder _ name, wp_specD (PQ x) args K) ⊢ add_with PQ name args K.
 Proof. intros; by rewrite add_with_equiv. Qed.
 
 Lemma add_arg_equiv {PROP : bi} {ARG RESULT : Type} : forall v (PQ : WpSpec PROP ARG RESULT) args K,
