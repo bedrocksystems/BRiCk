@@ -43,7 +43,8 @@ Module Binder.
     in
     let (len, chars) := go bs 0 [] in
     let str := String.make len (Char.of_int 0) in
-    List.iteri (fun i char => String.set str (Int.sub len (Int.add i 1)) char) chars;
+    let n := Int.sub len 1 in
+    List.iteri (fun i char => String.set str (Int.sub n i) char) chars;
     str.
 
   Ltac2 to_id_fun (bs : constr) : unit :=
