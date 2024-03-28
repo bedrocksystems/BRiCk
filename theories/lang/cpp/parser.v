@@ -144,7 +144,7 @@ Section stmt.
   Definition Sforeach (range ibegin iend : Stmt)
       (init : option Stmt) (cond : option Expr) (inc : option Expr)
       (decl body : Stmt) : Stmt :=
-    Sseq $ (if init is Some init' then [init'] else [])
+    Sseq $ option_list init
       ++ [range; ibegin; iend; Sfor None cond inc (Sseq [decl; body])].
 End stmt.
 
