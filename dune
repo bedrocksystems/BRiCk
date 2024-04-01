@@ -11,6 +11,8 @@
  ; > Error: This env stanza contains rules after a wildcard rule. These are going
  ; > to be ignored.
  (_
+  (binaries
+   (scripts/dummy-gen.awk as dummy-gen))
   (coq
    (flags
     (:standard
