@@ -5,12 +5,15 @@
  (theories iris stdpp elpi Lens Lens.Elpi)
 )
 
-; hashes elpi/coq.elpi into a .v file in _build
-; add one such rule per .elpi file
-; TODO generalize this rule using %{deps} and to support more than one .elpi file
+; Copy dependencies --- typically Elpi files needed for `From ⋯ Extra
+; Dependency` --- into dune's build directory. Arrange for the dummy
+; target to change with its dependencies (because a constant target
+; might some day run afoul of dune's cache).
 (rule
- (target elpi_coq_elpi.v)
- (deps elpi/coq.elpi)
+ (target dummy.v)
+ (deps
+  elpi/coq.elpi
+ )
  (action
-   (with-stdout-to %{target}
-   (run ./elpi/dune_hash.sh elpi/coq.elpi))))
+  (with-stdout-to %{target}
+   (pipe-stdout (run sha512sum %{deps}) (run dummy-gen)))))
