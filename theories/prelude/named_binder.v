@@ -10,7 +10,7 @@ Require Import bedrock.prelude.bytestring.
 Require Export bedrock.prelude.tactics.base_dbs.
 Require Ltac2.Ltac2.
 
-(** NamedBinder is a wrapper around any type that can be used to record the name
+(** NamedBinder is a type wrapper that can be used to record the name
     of a binder in a persistent way that is not affected by any computation.
 
     Existentials/universals of type [NamedBinder A str] are always
