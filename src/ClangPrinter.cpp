@@ -17,8 +17,9 @@
 using namespace clang;
 
 ClangPrinter::ClangPrinter(clang::CompilerInstance *compiler,
-						   clang::ASTContext *context, Trace::Mask trace)
-	: compiler_(compiler), context_(context), trace_(trace) {
+						   clang::ASTContext *context, Trace::Mask trace,
+						   bool comment)
+	: compiler_(compiler), context_(context), trace_(trace), comment_{comment} {
 	mangleContext_ =
 		ItaniumMangleContext::create(*context, compiler->getDiagnostics());
 }

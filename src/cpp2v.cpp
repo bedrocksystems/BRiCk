@@ -58,6 +58,8 @@ static cl::opt<bool> Verboser("vv", cl::desc("verboser"), cl::Optional,
 							  cl::cat(Cpp2V));
 static cl::opt<bool> Quiet("q", cl::desc("quiet"), cl::Optional,
 						   cl::cat(Cpp2V));
+static cl::opt<bool> Comment("comment", cl::desc("include name comments"),
+							 cl::Optional, cl::cat(Cpp2V));
 
 static cl::opt<bool> Version("cpp2v-version",
 							 cl::desc("print version and exit"), cl::Optional,
@@ -105,10 +107,10 @@ public:
             llvm::errs() << i << "\n";
         }
 #endif
-		auto result =
-			new ToCoqConsumer(&Compiler, to_opt(VFileOutput), to_opt(NamesFile),
-							  to_opt(Templates), to_opt(NameTest), Ast2,
-							  Trace::fromBits(TraceBits.getBits()));
+		auto result = new ToCoqConsumer(
+			&Compiler, to_opt(VFileOutput), to_opt(NamesFile),
+			to_opt(Templates), to_opt(NameTest), Ast2,
+			Trace::fromBits(TraceBits.getBits()), true, Comment);
 		return std::unique_ptr<clang::ASTConsumer>(result);
 	}
 

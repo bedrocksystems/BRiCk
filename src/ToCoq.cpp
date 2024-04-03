@@ -102,7 +102,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 
 	with_open_file(output_file_, [this, &ctxt, &mod](Formatter& fmt) {
 		CoqPrinter print(fmt, false, false);
-		ClangPrinter cprint(compiler_, ctxt, trace_);
+		ClangPrinter cprint(compiler_, ctxt, trace_, this->comment_);
 
 		fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line
 			<< fmt::line << "#[local] Open Scope bs_scope." << fmt::line;
@@ -140,7 +140,8 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 	with_open_file(notations_file_, [this, &decl, &mod](Formatter& spec_fmt) {
 		CoqPrinter print(spec_fmt, false, false);
 		auto& ctxt = decl->getASTContext();
-		ClangPrinter cprint(compiler_, &decl->getASTContext(), trace_);
+		ClangPrinter cprint(compiler_, &decl->getASTContext(), trace_,
+							this->comment_);
 		// PrintSpec printer(ctxt);
 
 		NoInclude source(ctxt.getSourceManager());
@@ -161,7 +162,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 
 	with_open_file(templates_file_, [this, &ctxt, &mod](Formatter& fmt) {
 		CoqPrinter print(fmt, true, ast2_);
-		ClangPrinter cprint(compiler_, ctxt, trace_);
+		ClangPrinter cprint(compiler_, ctxt, trace_, this->comment_);
 
 		auto v = ast2_ ? "2" : "";
 		fmt << "Require Import bedrock.auto.cpp.templates.mparser" << v << "."
@@ -188,7 +189,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 
 	with_open_file(name_test_file_, [this, &ctxt, &mod](Formatter& fmt) {
 		CoqPrinter print(fmt, true, true);
-		ClangPrinter cprint(compiler_, ctxt, trace_);
+		ClangPrinter cprint(compiler_, ctxt, trace_, this->comment_);
 
 		auto testnames = [&](const std::string id,
 							 std::function<void()> k) -> auto& {

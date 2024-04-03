@@ -1135,12 +1135,13 @@ fmt::Formatter&
 ClangPrinter::printNameComment(const Decl& decl, CoqPrinter& print) {
 	if (trace(Trace::Name))
 		trace("printNameComment", loc::of(decl));
-	if (auto nd = dyn_cast<NamedDecl>(&decl)) {
-		std::string cmt;
-		llvm::raw_string_ostream os{cmt};
-		structured::printNameForDiagnostics(os, *nd, getContext());
-		return print.cmt(cmt);
-	}
+	if (comment_)
+		if (auto nd = dyn_cast<NamedDecl>(&decl)) {
+			std::string cmt;
+			llvm::raw_string_ostream os{cmt};
+			structured::printNameForDiagnostics(os, *nd, getContext());
+			return print.cmt(cmt);
+		}
 	return print.output();
 }
 

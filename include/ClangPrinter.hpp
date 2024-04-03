@@ -107,11 +107,12 @@ private:
 	clang::MangleContext* mangleContext_;
 	const Trace::Mask trace_;
 	const clang::DeclContext* decl_{nullptr};
+	const bool comment_{false};
 
 	ClangPrinter(const ClangPrinter& from, const clang::DeclContext* decl)
 		: compiler_(from.compiler_), context_(from.context_),
-		  mangleContext_(from.mangleContext_), trace_(from.trace_),
-		  decl_{decl} {}
+		  mangleContext_(from.mangleContext_), trace_(from.trace_), decl_{decl},
+		  comment_{from.comment_} {}
 
 public:
 	// Silence some warnings until we can improve our diagnostics
@@ -121,7 +122,7 @@ public:
 	static inline constexpr bool debug = false;
 
 	ClangPrinter(clang::CompilerInstance* compiler, clang::ASTContext* context,
-				 Trace::Mask trace);
+				 Trace::Mask trace, bool comment);
 
 	/*
     This declaration provides context for resolving template
