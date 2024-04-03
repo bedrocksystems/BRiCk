@@ -11,22 +11,22 @@ static Level log_level = Level::NONE;
 
 llvm::raw_ostream&
 log(Level level) {
-    if (level <= log_level) {
-        return llvm::errs();
-    } else {
-        return llvm::nulls();
-    }
+	if (level <= log_level) {
+		return llvm::errs();
+	} else {
+		return llvm::nulls();
+	}
 }
 
 void
 set_level(Level level) {
-    log_level = level;
+	log_level = level;
 }
 
 [[noreturn]] void
 die() {
-    llvm::outs().flush();
-    llvm::errs().flush();
-    exit(1);
+	llvm::outs().flush();
+	llvm::errs().flush();
+	exit(1);
 }
 }

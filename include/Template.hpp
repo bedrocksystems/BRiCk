@@ -16,12 +16,12 @@ class TemplateArgumentList;
 
 /// Shallow view of template specialization
 struct SDecl {
-    const clang::TemplateDecl &temp;
-    const clang::TemplateArgumentList &args;
+	const clang::TemplateDecl &temp;
+	const clang::TemplateArgumentList &args;
 
-    SDecl() = delete;
-    SDecl(const clang::TemplateDecl &t, const clang::TemplateArgumentList &a)
-        : temp{t}, args{a} {}
+	SDecl() = delete;
+	SDecl(const clang::TemplateDecl &t, const clang::TemplateArgumentList &a)
+		: temp{t}, args{a} {}
 };
 using SDeclO = std::optional<SDecl>;
 
