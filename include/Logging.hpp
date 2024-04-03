@@ -11,31 +11,31 @@ class raw_ostream;
 
 namespace logging {
 enum Level : int {
-    FATAL = -1,
-    NONE = 0,
-    UNSUPPORTED = 5,
-    VERBOSE = 10,
-    VERBOSER = 20,
-    ALL = 1000,
+	FATAL = -1,
+	NONE = 0,
+	UNSUPPORTED = 5,
+	VERBOSE = 10,
+	VERBOSER = 20,
+	ALL = 1000,
 };
 
 llvm::raw_ostream& log(Level level = VERBOSE);
 
 static inline llvm::raw_ostream&
 fatal() {
-    return log(FATAL);
+	return log(FATAL);
 }
 static inline llvm::raw_ostream&
 unsupported() {
-    return log(UNSUPPORTED);
+	return log(UNSUPPORTED);
 }
 static inline llvm::raw_ostream&
 verbose() {
-    return log(VERBOSE);
+	return log(VERBOSE);
 }
 static inline llvm::raw_ostream&
 debug() {
-    return log(VERBOSER);
+	return log(VERBOSER);
 }
 
 void set_level(Level level);
