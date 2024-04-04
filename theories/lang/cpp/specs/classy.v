@@ -14,6 +14,7 @@
 
 Require Import iris.bi.bi.
 Require Import bedrock.prelude.bytestring_core.
+Require Import bedrock.prelude.named_binder.
 Require Import bedrock.lang.bi.only_provable.
 Require Import bedrock.lang.cpp.specs.spec_notations.
 
@@ -23,7 +24,7 @@ Section with_prop.
   Class SpecGen : Type :=
     { add_pre : PROP -> spec_car -> spec_car
     ; add_post : PROP -> spec_car -> spec_car
-    ; add_with : forall {T : Type@{universes.Quant}}, (T -> spec_car) -> spec_car
+    ; add_with : forall {T : Type@{universes.Quant}}, (T -> spec_car) -> BS.t -> spec_car
     ; add_prepost (P : PROP) (S : spec_car) : spec_car :=
       add_pre P (add_post P S)
     ; add_require (P : Prop) : spec_car -> spec_car :=
@@ -40,7 +41,7 @@ Section with_prop.
   Class WithPost {RESULT : Type} : Type :=
     { post_car : Type
     ; start_post : post_car -> spec_car
-    ; post_with : forall T : Type@{universes.Quant}, (T -> post_car) -> post_car
+    ; post_with : forall T : Type@{universes.Quant}, (T -> post_car) -> BS.t -> post_car
     ; post_ret : RESULT -> PROP -> post_car
     }.
 
@@ -82,50 +83,70 @@ Declare Scope pre_spec_scope.
 Delimit Scope pre_spec_scope with pre_spec.
 
 Notation "'\with' x .. y X" :=
-  (add_with (fun x => .. (add_with (fun y => X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\with' x .. y X" :=
+  (add_with (fun x => .. (add_with (fun y => X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\prepost' pp X" := (add_prepost pp%I X%pre_spec).
 
 Notation "'\prepost{' x .. y '}' pp X" :=
-  (add_with (fun x => .. (add_with (fun y => add_prepost pp%I X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => add_prepost pp%I X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\prepost{' x .. y '}' pp X" :=
+  (add_with (fun x => .. (add_with (fun y => add_prepost pp%I X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\let' x ':=' e X" := (let_pre_spec (let x := e in X%pre_spec)).
 
 Notation "'\let{' x .. y '}' z ':=' e X" :=
-  (add_with (fun x => .. (add_with (fun y => let_pre_spec (let z := e in X%pre_spec))) ..)).
+  (add_with (fun x => .. (add_with (fun y => let_pre_spec (let z := e in X%pre_spec)) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\let{' x .. y '}' z ':=' e X" :=
+  (add_with (fun x => .. (add_with (fun y => let_pre_spec (let z := e in X%pre_spec)) _) ..) _) (only printing).
 
 Notation "'\arg' nm v X" := (add_named_arg nm%bs v X%pre_spec).
 
 Notation "'\arg{' x .. y } nm v X" :=
-  (add_with (fun x => .. (add_with (fun y => add_named_arg nm%bs v X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => add_named_arg nm%bs v X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\arg{' x .. y } nm v X" :=
+  (add_with (fun x => .. (add_with (fun y => add_named_arg nm%bs v X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\args' v X" := (add_args v X%pre_spec).
 
 Notation "'\args{' x .. y } v X" :=
-  (add_with (fun x => .. (add_with (fun y => add_args v X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => add_args v X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\args{' x .. y } v X" :=
+  (add_with (fun x => .. (add_with (fun y => add_args v X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\require' pre X" := (add_require pre X%pre_spec).
 
 Notation "'\require{' x .. y } pre X" :=
-  (add_with (fun x => .. (add_with (fun y => add_require pre X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => add_require pre X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\require{' x .. y } pre X" :=
+  (add_with (fun x => .. (add_with (fun y => add_require pre X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\persist' pre X" := (add_persist pre%I X%pre_spec).
 
 Notation "'\persist{' x .. y } pre X" :=
-  (add_with (fun x => .. (add_with (fun y => add_persist pre%I X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => add_persist pre%I X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\persist{' x .. y } pre X" :=
+  (add_with (fun x => .. (add_with (fun y => add_persist pre%I X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\pre' pre X" := (add_pre pre%I X%pre_spec).
 
 Notation "'\pre{' x .. y '}' pp X" :=
-  (add_with (fun x => .. (add_with (fun y => add_pre pp%I X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => add_pre pp%I X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\pre{' x .. y '}' pp X" :=
+  (add_with (fun x => .. (add_with (fun y => add_pre pp%I X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\post*{' x .. y '}' post X" :=
-  (add_with (fun x => .. (add_with (fun y => add_post post%I X%pre_spec)) ..)).
+  (add_with (fun x => .. (add_with (fun y => add_post post%I X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
+Notation "'\post*{' x .. y '}' post X" :=
+  (add_with (fun x => .. (add_with (fun y => add_post post%I X%pre_spec) _) ..) _) (only printing).
 
 Notation "'\post*' post X" := (add_post post%I X%pre_spec).
 
 Notation "'\post' { x .. y } [ r ] post" :=
-  (start_post (post_with (fun x => .. (post_with (fun y => post_ret r post%I)) ..))).
+  (start_post (post_with (fun x => .. (post_with (fun y => post_ret r post%I) [binder y]) ..) [binder x])) (only parsing).
+Notation "'\post' { x .. y } [ r ] post" :=
+  (start_post (post_with (fun x => .. (post_with (fun y => post_ret r post%I) _) ..) _)) (only printing).
 
 Notation "'\post' [ r ] post" :=
   (start_post (post_ret r post%I)).

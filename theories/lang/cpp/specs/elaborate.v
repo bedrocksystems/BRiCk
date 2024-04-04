@@ -44,25 +44,25 @@ Section with_cpp.
         let finish args :=
           match mtype ret with
           | None =>
-              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]))
+              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]) "pr")
           | Some (cv, t) =>
               wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr =>
-                   DONE pr (_at pr (primR t (cQp.mk (q_const cv) 1) rv))))
+                   DONE pr (_at pr (primR t (cQp.mk (q_const cv) 1) rv))) "pr")
           end
         in
         match ar with
         | Ar_Definite => finish args
         | Ar_Variadic =>
-            add_with (fun pv : ptr => add_arg pv $ finish (args ++ [Vptr pv]))
+            add_with (fun pv : ptr => add_arg pv $ finish (args ++ [Vptr pv])) "pv"
         end
     | t :: ts =>
         match mtype t with
         | None =>
-            add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar (args ++ [Vptr pv]) wpp))
+            add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar (args ++ [Vptr pv]) wpp)) "pv"
         | Some (_, t) => (* arguments are always passed as mutable *)
             add_with (fun pv : ptr => add_with (fun v : val => add_arg pv (
                                            add_pre (_at pv (primR t (cQp.mut 1) v)) (add_post (Exists v, _at pv (primR t (cQp.mut 1) v))
-                                                                                    (elaborate ret ts ar (args ++ [v]) wpp)))))
+                                                                                    (elaborate ret ts ar (args ++ [v]) wpp)))) "v") "pv"
         end
     end.
 

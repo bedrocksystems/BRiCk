@@ -45,6 +45,8 @@ theories/prelude/reserved_notation.v
 theories/prelude/relations.v
 theories/prelude/under_rel_proper.v
 
+theories/prelude/named_binder.v
+
 theories/prelude/base.v
 theories/prelude/option.v
 theories/prelude/addr.v
