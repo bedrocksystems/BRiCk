@@ -14,61 +14,9 @@
 
 Require Import iris.bi.bi.
 Require Import bedrock.prelude.bytestring_core.
+Require Import bedrock.prelude.named_binder.
 Require Import bedrock.lang.bi.only_provable.
 Require Import bedrock.lang.cpp.specs.spec_notations.
-Require Ltac2.Ltac2.
-
-Module Binder.
-  Import Ltac2.
-  Import Ltac2.Printf.
-  Import Ltac2.Constr.
-  Import Ltac2.Constr.Unsafe.
-
-  Ltac2 Type exn ::= [No].
-
-  Ltac2 to_bs (s : string) :=
-    let cons := constr:(@BS.String) in
-    let univs := match kind constr:(Byte.x00) with | Constructor _ univs => univs | _ => Control.throw No end in
-    let byte :=
-      match Option.get (Env.get (Env.path reference:(Byte.byte))) with
-      | Std.IndRef ind => ind
-      | _ => Control.throw No
-      end
-    in
-    let rec go i acc : constr :=
-      let i := Int.sub i 1 in
-      if Int.lt i 0 then acc else
-      let c := String.get s i in
-      let c := Char.to_int c in
-      let acc := make (App cons [|make (Constructor (Constr.Unsafe.constructor byte c) univs); acc|]) in
-      go i acc
-    in
-    go (String.length s) constr:(BS.EmptyString).
-
-  Ltac2 binder (p : Ltac1.t) :=
-    let p := Option.get (Ltac1.to_constr p) in
-    (* printf "%t" p; *)
-    let id := match Constr.Unsafe.kind p with
-    | Constr.Unsafe.Lambda b _ =>
-        (Option.default (@anon) (Constr.Binder.name b))
-    | _ => @anon
-    end in
-    refine (to_bs (Ident.to_string id)).
-End Binder.
-
-Section Binder.
-  #[local] Set Typeclasses Unique Instances.
-  #[local] Set Typeclasses Strict Resolution.
-  Class Binder {P : Type} (p : P) := binder : BS.t.
-End Binder.
-
-Hint Opaque Binder : typeclass_instances.
-Ltac binder p :=
-  let f := ltac2:(p |- Binder.binder p) in
-  f p.
-#[global] Hint Extern 0 (Binder ?p) => binder p : typeclass_instances.
-
-#[global] Notation "'[binder' x ]" := (_ :> @Binder (forall x, True) (fun x => I)) (at level 0, x binder).
 
 Section with_prop.
   Context {PROP : bi} {spec_car : Type}.
