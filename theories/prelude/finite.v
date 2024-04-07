@@ -27,6 +27,11 @@ conversion to and from [N], both for individual elements and bitsets of them.
 (** Enable bidirectional typechecking for [decode_fin] *)
 #[global] Arguments decode_fin & {A _ _} i. (* [&] = infer [A] from return type. *)
 
+(** Let [simpl/cbn] not unfold [enum], to avoid bloating goals.
+Concrete computations can use decision procedures [vm_decide] or normalization
+tactics. *)
+#[global] Arguments enum : simpl never.
+
 Section fin_fun_eq_dec.
   Context `{Finite A} `{EqDecision B}.
   Implicit Types (f g : A -> B).
