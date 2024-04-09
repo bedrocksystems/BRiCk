@@ -27,6 +27,11 @@ conversion to and from [N], both for individual elements and bitsets of them.
 (** Enable bidirectional typechecking for [decode_fin] *)
 #[global] Arguments decode_fin & {A _ _} i. (* [&] = infer [A] from return type. *)
 
+(** Let [simpl/cbn] not unfold [enum], to avoid bloating goals.
+Concrete computations can use decision procedures [vm_decide] or normalization
+tactics. *)
+#[global] Arguments enum : simpl never.
+
 Section fin_fun_eq_dec.
   Context `{Finite A} `{EqDecision B}.
   Implicit Types (f g : A -> B).
@@ -269,15 +274,27 @@ Section finite.
     decode_nat n = enum A !! n.
   Proof. apply (f_equal (flip lookup (enum _))). lia. Qed.
 
+  Lemma enum_lookup_encode_nat (x : A) :
+    enum A !! encode_nat x = Some x.
+  Proof. by rewrite -finite_decode_nat_unfold decode_encode_nat. Qed.
+
   (* To upstream! Missing companion to [encode_lt_card]. *)
   Lemma finite_decode_nat_lt n x :
     decode_nat n = Some x → (n < card A)%nat.
   Proof. rewrite finite_decode_nat_unfold /card. apply lookup_lt_Some. Qed.
 
   (** Lift the above lemmas *)
-  Lemma finite_decode_N_unfold n :
+  Lemma finite_decode_N_unfold' n :
     decode_N n = enum A !! N.to_nat n.
   Proof. by rewrite decode_N_nat finite_decode_nat_unfold. Qed.
+
+  Lemma finite_decode_N_unfold n :
+    decode_N n = enum A !! n.
+  Proof. by rewrite list_lookupN_lookup -finite_decode_N_unfold'. Qed.
+
+  Lemma enum_lookup_encode_N (x : A) :
+    enum A !! encode_N x = Some x.
+  Proof. by rewrite -finite_decode_N_unfold decode_encode_N. Qed.
 
   Lemma finite_decode_N_lt n x :
     decode_N n = Some x → n < card_N A.
