@@ -254,9 +254,11 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			}
 		} else {
 			unsupported("ClassTemplateSpecializationDecl for simple contexts");
-			ts->printQualifiedName(print.output().nobreak());
-			return true;
+			mangle.mangleTypeName(QualType(ts->getTypeForDecl(), 0),
+								  print.output().nobreak());
+			return 2;
 		}
+
 	} else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
 		auto parent = ns->getDeclContext();
 		auto compound =
