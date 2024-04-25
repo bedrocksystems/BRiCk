@@ -1,0 +1,6 @@
+(include_subdirs qualified)
+
+(coq.theory
+ (name bedrock.upoly)
+ (package coq-upoly)
+ (theories stdpp))
