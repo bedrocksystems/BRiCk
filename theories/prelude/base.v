@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2023 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -11,6 +11,7 @@ Require Export stdpp.countable.
 Require Export bedrock.prelude.stdpp_ssreflect.
 Require Export bedrock.prelude.tc_cond_type.
 Require Export bedrock.prelude.notations.
+Require Export bedrock.upoly.upoly.
 Require bedrock.prelude.tactics.base_dbs. (* For [br_opacity]; import not required. *)
 
 #[global] Hint Opaque elem_of : typeclass_instances.
@@ -226,34 +227,19 @@ observation like [Observe2 [| l ## k |] (myList l) (mList k)] is to
 #[global] Hint Mode Reflexive ! ! : typeclass_instances.
 #[global] Hint Mode Symmetric ! ! : typeclass_instances.
 
+(** Global notation for [UPoly.ap] *)
 
-(** Part of an applicative functor *)
-#[universes(polymorphic)]
-Class Ap@{u1 u2 uA uB} (F : Type@{u1} -> Type@{u2}) :=
-  ap : ∀ {A : Type@{uA}} {B : Type@{uB}}, F (A -> B) -> F A -> F B.
-#[global] Hint Mode Ap ! : typeclass_instances.
-#[global] Arguments ap {_ _ _ _} & _ !_ / : simpl nomatch, assert.
-#[global] Instance: Params (@ap) 4 := {}.
-#[global] Hint Opaque ap : typeclass_instances.
+Infix "<*>" := UPoly.ap : stdpp_scope.
+Infix "<*>@{ F }" := (UPoly.ap (F:=F)) (only parsing) : stdpp_scope.
 
-(*
-We use level 61 for <*> following <$>; ext-lib also has matching
-levels, but different ones.
-*)
-Reserved Infix "<*>" (at level 61, left associativity).
-Reserved Infix "<*>@{ F }" (at level 61, left associativity).
-
-Infix "<*>" := ap : stdpp_scope.
-Infix "<*>@{ F }" := (ap (F:=F)) (only parsing) : stdpp_scope.
-
-(** Some default instances *)
+(** Some default instances (for stdpp monads) *)
 #[global,universes(polymorphic)]
-Instance applicative_fmap {F} `{!MRet F, !Ap F} : FMap F | 1000 := fun _ _ f =>
-  ap (mret f).
+Instance applicative_fmap {F} `{!MRet F, !UPoly.Ap F} : FMap F | 1000 := fun _ _ f =>
+  UPoly.ap (mret f).
 #[global] Arguments applicative_fmap _ _ _ _ _ _ !_ / : simpl nomatch, assert.
 
 #[global,universes(polymorphic)]
-Instance monad_ap {M} `{!MBind M, !MRet M} : Ap M | 1000 := fun _ _ mf ma =>
+Instance monad_ap {M} `{!MBind M, !MRet M} : UPoly.Ap M | 1000 := fun _ _ mf ma =>
   f ← mf; a ← ma; mret (f a).
 #[global] Arguments monad_ap _ _ _ _ _ _ !_ / : simpl nomatch, assert.
 

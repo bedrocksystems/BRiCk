@@ -141,13 +141,15 @@ build_latest:
 
 # Ensure that the code builds against dependencies declared in opam files, and
 # that those match the versions in our "public" Docker image.
+# TODO: This seems to depend on commiting files that dune can generate (`*.opam`).
 build_public_opam:
   script:
+    - opam pin add -n -y coq-upoly.dev ./coq-upoly
     - opam pin add -n -y coq-cpp2v.dev .
     - opam pin add -n -y coq-cpp2v-bin.dev .
     - opam pin add -n -y coq-lens.dev ./coq-lens
     - opam pin add -n -y coq-lens-elpi.dev ./coq-lens
-    - opam install --assume-depexts -y coq-cpp2v coq-cpp2v-bin coq-lens coq-lens-elpi
+    - opam install --assume-depexts -y coq-upoly coq-cpp2v coq-cpp2v-bin coq-lens coq-lens-elpi
   needs: [dune-build]
   extends:
     - .build_aux
@@ -344,7 +346,7 @@ prepare_cpp2v_env:
     - cd /tmp/build-dir/fmdeps/cpp2v-core
     - time dune build -j ${NJOBS} . coq-lens/coq-lens.install coq-lens/coq-lens-elpi.install 2>&1 | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
     - time dune build -j ${NJOBS} . coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
-    - time dune build -j ${NJOBS} -p coq-lens,coq-lens-elpi,coq-cpp2v,coq-cpp2v-bin 2>&1 | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
+    - time dune build -j ${NJOBS} -p coq-upoly,coq-lens,coq-lens-elpi,coq-cpp2v,coq-cpp2v-bin 2>&1 | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
     - cd $CI_PROJECT_DIR/
     # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
     # this build. The value of CI_JOB_ID is only available in this

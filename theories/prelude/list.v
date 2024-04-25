@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2021-2023
+ * Copyright (C) BedRock Systems Inc. 2021-2024
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -477,6 +477,7 @@ Section ap.
   Context {A B C : Type}.
   Implicit Types (g : B -> C) (f : A -> B) (x : A).
   Implicit Types (gs : list (B -> C)) (fs : list (A -> B)) (xs : list A).
+  #[local] Notation ap := UPoly.ap (only parsing).
 
   #[global] Instance ap_Permutation : Proper ((≡ₚ@{A -> B}) ==> (≡ₚ) ==> (≡ₚ)) ap.
   Proof. rewrite /ap. solve_proper. Qed.

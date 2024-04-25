@@ -5,6 +5,7 @@
   %{bin:coqdep}
   (package coq-cpp2v)
   (package coq-cpp2v-bin)
+  (package coq-upoly)
   setup-project.sh
   setup-cpp2v.sh
   setup-name-test.sh))
