@@ -69,7 +69,7 @@ Functionality to elaborate specifications that are written to take
 
 <div class="doc">
 Determine if an argument is already materialized in the operand style.
-      If it is, return <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a></span>, otherwise, return <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a></span> <span class="inlinecode">(<span class="id" title="var">cv</span>,</span> <span class="inlinecode"><span class="id" title="var">ty</span>)</span> used for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="abbreviation">primR</span></a></span>.
+      If it is, return <span class="inlinecode"><a class="idref" href="bedrock.upoly.UTypes.html#None"><span class="id" title="constructor">None</span></a></span>, otherwise, return <span class="inlinecode"><a class="idref" href="bedrock.upoly.UTypes.html#Some"><span class="id" title="constructor">Some</span></a></span> <span class="inlinecode">(<span class="id" title="var">cv</span>,</span> <span class="inlinecode"><span class="id" title="var">ty</span>)</span> used for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="abbreviation">primR</span></a></span>.
 
 <div class="paragraph"> </div>
 
@@ -90,7 +90,7 @@ Determine if an argument is already materialized in the operand style.
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.elaborate.html#elaborate"><span class="id" title="definition">elaborate</span></a></span> <span class="inlinecode"><span class="id" title="var">ret</span></span> <span class="inlinecode"><span class="id" title="var">ts</span></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> <span class="inlinecode"><span class="id" title="var">args</span></span> builds a function specification around <span class="inlinecode"><span class="id" title="var">wpp</span></span>
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.elaborate.html#elaborate"><span class="id" title="definition">elaborate</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.upoly.stateT.html#ret"><span class="id" title="instance">ret</span></a></span> <span class="inlinecode"><span class="id" title="var">ts</span></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> <span class="inlinecode"><span class="id" title="var">args</span></span> builds a function specification around <span class="inlinecode"><span class="id" title="var">wpp</span></span>
       assuming that <span class="inlinecode"><span class="id" title="var">wpp</span></span> takes the arguments in <span class="inlinecode"><span class="id" title="var">args</span></span> (in reverse order) and the
       remaining arguments in <span class="inlinecode"><span class="id" title="var">ts</span></span>.
 
@@ -133,7 +133,7 @@ Determine if an argument is already materialized in the operand style.
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.elaborate.html#cpp_spec"><span class="id" title="definition">cpp_spec</span></a></span> <span class="inlinecode"><span class="id" title="var">ret</span></span> <span class="inlinecode"><span class="id" title="var">ts</span></span> <span class="inlinecode"><span class="id" title="library">spec</span></span> is the elaborated version of the <span class="inlinecode"><span class="id" title="library">spec</span></span>
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.elaborate.html#cpp_spec"><span class="id" title="definition">cpp_spec</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.upoly.stateT.html#ret"><span class="id" title="instance">ret</span></a></span> <span class="inlinecode"><span class="id" title="var">ts</span></span> <span class="inlinecode"><span class="id" title="library">spec</span></span> is the elaborated version of the <span class="inlinecode"><span class="id" title="library">spec</span></span>
       (operand-based) spec that is based on materialized values.
    
 </div>

@@ -72,34 +72,34 @@
 </div>
 
 <div class="doc">
-<a id="lab231"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_region.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
+<a id="lab258"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_region.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
 
    *
-<a id="lab232"></a><h1 class="section">The semantics of <code>new</code> and <code>delete</code> expressions (including their array forms)</h1>
+<a id="lab259"></a><h1 class="section">The semantics of <code>new</code> and <code>delete</code> expressions (including their array forms)</h1>
 
-<a id="lab233"></a><h1 class="section">are *very* complex in C++. This is due to a litany of corner cases such as:</h1>
+<a id="lab260"></a><h1 class="section">are *very* complex in C++. This is due to a litany of corner cases such as:</h1>
 
-<a id="lab234"></a><h1 class="section">- the need to pair allocation and de-allocation functions</h1>
+<a id="lab261"></a><h1 class="section">- the need to pair allocation and de-allocation functions</h1>
 
-<a id="lab235"></a><h1 class="section">- the existance of placement <code>new</code></h1>
+<a id="lab262"></a><h1 class="section">- the existance of placement <code>new</code></h1>
 
-<a id="lab236"></a><h1 class="section">- the need to handle alignment as well as size.</h1>
+<a id="lab263"></a><h1 class="section">- the need to handle alignment as well as size.</h1>
 
-<a id="lab237"></a><h1 class="section">- the potential for padding bytes.</h1>
+<a id="lab264"></a><h1 class="section">- the potential for padding bytes.</h1>
 
-<a id="lab238"></a><h1 class="section">- the potential to merge allocations. (BRiCk does not attempt to support this)</h1>
-
-   *
-<a id="lab239"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
-
-<a id="lab240"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
-
-<a id="lab241"></a><h1 class="section">the behavior of various constructs.</h1>
+<a id="lab265"></a><h1 class="section">- the potential to merge allocations. (BRiCk does not attempt to support this)</h1>
 
    *
-<a id="lab242"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
+<a id="lab266"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
 
-<a id="lab243"></a><h1 class="section">an issue.</h1>
+<a id="lab267"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
+
+<a id="lab268"></a><h1 class="section">the behavior of various constructs.</h1>
+
+   *
+<a id="lab269"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
+
+<a id="lab270"></a><h1 class="section">an issue.</h1>
 
    
 <div class="paragraph"> </div>
@@ -234,7 +234,7 @@
             | (22.1) If the new-initializer is omitted, the object is default-initialized
             |        (<span class="inlinecode"><span class="id" title="var">dcl.init</span></span>).
             |        <span class="inlinecode"><span class="id" title="var">Note</span></span> <span class="inlinecode">12:</span> <span class="inlinecode"><span class="id" title="var">If</span></span> <span class="inlinecode"><span class="id" title="keyword">no</span></span> <span class="inlinecode"><span class="id" title="var">initialization</span></span> <span class="inlinecode"><span class="id" title="keyword">is</span></span> <span class="inlinecode"><span class="id" title="var">performed</span>,</span> <span class="inlinecode"><span class="id" title="var">the</span></span> <span class="inlinecode"><span class="id" title="var">object</span></span> <span class="inlinecode"><span class="id" title="var">has</span></span> <span class="inlinecode"><span class="id" title="var">an</span></span>
-            <span class="inlinecode">|</span>         <span class="inlinecode"><span class="id" title="var">indeterminate</span></span> <span class="inlinecode"><span class="id" title="var">value</span>.</span> <span class="inlinecode">—</span> <span class="inlinecode"><span class="id" title="keyword">end</span></span> <span class="inlinecode"><span class="id" title="var">note</span></span>
+            <span class="inlinecode">|</span>         <span class="inlinecode"><span class="id" title="var">indeterminate</span></span> <span class="inlinecode"><a class="idref" href="bedrock.upoly.writer.html#value"><span class="id" title="projection">value</span></a>.</span> <span class="inlinecode">—</span> <span class="inlinecode"><span class="id" title="keyword">end</span></span> <span class="inlinecode"><span class="id" title="var">note</span></span>
             | (22.2) Otherwise, the new-initializer is interpreted according to the
             |        initialization rules of <span class="inlinecode"><span class="id" title="var">dcl.init</span></span> for direct-initialization.
             We use <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.stmt.html#Stmt.default_initialize"><span class="id" title="abbreviation">default_initialize</span></a></span> for default ininitialization as it is defined in the
@@ -348,14 +348,14 @@
 
 <div class="doc">
 The C++ standard distinguishes placement/non-allocating forms in
-<a id="lab244"></a><h1 class="section">&lt;https://eel.is/c++draft/new.delete.placement1>.</h1>
+<a id="lab271"></a><h1 class="section">&lt;https://eel.is/c++draft/new.delete.placement1>.</h1>
 
          *
-<a id="lab245"></a><h1 class="section">NOTE: placement &lt;new&gt; is more subtle than the rule described here</h1>
+<a id="lab272"></a><h1 class="section">NOTE: placement &lt;new&gt; is more subtle than the rule described here</h1>
 
-<a id="lab246"></a><h1 class="section">because it can be used to construct an object over an existing</h1>
+<a id="lab273"></a><h1 class="section">because it can be used to construct an object over an existing</h1>
 
-<a id="lab247"></a><h1 class="section">object.</h1>
+<a id="lab274"></a><h1 class="section">object.</h1>
 
          
 </div>
@@ -506,7 +506,7 @@ The C++ standard distinguishes placement/non-allocating forms in
 </div>
 
 <div class="doc">
-<a id="lab248"></a><h3 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_delete"><span class="id" title="abbreviation">wp_delete</span></a></span></h3>
+<a id="lab275"></a><h3 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_delete"><span class="id" title="abbreviation">wp_delete</span></a></span></h3>
 
 </div>
 <div class="code">
@@ -725,9 +725,9 @@ The C++ standard distinguishes placement/non-allocating forms in
 
 <div class="doc">
 <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_operand_delete_default"><span class="id" title="lemma">wp_operand_delete_default</span></a></span> specializes <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_operand_delete"><span class="id" title="axiom">wp_operand_delete</span></a></span> for invocations of
-<a id="lab249"></a><h1 class="section">the form <code>delete p;</code> - where <code>p</code> is a non-null pointer to an object whose</h1>
+<a id="lab276"></a><h1 class="section">the form <code>delete p;</code> - where <code>p</code> is a non-null pointer to an object whose</h1>
 
-<a id="lab250"></a><h1 class="section">most-derived destructor is defined in the current translation unit.</h1>
+<a id="lab277"></a><h1 class="section">most-derived destructor is defined in the current translation unit.</h1>
 
         
 </div>

@@ -84,7 +84,7 @@ formalizations of their memory object models (see <span class="inlinecode"><span
 </div>
 
 <div class="doc">
-<a id="lab149"></a><h2 class="section">Allocation IDs. We use them to model pointer provenance, following</h2>
+<a id="lab176"></a><h2 class="section">Allocation IDs. We use them to model pointer provenance, following</h2>
 
 Cerberus. 
 </div>
@@ -137,7 +137,7 @@ Cerberus.
 </div>
 
 <div class="doc">
-<a id="lab150"></a><h1 class="section">Pointers.</h1>
+<a id="lab177"></a><h1 class="section">Pointers.</h1>
 
 
 <div class="paragraph"> </div>
@@ -245,7 +245,7 @@ Cerberus.
 </div>
 
 <div class="doc">
-<a id="lab151"></a><h1 class="section">Pointer offsets.</h1>
+<a id="lab178"></a><h1 class="section">Pointer offsets.</h1>
 
       Offsets represent paths between objects and subobjects.
 
@@ -361,7 +361,7 @@ An invalid pointer, included as a sentinel value. Other pointers might
 </div>
 
 <div class="doc">
-<a id="lab152"></a><h2 class="section">Concrete pointer offsets.</h2>
+<a id="lab179"></a><h2 class="section">Concrete pointer offsets.</h2>
 
 
 <div class="paragraph"> </div>
@@ -567,13 +567,13 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab153"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.offset"><span class="id" title="definition">offset</span></a></span> Congruence</h2>
+<a id="lab180"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.offset"><span class="id" title="definition">offset</span></a></span> Congruence</h2>
 
 
 <div class="paragraph"> </div>
 
      <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.offset_cong"><span class="id" title="definition">offset_cong</span></a></span> <span class="inlinecode">σ</span> <span class="inlinecode"><span class="id" title="var">o1</span></span> <span class="inlinecode"><span class="id" title="var">o2</span></span> expresses that <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.eval_offset"><span class="id" title="definition">eval_offset</span></a></span> <span class="inlinecode">σ</span> <span class="inlinecode"><span class="id" title="var">o1</span></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.eval_offset"><span class="id" title="definition">eval_offset</span></a></span> <span class="inlinecode">σ</span> <span class="inlinecode"><span class="id" title="var">o2</span></span>
-     both produce <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a></span> shared numerical value.
+     both produce <span class="inlinecode"><a class="idref" href="bedrock.upoly.UTypes.html#Some"><span class="id" title="constructor">Some</span></a></span> shared numerical value.
 
 <div class="paragraph"> </div>
 
@@ -587,7 +587,7 @@ Pointers into the same array with the same address have the same index.
 <div class="paragraph"> </div>
 
      NOTE: <span class="inlinecode"><a class="idref" href="bedrock.prelude.option.html#same_property_iff"><span class="id" title="lemma">same_property_iff</span></a></span> ensures that the partial <span class="inlinecode"><span class="id" title="var">obs</span></span>ervation (<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.eval_offset"><span class="id" title="definition">eval_offset</span></a></span>)
-     are both <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a></span>; <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.offset_cong"><span class="id" title="definition">offset_cong</span></a></span> is <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Classes.RelationClasses.html#Reflexive"><span class="id" title="class">Reflexive</span></a></span> for some <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.o"><span class="id" title="variable">o</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.offset"><span class="id" title="definition">offset</span></a></span> iff
+     are both <span class="inlinecode"><a class="idref" href="bedrock.upoly.UTypes.html#Some"><span class="id" title="constructor">Some</span></a></span>; <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.offset_cong"><span class="id" title="definition">offset_cong</span></a></span> is <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V8.19.0/stdlib//Coq.Classes.RelationClasses.html#Reflexive"><span class="id" title="class">Reflexive</span></a></span> for some <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.o"><span class="id" title="variable">o</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.offset"><span class="id" title="definition">offset</span></a></span> iff
      <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.option.html#is_Some"><span class="id" title="definition">is_Some</span></a></span> <span class="inlinecode">(<a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.eval_offset"><span class="id" title="definition">eval_offset</span></a></span> <span class="inlinecode">σ</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.o"><span class="id" title="variable">o</span></a>)</span>.
    
 </div>
@@ -603,7 +603,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab154"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.ptr"><span class="id" title="definition">ptr</span></a></span> Congruence</h2>
+<a id="lab181"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.ptr"><span class="id" title="definition">ptr</span></a></span> Congruence</h2>
 
 
 <div class="paragraph"> </div>
@@ -661,7 +661,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab155"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_address"><span class="id" title="definition">same_address</span></a></span> lemmas</h2>
+<a id="lab182"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_address"><span class="id" title="definition">same_address</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">
@@ -699,7 +699,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab156"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.same_address_bool"><span class="id" title="definition">same_address_bool</span></a></span> lemmas</h2>
+<a id="lab183"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.same_address_bool"><span class="id" title="definition">same_address_bool</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">
@@ -731,7 +731,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab157"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_alloc"><span class="id" title="definition">same_alloc</span></a></span> lemmas</h2>
+<a id="lab184"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_alloc"><span class="id" title="definition">same_alloc</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">

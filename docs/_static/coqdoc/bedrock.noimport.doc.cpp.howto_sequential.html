@@ -55,7 +55,7 @@
 </div>
 
 <div class="doc">
-<a id="lab7"></a><h1 class="section">Sequential Specs</h1>
+<a id="lab34"></a><h1 class="section">Sequential Specs</h1>
 
 </div>
 <div class="code">
@@ -68,7 +68,7 @@
 </div>
 
 <div class="doc">
-<a id="lab8"></a><h2 class="section">Range</h2>
+<a id="lab35"></a><h2 class="section">Range</h2>
 
 
 <div class="paragraph"> </div>
@@ -103,7 +103,7 @@ To write specs for C++ functions that operate on <span class="inlinecode"><a cla
 
 <div class="paragraph"> </div>
 
-<a id="lab9"></a><h3 class="section">Coq Model of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a></span></h3>
+<a id="lab36"></a><h3 class="section">Coq Model of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a></span></h3>
 
 
 <div class="paragraph"> </div>
@@ -156,7 +156,7 @@ Compute range_ex.(size).
  
 <div class="paragraph"> </div>
 
-<a id="lab10"></a><h3 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a></span>: Representation Predicate</h3>
+<a id="lab37"></a><h3 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a></span>: Representation Predicate</h3>
 
 
 <div class="paragraph"> </div>
@@ -260,7 +260,7 @@ the "this" pointer in its prev field.
 </div>
 
 <div class="doc">
-<a id="lab11"></a><h2 class="section">Binary Search Trees</h2>
+<a id="lab38"></a><h2 class="section">Binary Search Trees</h2>
 
 
 <div class="paragraph"> </div>
@@ -296,7 +296,7 @@ corresponding to the following C++ struct:
 </div>
 
 <div class="doc">
-<a id="lab12"></a><h3 class="section">Unsorted Binary Trees</h3>
+<a id="lab39"></a><h3 class="section">Unsorted Binary Trees</h3>
 
 
 <div class="paragraph"> </div>
@@ -452,7 +452,7 @@ We separately assert that:
 </div>
 
 <div class="doc">
-<a id="lab13"></a><h3 class="section">Sorted Binary Trees</h3>
+<a id="lab40"></a><h3 class="section">Sorted Binary Trees</h3>
 
 
 <div class="paragraph"> </div>
@@ -501,7 +501,7 @@ The representation predicate <span class="inlinecode"><a class="idref" href="bed
 representation predicate of unsigned integers. 
 <div class="paragraph"> </div>
 
-<a id="lab14"></a><h3 class="section">Count</h3>
+<a id="lab41"></a><h3 class="section">Count</h3>
 
 
 <div class="paragraph"> </div>
@@ -569,7 +569,7 @@ Alternatively, we could impose a bounds condition in the precondition:
 
 <div class="paragraph"> </div>
 
-<a id="lab15"></a><h3 class="section">Insert</h3>
+<a id="lab42"></a><h3 class="section">Insert</h3>
 
 <div class="paragraph"> </div>
 
@@ -628,7 +628,7 @@ More intensionally, we could write this spec using a Coq implementation of
 </div>
 
 <div class="doc">
-<a id="lab16"></a><h2 class="section">EXERCISE: Linked Lists</h2>
+<a id="lab43"></a><h2 class="section">EXERCISE: Linked Lists</h2>
 
 
 <div class="paragraph"> </div>
@@ -675,7 +675,7 @@ The empty linked list is represented by <span class="inlinecode"><a class="idref
 </div>
 
 <div class="doc">
-<a id="lab17"></a><h2 class="section">Range Maps</h2>
+<a id="lab44"></a><h2 class="section">Range Maps</h2>
 
 
 <div class="paragraph"> </div>
@@ -776,7 +776,7 @@ The representation predicate of an <span class="inlinecode"><a class="idref" hre
 
 <div class="doc">
 Putting the pieces together, here's the function spec for
-<span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#lookup"><span class="id" title="definition">lookup</span></a></span>, which maps an address <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> in a <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#tree"><span class="id" title="inductive">tree</span></a></span>s of <span class="inlinecode"><span class="id" title="var">Entries</span></span> to the
+<span class="inlinecode"><a class="idref" href="bedrock.upoly.list.html#lookup"><span class="id" title="instance">lookup</span></a></span>, which maps an address <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> in a <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#tree"><span class="id" title="inductive">tree</span></a></span>s of <span class="inlinecode"><span class="id" title="var">Entries</span></span> to the
 corresponding <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#Entry"><span class="id" title="record">Entry</span></a></span>, if any.  
 </div>
 <div class="code">
@@ -818,7 +818,7 @@ With <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.ho
 </div>
 
 <div class="doc">
-Using borrow, we can write the specification for <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#lookup"><span class="id" title="definition">lookup</span></a></span>:
+Using borrow, we can write the specification for <span class="inlinecode"><a class="idref" href="bedrock.upoly.list.html#lookup"><span class="id" title="instance">lookup</span></a></span>:
  
 </div>
 <div class="code">
