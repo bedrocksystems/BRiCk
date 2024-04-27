@@ -1,0 +1,10 @@
+(env
+ (_
+  (coq
+   (flags
+    (:standard
+     -w -notation-overridden
+     -w +deprecated-hint-without-locality
+     -w +deprecated-instance-without-locality
+     -w +unknown-option
+     -w +future-coercion-class-field)))))

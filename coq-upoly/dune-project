@@ -1,0 +1,42 @@
+(lang dune 3.8)
+(using coq 0.8)
+(name coq-upoly)
+
+(generate_opam_files)
+
+(license "BedRock Open-Source License")
+
+(maintainers
+ "Gregory Malecha <gregory@bedrocksystems.com>"
+ "Abhishek Anand <abhishek@bedrocksystems.com>"
+ "Gordon Stewart <gordon@bedrocksystems.com>"
+ "Jasper Haag <jasper@bedrocksystems.com>"
+ "Yoichi Hirai <yoichi@bedrocksystems.com>"
+ "David Swasey <david@bedrocksystems.com>"
+ "Jan-Oliver Kaiser <janno@bedrocksystems.com>"
+ "Hai Dang <hai@bedrocksystems.com>"
+ "Paolo Giarrusso <paolo@bedrocksystems.com>"
+ "Simon Hudon <simon@bedrocksystems.com>"
+ "František Farka <frantisek@bedrocksystems.com>"
+ "Rodolphe Lepigre <rodolphe@bedrocksystems.com>")
+
+(authors
+ "Gregory Malecha <gregory@bedrocksystems.com>"
+ "Abhishek Anand <abhishek@bedrocksystems.com>"
+ "Gordon Stewart <gordon@bedrocksystems.com>"
+ "Jasper Haag <jasper@bedrocksystems.com>"
+ "Yoichi Hirai <yoichi@bedrocksystems.com>"
+ "David Swasey <david@bedrocksystems.com>"
+ "Jan-Oliver Kaiser <janno@bedrocksystems.com>"
+ "Hai Dang <hai@bedrocksystems.com>"
+ "Paolo Giarrusso <paolo@bedrocksystems.com>"
+ "Simon Hudon <simon@bedrocksystems.com>"
+ "František Farka <frantisek@bedrocksystems.com>"
+ "Rodolphe Lepigre <rodolphe@bedrocksystems.com>")
+
+(source (gitlab bedrocksystems/cpp2v-core))
+
+(package
+ (name coq-upoly)
+ (synopsis "Extension to std++ Coq library for universe polymorphic monads")
+ (depends (coq-stdpp (>= dev.2024-02-09.0.cafd7113))))
