@@ -15,6 +15,7 @@
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/TargetInfo.h"
 #include <bit>
+#include <clang/Basic/Version.inc>
 
 using namespace clang;
 using namespace fmt;
@@ -754,11 +755,15 @@ public:
 		auto bytes = lit->getBytes();
 		const unsigned width = lit->getCharByteWidth();
 		print.begin_list();
+#if 18 <= CLANG_VERSION_MAJOR
+		namespace endianNS = llvm;
+#else
+		namespace endianNS = llvm::support;
+#endif
 		for (unsigned i = 0, len = lit->getByteLength(); i < len;) {
 			unsigned long long byte = 0;
 			// TODO confirm that this is correct
-			if (llvm::support::endian::system_endianness() ==
-				llvm::support::endianness::big) {
+			if (endianNS::endianness::native == endianNS::endianness::big) {
 				for (unsigned j = 0; j < width; ++j) {
 					byte = (byte << 8) | static_cast<unsigned char>(bytes[i++]);
 				}

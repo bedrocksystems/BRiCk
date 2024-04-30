@@ -84,7 +84,7 @@ private:
 		const box<TypeLoc> typeloc;	   // type is non-null
 		const box<TypeSourceInfo> tsi; // type is non-null
 		const box<QualType> qualtype;  // type is non-null
-		const Type* type;
+		const clang::Type* type;
 		const TemplateArgumentLoc* tal;
 	} u;
 
@@ -96,7 +96,7 @@ public:
 	Loc() = delete;
 	Loc(const Decl& d) : kind{Kind::Decl}, u{.decl = &d} {}
 	Loc(const Stmt& s) : kind{Kind::Stmt}, u{.stmt = &s} {}
-	Loc(const Type& t) : kind{Kind::Type}, u{.type = &t} {}
+	Loc(const clang::Type& t) : kind{Kind::Type}, u{.type = &t} {}
 	Loc(const TemplateArgumentLoc& a) : kind{Kind::Tal}, u{.tal = &a} {}
 
 	static std::optional<Loc> mk(const TypeLoc&);

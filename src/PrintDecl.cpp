@@ -461,6 +461,15 @@ printStructBases(const CXXRecordDecl &decl, const ASTRecordLayout *layout,
 	});
 }
 
+bool
+is_pure_virtual(const clang::FunctionDecl &d) {
+#if 18 <= CLANG_VERSION_MAJOR
+	return d.isPureVirtual();
+#else
+	return d.isPure();
+#endif
+}
+
 static fmt::Formatter &
 printStructVirtuals(const CXXRecordDecl &decl, CoqPrinter &print,
 					ClangPrinter &cprint) {
@@ -469,7 +478,8 @@ printStructVirtuals(const CXXRecordDecl &decl, CoqPrinter &print,
 			fatal(cprint, loc::of(decl), "null method");
 		if (not m->isVirtual())
 			return false;
-		guard::ctor _(print, m->isPure() ? "pure_virt" : "impl_virt", false);
+		guard::ctor _(print, is_pure_virtual(*m) ? "pure_virt" : "impl_virt",
+					  false);
 		cprint.printObjName(m, print, loc::of(decl));
 		return true;
 	});
@@ -482,7 +492,7 @@ printStructOverrides(const CXXRecordDecl &decl, CoqPrinter &print,
 	for (auto m : decl.methods()) {
 		if (!m)
 			fatal(cprint, loc::of(decl), "null method");
-		if (m->isVirtual() and not m->isPure()) {
+		if (m->isVirtual() and not is_pure_virtual(*m)) {
 			for (auto o : m->overridden_methods()) {
 				print.output() << "(";
 				cprint.printObjName(o, print, loc::of(m)) << fmt::tuple_sep;
@@ -1169,14 +1179,11 @@ public:
 							ClangPrinter &cprint, const ASTContext &ctxt) {
 		if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 			cprint.trace("VisitCXXRecordDecl", loc::of(decl));
-		switch (decl->getTagKind()) {
-		case TagTypeKind::TTK_Class:
-		case TagTypeKind::TTK_Struct:
+		if (decl->isStruct() or decl->isClass()) {
 			return VisitStructDecl(decl, print, cprint, ctxt);
-		case TagTypeKind::TTK_Union:
+		} else if (decl->isUnion()) {
 			return VisitUnionDecl(decl, print, cprint, ctxt);
-		case TagTypeKind::TTK_Interface:
-		default:
+		} else {
 			std::string msg;
 			llvm::raw_string_ostream os{msg};
 			os << "CXXRecord with tag kind " << decl->getKindName();

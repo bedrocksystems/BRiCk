@@ -417,10 +417,10 @@ dune-build-llvm17:
     - .dune-build-aux
     - .llvm17
 
-#dune-build-llvm18:
-#  extends:
-#    - .dune-build-aux
-#    - .llvm18
+dune-build-llvm18:
+  extends:
+    - .dune-build-aux
+    - .llvm18
 
 # TODO FM-4156 Reenable
 # dune-build-public:
