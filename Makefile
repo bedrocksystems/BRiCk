@@ -80,9 +80,6 @@ coq: coq-minimal
 %.vo %.vos %.required_vo: Makefile.coq
 	+@$(COQMK) $@
 
-
-
-
 # Tests for `cpp2v`
 
 test: test-cpp2v

@@ -12,6 +12,7 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/ExprCXX.h>
 #include <clang/AST/Mangle.h>
+#include <clang/Basic/Version.inc>
 #include <clang/Frontend/CompilerInstance.h>
 #include <optional>
 
@@ -254,8 +255,13 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			}
 		} else {
 			unsupported("ClassTemplateSpecializationDecl for simple contexts");
+#if 18 <= CLANG_VERSION_MAJOR
+			mangle.mangleCanonicalTypeName(QualType(ts->getTypeForDecl(), 0),
+										   print.output().nobreak());
+#else
 			mangle.mangleTypeName(QualType(ts->getTypeForDecl(), 0),
 								  print.output().nobreak());
+#endif
 			return 2;
 		}
 
@@ -295,8 +301,7 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			print.output() << s.length() << s;
 			//tdn->printName(print.output().nobreak());
 		} else if (not rd->field_empty()) {
-			print.output() << ".";
-			rd->field_begin()->printName(print.output().nobreak());
+			print.output() << "." << rd->field_begin()->getName();
 		} else {
 			// TODO this isn't technically sound
 			unsupported("empty anonymous record");
