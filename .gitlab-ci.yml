@@ -442,12 +442,12 @@ dune-test-llvm17:
   needs:
     - dune-build-llvm17
 
-#dune-test-llvm18:
-#  extends:
-#    - .dune-test-aux
-#    - .llvm18
-#  needs:
-#    - dune-build-llvm18
+dune-test-llvm18:
+  extends:
+    - .dune-test-aux
+    - .llvm18
+  needs:
+    - dune-build-llvm18
 
 # TODO FM-4156 Reenable
 # dune-test-public:
