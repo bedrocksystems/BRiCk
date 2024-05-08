@@ -36,6 +36,9 @@ variables:
   docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
   fm_docs_img: ${docker_img_prefix}:fm-docs-coq819
   img_prefix: cpp2v-llvm
+  BUILD_DIR: /tmp/build-dir
+  FMDEPS_DIR: $BUILD_DIR/fmdeps
+  FM_CI_TOOLS: $FMDEPS_DIR/fm-ci-tools
 
 # Configs
 .base:
@@ -71,16 +74,20 @@ stages:
   - prepare_env_for_downstream
   - build_proofs_downstream
 
-# Include only in the merge request pipeline
+# Name not accurate anymore.
 .only-mrs:
   rules:
     - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
       when: never
-    - if: $CI_MERGE_REQUEST_IID
+    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
+      when: never
 
 .proof-trigger:
   rules:
     - !reference [.only-mrs, rules]
+    - when: on_success
 
 # Include both in the merge request pipeline, and in the pipelines on the default branch
 .proof-trigger-mr-releases:
@@ -88,6 +95,7 @@ stages:
     - !reference [.only-mrs, rules]
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: on_success
 
 #This is a template job that's extended below by the real jobs
 # build_{latest,llvmNN,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
@@ -252,12 +260,19 @@ prepare_cpp2v_env:
   script:
     - >
       if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::same-branch.* ]]; then
-        export DOWNSTREAM_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME;
-        git ls-remote --exit-code --heads   https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git refs/heads/$DOWNSTREAM_BRANCH &&
-         export DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_BRANCH ||
-         export DOWNSTREAM_CPP2V_BRANCH="master";
-      else export DOWNSTREAM_CPP2V_BRANCH="master";
-           export DOWNSTREAM_BRANCH="master"; fi
+        export DOWNSTREAM_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+      elif [[ -n $DOWNSTREAM_BRANCH ]] && [[ $DOWNSTREAM_BRANCH != "master" ]]; then
+        export DOWNSTREAM_BRANCH
+      else
+        export DOWNSTREAM_BRANCH="master"
+      fi
+    - echo "DOWNSTREAM_BRANCH=$DOWNSTREAM_BRANCH"
+    - >
+      if git ls-remote --exit-code --heads https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git refs/heads/$DOWNSTREAM_BRANCH; then
+        export DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_BRANCH
+      else
+        export DOWNSTREAM_CPP2V_BRANCH="master"
+      fi
     - if [[ $CI_MERGE_REQUEST_LABELS =~ .*FM-CI-timing.* ]]; then FULL_TIMING=1; else FULL_TIMING=0; fi
     - export CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
     # Use whatever master commit was merged into our branch as a point of reference.
@@ -265,23 +280,33 @@ prepare_cpp2v_env:
     - echo $CPP2V_CORE_COMMIT_REF_HASH
     - echo $CI_MERGE_REQUEST_LABELS
     - >
-      if [[ $CI_MERGE_REQUEST_LABELS =~ .*FM-CI-Compare.* ]]; then
+      if [[ $CI_MERGE_REQUEST_LABELS =~ .*FM-CI-Compare.* ]] || [[ -n "$UPSTREAM_FM_CI_TOOLS_COMMIT_REF_HASH" ]]; then
         echo "LABEL MATCH"
         if [[ -z "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" ]]; then
-          echo "TARGET BRANCH"
-          # Only possible on manually triggered pipelines
+          # Usual reason: MR cannot be merged right now due to conflicts.
+          echo "NO TARGET BRANCH"
           export CPP2V_CORE_COMMIT_REF_HASH=$(git merge-base origin/master HEAD);
         else
-          echo "NO TARGET BRANCH"
+          echo "TARGET BRANCH"
           export CPP2V_CORE_COMMIT_REF_HASH=$CI_MERGE_REQUEST_TARGET_BRANCH_SHA;
         fi
       fi
-    - echo $CPP2V_CORE_COMMIT_REF_HASH
+    - >
+      if [[ -z "$ORIGIN_MERGE_REQUEST_PROJECT_ID" ]]; then
+        export ORIGIN_MERGE_REQUEST_PROJECT_ID=$CI_MERGE_REQUEST_PROJECT_ID
+        export ORIGIN_MERGE_REQUEST_IID=$CI_MERGE_REQUEST_IID
+        export ORIGIN_MERGE_REQUEST_PIPELINE_URL=$CI_PIPELINE_URL
+      fi
     - echo "DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_CPP2V_BRANCH" >> build.env
     - echo "DOWNSTREAM_BRANCH=$DOWNSTREAM_BRANCH" >> build.env
     - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
     - echo "CPP2V_CORE_COMMIT_REF_HASH=$CPP2V_CORE_COMMIT_REF_HASH" >> build.env
+    - echo "UPSTREAM_FM_CI_TOOLS_COMMIT_HASH=$UPSTREAM_FM_CI_TOOLS_COMMIT_HASH" >> build.env
+    - echo "UPSTREAM_FM_CI_TOOLS_COMMIT_REF_HASH=$UPSTREAM_FM_CI_TOOLS_COMMIT_REF_HASH" >> build.env
     - echo "FULL_TIMING=$FULL_TIMING" >> build.env
+    - echo "ORIGIN_MERGE_REQUEST_PROJECT_ID=$ORIGIN_MERGE_REQUEST_PROJECT_ID" >> build.env
+    - echo "ORIGIN_MERGE_REQUEST_IID=$ORIGIN_MERGE_REQUEST_IID" >> build.env
+    - echo "ORIGIN_MERGE_REQUEST_PIPELINE_URL=$ORIGIN_MERGE_REQUEST_PIPELINE_URL" >> build.env
     # TODO remove eventually; only for legacy builds
     - echo "ARTIFACT_JOB_ID=$ARTIFACT_JOB_ID" >> build.env
     - cat build.env
@@ -291,29 +316,43 @@ prepare_cpp2v_env:
   tags:
     - fm.shared
 
+.checkout_fm_ci_tools: &checkout_fm_ci_tools
+  - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/fm-ci-tools.git ${FMDEPS_DIR}/fm-ci-tools
+  - >
+    if [[ -n $UPSTREAM_FM_CI_TOOLS_COMMIT_HASH ]]; then
+      # Specific commit specified upstream.
+      git -C ${FMDEPS_DIR}/fm-ci-tools fetch origin $UPSTREAM_FM_CI_TOOLS_COMMIT_HASH
+      git -C ${FMDEPS_DIR}/fm-ci-tools checkout $UPSTREAM_FM_CI_TOOLS_COMMIT_HASH
+    else
+      export UPSTREAM_FM_CI_TOOLS_COMMIT_HASH=$(git -C ${FMDEPS_DIR}/fm-ci-tools rev-parse HEAD)
+    fi
+  - echo "UPSTREAM_FM_CI_TOOLS_COMMIT_HASH=$UPSTREAM_FM_CI_TOOLS_COMMIT_HASH" >> build.env
+  - echo "UPSTREAM_FM_CI_TOOLS_COMMIT_REF_HASH=$UPSTREAM_FM_CI_TOOLS_COMMIT_REF_HASH" >> build.env
+
 .setup-dunecache:
   stage: dune-build
   variables:
     DUNE_CACHE: enabled
     DUNE_CACHE_STORAGE_MODE: copy
   before_script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/fm-ci-tools.git
-    - cat ./fm-ci-tools/fm_dune/build_env_dune.inc.sh
-    - source ./fm-ci-tools/fm_dune/build_env_dune.inc.sh
-    - ./fm-ci-tools/fm_dune/filter_build_env_dune.sh >> build.env
+    - *checkout_fm_ci_tools
+    - echo "DOWNSTREAM_BRANCH=$DOWNSTREAM_BRANCH" >> build.env
+    - cat $FM_CI_TOOLS/fm_dune/build_env_dune.inc.sh
+    - source $FM_CI_TOOLS/fm_dune/build_env_dune.inc.sh
+    - $FM_CI_TOOLS/fm_dune/filter_build_env_dune.sh >> build.env
     # Lock cache only on Sundays(cache cleanup day)
     - >
       if [[ `date +%u` -eq 7 ]] ; then
         for i in {1..3}; do
-          time ./fm-ci-tools/fm_dune/dune_lock_ci.py check_cleanup_job -t ${GRP_CI_TOKEN} -v RSYNC_PUSH -a build.env && break
+          time $FM_CI_TOOLS/fm_dune/dune_lock_ci.py check_cleanup_job -t ${GRP_CI_TOKEN} -v RSYNC_PUSH -a build.env && break
         done
       fi
     # Workaround for https://github.com/ocaml/dune/issues/6005: we must ensure
     # that we run dune in bhv-shaped workspaces, since cache entries are keyed
     # on relative paths from the workspace root.
-    - mkdir -p /tmp/build-dir/fmdeps/
-    - cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
-    - cp $CI_PROJECT_DIR/dune-ci/root-dune-project /tmp/build-dir/dune-project
+    - mkdir -p $FMDEPS_DIR
+    - cp -ra $CI_PROJECT_DIR $FMDEPS_DIR/cpp2v-core
+    - cp $CI_PROJECT_DIR/dune-ci/root-dune-project $BUILD_DIR/dune-project
     # Set up the cache and dune configuration.
     - mkdir -p ~/.cache/ ~/.config/dune/
     - ls ~/.cache/dune
@@ -343,16 +382,16 @@ prepare_cpp2v_env:
     - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
     # Set up the environment and run the build (in the prepared workspace).
-    - cd /tmp/build-dir/fmdeps/cpp2v-core
-    - time dune build -j ${NJOBS} . coq-lens/coq-lens.install coq-lens/coq-lens-elpi.install 2>&1 | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
-    - time dune build -j ${NJOBS} . coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
-    - time dune build -j ${NJOBS} -p coq-upoly,coq-lens,coq-lens-elpi,coq-cpp2v,coq-cpp2v-bin 2>&1 | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
+    - cd $FMDEPS_DIR/cpp2v-core
+    - time dune build -j ${NJOBS} . coq-lens/coq-lens.install coq-lens/coq-lens-elpi.install 2>&1 | ocaml $FM_CI_TOOLS/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
+    - time dune build -j ${NJOBS} . coq-cpp2v.install coq-cpp2v-bin.install 2>&1 | ocaml $FM_CI_TOOLS/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
+    - time dune build -j ${NJOBS} -p coq-upoly,coq-lens,coq-lens-elpi,coq-cpp2v,coq-cpp2v-bin 2>&1 | ocaml $FM_CI_TOOLS/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
     - cd $CI_PROJECT_DIR/
     # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
     # this build. The value of CI_JOB_ID is only available in this
     # build_latest job, so it has to be stored here.
     - echo "ARTIFACT_JOB_ID=$CI_JOB_ID" >> build.env
-    - time ./fm-ci-tools/code_quality.py cpp2v-core || true
+    - time $FM_CI_TOOLS/code_quality.py cpp2v-core || true
   artifacts:
     reports:
       dotenv: build.env
@@ -383,11 +422,11 @@ prepare_cpp2v_env:
     - .dune-base
   script:
     # Set up the environment and run the build (in the prepared workspace).
-    - cd /tmp/build-dir/fmdeps/cpp2v-core
+    - cd $FMDEPS_DIR/cpp2v-core
     - >
-      (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | ocaml ./fm-ci-tools/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
+      (time dune runtest -j ${NJOBS} 2>&1 || (echo "Error: cram tests failed" && exit 1)) | ocaml $FM_CI_TOOLS/fm_dune/filter_dune_output.ml | tee -a ${CODEQ_LOG}
     - cd $CI_PROJECT_DIR/
-    - time ./fm-ci-tools/code_quality.py cpp2v-core || true
+    - time $FM_CI_TOOLS/code_quality.py cpp2v-core || true
   artifacts:
     reports:
       codequality: gl-code-quality-report.json
@@ -468,11 +507,13 @@ build-cpp2v-trigger:
   variables:
     UPSTREAM_CPP2V_CORE_COMMIT_HASH: $CPP2V_CORE_COMMIT_HASH
     UPSTREAM_CPP2V_CORE_COMMIT_REF_HASH: $CPP2V_CORE_COMMIT_REF_HASH
+    UPSTREAM_FM_CI_TOOLS_COMMIT_HASH: $UPSTREAM_FM_CI_TOOLS_COMMIT_HASH
+    UPSTREAM_FM_CI_TOOLS_COMMIT_REF_HASH: $UPSTREAM_FM_CI_TOOLS_COMMIT_REF_HASH
     DOWNSTREAM_BRANCH: $DOWNSTREAM_BRANCH
     FULL_TIMING: $FULL_TIMING
-    ORIGIN_MERGE_REQUEST_PROJECT_ID: $CI_MERGE_REQUEST_PROJECT_ID
-    ORIGIN_MERGE_REQUEST_IID: $CI_MERGE_REQUEST_IID
-    ORIGIN_MERGE_REQUEST_PIPELINE_URL: $CI_PIPELINE_URL
+    ORIGIN_MERGE_REQUEST_PROJECT_ID: $ORIGIN_MERGE_REQUEST_PROJECT_ID
+    ORIGIN_MERGE_REQUEST_IID: $ORIGIN_MERGE_REQUEST_IID
+    ORIGIN_MERGE_REQUEST_PIPELINE_URL: $ORIGIN_MERGE_REQUEST_PIPELINE_URL
     # TODO remove eventually; only for legacy builds
     UPSTREAM_CPP2V_CORE_JOB_ID: $ARTIFACT_JOB_ID
   trigger:
