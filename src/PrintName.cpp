@@ -259,8 +259,18 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			mangle.mangleCanonicalTypeName(QualType(ts->getTypeForDecl(), 0),
 										   print.output().nobreak());
 #else
-			mangle.mangleTypeName(QualType(ts->getTypeForDecl(), 0),
-								  print.output().nobreak());
+			{
+			  std::string sout;
+			  llvm::raw_string_ostream out(sout);
+
+			  mangle.mangleTypeName(QualType(ts->getTypeForDecl(), 0),
+								  out);
+			  assert(3 < sout.length() && "mangled string length is too small");
+			  sout = sout.substr(4, sout.length());
+			  auto &mos = print.output().nobreak();
+			  mos << "_Z" << sout;
+
+			}
 #endif
 			return 2;
 		}
