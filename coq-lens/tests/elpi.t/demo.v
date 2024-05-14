@@ -33,7 +33,7 @@ Goal {| foo := 3 ; bar := true |} .^ _bar = true.
 Proof. reflexivity. Qed.
 
 
-Goal {| foo := 3 ; bar := true |} & _bar .= false = {| foo := 3 ; bar := false |}.
+Goal {| foo := 3 ; bar := true |} &: _bar .= false = {| foo := 3 ; bar := false |}.
 Proof. reflexivity. Qed.
 
 Set Printing All.
