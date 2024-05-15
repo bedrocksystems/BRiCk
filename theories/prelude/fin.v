@@ -89,7 +89,7 @@ Module fin.
       since then [eq_refl] is a valid proof of [m < n]. *)
   Notation lit m := (mk m eq_refl).
 
-  Lemma t_0_inv : t 0 -> False.
+  Lemma t_0_inv : fin.t 0 -> False.
   Proof. move=> [x /bool_decide_unpack]. lia. Qed.
 
   (** Alternative to [of_N] taking any positive [m : N] instead of [p : positive]. *)
