@@ -210,15 +210,12 @@ Module fin.
     apply elem_of_seqN. case: i => /= i /bool_decide_unpack. lia.
   Qed.
 
-  Lemma seq_lookupN' n t : fin.seq n !! fin.to_N t = Some t.
+  Lemma seq_lookupN n t : fin.seq n !! fin.to_N t = Some t.
   Proof.
     rewrite /fin.seq. case_match. { destruct (t_0_inv t). }
     rewrite list_lookupN_fmap lookupN_seqN_lt; last by apply to_N_lt.
     by rewrite N.add_0_l //= fin.of_to_N.
   Qed.
-
-  Lemma seq_lookupN p t : fin.seq (Npos p) !! fin.to_N t = Some t.
-  Proof. exact: seq_lookupN'. Qed.
 
   #[global, refine] Instance t_finite n : Finite (t n) :=
     { enum := seq n; }.
