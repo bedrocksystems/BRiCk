@@ -89,8 +89,11 @@ Module fin.
       since then [eq_refl] is a valid proof of [m < n]. *)
   Notation lit m := (mk m eq_refl).
 
-  Lemma t_0_inv : t 0 -> False.
+  Lemma t_0_inv : fin.t 0 -> False.
   Proof. move=> [x /bool_decide_unpack]. lia. Qed.
+
+  Lemma t_inv {n} (i : fin.t n) : 0 < n.
+  Proof. elim /N.peano_rect: n i => [/fin.t_0_inv []|]. lia. Qed.
 
   (** Alternative to [of_N] taking any positive [m : N] instead of [p : positive]. *)
   Definition of_N' {n : N} (Hn : 0 < n) (m : N) : fin.t n :=
@@ -207,19 +210,19 @@ Module fin.
     apply elem_of_seqN. case: i => /= i /bool_decide_unpack. lia.
   Qed.
 
-  Lemma seq_lookupN' n t : 0 < n -> fin.seq n !! fin.to_N t = Some t.
+  Lemma seq_lookupN n t : fin.seq n !! fin.to_N t = Some t.
   Proof.
-    rewrite /fin.seq. case_match; first lia.
+    rewrite /fin.seq. case_match. { destruct (t_0_inv t). }
     rewrite list_lookupN_fmap lookupN_seqN_lt; last by apply to_N_lt.
     by rewrite N.add_0_l //= fin.of_to_N.
   Qed.
 
-  Lemma seq_lookupN p t : fin.seq (Npos p) !! fin.to_N t = Some t.
-  Proof. exact: seq_lookupN'. Qed.
-
   #[global, refine] Instance t_finite n : Finite (t n) :=
     { enum := seq n; }.
   Proof. solve [apply seq_NoDup]. solve [apply elem_of_seq]. Defined.
+
+  Lemma enum_unfold n : enum (fin.t n) = fin.seq n.
+  Proof. done. Qed.
 
   (** Conversion to and from the "indexed fin" type [fin] from the stdlib. *)
   #[program] Definition to_idx_fin' {m : N} (f : fin.t m) {n : nat} (_ : m = N.of_nat n) : fin n :=
