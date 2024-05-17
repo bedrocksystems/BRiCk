@@ -679,6 +679,7 @@ Notation Qp_mul_right_id := Qp.mul_right_id (only parsing).
 #[deprecated(since="20221223", note="use [Qp.div_right_id]")]
 Notation Qp_div_right_id := Qp.div_right_id (only parsing).
 
+#[global] Typeclasses Opaque Qp.le Qp.lt.
 
 (** ** [N_to_Qp] *)
 
