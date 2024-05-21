@@ -380,16 +380,16 @@ printAnonymousFieldName(const FieldDecl &field, CoqPrinter &print,
 	} else
 		return unsupported("unnamed field");
 }
-
-static fmt::Formatter &
-printFieldName(const FieldDecl &field, CoqPrinter &print,
-			   ClangPrinter &cprint) {
+}
+fmt::Formatter &
+ClangPrinter::printFieldName(const FieldDecl &field, CoqPrinter &print,
+							 loc::loc) {
 	if (auto id = field.getIdentifier())
 		return print.str(id->getName());
 	else
-		return printAnonymousFieldName(field, print, cprint);
+		return printAnonymousFieldName(field, print, *this);
 }
-
+namespace {
 static fmt::Formatter &
 printFieldInitializer(const FieldDecl &field, CoqPrinter &print,
 					  ClangPrinter &cprint) {
@@ -411,7 +411,7 @@ printFields(const CXXRecordDecl &decl, const ASTRecordLayout *layout,
 			fatal(cprint, loc::of(field), "bit fields are not supported");
 
 		guard::ctor _(print, "mkMember", i != 0);
-		printFieldName(*field, print, cprint) << fmt::nbsp;
+		cprint.printFieldName(*field, print, loc::of(field)) << fmt::nbsp;
 		cprint.printQualType(field->getType(), print, loc::of(field))
 			<< fmt::nbsp;
 		print.boolean(field->isMutable()) << fmt::nbsp;
@@ -731,7 +731,7 @@ printIndirectFieldChain(const CXXConstructorDecl &ctor,
 			return ref{*id};
 		else if (auto fd = dyn_cast<FieldDecl>(nd)) {
 			guard::tuple _(print);
-			printAnonymousFieldName(*fd, print, cprint) << fmt::tuple_sep;
+			cprint.printFieldName(*fd, print, loc::of(decl)) << fmt::tuple_sep;
 			printClassName(fd->getType(), print, cprint, loc::of(decl));
 		} else
 			fatal("non-field in indirect field chain");
@@ -747,16 +747,10 @@ printInitPath(const CXXConstructorDecl &decl, const CXXCtorInitializer &init,
 					 NORETURN { ::fatal(cprint, loc::of(decl), msg); };
 	if (init.isMemberInitializer()) {
 		auto fd = init.getMember();
-		if (ClangPrinter::warn_well_known) {
-			auto id = fd ? fd->getIdentifier() : nullptr;
-			if (!id)
-				fatal("field initializer with null or unnamed field");
-			guard::ctor _(print, "InitField", false);
-			return print.str(id->getName());
-		} else if (fd) {
+		if (fd) {
 			// this can print an invalid field name
 			guard::ctor _(print, "InitField", false);
-			return print.str(fd->getNameAsString());
+			return cprint.printFieldName(*fd, print, loc::of(decl));
 		} else
 			fatal("field initializer with null field");
 	} else if (init.isBaseInitializer()) {
@@ -770,7 +764,7 @@ printInitPath(const CXXConstructorDecl &decl, const CXXCtorInitializer &init,
 		guard::ctor _(print, "InitIndirect", false);
 		auto id = printIndirectFieldChain(decl, *fd, print, cprint);
 		print.output() << fmt::nbsp;
-		return print.str(id->getName());
+		return cprint.printFieldName(*fd->getAnonField(), print, loc::of(decl));
 	} else if (init.isDelegatingInitializer())
 		return print.output() << "InitThis";
 	else

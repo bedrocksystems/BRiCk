@@ -808,7 +808,7 @@ public:
 	void VisitFloatingLiteral(const FloatingLiteral* lit, CoqPrinter& print,
 							  ClangPrinter& cprint, const ASTContext&,
 							  OpaqueNames&) {
-		print.ctor("Eunsupported") << fmt::nbsp << "float: \"";
+		print.ctor("Eunsupported") << fmt::nbsp << "\"float: ";
 		lit->getValue().print(print.output().nobreak());
 		print.output() << "\"";
 		done(lit, print, cprint, Done::VT);
@@ -828,7 +828,7 @@ public:
 		if (auto fd = dyn_cast<FieldDecl>(member)) {
 			//print.str(expr->getMemberDecl()->getNameAsString());
 			print.output() << "(inl ";
-			print.str(fd->getName());
+			cprint.printFieldName(*fd, print, loc::of(expr));
 			print.output() << ")" << fmt::nbsp;
 			print.boolean(fd->isMutable());
 		} else if (auto vd = dyn_cast<VarDecl>(member)) {
