@@ -30,6 +30,7 @@ class SourceRange;
 class CompilerInstance;
 class Sema;
 class TypeDecl;
+class FieldDecl;
 class RecordDecl;
 class DeclContext;
 class TemplateDecl;
@@ -174,6 +175,8 @@ public:
 								 CoqPrinter& print);
 	fmt::Formatter& printObjName(const clang::ValueDecl* decl,
 								 CoqPrinter& print, loc::loc);
+	fmt::Formatter& printFieldName(const clang::FieldDecl&, CoqPrinter&,
+								   loc::loc);
 
 	// Print all parameters in scope; for example, with
 	// `template<typename T> struct s{ int x; template<typename U> void

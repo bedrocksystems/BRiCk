@@ -311,11 +311,13 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			print.output() << s.length() << s;
 			//tdn->printName(print.output().nobreak());
 		} else if (not rd->field_empty()) {
-			print.output() << "." << rd->field_begin()->getName();
+			auto s = rd->field_begin()->getName();
+			print.output() << s.size() + 1 << "."
+						   << rd->field_begin()->getName();
 		} else {
 			// TODO this isn't technically sound
 			unsupported("empty anonymous record");
-			print.output() << "~<empty>";
+			print.output() << "8~<empty>";
 		}
 		if (remaining == 0 && 0 < compound)
 			print.output() << "E";
@@ -334,10 +336,13 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			if (ed->enumerators().empty()) {
 				// no idea what to do
 				unsupported("unnamed, empty enumeration");
-				print.output() << "~<empty-enum>";
+				print.output() << "13~<empty-enum>";
 			} else {
-				print.output() << "~";
-				ed->enumerators().begin()->printName(print.output().nobreak());
+				std::string out_s{};
+				llvm::raw_string_ostream out{out_s};
+				ed->enumerators().begin()->printName(out);
+				out.flush();
+				print.output() << out_s.size() + 1 << "~" << out_s;
 			}
 		}
 		if (remaining == 0 && 0 < compound)
