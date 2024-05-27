@@ -129,6 +129,19 @@ Module Import BS.
     | BS.EmptyString => o
     | BS.String s b => last b (Some s)
     end.
+
+  Definition decimal_digit (i : N) : Byte.byte :=
+	  default Byte.x00 $ Byte.of_N $ N.add i 48.
+  Fixpoint pp_N_aux (fuel : nat) (i : N) (acc : bs) : bs :=
+    match fuel, i with
+    | O, _ | _, N0 =>
+      match acc with | BS.EmptyString => "0" | _ => acc end
+    | S fuel, _ =>
+      let (i, d) := N.div_eucl i 10 in
+      pp_N_aux fuel i $ BS.String (decimal_digit d) acc
+    end.
+  Definition of_N_decimal (n : N) : bs :=
+    pp_N_aux (S $ N.to_nat $ N.log2 n) n BS.EmptyString.
 End BS.
 
 (* stdpp-specific. *)
