@@ -228,6 +228,19 @@ Section wpspec_relations.
 
   #[local] Notation wpspec_relation R := (@wpspec_relation PROP R ARGS RESULT).
 
+  #[global] Instance wpspec_relation_refl (R : relation PROP) :
+    Reflexive R ->
+    Reflexive (wpspec_relation R).
+  Proof. unfold wpspec_relation. naive_solver. Qed.
+  #[global] Instance wpspec_relation_symm (R : relation PROP) :
+    Symmetric R ->
+    Symmetric (wpspec_relation R).
+  Proof. unfold wpspec_relation. naive_solver. Qed.
+  #[global] Instance wpspec_relation_trans (R : relation PROP) :
+    Transitive R ->
+    Transitive (wpspec_relation R).
+  Proof. unfold wpspec_relation. naive_solver. Qed.
+
   Lemma wpspec_equiv_spec wpp1 wpp2 :
     wpspec_relation (≡) wpp1 wpp2 <->
     wpspec_relation (⊢) wpp1 wpp2 /\
