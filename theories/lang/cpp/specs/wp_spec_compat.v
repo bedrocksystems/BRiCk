@@ -223,21 +223,37 @@ Notation wpspec_wand_fupd :=
   (wpspec_relationI (λ P1 P2, P1 -∗ |={⊤}=> P2)%I (λ K v, |={⊤}=> K v)%I) (only parsing).
 
 Section wpspec_relations.
-  Context `{!BiEntailsN PROP}.
+  Context {ARGS RESULT : Type}.
+  Context `{!BiEntailsN PROP} `{!BiFUpd PROP}.
 
-  Lemma wpspec_equiv_spec {ARGS : Type} {RESULT : Type} wpp1 wpp2 :
-    @wpspec_relation PROP (≡) ARGS RESULT wpp1 wpp2 <->
-    @wpspec_relation PROP (⊢) ARGS RESULT wpp1 wpp2 /\
-    @wpspec_relation PROP (⊢) ARGS RESULT wpp2 wpp1.
+  #[local] Notation wpspec_relation R := (@wpspec_relation PROP R ARGS RESULT).
+
+  #[global] Instance wpspec_relation_refl (R : relation PROP) :
+    Reflexive R ->
+    Reflexive (wpspec_relation R).
+  Proof. unfold wpspec_relation. naive_solver. Qed.
+  #[global] Instance wpspec_relation_symm (R : relation PROP) :
+    Symmetric R ->
+    Symmetric (wpspec_relation R).
+  Proof. unfold wpspec_relation. naive_solver. Qed.
+  #[global] Instance wpspec_relation_trans (R : relation PROP) :
+    Transitive R ->
+    Transitive (wpspec_relation R).
+  Proof. unfold wpspec_relation. naive_solver. Qed.
+
+  Lemma wpspec_equiv_spec wpp1 wpp2 :
+    wpspec_relation (≡) wpp1 wpp2 <->
+    wpspec_relation (⊢) wpp1 wpp2 /\
+    wpspec_relation (⊢) wpp2 wpp1.
   Proof.
     split.
     - intros Hwpp. by split=>vs K; rewrite (Hwpp vs K).
     - intros [] vs K. by split'.
   Qed.
 
-  Lemma wpspec_equiv_dist {ARGS : Type} {RESULT : Type} wpp1 wpp2 :
-    @wpspec_relation PROP (≡) ARGS RESULT wpp1 wpp2 <->
-    ∀ n, @wpspec_relation PROP (dist n) ARGS RESULT wpp1 wpp2.
+  Lemma wpspec_equiv_dist wpp1 wpp2 :
+    wpspec_relation (≡) wpp1 wpp2 <->
+    ∀ n, wpspec_relation (dist n) wpp1 wpp2.
   Proof.
     split.
     - intros Hwpp n vs K. apply equiv_dist, Hwpp.
@@ -246,18 +262,18 @@ Section wpspec_relations.
 
   Notation entailsN := (@entailsN PROP).
 
-  Lemma wpspec_dist_entailsN {ARGS : Type} {RESULT : Type} wpp1 wpp2 n :
-    @wpspec_relation _ (dist n) ARGS RESULT wpp1 wpp2 <->
-    @wpspec_relation _ (entailsN n) ARGS RESULT wpp1 wpp2 /\
-    @wpspec_relation _ (entailsN n) ARGS RESULT wpp2 wpp1.
+  Lemma wpspec_dist_entailsN wpp1 wpp2 n :
+    wpspec_relation (dist n) wpp1 wpp2 <->
+    wpspec_relation (entailsN n) wpp1 wpp2 /\
+    wpspec_relation (entailsN n) wpp2 wpp1.
   Proof.
     split.
     - intros Hwpp. by split=>vs K; apply dist_entailsN; rewrite (Hwpp vs K).
     - intros [] vs K. by apply dist_entailsN.
   Qed.
 
-  Lemma wpspec_entails_entails_fupd `{BiFUpd PROP} {ARGS : Type}
-      {RESULT : Type} (wpp1 wpp2 : WpSpec PROP ARGS RESULT) :
+  Lemma wpspec_entails_entails_fupd
+      (wpp1 wpp2 : WpSpec PROP ARGS RESULT) :
     wpspec_entails wpp1 wpp2 -> wpspec_entails_fupd wpp1 wpp2.
   Proof.
     iIntros (EN vs K). rewrite EN.

@@ -102,8 +102,13 @@ Section with_cpp.
   Definition spec_impl {A R} (Q P : WpSpec mpredI A R) : mpredI :=
     wpspec_wand Q P.
 
-  Definition spec_entails {A R} (Q P : WpSpec mpredI A R) :=
+  Definition spec_entails {A R} (Q P : WpSpec mpredI A R) : Prop :=
     wpspec_entails Q P.
+
+  #[global] Instance spec_entails_refl A R : Reflexive (@spec_entails A R).
+  Proof. exact: wpspec_relation_refl. Qed.
+  #[global] Instance spec_entails_trans A R : Transitive (@spec_entails A R).
+  Proof. exact: wpspec_relation_trans. Qed.
 
   Lemma spec_entails_impl {A R} Q P :
     (|-- @spec_impl A R P Q) ↔
