@@ -149,6 +149,9 @@ Section observe.
   (** We favor declaring observations with [only_provable] over [bi_pure]. *)
   Lemma observe_elim_pure (Q : Prop) P {O : Observe [| Q |] P} : P ⊢ ⌜Q⌝.
   Proof. rewrite (observe [| _ |] P). by iIntros "#%". Qed.
+  Lemma observe_elim_only_provable (Q : Prop) P `{!Affine P, !Observe [| Q |] P} :
+    P ⊢ [| Q |].
+  Proof. iIntros "P". iDestruct (observe_elim_pure Q with "P") as "#$". Qed.
   Lemma observe_elim_strong Q P {O : Observe Q P} : P ⊢ P ∗ □ Q.
   Proof.
     rewrite -{1}(idemp bi_and P) {2}(observe Q P).
@@ -165,6 +168,10 @@ Section observe.
   Lemma observe_2_elim_pure (Q : Prop) P1 P2 {O : Observe2 [| Q |] P1 P2} :
     P1 ⊢ P2 -∗ ⌜Q⌝.
   Proof. rewrite (observe_2 [| _ |] P1 P2). f_equiv. by iIntros "#%". Qed.
+  Lemma observe_2_elim_only_provable (Q : Prop) P1 P2
+      `{!Affine P1, !Affine P2, O : !Observe2 [| Q |] P1 P2} :
+    P1 ⊢ P2 -∗ [| Q |].
+  Proof. exact /bi.wand_intro_r /observe_elim_only_provable /observe_curry. Qed.
   Lemma observe_2_elim_strong Q P1 P2 {O : Observe2 Q P1 P2} :
     P1 ⊢ P2 -∗ P1 ∗ P2 ∗ □ Q.
   Proof.
