@@ -102,7 +102,7 @@ Section with_cpp.
   Definition spec_impl {A R} (Q P : WpSpec mpredI A R) : mpredI :=
     wpspec_wand Q P.
 
-  Definition spec_entails {A R} (Q P : WpSpec mpredI A R) :=
+  Definition spec_entails {A R} (Q P : WpSpec mpredI A R) : Prop :=
     wpspec_entails Q P.
 
   Lemma spec_entails_impl {A R} Q P :
