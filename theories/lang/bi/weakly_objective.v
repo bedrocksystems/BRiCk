@@ -205,6 +205,17 @@ Section weakly_obj.
     apply big_sepMS_mono => ? /HΦ ?. by apply weakly_objective.
   Qed.
 
+  Lemma big_sepL2_weakly_objective_lookup {A B}
+    (Φ : nat → A → B → monPred) (l : list A) (k : list B) :
+    (∀ n x y, l !! n = Some x → k !! n = Some y → WeaklyObjective (Φ n x y)) →
+    WeaklyObjective ([∗ list] n↦x; y ∈ l; k, Φ n x y)%I.
+  Proof.
+    intros HW. rewrite big_sepL2_alt.
+    apply /and_weakly_objective /big_sepL_weakly_objective_lookup.
+    move => n [x y] /= /lookup_zip_with_Some [_] [_] [] [<- <-] [].
+    apply HW.
+  Qed.
+
   #[global] Instance big_sepL_weakly_objective {A}
     (Φ : nat → A → monPred) (l : list A) `{∀ n x, WeaklyObjective (Φ n x)} :
     WeaklyObjective ([∗ list] n↦x ∈ l, Φ n x)%I.
@@ -222,4 +233,9 @@ Section weakly_obj.
     WeaklyObjective ([∗ mset] y ∈ X, Φ y)%I.
   Proof. by apply big_sepMS_weakly_objective_elem_of, _. Qed.
 
+  #[global] Instance big_sepL2_weakly_objective {A B}
+    (Φ : nat → A → B → monPred) (l : list A) (k : list B)
+    `{∀ n x y, WeaklyObjective (Φ n x y)} :
+    WeaklyObjective ([∗ list] n↦x; y ∈ l; k, Φ n x y)%I.
+  Proof. by apply big_sepL2_weakly_objective_lookup, _. Qed.
 End weakly_obj.
