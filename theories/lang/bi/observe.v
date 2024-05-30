@@ -326,6 +326,13 @@ Section bi.
   Global Instance observe_2_from_false_2 Q P : Observe2 Q P False.
   Proof. iDestruct 2 as "[]". Qed.
 
+  Global Instance observe_persistently Q P :
+    Observe Q P → Observe Q (<pers> P).
+  Proof. intros. iIntros "#P". iApply (observe with "P"). Qed.
+  Global Instance observe_2_persistently Q P1 P2 :
+    Observe2 Q P1 P2 → Observe2 Q (<pers> P1) (<pers> P2).
+  Proof. intros. iIntros "#P1 #P2". iApply (observe_2 with "P1 P2"). Qed.
+
   Global Instance observe_intuitionistically Q P :
     Observe Q P → Observe Q (□ P).
   Proof. intros. iIntros "#P". iApply (observe with "P"). Qed.
