@@ -53,7 +53,7 @@
 </div>
 
 <div class="doc">
-<a id="lab222"></a><h1 class="section">Proof mode instances</h1>
+<a id="lab247"></a><h1 class="section">Proof mode instances</h1>
 
 <div class="paragraph"> </div>
 
@@ -109,7 +109,7 @@ Additional instances are available in
 
 <div class="paragraph"> </div>
 
-<a id="lab223"></a><h1 class="section">Instances for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at"><span class="id" title="abbreviation">_at</span></a></span></h1>
+<a id="lab248"></a><h1 class="section">Instances for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at"><span class="id" title="abbreviation">_at</span></a></span></h1>
 
 </div>
 <div class="code">
@@ -528,7 +528,7 @@ TODO (PDS): The following two instances suggest we should
 </div>
 
 <div class="doc">
-<a id="lab224"></a><h1 class="section">Instances for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_offsetR"><span class="id" title="abbreviation">_offsetR</span></a></span></h1>
+<a id="lab249"></a><h1 class="section">Instances for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_offsetR"><span class="id" title="abbreviation">_offsetR</span></a></span></h1>
 
 </div>
 <div class="code">
@@ -802,7 +802,7 @@ Framing between <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp
 <div class="doc">
 TODO (PDS): Both the preceding and the following would make TC
       resolution diverge. <span class="inlinecode"><span class="id" title="keyword">Hint</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#Cut"><span class="id" title="abbreviation">Cut</span></a></span> might help, as might enabling the
-      IPM's <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.monpred_own.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span> framing instances to apply to <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at"><span class="id" title="abbreviation">_at</span></a></span>. 
+      IPM's <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.monpred_invariants.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span> framing instances to apply to <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at"><span class="id" title="abbreviation">_at</span></a></span>. 
 </div>
 <div class="code">
 &nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a id="_offsetR_instances.todo" class="idref" href="#_offsetR_instances.todo"><span class="id" title="section">todo</span></a>.<br/>
@@ -918,7 +918,7 @@ TODO (proofmode): Given <span class="inlinecode"><a class="idref" href="bedrock.
 </div>
 
 <div class="doc">
-<a id="lab225"></a><h1 class="section">Instances for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#pureR"><span class="id" title="definition">pureR</span></a></span></h1>
+<a id="lab250"></a><h1 class="section">Instances for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#pureR"><span class="id" title="definition">pureR</span></a></span></h1>
 
 </div>
 <div class="code">
@@ -1163,11 +1163,11 @@ Feed the <span class="inlinecode"><span class="id" title="var">iFrame</span></sp
 Feeding the <span class="inlinecode"><span class="id" title="var">iInv</span></span> tactic to open invariants written <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#pureR"><span class="id" title="definition">pureR</span></a></span> <span class="inlinecode"><span class="id" title="var">Inv</span></span>
   or <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.offset"><span class="id" title="definition">offset</span></a></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#pureR"><span class="id" title="definition">pureR</span></a></span> <span class="inlinecode"><span class="id" title="var">Inv</span></span> doesn't currently seem possible. The
   generality of the proof mode's <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.classes.html#IntoAcc"><span class="id" title="class">IntoAcc</span></a></span> and <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.classes.html#accessor"><span class="id" title="definition">accessor</span></a></span> wrt
-  arbitrary modalities doesn't work well with <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.monpred_own.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span>. We can
+  arbitrary modalities doesn't work well with <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.monpred_invariants.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span>. We can
   specialize those to fancy updates (which covers all
   invariant-related <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.classes.html#IntoAcc"><span class="id" title="class">IntoAcc</span></a></span> instances in Iris), but a problem
   remains. The underlying lemma <span class="inlinecode"><span class="id" title="var">coq_tactics.tac_inv_elim</span></span> generates
-  an entailment involving <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.monpred_own.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span> that the tactic <span class="inlinecode"><span class="id" title="var">iInv</span></span> seems
+  an entailment involving <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.monpred_invariants.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span> that the tactic <span class="inlinecode"><span class="id" title="var">iInv</span></span> seems
   unable to handle. 
 </div>
 <div class="code">

@@ -271,11 +271,11 @@ corresponding to the following C++ struct:
 <div class="paragraph"> </div>
 
 <br/>
-<span class="inlinecode"><span class="id" title="var">template</span> &lt;<span class="id" title="var">typename</span> <a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a> = <span class="id" title="var">int</span>&gt;<br/>
+<span class="inlinecode"><span class="id" title="var">template</span> &lt;<span class="id" title="var">typename</span> <a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a> = <span class="id" title="var">int</span>&gt;<br/>
 <span class="id" title="keyword">struct</span> <span class="id" title="var">Tree</span> {<br/>
-&nbsp;&nbsp;<a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_data"><span class="id" title="axiom">_data</span></a>;<br/>
-&nbsp;&nbsp;<span class="id" title="var">Tree</span>&lt;<a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a>&gt;* <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_left"><span class="id" title="axiom">_left</span></a>;<br/>
-&nbsp;&nbsp;<span class="id" title="var">Tree</span>&lt;<a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a>&gt;* <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_right"><span class="id" title="axiom">_right</span></a>;<br/>
+&nbsp;&nbsp;<a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_data"><span class="id" title="axiom">_data</span></a>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">Tree</span>&lt;<a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a>&gt;* <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_left"><span class="id" title="axiom">_left</span></a>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">Tree</span>&lt;<a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a>&gt;* <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_right"><span class="id" title="axiom">_right</span></a>;<br/>
 };
 <div class="paragraph"> </div>
 
@@ -686,14 +686,14 @@ trees of <span class="inlinecode"><span class="id" title="var">Entries</span></s
 <div class="paragraph"> </div>
 
 <br/>
-<span class="inlinecode">&nbsp;&nbsp;<span class="id" title="var">template</span>&lt;<span class="id" title="var">typename</span> <a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a>&gt;<br/>
+<span class="inlinecode">&nbsp;&nbsp;<span class="id" title="var">template</span>&lt;<span class="id" title="var">typename</span> <a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a>&gt;<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">struct</span> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#Entry"><span class="id" title="record">Entry</span></a> {<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_range"><span class="id" title="axiom">_range</span></a>;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_payload"><span class="id" title="axiom">_payload</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#_payload"><span class="id" title="axiom">_payload</span></a>;<br/>
 &nbsp;&nbsp;};<br/>
 <br/>
-&nbsp;&nbsp;<span class="id" title="var">template</span>&lt;<span class="id" title="var">typename</span> <a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a>&gt;<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">EntryTree</span> = <span class="id" title="var">Tree</span>&lt;<a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#Entry"><span class="id" title="record">Entry</span></a>&lt;<a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a>&gt;&gt;;
+&nbsp;&nbsp;<span class="id" title="var">template</span>&lt;<span class="id" title="var">typename</span> <a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a>&gt;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">EntryTree</span> = <span class="id" title="var">Tree</span>&lt;<a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#Entry"><span class="id" title="record">Entry</span></a>&lt;<a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a>&gt;&gt;;
 <div class="paragraph"> </div>
 
 </span>
@@ -712,7 +712,7 @@ trees of <span class="inlinecode"><span class="id" title="var">Entries</span></s
 </div>
 
 <div class="doc">
-The Coq model of an <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#Entry"><span class="id" title="record">Entry</span></a></span> tracks <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a></span>s and payloads of type <span class="inlinecode"><a class="idref" href="bedrock.prelude.elpi.derive_test.html#Alias.T"><span class="id" title="inductive">T</span></a></span>. 
+The Coq model of an <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.howto_sequential.html#Entry"><span class="id" title="record">Entry</span></a></span> tracks <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.stmt.html#Range"><span class="id" title="constructor">Range</span></a></span>s and payloads of type <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#T"><span class="id" title="abbreviation">T</span></a></span>. 
 </div>
 <div class="code">
 <span class="id" title="keyword">Record</span> <a id="Entry" class="idref" href="#Entry"><span class="id" title="record">Entry</span></a> {<a id="T:83" class="idref" href="#T:83"><span class="id" title="binder">T</span></a> : <span class="id" title="keyword">Type</span>} :=<br/>

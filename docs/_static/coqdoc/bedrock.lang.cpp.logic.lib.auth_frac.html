@@ -41,12 +41,12 @@
 </div>
 
 <div class="doc">
-<a id="lab309"></a><h1 class="section">Copyright (C) 2022 BedRock Systems, Inc.</h1>
+<a id="lab334"></a><h1 class="section">Copyright (C) 2022 BedRock Systems, Inc.</h1>
 
-<a id="lab310"></a><h1 class="section">All rights reserved.</h1>
+<a id="lab335"></a><h1 class="section">All rights reserved.</h1>
 
  *
-<a id="lab311"></a><h1 class="section">SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.</h1>
+<a id="lab336"></a><h1 class="section">SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.</h1>
 
  
 </div>
@@ -58,7 +58,7 @@
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.spec.frac_splittable.html#"><span class="id" title="library">bedrock.lang.bi.spec.frac_splittable</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.html#"><span class="id" title="library">bedrock.lang.cpp.logic</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.algebra.frac_auth.html#"><span class="id" title="library">bedrock.lang.algebra.frac_auth</span></a>.<br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.own_instances.html#"><span class="id" title="library">bedrock.lang.cpp.logic.own_instances</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.base_logic.own_instances.html#"><span class="id" title="library">bedrock.lang.base_logic.own_instances</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.proofmode.own_obs.html#"><span class="id" title="library">bedrock.lang.proofmode.own_obs</span></a>.<br/>
 
 <br/>
@@ -73,21 +73,21 @@ Well-typed ghost resources:
 <div class="paragraph"> </div>
 
 <ul class="doclist">
-<li> <span class="inlinecode"><span class="id" title="var">afrac.auth</span></span> <span class="inlinecode">(<span class="id" title="var">g</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">afrac.gname</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.prelude.numbers.html#Qp"><span class="id" title="module">Qp</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.mpred.html#mpred"><span class="id" title="definition">mpred</span></a></span>
+<li> <span class="inlinecode"><span class="id" title="var">afrac.auth</span></span> <span class="inlinecode">(<a class="idref" href="bedrock.prelude.lens.html#iso.g"><span class="id" title="projection">g</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">afrac.gname</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.prelude.numbers.html#Qp"><span class="id" title="module">Qp</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.mpred.html#mpred"><span class="id" title="definition">mpred</span></a></span>
 
 </li>
 </ul>
-represents fractional ownership of ghost cell <span class="inlinecode"><span class="id" title="var">g</span></span> currently containing
+represents fractional ownership of ghost cell <span class="inlinecode"><a class="idref" href="bedrock.prelude.lens.html#iso.g"><span class="id" title="projection">g</span></a></span> currently containing
 the authoritative state <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span>
 
 <div class="paragraph"> </div>
 
 <ul class="doclist">
-<li> <span class="inlinecode"><span class="id" title="var">afrac.frag</span></span> <span class="inlinecode">(<span class="id" title="var">g</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">afrac.gname</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.prelude.numbers.html#Qp"><span class="id" title="module">Qp</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.mpred.html#mpred"><span class="id" title="definition">mpred</span></a></span>
+<li> <span class="inlinecode"><span class="id" title="var">afrac.frag</span></span> <span class="inlinecode">(<a class="idref" href="bedrock.prelude.lens.html#iso.g"><span class="id" title="projection">g</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">afrac.gname</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.prelude.numbers.html#Qp"><span class="id" title="module">Qp</span></a>)</span> <span class="inlinecode">(<a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.destroy.html#A"><span class="id" title="abbreviation">A</span></a>)</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.base_logic.mpred.html#mpred"><span class="id" title="definition">mpred</span></a></span>
 
 </li>
 </ul>
-represents fractional ownership of ghost cell <span class="inlinecode"><span class="id" title="var">g</span></span> currently containing
+represents fractional ownership of ghost cell <span class="inlinecode"><a class="idref" href="bedrock.prelude.lens.html#iso.g"><span class="id" title="projection">g</span></a></span> currently containing
 the fragmentative state <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span>
 
 </div>
