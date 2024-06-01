@@ -100,3 +100,12 @@ Section top_set.
     Proof. intros ?. unfold_leibniz. apply (right_id _ _). Qed.
   End leibniz.
 End top_set.
+
+Lemma union_minus_l `{Set_ A C} (X Y : C) : (X ∪ Y) ∖ X ≡ Y ∖ X.
+Proof. set_solver. Qed.
+Lemma union_minus_l_L `{Set_ A C, !LeibnizEquiv C} (X Y : C) : (X ∪ Y) ∖ X = Y ∖ X.
+Proof. set_solver. Qed.
+Lemma union_minus_r `{Set_ A C} (X Y : C) : (X ∪ Y) ∖ Y ≡ X ∖ Y.
+Proof. set_solver. Qed.
+Lemma union_minus_r_L `{Set_ A C, !LeibnizEquiv C} (X Y : C) : (X ∪ Y) ∖ Y = X ∖ Y.
+Proof. set_solver. Qed.

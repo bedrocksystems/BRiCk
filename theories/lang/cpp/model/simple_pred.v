@@ -13,7 +13,7 @@ Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.fractional.
 Require Import bedrock.lang.bi.cancelable_invariants.
 Require Import bedrock.lang.cpp.bi.cfractional.
-Require Import bedrock.lang.cpp.logic.own_instances.
+Require Import bedrock.lang.base_logic.own_instances.
 
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.option.

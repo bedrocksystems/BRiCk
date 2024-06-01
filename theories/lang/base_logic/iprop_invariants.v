@@ -20,15 +20,13 @@
  * https://gitlab.mpi-sws.org/iris/iris/-/blob/7ccdfe0df5832b69742306302144b5358c9ed843/LICENSE-CODE
  *)
 
-(* NOTES FOR MAINTAINER: this is the iProp instances for invariants. This is
-  needed when mpred is still iProp. Once mpred is fixed to monPred, then this
-  can be removed. *)
+(* The iProp instances for invariants. *)
 Require Import bedrock.lang.proofmode.proofmode.
 
 Require Import bedrock.lang.bi.na_invariants.
 Require Import bedrock.lang.bi.cancelable_invariants.
 Require Import bedrock.lang.bi.invariants.
-Require Import bedrock.lang.cpp.logic.iprop_own.
+Require Import bedrock.lang.base_logic.iprop_own.
 
 (*** Invariants for iProp **)
 (* Copy from
@@ -43,7 +41,7 @@ Section inv.
     iPoseProof (own_inv_acc with "I") as "H"; eauto.
   Qed.
 
-  Lemma inv_alloc N E P : ▷ P ={E}=∗ inv N P.
+  Lemma inv_alloc N E P : ▷ P ⊢ |={E}=> inv N P.
   Proof.
     iIntros "HP". iApply own_inv_to_inv.
     iApply (own_inv_alloc N E with "HP").
@@ -68,7 +66,7 @@ Section na_inv.
 
   Implicit Types (P : iProp Σ).
 
-  Lemma na_inv_alloc p E N P : ▷ P ={E}=∗ na_inv p N P.
+  Lemma na_inv_alloc p E N P : ▷ P ⊢ |={E}=> na_inv p N P.
   Proof.
     iIntros "HP".
     iMod (own_unit (A:=prodUR coPset_disjUR (gset_disjUR positive)) p) as "Hempty".
@@ -133,7 +131,7 @@ Section cinv.
     exists (fresh (G ∪ E')). apply not_elem_of_union, is_fresh.
   Qed.
 
-  Lemma cinv_alloc E N P : ▷ P ={E}=∗ ∃ γ, cinv N γ P ∗ cinv_own γ 1.
+  Lemma cinv_alloc E N P : ▷ P ⊢ |={E}=> ∃ γ, cinv N γ P ∗ cinv_own γ 1.
   Proof.
     iIntros "HP". iMod (cinv_alloc_cofinite ∅ E N) as (γ _) "[Hγ Halloc]".
     iExists γ. iFrame "Hγ". by iApply "Halloc".

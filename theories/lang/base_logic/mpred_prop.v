@@ -12,7 +12,7 @@ lang/bi/prop_constraints.v
 
 *)
 
-Require Import bedrock.lang.cpp.logic.own_instances.
+Require Import bedrock.lang.base_logic.own_instances.
 Require Import bedrock.lang.bi.prop_constraints.
 Require Import bedrock.lang.cpp.logic.pred.
 
