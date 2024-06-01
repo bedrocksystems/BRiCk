@@ -5,5 +5,5 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export bedrock.lang.bi.entailsN.
-Require Export bedrock.lang.cpp.logic.upred_entailsN.
-Require Export bedrock.lang.cpp.logic.monpred_entailsN.
+Require Export bedrock.lang.base_logic.upred_entailsN.
+Require Export bedrock.lang.bi.monpred_entailsN.

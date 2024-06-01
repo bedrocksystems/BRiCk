@@ -12,7 +12,8 @@ Require Import iris.base_logic.lib.own.
 
 Require Import bedrock.lang.bi.embedding.
 Require Import bedrock.lang.bi.own.
-Require Import bedrock.lang.cpp.logic.iprop_own.
+Require Import bedrock.lang.bi.weakly_objective.
+Require Import bedrock.lang.base_logic.iprop_own.
 
 (* Instances for monpred *)
 
@@ -80,6 +81,11 @@ Section monpred_instances.
   #[global] Instance monPred_own_objective γ (a : A) :
     Objective (own γ a).
   Proof. rewrite has_own_monpred_eq. apply _. Qed.
+
+  #[global] Instance monPred_own_weakly_objective γ x :
+    @WeaklyObjective I iPropI (own γ x).
+  Proof. rewrite has_own_monpred_eq. apply _. Qed.
+
 End monpred_instances.
 
 #[global] Instance has_own_unit_monpred {I : biIndex} {Σ} {A : ucmra} `{Hin: inG Σ A} :

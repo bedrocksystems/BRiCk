@@ -10,7 +10,7 @@ Require Import bedrock.lang.algebra.dfrac_agree.
 Require Import bedrock.lang.bi.spec.frac_splittable.
 Require Import bedrock.lang.bi.spec.knowledge.
 Require Import bedrock.lang.cpp.logic.
-Require Import bedrock.lang.cpp.logic.own_instances.
+Require Import bedrock.lang.base_logic.own_instances.
 
 Set Printing Coercions.
 

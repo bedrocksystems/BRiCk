@@ -14,7 +14,7 @@ This is only needed as we instantiate general [bedrock.lang.bi.own] with [iProp]
 *)
 
 Require Import bedrock.lang.bi.prop_constraints.
-Require Export bedrock.lang.cpp.logic.iprop_own.
+Require Export bedrock.lang.base_logic.iprop_own.
 
 #[global] Instance iprop_ghostly {Σ : gFunctors} : Ghostly (iPropI Σ) :=
   {| ghostly_bibupd := _

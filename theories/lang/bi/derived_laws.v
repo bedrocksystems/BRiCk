@@ -268,6 +268,15 @@ Section derived_laws.
     { apply and_intro; apply wand_mono; trivial using or_intro_l, or_intro_r. }
   Qed.
 
+  Lemma equiv_wand_iff_l (P Q R : PROP) `{!Persistent P, !Affine P} :
+    (P ⊢ Q ∗-∗ R) ↔
+    ((P -∗ Q) ⊣⊢ (P -∗ R)).
+  Proof.
+    split; intros H.
+    { iSplit; iIntros "W #P"; iApply (H with "P (W P)"). }
+    iIntros "P". iSplit; iIntros "A"; iRevert "P"; iApply H; eauto.
+  Qed.
+
   (** Lemmas about modalities. *)
 
   Lemma forall_affinely_bot {A} (Φ : A → PROP) (R : relation A) (bot : A) :

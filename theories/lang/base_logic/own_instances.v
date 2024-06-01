@@ -12,7 +12,7 @@ Require Export iris.base_logic.lib.own. (* <- exporting [inG] and [gFunctors] *)
 Require Export bedrock.lang.bi.own. (* <- general [own]. *)
 
 (** Own instances for iProp, currently not exported **)
-(* Require Export bedrock.lang.cpp.logic.iprop_own. *)
+(* Require Export bedrock.lang.base_logic.iprop_own. *)
 
 (** Own instances for monPred, currently exported. **)
-Require Export bedrock.lang.cpp.logic.monpred_own.
+Require Export bedrock.lang.base_logic.monpred_own.

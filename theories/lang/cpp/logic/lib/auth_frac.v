@@ -10,7 +10,7 @@ Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.spec.frac_splittable.
 Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.algebra.frac_auth.
-Require Import bedrock.lang.cpp.logic.own_instances.
+Require Import bedrock.lang.base_logic.own_instances.
 Require Import bedrock.lang.proofmode.own_obs.
 
 Set Printing Coercions.
