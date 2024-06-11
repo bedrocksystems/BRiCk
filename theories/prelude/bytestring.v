@@ -131,7 +131,7 @@ Module Import BS.
     end.
 
   Definition decimal_digit (i : N) : Byte.byte :=
-	  default Byte.x00 $ Byte.of_N $ N.add i 48.
+    default Byte.x00 $ Byte.of_N $ N.add i 48.
   Fixpoint pp_N_aux (fuel : nat) (i : N) (acc : bs) : bs :=
     match fuel, i with
     | O, _ | _, N0 =>
