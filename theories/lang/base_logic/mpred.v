@@ -41,8 +41,11 @@ Section mpred.
 
   (* HACK: this is to prevent IPM from simplifying [mpred] into [monPred].
   Sealing mpred is better *)
-  #[global] Instance : BiBUpd mpredI | 0 := monPred_bi_bupd _ _.
+  #[global] Instance mpred_bi_bupd : BiBUpd mpredI | 0 := monPred_bi_bupd _ _.
   #[global] Instance mpred_bi_fupd `{!invGS Σ} : BiFUpd mpredI | 0 := monPred_bi_fupd _ _.
+  #[global] Instance mpred_bi_bupd_fupd `{!invGS Σ} : BiBUpdFUpd mpredI | 0.
+  Proof. apply _. Qed.
+
   #[global] Instance : BiEntailsN mpredI | 0 := monPred_bi_entailsN.
 
 End mpred.
