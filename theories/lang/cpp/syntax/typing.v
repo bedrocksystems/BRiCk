@@ -132,6 +132,7 @@ Fixpoint type_of (e : Expr) : exprtype :=
   | Ethis t => t
   | Enull => Tnullptr
   | Einitlist _ _ t
+  | Einitlist_union _ _ t
   | Eimplicit_init t => t
   | Enew _ _ _ aty _ _ => Tptr aty
   | Edelete _ _ _ _ => Tvoid
@@ -295,6 +296,7 @@ Fixpoint valcat_of (e : Expr) : ValCat :=
   | Ethis _ => Prvalue
   | Enull => Prvalue
   | Einitlist _ _ _ => Prvalue (* operand | init *)
+  | Einitlist_union _ _ _ => Prvalue (* operand | init *)
   | Eimplicit_init _ =>
     (**
     "References cannot be value-initialized".

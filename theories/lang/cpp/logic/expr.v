@@ -1470,24 +1470,56 @@ Module Type Expr.
         Some $ List.map (fun '(f,e) => f e) $ combine info es
       else None.
 
-    (* The standard allows initializing unions in a variety of ways.
-       See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
-       frontend desugars all of these to initialize exactly one element.
-     *)
-    Definition union_inits (u : decl.Union) (es : list Expr)
-      : option (list Initializer) :=
-      match u.(u_fields) , es with
-      | m :: _ , e :: nil =>
-          let inits :=
-            {| init_path := InitField m.(mem_name)
-            ; init_type := m.(mem_type)
-            ; init_init := e |} :: nil
-          in
-          Some inits
-      | _ , _ => None
+    Fixpoint wp_each (ps : list (ptr * type * Expr)) (free : FreeTemps.t)(Q : FreeTemps.t -> epred) : mpred :=
+      match ps with
+      | nil => Q free
+      | (p, t, e) :: ps =>
+          let* free' := wp_initialize t p e in
+          wp_each ps (free' >*> free) Q
       end.
 
-    (** Using an initializer list to create a `struct` or `union`.
+    Definition wp_struct_initlist (cls : globname) (s : Struct) (es : list Expr) (this : ptr)
+      (Q : FreeTemps.t -> epred) : mpred :=
+      (if bool_decide (length es = length s.(s_bases) + length s.(s_fields)) then
+         let* free :=
+           wp_each ((fun '(b, e) => (this ,, _base cls b.1, Tnamed b.1, e)) <$> combine s.(s_bases) es) FreeTemps.id in
+         let* := wp_init_identity this tu cls in
+         let* free :=
+           wp_each ((fun '(m, e) => (this ., {| f_type := cls ; f_name := m.(mem_name) |}, m.(mem_type), e)) <$> (combine s.(s_fields) $ skipn (length s.(s_bases)) es)) free in
+         this |-> structR cls (cQp.m 1) -* Q free
+       else False)%I.
+
+
+    (* The standard allows initializing unions in a variety of ways.
+       See <https://eel.is/c++draft/dcl.init.aggr#5>. However, the cpp2v
+       frontend desugars all of these to initialize exactly one element.
+     *)
+    Fixpoint find_member (fld : ident) (ls : list Member) {struct ls} : option (nat * Member) :=
+      match ls with
+      | nil => None
+      | m :: ms =>
+          if bool_decide (m.(mem_name) = fld) then
+            Some (0, m)
+          else
+            first S <$> find_member fld ms
+      end.
+
+    Definition wp_union_initlist (cls : globname) (u : decl.Union) (fld : ident) (e : option Expr) (this : ptr)
+                                 (Q : FreeTemps.t -> epred) : mpred :=
+      match find_member fld u.(u_fields) with
+      | None => False (* UNSUPPORTED *)
+      | Some (n, m) =>
+          let field_ptr : ptr := this ., {| f_type := cls ; f_name := fld |} in
+          letI* free :=
+            match e with
+            | Some init => wp_initialize m.(mem_type) field_ptr init
+            | None => default_initialize tu m.(mem_type) field_ptr
+            end
+          in
+          this |-> unionR cls (cQp.m 1) (Some n) -* Q free
+      end%I.
+
+    (** Using an initializer list to create a `struct`.
 
        NOTE clang elaborates the initializer list to directly match the members
        of the target class. For example, consider `struct C { int x; int y{3}; };`
@@ -1500,7 +1532,7 @@ Module Type Expr.
        of anonymous unions, but cpp2v represents anonymous unions as regular
        named unions and the front-end desugars initializer lists accordingly.
      *)
-    Axiom wp_init_initlist_agg : forall cls (base : ptr) cv es ty Q,
+    Axiom wp_init_initlist_struct : forall cls (base : ptr) cv es ty Q,
         decompose_type ty = (cv, Tnamed cls) ->
         (let do_const Q :=
            if q_const cv
@@ -1509,22 +1541,26 @@ Module Type Expr.
          in
          match tu.(types) !! cls with
          | Some (Gstruct s) =>
-             match struct_inits s es with
-             | Some inits =>
-                 letI* := wp_struct_initializer_list tu s ρ cls base inits in
-                   do_const (Q FreeTemps.id)
-             | _ => False
-             end
-         | Some (Gunion u) =>
-            match union_inits u es with
-            | Some inits =>
-                letI* := wp_union_initializer_list tu u ρ cls base inits in
-                do_const (Q FreeTemps.id)
-            | _ => False
-            end
+             letI* free := wp_struct_initlist cls s es base in
+             do_const (Q free)
          | _ => False
          end)
       |-- wp_init ty base (Einitlist es None ty) Q.
+
+    Axiom wp_init_initlist_union : forall cls (base : ptr) fld cv e ty Q,
+        decompose_type ty = (cv, Tnamed cls) ->
+        (let do_const Q :=
+           if q_const cv
+           then wp_make_const tu base (Tnamed cls) Q
+           else Q
+         in
+         match tu.(types) !! cls with
+         | Some (Gunion u) =>
+             letI* free := wp_union_initlist cls u fld e base in
+             do_const (Q free)
+         | _ => False
+         end)
+      |-- wp_init ty base (Einitlist_union fld e ty) Q.
 
   End with_resolve.
 
