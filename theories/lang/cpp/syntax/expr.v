@@ -425,6 +425,7 @@ NOTE: Enumeration constants lack addresses (unlike other globals).
 | Ethis (_ : exprtype)
 | Enull
 | Einitlist (_ : list Expr) (_ : option Expr) (_ : exprtype)
+| Einitlist_union (field : ident) (_ : option Expr) (_ : exprtype)
 
 | Enew (new_fn : obj_name * functype) (new_args : list Expr) (_ : new_form)
        (alloc_ty : exprtype)

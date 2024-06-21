@@ -1099,6 +1099,21 @@ public:
 			// and are retained in the clang AST only for printing purposes.
 			assert(expr->inits().size() == 1);
 			cprint.printExpr(expr->getInit(0), print, li);
+		} else if (auto fld = expr->getInitializedFieldInUnion()) {
+			print.ctor("Einitlist_union");
+			assert(expr->inits().size() <= 1 &&
+				   "init length must be 1 for union initializer");
+			assert(expr->getArrayFiller() == nullptr &&
+				   "array filler not allowed for union initializer");
+
+			cprint.printFieldName(*fld, print, loc::of(expr)) << fmt::nbsp;
+			if (0 < expr->inits().size()) {
+				guard::some _{print};
+				cprint.printExpr(expr->getInit(0), print, li);
+			} else {
+				print.none();
+			}
+			done(expr, print, cprint);
 		} else {
 			print.ctor("Einitlist");
 
