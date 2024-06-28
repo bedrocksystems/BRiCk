@@ -3,7 +3,6 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import ExtLib.Tactics.Forward.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.

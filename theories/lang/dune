@@ -8,5 +8,5 @@
  (package coq-cpp2v)            ; Adding this line will make your
  ; library installable in the package
 
- (theories bedrock.prelude iris stdpp elpi ExtLib Ltac2)
+ (theories bedrock.prelude iris stdpp elpi Ltac2)
 )
