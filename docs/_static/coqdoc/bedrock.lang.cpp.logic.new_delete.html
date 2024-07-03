@@ -72,34 +72,34 @@
 </div>
 
 <div class="doc">
-<a id="lab283"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_region.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
+<a id="lab299"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_region.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
 
    *
-<a id="lab284"></a><h1 class="section">The semantics of <code>new</code> and <code>delete</code> expressions (including their array forms)</h1>
+<a id="lab300"></a><h1 class="section">The semantics of <code>new</code> and <code>delete</code> expressions (including their array forms)</h1>
 
-<a id="lab285"></a><h1 class="section">are *very* complex in C++. This is due to a litany of corner cases such as:</h1>
+<a id="lab301"></a><h1 class="section">are *very* complex in C++. This is due to a litany of corner cases such as:</h1>
 
-<a id="lab286"></a><h1 class="section">- the need to pair allocation and de-allocation functions</h1>
+<a id="lab302"></a><h1 class="section">- the need to pair allocation and de-allocation functions</h1>
 
-<a id="lab287"></a><h1 class="section">- the existance of placement <code>new</code></h1>
+<a id="lab303"></a><h1 class="section">- the existance of placement <code>new</code></h1>
 
-<a id="lab288"></a><h1 class="section">- the need to handle alignment as well as size.</h1>
+<a id="lab304"></a><h1 class="section">- the need to handle alignment as well as size.</h1>
 
-<a id="lab289"></a><h1 class="section">- the potential for padding bytes.</h1>
+<a id="lab305"></a><h1 class="section">- the potential for padding bytes.</h1>
 
-<a id="lab290"></a><h1 class="section">- the potential to merge allocations. (BRiCk does not attempt to support this)</h1>
-
-   *
-<a id="lab291"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
-
-<a id="lab292"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
-
-<a id="lab293"></a><h1 class="section">the behavior of various constructs.</h1>
+<a id="lab306"></a><h1 class="section">- the potential to merge allocations. (BRiCk does not attempt to support this)</h1>
 
    *
-<a id="lab294"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
+<a id="lab307"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
 
-<a id="lab295"></a><h1 class="section">an issue.</h1>
+<a id="lab308"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
+
+<a id="lab309"></a><h1 class="section">the behavior of various constructs.</h1>
+
+   *
+<a id="lab310"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
+
+<a id="lab311"></a><h1 class="section">an issue.</h1>
 
    
 <div class="paragraph"> </div>
@@ -348,14 +348,14 @@
 
 <div class="doc">
 The C++ standard distinguishes placement/non-allocating forms in
-<a id="lab296"></a><h1 class="section">&lt;https://eel.is/c++draft/new.delete.placement1>.</h1>
+<a id="lab312"></a><h1 class="section">&lt;https://eel.is/c++draft/new.delete.placement1>.</h1>
 
          *
-<a id="lab297"></a><h1 class="section">NOTE: placement &lt;new&gt; is more subtle than the rule described here</h1>
+<a id="lab313"></a><h1 class="section">NOTE: placement &lt;new&gt; is more subtle than the rule described here</h1>
 
-<a id="lab298"></a><h1 class="section">because it can be used to construct an object over an existing</h1>
+<a id="lab314"></a><h1 class="section">because it can be used to construct an object over an existing</h1>
 
-<a id="lab299"></a><h1 class="section">object.</h1>
+<a id="lab315"></a><h1 class="section">object.</h1>
 
          
 </div>
@@ -506,7 +506,7 @@ The C++ standard distinguishes placement/non-allocating forms in
 </div>
 
 <div class="doc">
-<a id="lab300"></a><h3 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_delete"><span class="id" title="abbreviation">wp_delete</span></a></span></h3>
+<a id="lab316"></a><h3 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_delete"><span class="id" title="abbreviation">wp_delete</span></a></span></h3>
 
 </div>
 <div class="code">
@@ -725,9 +725,9 @@ The C++ standard distinguishes placement/non-allocating forms in
 
 <div class="doc">
 <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_operand_delete_default"><span class="id" title="lemma">wp_operand_delete_default</span></a></span> specializes <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_operand_delete"><span class="id" title="axiom">wp_operand_delete</span></a></span> for invocations of
-<a id="lab301"></a><h1 class="section">the form <code>delete p;</code> - where <code>p</code> is a non-null pointer to an object whose</h1>
+<a id="lab317"></a><h1 class="section">the form <code>delete p;</code> - where <code>p</code> is a non-null pointer to an object whose</h1>
 
-<a id="lab302"></a><h1 class="section">most-derived destructor is defined in the current translation unit.</h1>
+<a id="lab318"></a><h1 class="section">most-derived destructor is defined in the current translation unit.</h1>
 
         
 </div>
