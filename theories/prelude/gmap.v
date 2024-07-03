@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2021 BedRock Systems, Inc.
+ * Copyright (c) 2021-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -8,6 +8,7 @@ Require Export stdpp.gmap.
 Require Export stdpp.mapset.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.fin_sets.
+Require Import bedrock.prelude.list_numbers.
 
 (* To upstream to Iris: using [mapseq_eq] directly would unfold a TC opaque
 definition and interfere with TC search. *)
@@ -52,3 +53,11 @@ Section gset_bind.
     gset_bind f {[ a ]} = f a.
   Proof. set_solver. Qed.
 End gset_bind.
+
+Section lookup_insert.
+
+  Lemma lookup_insert_iff `{Countable K, A} (m : gmap K A) k k' a :
+    <[ k := a ]> m !! k' = if bool_decide (k = k') then Some a else m !! k'.
+  Proof. by case: bool_decide_reflect => [<-|?]; rewrite (lookup_insert, lookup_insert_ne). Qed.
+
+End lookup_insert.

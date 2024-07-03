@@ -16,6 +16,19 @@ Require bedrock.prelude.tactics.base_dbs. (* For [br_opacity]; import not requir
 
 #[global] Hint Opaque elem_of : typeclass_instances.
 
+(** ** Missing from Coq's stdlib *)
+
+Lemma not_or {P Q : Prop} : ~ (P ∨ Q) <-> ~ P ∧ ~ Q.
+Proof. tauto. Qed.
+
+Lemma and_proper_l {P Q R} :
+  (P -> (Q <-> R)) -> Q ∧ P <-> R ∧ P.
+Proof. by split => - [] /[swap] /[dup] HP /H /[apply]. Qed.
+
+Lemma and_proper_r {P Q R} :
+  (P -> (Q <-> R)) -> P ∧ Q <-> P ∧ R.
+Proof. by split => - [] /[dup] HP /H /[apply]. Qed.
+
 (** Workaround https://github.com/coq/coq/issues/4230. Taken from Software Foundations. *)
 #[global] Remove Hints Bool.trans_eq_bool : core.
 

@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2021-2022
+ * Copyright (C) BedRock Systems Inc. 2021-2024
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -94,6 +94,29 @@ Section big_op.
   Qed.
 
 End big_op.
+
+Section map_seqZ.
+  #[local] Open Scope Z_scope.
+
+  Lemma big_sepM_map_seqZ `{Monoid A o} {B} (xs : list B) i f :
+    ([^o map] k ↦ x ∈ map_seqZ i xs, f k x) ≡ [^o list] k ↦ x ∈ xs, f (i + Z.of_nat k) x.
+  Proof.
+    elim/rev_ind: xs i => [|x xs IH] i.
+    - by rewrite /= big_opM_empty.
+    -
+      rewrite map_seqZ_snoc big_opL_snoc monoid_comm big_opM_insert.
+      + by apply monoid_proper, IH.
+      + apply map_seqZ_snoc_disjoint.
+  Qed.
+
+  Lemma big_sepM_map_seqZ0 `{Monoid A o} {B} (xs : list B) f :
+    ([^o list] k ↦ x ∈ xs, f k x) ≡ ([^o map] k ↦ x ∈ map_seqZ 0 xs, f (Z.to_nat k) x).
+  Proof.
+    rewrite big_sepM_map_seqZ; f_equiv => i x.
+    by rewrite Z.add_0_l Nat2Z.id.
+  Qed.
+
+End map_seqZ.
 
 (** ** Powers encoded as big ops *)
 (**
