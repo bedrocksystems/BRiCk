@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2022
+ * Copyright (C) BedRock Systems Inc. 2022-2024
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -971,6 +971,14 @@ Section listN.
       by rewrite -N.add_lt_mono_r=> /IH ->.
   Qed.
 
+  Lemma insertN_takeN_dropN (l : list A) (i : N) (x : A) (Hl : (i < lengthN l)%N) :
+    <[i:=x]> l = (takeN i l ++ x :: dropN (i + 1) l).
+  Proof.
+    move: Hl; rewrite /lengthN -{1}(N2Nat.id i) => /N_of_nat_lt_mono => Hlt.
+    rewrite /insertN /list_insertN /takeN /dropN N.add_1_r N2Nat.inj_succ.
+    rewrite insert_take_drop //.
+  Qed.
+
   Lemma list_alterN_insertN xs i f :
     alter f i xs = if xs !! i is Some x then <[i:=f x]> xs else xs.
   Proof. by rewrite list_alterN_alter list_alter_insert. Qed.
@@ -1024,3 +1032,636 @@ Proof.
   rewrite N.recursion_succ// N.lt_succ_r N.lt_eq_cases=> IH.
   case=> [{} /IH IH|H]; by [right|left].
 Qed.
+
+#[global] Notation lengthZ x := (Z.of_N (lengthN x)).
+#[global] Notation replicateZ n := (replicateN (Z.to_N n)).
+
+Section listZ.
+  #[local] Open Scope Z_scope.
+
+  Lemma lengthZ_eq_sub_iff {A} (m n : Z) (xs : list A) :
+    lengthZ xs = m - n <-> lengthN xs = Z.to_N (m - n) ∧ n ≤ m.
+  Proof. lia. Qed.
+
+  #[global] Instance list_lookupZ {A} : Lookup Z A (list A) | 20 :=
+    fun k l =>
+    if bool_decide (0 ≤ k)
+      then l !! (Z.to_nat k)
+      else None.
+
+  #[global] Instance list_insertZ {A} : Insert Z A (list A) | 20 :=
+    fun k a l =>
+    if bool_decide (0 ≤ k)
+      then <[ Z.to_nat k := a ]> l
+      else l.
+
+  Lemma insertZ_eq_insertN {A} (k : Z) x (xs : list A) :
+    <[ k := x ]> xs =
+      if bool_decide (0 ≤ k)
+        then <[ Z.to_N k := x ]> xs
+        else xs.
+  Proof. by rewrite /insert /list_insertZ /list_insertN Z_N_nat. Qed.
+
+  Lemma insertZ_cons_iff {A} x x' (xs : list A) (k : Z) :
+    <[ k := x' ]> (x :: xs) =
+      if bool_decide (k = 0)
+        then x' :: xs
+        else x :: <[ k - 1 := x']> xs.
+  Proof.
+    rewrite /insert /list_insertZ.
+    case: bool_decide_reflect; first last.
+    { move => ?; rewrite !bool_decide_eq_false_2 //; lia. }
+    move => /Zle_lt_or_eq []; first last.
+    - by move => /symmetry_iff -> /=.
+    - move => ?.
+      have ? : k <> 0 by lia.
+      have ? : (0 ≤ k - 1) by lia.
+      rewrite bool_decide_eq_false_2 // bool_decide_eq_true_2 //.
+      rewrite -{1}[k]Z.succ_pred Z2Nat.inj_succ //.
+  Qed.
+
+  Lemma insertZ_cons_z {A} x x' (xs : list A) :
+    <[ 0 := x' ]> (x :: xs) = x' :: xs.
+  Proof. by rewrite insertZ_cons_iff bool_decide_eq_true_2. Qed.
+
+  Lemma insertZ_cons_nz {A} x x' (xs : list A) (k : Z) (Hk : k <> 0) :
+    <[ k := x' ]> (x :: xs) = x :: <[ k - 1 := x']> xs.
+  Proof. by rewrite insertZ_cons_iff bool_decide_eq_false_2. Qed.
+
+  Lemma insertZ_app_iff {A} x' (xs xs' : list A) (k : Z) :
+    <[ k := x' ]> (xs ++ xs') =
+      if bool_decide (k < lengthZ xs)
+        then ((<[ k := x' ]> xs) ++ xs')
+        else (xs ++ <[ k - lengthZ xs := x']> xs').
+  Proof.
+    case: bool_decide_reflect => [|/Z.nlt_ge/Z.ge_le_iff] Hlt.
+    - rewrite /insert /list_insertZ.
+      case: bool_decide_reflect => Hk //.
+      have ? : (Z.to_nat k < length xs)%nat by move: Hlt; rewrite /lengthN; lia.
+      by rewrite insert_app_l.
+    - rewrite /insert /list_insertZ.
+      have ? : (0 ≤ k) by lia.
+      have Hk : (0 ≤ k - lengthZ xs) by lia.
+      have ? : (0 ≤ k - length xs) by move: Hk; rewrite /lengthN; lia.
+      have ? : (0 ≤ lengthZ xs) by lia.
+      have ? : (0 ≤ length xs) by lia.
+      rewrite !bool_decide_eq_true_2 // -insert_app_r //.
+      rewrite /lengthN nat_N_Z // -[X in (X + _)%nat]Nat2Z.id -Z2Nat.inj_add // Zplus_minus //.
+  Qed.
+
+  Lemma insertZ_app_l {A} x' (xs xs' : list A) (k : Z) (Hk : k < lengthZ xs) :
+    <[ k := x' ]> (xs ++ xs') = ((<[ k := x' ]> xs) ++ xs').
+  Proof. by rewrite insertZ_app_iff bool_decide_eq_true_2. Qed.
+
+  Lemma insertZ_app_r {A} x' (xs xs' : list A) (k : Z) (Hk : lengthZ xs ≤ k) :
+    <[ k := x' ]> (xs ++ xs') =
+      (xs ++ <[ k - lengthZ xs := x']> xs').
+  Proof. by rewrite insertZ_app_iff bool_decide_eq_false_2 // Z.nlt_ge. Qed.
+
+  #[local] Lemma bool_decide_refl `{HR : Reflexive A R} (x : A) `{!Decision (R x x)} :
+    bool_decide (R x x) = true.
+  Proof. by apply bool_decide_eq_true_2. Qed.
+
+  #[local] Lemma bool_decide_sub_move_0_r (x y : Z) :
+    bool_decide (x - y = 0) = bool_decide (x = y).
+  Proof. by apply bool_decide_ext, Z.sub_move_0_r. Qed.
+
+  #[local] Lemma bool_decide_lt_irrefl (x : Z) :
+    bool_decide (x < x) = false.
+  Proof. by apply bool_decide_eq_false_2, Z.lt_irrefl. Qed.
+
+  (** [Zarith_simpl] simplifies arithmetic expressions of the form:
+   *    - [x - x]
+   *    - [0 - x]
+   *    - [x - 0]
+   *    - [bool_decide (x - y = 0)] (it becomes [bool_decide (x = y)])
+   *    - [x + 0]
+   *    - [0 + x]
+   *    - [x `min` x]
+   *    - [x `min` y = x]
+   *    - [x `min` y = y]
+   *    - [x `max` x]
+   *    - [x `max` y = x]
+   *    - [bool_decide (R x x)] for any reflexive relation [R]
+   *    - [bool_decide (x < x)]
+   *
+   * Those lemmas, in combination with definition by case of [insertZ] and [lookupZ],
+   * help normalize the list indices and conditions about list indices.
+   *)
+  Definition Zarith_simpl :=
+    (Z.sub_diag, Z.sub_0_l, Z.sub_0_r,
+     @bool_decide_sub_move_0_r,
+     Z.add_0_l, Z.add_0_r,
+     Z.min_id, Z.min_l_iff, Z.min_r_iff,
+     Z.max_id, Z.max_l_iff, Z.max_r_iff,
+     @bool_decide_refl,
+     @bool_decide_lt_irrefl
+    ).
+
+  Lemma insertZ_nil {A} (i : Z) (x : A) : <[i:=x]>[] = [].
+  Proof. rewrite /insert /list_insertZ; case: bool_decide_reflect => //. Qed.
+
+  Lemma lengthN_insertZ {A} (i : Z) (x : A) (xs : list A) :
+    lengthN (<[i:=x]> xs) = lengthN xs.
+  Proof.
+    rewrite /lengthN /insert /list_insertZ.
+    case: bool_decide_reflect => [Hnneg|//].
+    by rewrite insert_length.
+  Qed.
+
+  Lemma insertZ_oob {A} (i : Z) (x : A) (xs : list A) (Hi : (i < 0 ∨ lengthZ xs ≤ i)) :
+    <[i:=x]> xs = xs.
+  Proof.
+    rewrite /insert /list_insertZ.
+    case: Hi => [/Zlt_not_le|] Hi.
+    - by rewrite bool_decide_eq_false_2.
+    - move: Hi; rewrite /lengthN => Hi.
+      rewrite list_insert_ge; last lia.
+      by case: bool_decide_reflect.
+  Qed.
+
+  Definition insertZ_simpl :=
+    (@insertZ_nil, @lengthN_insertZ, @insertZ_cons_iff, @insertZ_app_iff, Zarith_simpl).
+
+  Definition lengthN_simplZ :=
+    (@lengthN_insertZ, @lengthN_simpl, Zarith_simpl).
+
+  Lemma lookupZ_Some_to_nat {A} (xs : list A) (k : Z) x :
+    xs !! k = Some x <-> (0 ≤ k) ∧ xs !! Z.to_nat k = Some x.
+  Proof.
+    rewrite {1}/lookup /list_lookupZ.
+    case: bool_decide_reflect.
+    - tauto.
+    - split => [|[]] //.
+  Qed.
+
+  Lemma lookupZ_Some_to_N {A} (xs : list A) (k : Z) x :
+    xs !! k = Some x <-> (0 ≤ k) ∧ xs !! Z.to_N k = Some x.
+  Proof. by rewrite lookupZ_Some_to_nat /lookupN /list_lookupN Z_N_nat. Qed.
+
+  Lemma lookupZ_None {A} (xs : list A) (k : Z) :
+    xs !! k = None <-> (k < 0 ∨ lengthZ xs ≤ k).
+  Proof.
+    rewrite /lookup /list_lookupZ.
+    case: bool_decide_reflect => Hk.
+    - rewrite lookup_ge_None /lengthN; lia.
+    - split => // ?; lia.
+  Qed.
+
+  Lemma lookupZ_None_inv {A} (xs : list A) (k : Z) :
+    None = xs !! k <-> (k < 0 ∨ lengthZ xs ≤ k).
+  Proof. by rewrite [X in X ↔ _]symmetry_iff lookupZ_None. Qed.
+
+  Lemma lookupZ_is_Some {A} (xs : list A) (k : Z) :
+    is_Some (xs !! k) <-> (0 ≤ k < lengthZ xs).
+  Proof. by rewrite -not_eq_None_Some lookupZ_None not_or Z.nlt_ge Z.nle_gt. Qed.
+
+  Lemma lookupZ_nil {A} (k : Z) :
+    @nil A !! k = None.
+  Proof.
+    rewrite /lookup /list_lookupZ /=.
+    by case: bool_decide_reflect.
+  Qed.
+
+  Lemma lookupZ_app {A} (xs xs' : list A) (k : Z) :
+    (xs ++ xs') !! k =
+      if bool_decide (k < lengthZ xs)
+        then xs !! k
+        else xs' !! (k - lengthZ xs).
+  Proof.
+    rewrite option_eq => x.
+    rewrite lookupZ_Some_to_N.
+    case: bool_decide_reflect => [|] Hk.
+    - rewrite lookupZ_Some_to_N; apply and_proper_r => Hnneg.
+      rewrite lookupN_app_l //; lia.
+    - have ? : (Z.to_N k >= lengthN xs)%N by lia.
+      have ? : (0 ≤ lengthZ xs) by lia.
+      rewrite lookupZ_Some_to_N lookupN_app_r //.
+      rewrite Z2N.inj_sub // N2Z.id.
+      f_equiv; lia.
+  Qed.
+
+  Lemma lookupZ_cons {A} x (xs : list A) (k : Z) :
+    (x :: xs) !! k =
+      if bool_decide (k = 0)
+        then Some x
+        else xs !! (k - 1).
+  Proof.
+    case: bool_decide_reflect => [->|?].
+    - rewrite lookupZ_Some_to_nat //=.
+    - rewrite option_eq => x'.
+      have Hiff : (0 ≤ k <-> 0 ≤ k - 1) by lia.
+      rewrite !lookupZ_Some_to_nat Hiff -{2}[k]Z.succ_pred.
+      apply and_proper_r => Hk.
+      rewrite Z2Nat.inj_succ //.
+  Qed.
+
+  Lemma lookupZ_insertZ {A} x (xs : list A) (k k' : Z) :
+    <[ k' := x ]> xs !! k =
+      if bool_decide (k = k' ∧ 0 ≤ k < lengthZ xs)
+        then Some x
+        else xs !! k.
+  Proof.
+    case: bool_decide_reflect.
+    - rewrite /lengthN => - [] <- [? ?].
+      rewrite /lookup /list_lookupZ /insert /list_insertZ.
+      rewrite bool_decide_eq_true_2 // list_lookup_insert //.
+      lia.
+    -
+      rewrite /lengthN !not_and_l Z.nlt_ge.
+      rewrite /lookup /list_lookupZ /insert /list_insertZ.
+      case: bool_decide_reflect => //.
+      case: bool_decide_reflect => // ? ? [Hk|[Hneg|Hlen]].
+      + rewrite list_lookup_insert_ne //; lia.
+      + contradiction.
+      + have ? : (length xs <= Z.to_nat k)%nat by lia.
+        rewrite !(lookup_ge_None_2, insert_length) //.
+  Qed.
+
+  Lemma lookupZ_insertZ_eq {A} x (xs : list A) (k : Z)
+       (Hk : 0 ≤ k < lengthZ xs) :
+    <[ k := x ]> xs !! k = Some x.
+  Proof. rewrite lookupZ_insertZ bool_decide_eq_true_2 //. Qed.
+
+  Lemma lookupZ_insertZ_neq {A} x (xs : list A) (k k' : Z)
+        (Hkk' : k ≠ k') :
+    <[ k := x ]> xs !! k' = xs !! k'.
+  Proof. by rewrite lookupZ_insertZ bool_decide_eq_false_2 // not_and_l; left. Qed.
+
+  Lemma insertZ_id {A} (xs : list A) (i : Z) x (Hx : xs !! i = Some x) :
+    <[ i := x ]> xs = xs.
+  Proof.
+    move: Hx; rewrite lookupZ_Some_to_nat /insert /list_insertZ => - [Hi Hx].
+    by rewrite bool_decide_eq_true_2 // list_insert_id.
+  Qed.
+
+  Lemma lookupZ_singleton_Some {A} (x y : A) (k : Z) :
+    [x] !! k = Some y <-> x = y ∧ k = 0.
+  Proof.
+    rewrite !(lookupZ_cons, lookupZ_nil).
+    case: bool_decide_reflect.
+    - move => ->; rewrite inj_iff; split => [|[]] //.
+    - split => [|[]] //.
+  Qed.
+
+  Definition lookupZ_simpl :=
+    (@lookupZ_singleton_Some, @lookupZ_cons, @lookupZ_app, @lookupZ_nil, @lookupZ_insertZ,
+       @lookupZ_None, @lookupZ_None_inv, @lookupZ_is_Some, Zarith_simpl).
+
+End listZ.
+
+Section seqZ.
+  #[local] Open Scope Z_scope.
+
+  #[local] Definition seqZ' (from : Z) (to : N) : list Z :=
+    N.peano_rect _
+      (fun from => [])
+      (fun n' seqZ' from => from :: seqZ' (from + 1))
+      to from.
+
+  Definition seqZ (from : Z) (to : Z) : list Z :=
+    seqZ' from (Z.to_N (to - from)).
+
+  Lemma seqZ_oob from to (Hlt : (to <= from)) : seqZ from to = [].
+  Proof. rewrite /seqZ Z_to_N_eq_0 //; lia. Qed.
+
+  Lemma seqZ_nil from : seqZ from from = [].
+  Proof. by rewrite seqZ_oob. Qed.
+
+  Lemma seqZ_cons from to (Hlt : (from < to)) :
+    seqZ from to = from :: seqZ (from + 1) to.
+  Proof.
+    have ? : 0 ≤ Z.pred (to - from) by lia.
+    by rewrite /seqZ -[(to - from)]Z.succ_pred /seqZ' !(Z2Nat.inj_succ, Z.sub_succ_r, Z2N.inj_succ, N.peano_rect_succ).
+  Qed.
+
+  Lemma seqZ_app {from} mid {to} (Hfrom_mid : (from ≤ mid)) (Hmid_to : (mid ≤ to)) :
+    (seqZ from mid ++ seqZ mid to) = seqZ from to.
+  Proof.
+    rewrite /seqZ.
+    have {}Hfrom_mid :  (0 ≤ (mid - from)) by lia.
+    have {}Hmid_to :  (0 ≤ (to - mid)) by lia.
+    have [n Hn] : exists n, n = Z.to_N (mid - from) by exists (Z.to_N (mid - from)).
+    have [m Hm] : exists n, n = Z.to_N (to - mid) by exists (Z.to_N (to - mid)).
+    have Hmn : (n + m)%N = Z.to_N (to - from) by lia.
+    have Hmid : mid = (from + Z.of_N n) by lia.
+    rewrite -{}Hmn -{}Hn -{}Hm {}Hmid {mid to Hfrom_mid Hmid_to}.
+    elim/N.peano_ind: n from => [|n IH] from /=.
+    - by rewrite /= Z.add_0_r.
+    - have Hseq_succ x : seqZ' from (N.succ x) = from :: seqZ' (from + 1) x
+        by rewrite /seqZ' N.peano_rect_succ.
+      rewrite N.add_succ_l !{}Hseq_succ -{}IH.
+      by rewrite N2Z.inj_succ -Z.add_1_l Z.add_assoc.
+  Qed.
+
+  Lemma seqZ_snoc from to (Hlt : (from < to)) :
+    seqZ from to = (seqZ from (to - 1) ++ [to - 1]).
+  Proof.
+    have ? :  (from ≤ to - 1) by lia.
+    have ? :  (to - 1 ≤ to)   by lia.
+    have ? :  (to - 1 < to)   by lia.
+    by rewrite -(seqZ_app (to - 1)) // !(seqZ_cons (to - 1), Z.sub_add, seqZ_nil).
+  Qed.
+
+  Lemma lengthN_seqZ from to :
+    lengthN (seqZ from to) = Z.to_N (to - from).
+  Proof.
+    have [Hle|Hle] : (to <= from ∨ from ≤ to) by lia.
+    - have ? : (to - from <= 0) by lia.
+      by rewrite !(seqZ_oob, Z_to_N_eq_0, lengthN_nil).
+    - elim/Zlt_lower_bound_ind: Hle => {}to IH Hle.
+      have {Hle} [<-|Hlt] : from = to ∨ (from < to) by lia.
+      { rewrite seqZ_nil Z.sub_diag lengthN_nil //. }
+      have ? : (from <= to - 1 < to) by lia.
+      rewrite seqZ_snoc // !lengthN_simplZ {}IH // -[1%N] /(Z.to_N 1).
+      lia.
+  Qed.
+
+  Lemma elem_of_seqZ x i j : x ∈ seqZ i j <-> (i ≤ x < j).
+  Proof.
+    case: (Z.le_ge_cases j i).
+    { move => Hji; rewrite seqZ_oob // elem_of_nil; lia. }
+    move => Hle.
+    elim/Zlt_lower_bound_ind: Hle => {}j IH Hle.
+    move: (Zle_lt_or_eq _ _ Hle) => /or_comm [|Hlt].
+    { move => <-; rewrite seqZ_nil elem_of_nil; lia. }
+    rewrite seqZ_snoc // elem_of_app elem_of_list_singleton.
+    rewrite IH; lia.
+  Qed.
+
+  Lemma NoDup_seqZ i j : NoDup (seqZ i j).
+  Proof.
+    case: (Z.le_ge_cases j i).
+    { move => Hji; rewrite seqZ_oob // elem_of_nil; lia. }
+    move => Hle.
+    elim/Zlt_lower_bound_ind: Hle => {}j IH Hle.
+    move: (Zle_lt_or_eq _ _ Hle) => /or_comm [|Hlt].
+    { move => <-; rewrite seqZ_nil //. }
+    rewrite seqZ_snoc // Permutation_app_comm /=.
+    constructor.
+    - rewrite elem_of_seqZ; lia.
+    - apply: IH; lia.
+  Qed.
+
+End seqZ.
+
+Section sliceZ.
+  #[local] Open Scope Z_scope.
+
+  Definition sliceZ {A} (base i j : Z) (xs : list A) : list A :=
+    dropN (Z.to_N (i - base)) (takeN (Z.to_N (j - base)) xs).
+
+  Lemma sliceZ_crop_l {A} (base i j : Z) (xs : list A) :
+    sliceZ base i j xs = sliceZ base (i `max` base) j xs.
+  Proof.
+    rewrite /sliceZ -Z.sub_max_distr_r Z.sub_diag Z2N.inj_max /= N.max_0_r; f_equal.
+  Qed.
+
+  Lemma sliceZ_crop_r {A} (base i j : Z) (xs : list A) :
+    sliceZ base i j xs = sliceZ base i (j `min` (base + lengthN xs)) xs.
+  Proof.
+    rewrite /sliceZ; f_equal.
+    rewrite -Z.sub_min_distr_r Z.add_simpl_l Z2N.inj_min N2Z.id -takeN_takeN.
+    rewrite (takeN_lengthN (lengthN xs)) //.
+  Qed.
+
+  Lemma sliceZ_crop {A} (base i j : Z) (xs : list A) :
+    sliceZ base i j xs = sliceZ base (i `max` base) (j `min` (base + lengthN xs)) xs.
+  Proof. by rewrite sliceZ_crop_l sliceZ_crop_r. Qed.
+
+  Lemma lengthN_sliceZ {A} (base i j : Z) (xs : list A)
+       (Hi : base ≤ i)
+       (Hj : j - base ≤ lengthN xs) :
+    lengthN (sliceZ base i j xs) = Z.to_N (j - i).
+  Proof.
+    have ? : (Z.to_N (j - base) ≤ lengthN xs)%N by lia.
+    have ? : 0 <= i - base by lia.
+    rewrite /sliceZ lengthN_dropN lengthN_takeN N.min_l // -Z2N.inj_sub //.
+    lia.
+  Qed.
+
+  Lemma sliceZ_self {A} (base i j : Z) (xs : list A) (Hi : i <= base) (Hj : lengthZ xs ≤ j - base) :
+    sliceZ base i j xs = xs.
+  Proof.
+    have Hi_base : (Z.to_N (i - base)) = 0%N by lia.
+    rewrite /sliceZ Hi_base dropN_zero takeN_lengthN //.
+    lia.
+  Qed.
+
+  Lemma sliceZ_nil {A} (base i j : Z) (xs : list A)
+    (Hij : j ≤ i) :
+    sliceZ base i j xs = [].
+  Proof.
+    rewrite /sliceZ; apply dropN_lengthN.
+    rewrite lengthN_takeN. lia.
+  Qed.
+
+  Lemma insertZ_preserves_sliceZ {A} x (base i j : Z) k (xs : list A)
+    (Hx : ¬ i ≤ base + k < j) :
+    sliceZ base i j (<[k := x]> xs) = sliceZ base i j xs.
+  Proof.
+    rewrite /sliceZ.
+    case: (Z.le_gt_cases (j - base) k) => [/Z.ge_le_iff Hj_le_k|Hk_lt_j].
+    { rewrite insertZ_eq_insertN.
+      case: bool_decide_reflect => [Hnneg|//].
+      rewrite takeN_insertN_ge //; lia. }
+    rewrite insertZ_eq_insertN.
+    case: bool_decide_reflect => [Hnneg|//].
+    have ? :  (Z.to_N k < Z.to_N (j - base))%N by lia.
+    rewrite takeN_insertN_lt //.
+    have ? : (Z.to_N k < Z.to_N (i - base))%N by lia.
+    rewrite dropN_insertN_lt //; lia.
+  Qed.
+
+  Lemma sliceZ_cons {A} x (base i j : Z) (xs : list A)
+    (Hi : base <= i)
+    (Hij : i < j)
+    (Hx : xs !! (i - base) = Some x) :
+    sliceZ base i j xs = x :: sliceZ base (i + 1) j xs.
+  Proof.
+    have Hplus_one : Z.to_N (i + 1 - base) = (Z.to_N (i - base) + 1)%N by lia.
+    rewrite /sliceZ Hplus_one -dropN_lookupN //.
+    move: Hx; rewrite lookupZ_Some_to_N lookupN_takeN //.
+    - by case.
+    - lia.
+  Qed.
+
+  Lemma sliceZ_snoc {A} x (base i j : Z) (xs : list A)
+    (Hbase_j : base < j)
+    (Hij : i < j)
+    (Hx : xs !! (j - 1 - base) = Some x) :
+    sliceZ base i j xs = sliceZ base i (j - 1) xs ++ [x].
+  Proof.
+    rewrite !(sliceZ_crop_l _ i).
+    have {}Hij : i `max` base < j by lia.
+    move: (i `max` base) (Z.le_max_r i base) Hij => {}i Hbase_i Hij.
+    have ? : 0 ≤ i - base by lia.
+    rewrite /sliceZ !dropN_takeN -takeN_S_r.
+    - f_equal; lia.
+    - move: Hx; rewrite lookupZ_Some_to_N => - [] ? Hx.
+      rewrite lookupN_dropN -Hx.
+      f_equal; lia.
+  Qed.
+
+  Lemma sliceZ_cons_insertZ {A} x (base i j : Z) (xs : list A)
+    (Hbase_i : base <= i)
+    (Hij : i < j)
+    (Hi_len : i < base + lengthZ xs) :
+    sliceZ base i j (<[ i - base := x ]> xs) = x :: sliceZ base (i + 1) j xs.
+  Proof.
+    have ? : (Z.to_N (i - base) < lengthN xs)%N by lia.
+    have ? :  ¬ i + 1 ≤ base + (i - base) < j by lia.
+    have ? : 0 ≤ i - base < lengthZ xs by lia.
+    rewrite (sliceZ_cons x) ?(insertZ_preserves_sliceZ, lookupZ_insertZ_eq) //.
+  Qed.
+
+  Lemma sliceZ_snoc_insertZ {A} x (base i j : Z) (xs : list A)
+    (Hij : i < j)
+    (Hbase_j : base < j)
+    (Hj_len : j ≤ base + lengthZ xs) :
+    sliceZ base i j (<[ j - 1 - base := x ]> xs) = sliceZ base i (j - 1) xs ++ [x].
+  Proof.
+    have ? : (j - 1 - base < lengthZ xs) by lia.
+    have ? : ¬ i ≤ base + (j - 1 - base) < j - 1 by lia.
+    have ? : 0 ≤ j - 1 - base < lengthZ xs by lia.
+    rewrite (sliceZ_snoc x) // ?(insertZ_preserves_sliceZ, lookupZ_insertZ_eq) //.
+  Qed.
+
+  Lemma sliceZ_app {A} (base i j k : Z) (xs : list A)
+    (Hij : i <= j)
+    (Hjk : j ≤ k) :
+    (sliceZ base i j xs ++ sliceZ base j k xs) = sliceZ base i k xs.
+  Proof.
+    rewrite !(sliceZ_crop_l _ i) !(sliceZ_crop_r _ _ k).
+    case: (Z.le_ge_cases j (i `max` base)) => [Hij'|].
+    { rewrite (sliceZ_nil _ _ j) //= (sliceZ_crop_l _ j).
+      f_equal; lia. }
+    move: (i `max` base) (Z.le_max_r i base) => {}i Hbase_i {}Hij.
+    case: (Z.le_ge_cases (k `min` (base + lengthZ xs)) j) => [Hjk'|].
+    { rewrite (sliceZ_nil _ j) // app_nil_r (sliceZ_crop_r _ _ j).
+      f_equal; lia. }
+    move: (k `min` (base + lengthZ xs)) (Z.le_min_r k (base + lengthZ xs)) => {}k Hk_len {}Hjk.
+
+    elim/Zlt_lower_bound_ind: Hjk Hk_len => {}k IH Hjk Hk_len.
+    case: (Zle_lt_or_eq _ _ Hjk) IH => [{}Hjk IH | <- _]; first last.
+    - by rewrite [X in _ ++ X] sliceZ_nil // app_nil_r.
+    - have Hlt : (0 ≤ k - 1 - base < lengthZ xs) by lia.
+      move: (Hlt) => /lookupZ_is_Some [x Hx].
+      have ? :  base < k by lia.
+      have ? :  j ≤ k - 1 < k by lia.
+      have ? :  i < k by lia.
+      have ? :  k - 1 ≤ base + lengthZ xs by lia.
+      rewrite [X in _ ++ X] (sliceZ_snoc x) // assoc IH // -(sliceZ_snoc x) //.
+  Qed.
+
+  Lemma sliceZ_explode {A} x (base i j k : Z) (xs : list A)
+    (Hx : xs !! (j - base) = Some x)
+    (Hbase_j : base ≤ j)
+    (Hij : i ≤ j)
+    (Hjk : j < k) :
+    (sliceZ base i j xs ++ [x] ++ sliceZ base (j + 1) k xs) = sliceZ base i k xs.
+  Proof. rewrite /= -sliceZ_cons // sliceZ_app //; lia. Qed.
+
+  Lemma sliceZ_explode_insert {A} x (base i j k : Z) (xs : list A)
+    (Hbase_j : base ≤ j)
+    (Hij : i ≤ j)
+    (Hjk : j < k)
+    (Hj_len : j < base + lengthZ xs) :
+    (sliceZ base i j xs ++ [x] ++ sliceZ base (j + 1) k xs) = sliceZ base i k (<[ j - base := x]> xs).
+  Proof.
+    have ? : ((j - base) < lengthZ xs) by lia.
+    have ? : ¬ j + 1 ≤ base + (j - base) < k by lia.
+    have ? : ¬ i ≤ base + (j - base) < j by lia.
+    have ? : 0 ≤ j - base < lengthZ xs by lia.
+    rewrite -(sliceZ_explode x _ i j k) ?(lookupZ_insertZ_eq) // !insertZ_preserves_sliceZ //.
+  Qed.
+
+  Lemma sliceZ_max_r {A} base i j (xs : list A) :
+    sliceZ base i (i `max` j) xs = sliceZ base i j xs.
+  Proof.
+    case: (Z.le_ge_cases i j) => Hij.
+    - rewrite Z.max_r //.
+    - rewrite Z.max_l // !sliceZ_nil //.
+  Qed.
+
+  Lemma sliceZ_min_l {A} base i j (xs : list A) :
+    sliceZ base (i `min` j) j xs = sliceZ base i j xs.
+  Proof.
+    case: (Z.le_ge_cases i j) => Hij.
+    - rewrite Z.min_l //.
+    - rewrite Z.min_r // !sliceZ_nil //.
+  Qed.
+
+  Lemma takeN_sliceZ {A} base i j k (xs : list A) (Hbase_i : (base ≤ i)) :
+    takeN (Z.to_N (j - i)) (sliceZ base i k xs) = sliceZ base i (j `min` k) xs.
+  Proof.
+    have ? : (0 ≤ i - base) by lia.
+    have ? :  (0 ≤ (j - i) `max` 0) by lia.
+    have Hi_cancel : ((i - base) + (j - i) = j - base) by lia.
+    rewrite -(sliceZ_max_r _ _ k) -(sliceZ_max_r _ _ (j `min` k)) /sliceZ.
+    rewrite takeN_dropN_commute takeN_takeN -(Z_to_N_max_0 (j - i)) -Z2N.inj_add //.
+    rewrite -Z.add_max_distr_l Hi_cancel Z.add_0_r Z.sub_max_distr_r -Z2N.inj_min.
+    by rewrite Z.sub_min_distr_r Z.max_min_distr Z.max_comm.
+  Qed.
+
+  Lemma dropN_sliceZ {A} base i j k (xs : list A) (Hbase_i : (base ≤ i)) :
+    dropN (Z.to_N (j - i)) (sliceZ base i k xs) = sliceZ base (i `max` j) k xs.
+  Proof.
+    have ? : (0 ≤ i - base) by lia.
+    have Hi_cancel : (j - i + (i - base) = j - base) by lia.
+    have ? :  (0 ≤ (j - i) `max` 0) by lia.
+    rewrite [X in _ = X]sliceZ_crop_l  /sliceZ dropN_dropN.
+    rewrite -!Z.sub_max_distr_r Z.sub_diag Z_to_N_max_0.
+    by rewrite -(Z_to_N_max_0 (j - i)) -Z2N.inj_add // -Z.add_max_distr_r Z.add_0_l Hi_cancel Z.max_comm.
+  Qed.
+
+  Lemma sliceZ_insertN {A} base i j k (xs : list A) x
+          (Hbase_i : (base ≤ i))
+          (Hij : (i ≤ j))
+          (Hjk : (j < k))
+          (Hk_len : (k ≤ base + lengthZ xs)) :
+    sliceZ base i k (<[ j - base := x ]> xs) = <[ j - i := x ]> (sliceZ base i k xs).
+  Proof.
+    have ? :  ¬ (i ≤ base + (j - base) < j) by lia.
+    have ? : (i ≤ j + 1) by lia.
+    have ? : (j ≤ k) by lia.
+    have ? : (0 ≤ j - i) by lia.
+    have ? : (Z.to_N (j - i) < Z.to_N (k - i))%N by lia.
+    have ? : (base ≤ j) by lia.
+    have ? : (j < base + lengthZ xs) by lia.
+    have ? : (j - base < lengthZ xs) by lia.
+    have ? : (k - base ≤ lengthZ xs) by lia.
+    rewrite -(sliceZ_app _ _ j) // insertZ_preserves_sliceZ // sliceZ_cons_insertZ //.
+    rewrite insertZ_eq_insertN insertN_takeN_dropN ?lengthN_sliceZ //.
+    rewrite N.add_1_r -Z2N.inj_succ // Zminus_succ_l -Z.add_1_r.
+    rewrite takeN_sliceZ // dropN_sliceZ // Z.min_l // Z.max_r //.
+    by rewrite bool_decide_eq_true_2.
+  Qed.
+
+  Lemma lengthN_sliceZ_le {A} (base i j : Z) (xs : list A) :
+    (lengthN (sliceZ base i j xs) ≤ lengthN xs)%N.
+  Proof. rewrite sliceZ_crop lengthN_sliceZ; lia. Qed.
+
+  Lemma lengthZ_sliceZ_iff {A} (base i j : Z) (xs : list A) :
+    lengthZ (sliceZ base i j xs) = j - i <-> i = j ∨ base ≤ i ∧ i < j ∧ j ≤ base + lengthN xs.
+  Proof.
+    split => [|[]].
+    - move => Hlen.
+      move: Hlen; rewrite sliceZ_crop Z.min_comm.
+      case: (Z.max_spec i base);
+        case: (Z.min_spec (base + lengthZ xs) j)
+          => - [] Hj_len -> [] Hbase_i ->;
+            rewrite lengthN_sliceZ //; try lia.
+    - move => <-.
+      rewrite Z.sub_diag sliceZ_crop lengthN_sliceZ; [|lia|lia].
+      rewrite Z_of_N_Zto_N_eq_max Z.max_r // Z.le_sub_0.
+      trans i => //; [apply Z.le_min_l | apply Z.le_max_l].
+    - move => [Hbase_i] [Hij Hj_len].
+      have ? : j - base ≤ lengthZ xs by lia.
+      have ? : 0 ≤ j - i by lia.
+      rewrite lengthN_sliceZ // Z2N.id //.
+  Qed.
+
+End sliceZ.
+
+#[global] Hint Opaque sliceZ : typeclass_instances br_opacity.

@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2021-2022
+ * Copyright (C) BedRock Systems Inc. 2021-2024
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -433,6 +433,15 @@ Proof. intros n1 n2. lia. Qed.
 
 #[global] Instance Z_pred_inj : Inj (=) (=) Z.pred.
 Proof. intros n1 n2. lia. Qed.
+
+Lemma Z_to_N_eq_0 n (Hn : (n ≤ 0)%Z) : Z.to_N n = 0%N.
+Proof. case: n Hn => //. Qed.
+
+Lemma Z_of_N_Zto_N_eq_max x : Z.of_N (Z.to_N x) = (x `max` 0)%Z.
+Proof. lia. Qed.
+
+Lemma Z_to_N_max_0 n : Z.to_N (n `max` 0) = Z.to_N n.
+Proof. by rewrite -(inj_iff Z.of_N) !Z_of_N_Zto_N_eq_max -Z.max_assoc Z.max_id. Qed.
 
 (** Shorter and more memorable name. *)
 Lemma Z_ext n m : (∀ i, Z.testbit n i = Z.testbit m i) -> n = m.

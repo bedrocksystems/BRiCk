@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-23
+ * Copyright (C) BedRock Systems Inc. 2020-2024
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -8,6 +8,7 @@ Require Export stdpp.fin_sets.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.sets.
 Require Import bedrock.prelude.list.
+Require Import bedrock.prelude.list_numbers.
 
 (** * Small extensions to [stdpp.fin_sets]. *)
 #[local] Set Default Proof Using "Type*".
@@ -311,3 +312,28 @@ Section fin_set.
     - intros (Y & ? & ? & ?). split; first done. rewrite set_not_Forall. by exists Y.
   Qed.
 End fin_set.
+
+Section set_seqZ.
+  #[local] Open Scope Z_scope.
+
+  Definition set_seqZ `{!Singleton Z C, !Union C, !Empty C} (i j : Z) : C :=
+    list_to_set (seqZ i j).
+
+  Section dom_seqZ.
+    Context `{!ElemOf Z D, !Empty D, !Singleton Z D, !Union D}.
+
+    Lemma elem_of_set_seqZ `{!SemiSet Z D} x i j : x ∈ (set_seqZ i j : D) <-> (i ≤ x < j).
+    Proof.
+      by rewrite /set_seqZ elem_of_list_to_set elem_of_seqZ.
+    Qed.
+
+    Lemma size_set_seqZ `{!Intersection D, !Difference D, !Elements Z D, !FinSet Z D} i j :
+      size (set_seqZ i j : D) = Z.to_nat (j - i).
+    Proof.
+      have ? := NoDup_seqZ i j.
+      by rewrite /set_seqZ size_list_to_set // -(inj_iff N.of_nat) [N.of_nat _]lengthN_seqZ Z_nat_N.
+    Qed.
+
+  End dom_seqZ.
+
+End set_seqZ.
