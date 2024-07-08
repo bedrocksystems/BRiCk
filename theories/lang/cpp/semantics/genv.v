@@ -177,20 +177,18 @@ Qed.
     - This does not (currently) account for visibility, e.g. with anonymous namespaces
     - This lemma only covers type declarations.
  *)
-Lemma ODR : forall {σ tu1 tu2},
+Lemma ODR {σ tu1 tu2} :
     tu1 ⊧ σ ->
     tu2 ⊧ σ -> forall nm gd1 gd2,
         tu1.(types) !! nm = Some gd1 ->
         tu2.(types) !! nm = Some gd2 ->
         GlobDecl_compat gd1 gd2.
 Proof.
-  intros.
-  destruct H. destruct H0.
-  eapply tu_compat0 in H1.
-  eapply tu_compat1 in H2.
-  Forward.forward_reason.
-  rewrite H0 in H. inversion H; subst.
-  eapply (GlobDecl_ler_join); eauto.
+  move => [Hsub1] [Hsub2] nm gd1 gd2 H1 H2.
+  apply Hsub1 in H1 as [gd1' [Hlookup1 H1]].
+  apply Hsub2 in H2 as [gd2' [Hlookup2 H2]].
+  rewrite Hlookup1 in Hlookup2. simplify_eq.
+  by eapply GlobDecl_ler_join.
 Qed.
 
 (** TODO deprecate this in favor of inlining it *)

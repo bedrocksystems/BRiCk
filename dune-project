@@ -19,7 +19,6 @@
  (synopsis "Frontend and program logic for C++")
  (depends
   (coq (and (>= 8.19.0) (< 8.20~)))
-  (coq-ext-lib (= 0.12.1))
   coq-upoly
   (coq-iris (= dev.2024-03-06.1.9c192c8d))
   coq-lens
