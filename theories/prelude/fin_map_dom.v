@@ -32,19 +32,19 @@ Section dom_map_seqZ.
             !ElemOf Z D, !Empty D, !FinMapDom Z M D}.
 
   Lemma dom_seqZ {A} (start : Z) (xs : list A) :
-    dom (map_seqZ start xs : M A) ≡ (set_seqZ start (start + lengthZ xs) : D).
+    dom (map_seqZ start xs : M A) ≡ (set_rangeZ start (start + lengthZ xs) : D).
   Proof using FinMapDom0.
-    rewrite /set_seqZ.
+    rewrite /set_rangeZ.
     elim: xs start => [|x xs IH] start.
-    - rewrite lengthN_nil /= Z.add_0_r seqZ_oob //; apply dom_empty.
+    - rewrite lengthN_nil /= Z.add_0_r rangeZ_oob //; apply dom_empty.
     - have ? : (start < start + (lengthN xs + 1)%N) by lia.
-      rewrite [X in dom X] /= dom_insert lengthN_cons seqZ_cons //.
+      rewrite [X in dom X] /= dom_insert lengthN_cons rangeZ_cons //.
       rewrite N.add_1_r N2Z.inj_succ -Z.add_succ_comm Z.add_1_r.
       by rewrite /= -IH.
   Qed.
 
-  Lemma dom_seqZ_L `{!LeibnizEquiv D, A} (start : Z) (xs : list A) :
-    dom (map_seqZ start xs : M A) = (set_seqZ start (start + lengthN xs) : D).
+  Lemma dom_seqZ_L `{!LeibnizEquiv D} {A} (start : Z) (xs : list A) :
+    dom (map_seqZ start xs : M A) = (set_rangeZ start (start + lengthN xs) : D).
   Proof using FinMapDom0.
     apply leibniz_equiv, dom_seqZ.
   Qed.

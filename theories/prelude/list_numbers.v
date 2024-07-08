@@ -1310,35 +1310,35 @@ Section listZ.
 
 End listZ.
 
-Section seqZ.
+Section rangeZ.
   #[local] Open Scope Z_scope.
 
-  #[local] Definition seqZ' (from : Z) (to : N) : list Z :=
+  #[local] Definition rangeZ' (from : Z) (to : N) : list Z :=
     N.peano_rect _
       (fun from => [])
-      (fun n' seqZ' from => from :: seqZ' (from + 1))
+      (fun n' rangeZ' from => from :: rangeZ' (from + 1))
       to from.
 
-  Definition seqZ (from : Z) (to : Z) : list Z :=
-    seqZ' from (Z.to_N (to - from)).
+  Definition rangeZ (from : Z) (to : Z) : list Z :=
+    rangeZ' from (Z.to_N (to - from)).
 
-  Lemma seqZ_oob from to (Hlt : (to <= from)) : seqZ from to = [].
-  Proof. rewrite /seqZ Z_to_N_eq_0 //; lia. Qed.
+  Lemma rangeZ_oob from to (Hlt : (to <= from)) : rangeZ from to = [].
+  Proof. rewrite /rangeZ Z_to_N_eq_0 //; lia. Qed.
 
-  Lemma seqZ_nil from : seqZ from from = [].
-  Proof. by rewrite seqZ_oob. Qed.
+  Lemma rangeZ_nil from : rangeZ from from = [].
+  Proof. by rewrite rangeZ_oob. Qed.
 
-  Lemma seqZ_cons from to (Hlt : (from < to)) :
-    seqZ from to = from :: seqZ (from + 1) to.
+  Lemma rangeZ_cons from to (Hlt : (from < to)) :
+    rangeZ from to = from :: rangeZ (from + 1) to.
   Proof.
     have ? : 0 ≤ Z.pred (to - from) by lia.
-    by rewrite /seqZ -[(to - from)]Z.succ_pred /seqZ' !(Z2Nat.inj_succ, Z.sub_succ_r, Z2N.inj_succ, N.peano_rect_succ).
+    by rewrite /rangeZ -[(to - from)]Z.succ_pred /rangeZ' !(Z2Nat.inj_succ, Z.sub_succ_r, Z2N.inj_succ, N.peano_rect_succ).
   Qed.
 
-  Lemma seqZ_app {from} mid {to} (Hfrom_mid : (from ≤ mid)) (Hmid_to : (mid ≤ to)) :
-    (seqZ from mid ++ seqZ mid to) = seqZ from to.
+  Lemma rangeZ_app {from} mid {to} (Hfrom_mid : (from ≤ mid)) (Hmid_to : (mid ≤ to)) :
+    (rangeZ from mid ++ rangeZ mid to) = rangeZ from to.
   Proof.
-    rewrite /seqZ.
+    rewrite /rangeZ.
     have {}Hfrom_mid :  (0 ≤ (mid - from)) by lia.
     have {}Hmid_to :  (0 ≤ (to - mid)) by lia.
     have [n Hn] : exists n, n = Z.to_N (mid - from) by exists (Z.to_N (mid - from)).
@@ -1348,62 +1348,62 @@ Section seqZ.
     rewrite -{}Hmn -{}Hn -{}Hm {}Hmid {mid to Hfrom_mid Hmid_to}.
     elim/N.peano_ind: n from => [|n IH] from /=.
     - by rewrite /= Z.add_0_r.
-    - have Hseq_succ x : seqZ' from (N.succ x) = from :: seqZ' (from + 1) x
-        by rewrite /seqZ' N.peano_rect_succ.
+    - have Hseq_succ x : rangeZ' from (N.succ x) = from :: rangeZ' (from + 1) x
+        by rewrite /rangeZ' N.peano_rect_succ.
       rewrite N.add_succ_l !{}Hseq_succ -{}IH.
       by rewrite N2Z.inj_succ -Z.add_1_l Z.add_assoc.
   Qed.
 
-  Lemma seqZ_snoc from to (Hlt : (from < to)) :
-    seqZ from to = (seqZ from (to - 1) ++ [to - 1]).
+  Lemma rangeZ_snoc from to (Hlt : (from < to)) :
+    rangeZ from to = (rangeZ from (to - 1) ++ [to - 1]).
   Proof.
     have ? :  (from ≤ to - 1) by lia.
     have ? :  (to - 1 ≤ to)   by lia.
     have ? :  (to - 1 < to)   by lia.
-    by rewrite -(seqZ_app (to - 1)) // !(seqZ_cons (to - 1), Z.sub_add, seqZ_nil).
+    by rewrite -(rangeZ_app (to - 1)) // !(rangeZ_cons (to - 1), Z.sub_add, rangeZ_nil).
   Qed.
 
-  Lemma lengthN_seqZ from to :
-    lengthN (seqZ from to) = Z.to_N (to - from).
+  Lemma lengthN_rangeZ from to :
+    lengthN (rangeZ from to) = Z.to_N (to - from).
   Proof.
     have [Hle|Hle] : (to <= from ∨ from ≤ to) by lia.
     - have ? : (to - from <= 0) by lia.
-      by rewrite !(seqZ_oob, Z_to_N_eq_0, lengthN_nil).
+      by rewrite !(rangeZ_oob, Z_to_N_eq_0, lengthN_nil).
     - elim/Zlt_lower_bound_ind: Hle => {}to IH Hle.
       have {Hle} [<-|Hlt] : from = to ∨ (from < to) by lia.
-      { rewrite seqZ_nil Z.sub_diag lengthN_nil //. }
+      { rewrite rangeZ_nil Z.sub_diag lengthN_nil //. }
       have ? : (from <= to - 1 < to) by lia.
-      rewrite seqZ_snoc // !lengthN_simplZ {}IH // -[1%N] /(Z.to_N 1).
+      rewrite rangeZ_snoc // !lengthN_simplZ {}IH // -[1%N] /(Z.to_N 1).
       lia.
   Qed.
 
-  Lemma elem_of_seqZ x i j : x ∈ seqZ i j <-> (i ≤ x < j).
+  Lemma elem_of_rangeZ x i j : x ∈ rangeZ i j <-> (i ≤ x < j).
   Proof.
     case: (Z.le_ge_cases j i).
-    { move => Hji; rewrite seqZ_oob // elem_of_nil; lia. }
+    { move => Hji; rewrite rangeZ_oob // elem_of_nil; lia. }
     move => Hle.
     elim/Zlt_lower_bound_ind: Hle => {}j IH Hle.
     move: (Zle_lt_or_eq _ _ Hle) => /or_comm [|Hlt].
-    { move => <-; rewrite seqZ_nil elem_of_nil; lia. }
-    rewrite seqZ_snoc // elem_of_app elem_of_list_singleton.
+    { move => <-; rewrite rangeZ_nil elem_of_nil; lia. }
+    rewrite rangeZ_snoc // elem_of_app elem_of_list_singleton.
     rewrite IH; lia.
   Qed.
 
-  Lemma NoDup_seqZ i j : NoDup (seqZ i j).
+  Lemma NoDup_rangeZ i j : NoDup (rangeZ i j).
   Proof.
     case: (Z.le_ge_cases j i).
-    { move => Hji; rewrite seqZ_oob // elem_of_nil; lia. }
+    { move => Hji; rewrite rangeZ_oob // elem_of_nil; lia. }
     move => Hle.
     elim/Zlt_lower_bound_ind: Hle => {}j IH Hle.
     move: (Zle_lt_or_eq _ _ Hle) => /or_comm [|Hlt].
-    { move => <-; rewrite seqZ_nil //. }
-    rewrite seqZ_snoc // Permutation_app_comm /=.
+    { move => <-; rewrite rangeZ_nil //. }
+    rewrite rangeZ_snoc // Permutation_app_comm /=.
     constructor.
-    - rewrite elem_of_seqZ; lia.
+    - rewrite elem_of_rangeZ; lia.
     - apply: IH; lia.
   Qed.
 
-End seqZ.
+End rangeZ.
 
 Section sliceZ.
   #[local] Open Scope Z_scope.
