@@ -437,6 +437,9 @@ Proof. intros n1 n2. lia. Qed.
 Lemma Z_to_N_eq_0 n (Hn : (n ≤ 0)%Z) : Z.to_N n = 0%N.
 Proof. case: n Hn => //. Qed.
 
+Lemma Z_to_N_eq_0_iff n : Z.to_N n = 0%N <-> (n ≤ 0)%Z.
+Proof. case: n => //. Qed.
+
 Lemma Z_of_N_Zto_N_eq_max x : Z.of_N (Z.to_N x) = (x `max` 0)%Z.
 Proof. lia. Qed.
 
