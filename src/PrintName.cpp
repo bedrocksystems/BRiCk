@@ -238,9 +238,11 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			// HACK: this mangles an aggregate name by mangling
 			// the destructor and then doing some string manipulation
 			std::string sout;
-			llvm::raw_string_ostream out(sout);
-			mangle.mangleName(to_gd(dtor), out);
-			out.flush();
+			{
+				llvm::raw_string_ostream out(sout);
+				mangle.mangleName(to_gd(dtor), out);
+				out.flush();
+			}
 			// TODO: assertions are generally disabled
 			assert(3 < sout.length() && "mangled string length is too small");
 			sout =
@@ -255,26 +257,25 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			}
 		} else {
 			unsupported("ClassTemplateSpecializationDecl for simple contexts");
-#if 18 <= CLANG_VERSION_MAJOR
-			mangle.mangleCanonicalTypeName(QualType(ts->getTypeForDecl(), 0),
-										   print.output().nobreak());
-#else
+			std::string sout;
 			{
-			  std::string sout;
-			  llvm::raw_string_ostream out(sout);
+				llvm::raw_string_ostream out(sout);
 
-			  mangle.mangleTypeName(QualType(ts->getTypeForDecl(), 0),
-								  out);
-			  assert(3 < sout.length() && "mangled string length is too small");
-			  sout = sout.substr(4, sout.length());
-			  auto &mos = print.output().nobreak();
-			  mos << "_Z" << sout;
-
-			}
+#if 18 <= CLANG_VERSION_MAJOR
+				mangle.mangleCanonicalTypeName(
+					QualType(ts->getTypeForDecl(), 0), out);
+#else
+				mangle.mangleTypeName(QualType(ts->getTypeForDecl(), 0), out);
 #endif
+			}
+
+			if (sout.substr(0, 4) == "_ZTS") {
+				print.output() << "_Z" << sout.substr(4);
+			} else {
+				print.output() << sout;
+			}
 			return 2;
 		}
-
 	} else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
 		auto parent = ns->getDeclContext();
 		auto compound =
