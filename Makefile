@@ -10,11 +10,12 @@
 DOCOPEN ?= xdg-open
 CMAKE=cmake
 
-COQPROJECT = _CoqProject.template
-
 all:
 	dune build @default @runtest
 .PHONY: all
+
+_CoqProject: _CoqProject.template
+	@cp $< $@
 
 # On Darwin, customize the cmake build system to use homebrew's llvm.
 SYS := $(shell uname)
@@ -32,10 +33,6 @@ build/Makefile: $(MAKEFILE_LIST) CMakeLists.txt
 cpp2v: build/Makefile
 	+@$(MAKE) -C build cpp2v &> build/cpp2v-make.log || { cat build/cpp2v-make.log; exit 1; }
 .PHONY: cpp2v
-
-deps.pdf: $(COQPROJECT)
-	coqdep -f $(COQPROJECT) -dumpgraphbox deps.dot > /dev/null
-	dot -Tpdf -o deps.pdf deps.dot
 
 BUILD_ROOT=../../_build/default/fmdeps/cpp2v-core
 COQDOC_DIR=doc/sphinx/_static/coqdoc
@@ -65,4 +62,5 @@ doc-clean:
 
 clean: doc-clean
 	@dune clean
+	@rm -f _CoqProject
 .PHONY: clean
