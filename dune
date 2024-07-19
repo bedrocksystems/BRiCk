@@ -26,8 +26,14 @@
       -w +deprecated-hint-without-locality
       -w +deprecated-instance-without-locality
       -w +unknown-option
-      -w +future-coercion-class-field
- )))))
+      -w +future-coercion-class-field))
+   (coqdoc_flags
+    --toc --toc-depth 2 --interpolate
+    --index indexpage --no-lib-name --parse-comments
+    --external https://plv.mpi-sws.org/coqdoc/iris/ iris
+    --external https://plv.mpi-sws.org/coqdoc/stdpp/ stdpp
+    --with-header /tmp/coqdocjs/extra/header.html
+    --with-footer /tmp/coqdocjs/extra/footer.html))))
 
 ; Explain Dune how to find and build cpp2v binary
 ;
@@ -74,17 +80,10 @@
     ; and any makefile can, in principle, change what `make` does.
     ;
     ../Makefile
-    ../Makefile.doc
-    ;
     ../CMakeLists.txt
     (source_tree ../include)
     (source_tree ../llvm-include)
     (source_tree ../src)
-    ;
-    ; TODO: These seem pointless
-    (source_tree ../cmake)	;; does not exist
-    (source_tree ../doc)	;; irrelevant to cpp2v
-    ;
     (env_var PATH)
     (env_var LLVM_DIR)
     (env_var CLANG_DIR)
