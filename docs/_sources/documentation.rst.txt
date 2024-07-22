@@ -2,17 +2,28 @@
 Code Documentation
 ###############################
 
-**Documentation** You can check out the old coqdoc-documentation for cpp2v-core `here <./_static/coqdoc/toc.html>`__.
+You can find the ``coqdoc`` documentation for BRiCk and related packages at
+the following links.
+
+- `bedrock.prelude <./_static/coqdoc/bedrock.prelude.html/toc.html>`__.
+
+- `bedrock.lang <./_static/coqdoc/bedrock.lang.html/toc.html>`__.
+
+- `bedrock.upoly <./_static/coqdoc/bedrock.upoly.html/toc.html>`__.
+
+- `Lens <./_static/coqdoc/Lens.html/toc.html>`__.
+
+- `Lens.Elpi <./_static/coqdoc/Lens.Elpi.html/toc.html>`__.
 
 Some BRiCk-specific examples are linked below. These are *not* sufficient for
 learning how to use BRiCk.
 
-- `Logic <./_static/coqdoc/bedrock.noimport.doc.cpp.logic.html>`__
+- `Logic <./_static/coqdoc/bedrock.noimport.html/bedrock.noimport.doc.cpp.logic.html>`__
 
-- `Notations <./_static/coqdoc/bedrock.noimport.doc.cpp.notations.html>`__
+- `Notations <./_static/coqdoc/bedrock.noimport.html/bedrock.noimport.doc.cpp.notations.html>`__
 
-- `Sequential Specs/Proofs <./_static/coqdoc/bedrock.noimport.doc.cpp.howto_sequential.html>`__
+- `Sequential Specs/Proofs <./_static/coqdoc/bedrock.noimport.html/bedrock.noimport.doc.cpp.howto_sequential.html>`__
 
-- `Classes <./_static/coqdoc/bedrock.noimport.doc.cpp.class_representations.html>`__
+- `Classes <./_static/coqdoc/bedrock.noimport.html/bedrock.noimport.doc.cpp.class_representations.html>`__
 
 

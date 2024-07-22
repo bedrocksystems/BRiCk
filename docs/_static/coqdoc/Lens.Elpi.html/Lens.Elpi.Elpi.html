@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index for the theory </a>
+      <a href="./toc.html"> Table of contents for the theory </a>
+      <a href="../../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">Lens.Elpi.Elpi</h1>
+
+<div class="code">
+<span class="comment">(*&nbsp;TODO&nbsp;copyright&nbsp;header.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Lens.Lens</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;A&nbsp;lens,&nbsp;to&nbsp;see&nbsp;better.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;license:&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License&nbsp;Version&nbsp;2.1&nbsp;or&nbsp;later<br/>
+&nbsp;&nbsp;&nbsp;-------------------------------------------------------------------------&nbsp;*)</span><br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">elpi.apps.derive</span> <span class="id" title="var">Extra</span> <span class="id" title="var">Dependency</span> "lens.elpi" <span class="id" title="keyword">as</span> <span class="id" title="var">lens</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">elpi.apps.derive</span> <span class="id" title="var">Extra</span> <span class="id" title="var">Dependency</span> "derive_hook.elpi" <span class="id" title="keyword">as</span> <span class="id" title="var">derive_hook</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">elpi.elpi</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">elpi.apps.derive</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="module">LensNotations</span>.<br/>
+#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">lens_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Register</span> <span class="id" title="var">Build_Lens</span> <span class="id" title="keyword">as</span> <span class="id" title="var">elpi.derive.lens.make</span>.<br/>
+<span class="id" title="keyword">Register</span> <span class="id" title="tactic">set</span> <span class="id" title="keyword">as</span> <span class="id" title="var">elpi.derive.lens.set</span>.<br/>
+<span class="id" title="keyword">Register</span> <span class="id" title="var">view</span> <span class="id" title="keyword">as</span> <span class="id" title="var">elpi.derive.lens.view</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Links&nbsp;the&nbsp;record,&nbsp;a&nbsp;field&nbsp;name&nbsp;and&nbsp;the&nbsp;lens&nbsp;focusing&nbsp;on&nbsp;that&nbsp;field&nbsp;*)</span><br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.lens.db</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">lens</span>-<span class="id" title="var">db</span> <span class="id" title="var">o</span>:<span class="id" title="var">inductive</span>, <span class="id" title="var">o</span>:<span class="id" title="var">string</span>, <span class="id" title="var">o</span>:<span class="id" title="var">constant</span>.<br/>
+}}.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;standalone&nbsp;command&nbsp;*)</span><br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Command</span> <span class="id" title="var">derive.lens</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">derive_hook</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">lens</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.lens.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">main</span> [<span class="id" title="var">str</span> <span class="id" title="var">I</span>, <span class="id" title="var">str</span> <span class="id" title="var">O</span>] :- !, <span class="id" title="var">coq.locate</span> <span class="id" title="var">I</span> (<span class="id" title="var">indt</span> <span class="id" title="var">GR</span>), <span class="id" title="var">derive.lens.main</span> <span class="id" title="var">GR</span> <span class="id" title="var">O</span> <span class="id" title="var">_</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="var">main</span> [<span class="id" title="var">str</span> <span class="id" title="var">I</span>] :- !, <span class="id" title="var">coq.locate</span> <span class="id" title="var">I</span> (<span class="id" title="var">indt</span> <span class="id" title="var">GR</span>), <span class="id" title="var">derive.lens.main</span> <span class="id" title="var">GR</span> "_" <span class="id" title="var">_</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="var">main</span> <span class="id" title="var">_</span> :- <span class="id" title="var">usage</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="var">usage</span> :- <span class="id" title="var">coq.error</span> "Usage: derive.lens &lt;record name&gt; [&lt;output prefix&gt;]".<br/>
+}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;hook&nbsp;into&nbsp;derive&nbsp;*)</span><br/>
+#[<span class="id" title="var">synterp</span>] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">derivation</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> (<span class="id" title="var">derive</span> "lens" (<span class="id" title="var">cl</span>\ <span class="id" title="var">cl</span> = []) <span class="id" title="var">true</span>).<br/>
+}}.<br/>
+
+<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.lens.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">lens</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">derivation</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">_Prefix</span> <span class="id" title="var">ff</span> (<span class="id" title="var">derive</span> "lens" (<span class="id" title="var">derive.lens.main</span> <span class="id" title="var">T</span> <span class="id" title="var">N</span>) (<span class="id" title="var">lens</span>-<span class="id" title="var">db</span> <span class="id" title="var">T</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)) :- <span class="id" title="var">N</span> <span class="id" title="keyword">is</span> "_".<br/>
+}}.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>
