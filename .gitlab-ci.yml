@@ -7,24 +7,6 @@
 ################################################
 # This file configures the cpp2v CI/CD pipelines.
 #
-# There are two pipelines:
-#
-#   1. build_latest -> test_latest
-#
-#      This builds and tests cpp2v against the current
-#      major version of llvm.
-#      In fact, "latest" does not depend on the latest version, but on the main
-#      supported one.
-#
-#   2. build_llvmX -> test_llvmX
-#
-#      This builds cpp2v against an alternate major
-#      version of llvm - llvmX. It tests only the cpp2v
-#      frontend.
-#
-# The build* jobs extend the .build template job.
-# The test* jobs extend the .test template job.
-#
 # NOTE: If you need to change the base software in a
 # container image used in a pipeline, first update
 # Dockerfile and push a new image to the registry
@@ -97,60 +79,13 @@ stages:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - when: on_success
 
-#This is a template job that's extended below by the real jobs
-# build_{latest,llvmNN,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
-.build_base:
-  stage: build
-  needs: []
-  script:
-    - mkdir -p build
-    - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
-    - cd build; cmake ../; cd ..
-    - make -j ${NJOBS} cpp2v
-    - make -j ${NJOBS} coq
-    - rm -f build/bedrock
-    - cp -a theories build/bedrock
-  artifacts:
-    name: cpp2v-${LLVM_MAJ_VER}
-    paths:
-      - build/gitshas.txt
-      - build/cpp2v
-      - build/bedrock
-  tags:
-    - fm.shared
-
-.build:
-  extends:
-    - .proof-trigger-mr-releases
-    - .build_base
-
-.build_aux:
-  extends:
-    - .proof-trigger
-    - .build_base
-
-.test:
-  extends:
-    - .proof-trigger
-  stage: test
-  script:
-    - coqc -v
-    - opam list
-    - ./build/cpp2v --cpp2v-version 0 --
-    - PATH=$PWD/build:$PATH make test -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
-  tags:
-    - fm.shared
-
-build_latest:
-  extends:
-    - .public
-    - .build
-    - .latest
-
 # Ensure that the code builds against dependencies declared in opam files, and
 # that those match the versions in our "public" Docker image.
 # TODO: This seems to depend on commiting files that dune can generate (`*.opam`).
 build_public_opam:
+  stage: build
+  tags:
+    - fm.shared
   script:
     - opam pin add -n -y coq-upoly.dev ./coq-upoly
     - opam pin add -n -y coq-cpp2v.dev .
@@ -160,7 +95,7 @@ build_public_opam:
     - opam install --assume-depexts -y coq-upoly coq-cpp2v coq-cpp2v-bin coq-lens coq-lens-elpi
   needs: [dune-build]
   extends:
-    - .build_aux
+    - .proof-trigger
     - .public
   # No artifacts are needed here.
   artifacts:
@@ -171,27 +106,15 @@ prepare_pages:
   image: ${fm_docs_img}
   stage: prepare_pages
   needs:
-    - build_latest
+    - [dune-build]
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
   script:
-    - sudo chown coq.coq -R .
+    - sudo chown coq:coq -R .
     # Clone the Alectryon submodule, but only in the pages jobs
     - git submodule update --init
-    # Copy compiled code.
-    #
-    # Beware: the trailing slash affects the semantics.
-    # Excluded flags, compared to -a: -pgoD
-    # --omit-dir-times because of https://stackoverflow.com/a/668049/53974 and
-    # https://gitlab.com/bedrocksystems/cpp2v-core/-/jobs/1474918505#L1325
-    # and --omit-link-times to be safe.
-    - sudo rsync
-        --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
-        -avc
-        --omit-link-times --omit-dir-times
-        build/bedrock/ theories
-    - make touch_deps
-    - make -j ${NJOBS} doc
+    - opam install -y odoc
+    - make -j ${NJOBS} doc BUILD_ROOT=_build/default
   artifacts:
     paths:
       - doc/sphinx/_build

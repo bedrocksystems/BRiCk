@@ -14,7 +14,7 @@ authors: [
 homepage: "https://github.com/bedrocksystems/cpp2v"
 bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
 depends: [
-  "dune" {>= "3.8"}
+  "dune" {>= "3.14"}
   "coq" {>= "8.19.0" & < "8.20~"}
   "coq-upoly"
   "coq-iris" {= "dev.2024-03-06.1.9c192c8d"}

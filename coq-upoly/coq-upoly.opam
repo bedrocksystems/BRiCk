@@ -33,7 +33,7 @@ license: "BedRock Open-Source License"
 homepage: "https://gitlab.com/bedrocksystems/cpp2v-core"
 bug-reports: "https://gitlab.com/bedrocksystems/cpp2v-core/-/issues"
 depends: [
-  "dune" {>= "3.8"}
+  "dune" {>= "3.14"}
   "coq-stdpp" {>= "dev.2024-02-09.0.cafd7113"}
   "odoc" {with-doc}
 ]
