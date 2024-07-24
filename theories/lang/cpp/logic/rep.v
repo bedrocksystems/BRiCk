@@ -600,6 +600,11 @@ Section with_cpp.
     by setoid_rewrite _at_emp.
   Qed.
 
+  Lemma _at_cfractional_list_div (R : cQp.t -> Rep) `{_ : CFractional _ R} q n (p : ptr) :
+    (0 < n)%N ->
+    p |-> R (cQp.m q) |-- [** list] _ ∈ replicateN n (), p |-> R (cQp.m (q / N_to_Qp n)).
+  Proof. by move=>?; rewrite cfractional_list_div // _at_big_sepL. Qed.
+
   Lemma _at_obs p (r : Rep) P :
     r |-- r ** [| P |] →
     p |-> r |-- p |-> r ** [| P |].

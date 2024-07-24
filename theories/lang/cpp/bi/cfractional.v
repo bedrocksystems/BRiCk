@@ -307,6 +307,29 @@ Section fractional.
     move: (HF 1%Qp) => [] _ //.
   Qed.
 
+  Lemma cfractional_list_div (P : cQp.t -> PROP) `{_ : CFractional _ P} q n :
+    (0 < n)%N ->
+    P (cQp.m q) |-- [** list] _ ∈ replicateN n (), P (cQp.m (q / N_to_Qp n)).
+  Proof.
+    move=>/N.succ_pred_pos<-; set n' := (N.pred _).
+    move: {n}n' q; apply: N.peano_ind=>[|n]; first
+      by move=>q; rewrite /= Qp.div_1 bi.sep_emp.
+    move=>HIP q; rewrite N_to_Qp_succ; last lia.
+    set p := (N_to_Qp _).
+    rewrite (replicateN_S _ ((N.succ _))) big_opL_cons.
+
+    have{1}->: (cQp.mut q = cQp.m (q * p / (p + 1)) + cQp.m (q / (p + 1)))%cQp.
+    {
+      rewrite /cQp.add/=; f_equal.
+      by rewrite -Qp.div_add_distr -{3}[q]Qp.mul_1_r -Qp.mul_add_distr_l
+         -{2}[(p + 1)%Qp]Qp.mul_1_l Qp.div_mul_cancel_r Qp.div_1.
+    }
+
+    iIntros "H"; iDestruct (cfractional with "H") as "[H $]".
+    iDestruct (HIP (q * p / (p + 1))%Qp with "H") as "?".
+    by rewrite Qp.div_div Qp.div_mul_cancel_r.
+  Qed.
+
   (** *** Lifting [CFractional] things into [Fractional] when using [cQp.mk] *)
 
   #[global] Instance cfractional_fractional_mk_0 (P : cQp.t -> PROP) is_const :
