@@ -6,8 +6,12 @@
 
 trigger:
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE =~ /^(merge_request_event|schedule|wep|api)$/
+      variables:
+        FM_CI_TRIGGER_KIND: mr
+    - if: $CI_PIPELINE_SOURCE == 'push' && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        FM_CI_TRIGGER_KIND: default
   variables:
     ORIGIN_CI_COMMIT_SHA: $CI_COMMIT_SHA
     ORIGIN_CI_COMMIT_BRANCH: $CI_COMMIT_BRANCH
@@ -20,7 +24,8 @@ trigger:
     ORIGIN_CI_PIPELINE_URL: $CI_PIPELINE_URL
     ORIGIN_CI_PROJECT_PATH: $CI_PROJECT_PATH
     ORIGIN_CI_PROJECT_TITLE: $CI_PROJECT_TITLE
+    FM_CI_TRIGGER_KIND: $FM_CI_TRIGGER_KIND
   trigger:
     project: bedrocksystems/formal-methods/fm-ci
-    branch: main
+    branch: trigger-$FM_CI_TRIGGER_KIND
     strategy: depend
