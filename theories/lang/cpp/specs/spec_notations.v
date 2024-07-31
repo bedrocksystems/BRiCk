@@ -59,10 +59,6 @@ Reserved Notation "'\post*' post X"
   (at level 10, post at level 200, X at level 200, left associativity,
    format "'[v' '[  ' '\post*'  '/' post  ']' '//' X ']'").
 
-Reserved Notation "'\post*{' x .. y '}' post X"
-  (at level 10, x binder, y binder, post at level 100, X at level 200, right associativity,
-   format "'[v' '[hv  ' '\post*{' x  ..  y '}'  '/' post ']' '//' X ']'").
-
 (** Post-conditions with Return *)
 Reserved Notation "'\post' { x .. y } [ r ] post"
   (at level 10, r at level 200, no associativity, x binder, y binder,
