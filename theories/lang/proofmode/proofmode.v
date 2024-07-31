@@ -44,3 +44,66 @@ Ltac iFrameAnySpatial ::=
   | |- envs_entails ?Δ _ =>
      let Hs := eval lazy in (env_dom (env_spatial Δ)) in go Hs
   end.
+
+(** Missing instances for [bi_intuitionistically_if], i.e. [□?b _]. *)
+Section class_instances_intuitionistically_if.
+  Context {PROP : bi}.
+  Implicit Types P Q R : PROP.
+
+  #[global] Instance persistent_intuitionistically_if b P:
+    Persistent P -> Persistent (□?b P).
+  Proof. case: b => //=. apply _. Qed.
+
+  #[global] Instance affine_intuitionistically_if b P:
+    Affine P -> Affine (□?b P).
+  Proof. case: b => //=. apply _. Qed.
+
+  (* TODO: not sure if this is useful *)
+  (* #[global] Instance from_pure_intuitionistically_if_true b P (φ : Prop): *)
+  (*   FromPure (negb b) P φ → FromPure true (□?b P) φ. *)
+  (* Proof. case: b => //=. apply _. Qed. *)
+
+  (* TODO: not sure if this is useful *)
+  (* #[global] Instance into_persistent_intuitionistically_if_false b P Q: *)
+  (*   IntoPersistent b P Q → IntoPersistent false (□?b P) Q. *)
+  (* Proof. case: b => //=; apply _. Qed. *)
+
+  #[global] Instance into_sep_intuitionistically_if `{BiPositive PROP} b P Q1 Q2:
+    IntoSep P Q1 Q2 → IntoSep (□?b P) (□?b Q1) (□?b Q2).
+  Proof. case: b => //=; apply _. Qed.
+
+  #[global] Instance frame_intuitionistically_if_true b P Q R:
+    Frame true P Q R->
+    Frame true P (□?b Q) (□?b R) | 2.
+  Proof.
+    unfold Frame.
+    destruct b; cbn in *; [|done].
+    iIntros (H) "[##P #Q]". rewrite -H. by iFrame "#".
+  Qed.
+
+  #[global] Instance frame_intuitionistically_if p b P Q R:
+    Frame p P Q R->
+    Frame p (□?b P) (□?b Q) (□?b R) | 3.
+  Proof.
+    unfold Frame.
+    destruct b, p; cbn in *.
+    1: iIntros (H) "[##P #Q]".
+    2: iIntros (H) "[#P #Q]".
+    3: iIntros (H) "[#P Q]".
+    4: iIntros (H) "[P Q]".
+    all: rewrite -H; by iFrame "#∗".
+  Qed.
+
+  #[global] Instance frame_intuitionistically_intuitionistically_if p b P Q R:
+    Frame p P Q R->
+    Frame p (□ P) (□?b Q) (□?b R) | 2.
+  Proof.
+    unfold Frame.
+    destruct b, p; cbn in *.
+    1: iIntros (H) "[##P #Q]".
+    2: iIntros (H) "[#P #Q]".
+    3: iIntros (H) "[#P Q]".
+    4: iIntros (H) "[P Q]".
+    all: rewrite -H; by iFrame "#∗".
+  Qed.
+End class_instances_intuitionistically_if.

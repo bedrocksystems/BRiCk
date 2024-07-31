@@ -204,6 +204,9 @@ Section observe.
   Lemma observe_intro_intuitionistically Q P : Observe Q P → Observe (□ Q) P.
   Proof. rewrite/Observe=>->. iIntros "#$". Qed.
 
+  Lemma observe_intro_intuitionistically_if b Q P : Observe Q P → Observe (□?b Q) P.
+  Proof. rewrite/Observe=>->. case: b => //=. iIntros "#$". Qed.
+
   Lemma observe_equiv_sep_True Q P `{!Persistent Q} : (P ⊢ Q ∗ True) ↔ Observe Q P.
   Proof.
     by rewrite (comm bi_sep Q) /Observe bi.persistently_absorbingly.
@@ -233,6 +236,9 @@ Section observe.
   (* Ease proving the goal linearly. *)
   Lemma observe_2_intro_intuitionistically Q P1 P2 : Observe2 Q P1 P2 → Observe2 (□ Q) P1 P2.
   Proof. rewrite/Observe2=>->. f_equiv. iIntros "#$". Qed.
+
+  Lemma observe_2_intro_intuitionistically_if b Q P1 P2 : Observe2 Q P1 P2 → Observe2 (□?b Q) P1 P2.
+  Proof. rewrite/Observe2=>->. f_equiv. case: b => //=. iIntros "#$". Qed.
 
   Lemma observe_2_equiv_sep_True Q P1 P2 `{!Persistent Q} : (P1 ∗ P2 ⊢ Q ∗ True) ↔ Observe2 Q P1 P2.
   Proof. by rewrite observe_2_observe observe_equiv_sep_True. Qed.
@@ -339,6 +345,13 @@ Section bi.
   Global Instance observe_2_intuitionistically Q P1 P2 :
     Observe2 Q P1 P2 → Observe2 Q (□ P1) (□ P2).
   Proof. intros. iIntros "#P1 #P2". iApply (observe_2 with "P1 P2"). Qed.
+
+  Global Instance observe_intuitionistically_if b Q P :
+    Observe Q P → Observe Q (□?b P).
+  Proof. intros. case: b => //=. iIntros "#P". iApply (observe with "P"). Qed.
+  Global Instance observe_2_intuitionistically_if b Q P1 P2 :
+    Observe2 Q P1 P2 → Observe2 Q (□?b P1) (□?b P2).
+  Proof. intros. case: b => //=. iIntros "#P1 #P2". iApply (observe_2 with "P1 P2"). Qed.
 End bi.
 
 Section monpred.
