@@ -136,11 +136,6 @@ Notation "'\pre{' x .. y '}' pp X" :=
 Notation "'\pre{' x .. y '}' pp X" :=
   (add_with (fun x => .. (add_with (fun y => add_pre pp%I X%pre_spec) _) ..) _) (only printing).
 
-Notation "'\post*{' x .. y '}' post X" :=
-  (add_with (fun x => .. (add_with (fun y => add_post post%I X%pre_spec) [binder y]) ..) [binder x]) (only parsing).
-Notation "'\post*{' x .. y '}' post X" :=
-  (add_with (fun x => .. (add_with (fun y => add_post post%I X%pre_spec) _) ..) _) (only printing).
-
 Notation "'\post*' post X" := (add_post post%I X%pre_spec).
 
 Notation "'\post' { x .. y } [ r ] post" :=
@@ -151,6 +146,7 @@ Notation "'\post' { x .. y } [ r ] post" :=
 Notation "'\post' [ r ] post" :=
   (start_post (post_ret r post%I)).
 
+#[deprecated(since="2024-07-31",note="avoid [\post{}], simply use [\post].")]
 Notation "'\post' { } [ r ]  post" := (\post[r] post).
 
 Notation "'\post' post" := (start_post (post_void post%I)).
