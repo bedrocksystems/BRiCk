@@ -35,6 +35,9 @@ Notation WithPrePost PROP := (WpSpec PROP ptr ptr) (only parsing).
   {| classy.add_arg p := classy.add_arg (Vint p)
    ; classy.add_args p := classy.add_args (List.map Vint p) |}.
 
+Notation "'\this' this X" := (fun this : ptr => X%pre_spec)
+  (at level 10, this ident, X at level 200, only parsing).
+
 (* only needed for examples *)
 Require Import bedrock.lang.cpp.logic.
 
@@ -44,6 +47,11 @@ Section with_Σ.
   #[local] Notation WPP := (WpSpec_cpp_val).
 
   Succeed Definition _1 : WPP :=
+    \pre emp
+    \post  emp.
+
+  Succeed Definition _1 : _ -> WPP :=
+    \this this
     \pre emp
     \post  emp.
 
