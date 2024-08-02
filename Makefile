@@ -61,6 +61,6 @@ doc-clean:
 .PHONY: doc-clean
 
 clean: doc-clean
-	@dune clean
+	@dune clean || echo "dune not found; not cleaning dune-generated documentation files"
 	@rm -f _CoqProject
 .PHONY: clean
