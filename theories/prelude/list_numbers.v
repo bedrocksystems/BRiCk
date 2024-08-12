@@ -96,6 +96,10 @@ Lemma length_lengthN {A} (xs : list A) :
   length xs = N.to_nat (lengthN xs).
 Proof. by rewrite /lengthN Nat2N.id. Qed.
 
+Lemma fmap_dropN {A B} (f : A -> B) (l : list A) (i : N) :
+  f <$> dropN i l = dropN i (f <$> l).
+Proof. by rewrite /dropN fmap_drop. Qed.
+
 Section seqN.
   Lemma seqN_0 n : seqN n 0 = [].
   Proof. done. Qed.
