@@ -757,12 +757,15 @@ f()` for `void f()` are not allowed.
 NOTE: we could drop this in favor of relying on the compiler to check
 this.
 *)
-Definition Kreturn_void `{Σ : cpp_logic} (P : epred) : Kpred :=
-  KP $ funI rt =>
+Definition Kreturn_void_inner `{Σ : cpp_logic} (P : epred) (rt : ReturnType) : mpred :=
   match rt with
   | Normal | ReturnVoid => P
   | Break | Continue | ReturnVal _ => False
   end.
+#[global] Arguments Kreturn_void_inner _ _ _ _ !rt /.
+
+Definition Kreturn_void `{Σ : cpp_logic} (P : epred) : Kpred :=
+  KP $ Kreturn_void_inner P.
 #[global] Hint Opaque Kreturn_void : typeclass_instances.
 
 Section Kreturn_void.
@@ -776,7 +779,7 @@ Section Kreturn_void.
   Lemma Kreturn_void_fupd Q :
     Kreturn_void (|={top}=> Q) |-- |={top}=> Kreturn_void Q.
   Proof.
-    constructor=>rt /=. rewrite monPred_at_fupd.
+    constructor=>rt /=. rewrite monPred_at_fupd /Kreturn_void_inner.
     by case_match; auto using bi.False_elim.
   Qed.
 End Kreturn_void.

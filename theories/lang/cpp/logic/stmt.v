@@ -395,13 +395,16 @@ Module Type Stmt.
      *)
 
     (* loop with invariant `I` *)
+    Definition Kloop_inner (I : mpred) (Q : Kpred) (rt : ReturnType) : mpred :=
+      match rt with
+      | Break => Q Normal
+      | Normal | Continue => I
+      | rt => Q rt
+      end.
+    #[global] Arguments Kloop_inner _ _ !rt /.
+
     Definition Kloop (I : mpred) (Q : Kpred) : Kpred :=
-      KP (funI rt =>
-          match rt with
-          | Break => Q Normal
-          | Normal | Continue => I
-          | rt => Q rt
-          end).
+      KP $ Kloop_inner I Q.
 
     (** * <<while>> *)
 
@@ -447,12 +450,15 @@ Module Type Stmt.
         |-- wp ρ (Swhile (Some d) test body) Q.
 
     (** * <<for>> *)
+    Definition Kpost_inner I Q (rt : ReturnType) :=
+      match rt with
+      | Normal | Continue => I
+      | _ => Q rt
+      end.
+    #[global] Arguments Kpost_inner _ _ !rt /.
+
     Definition Kpost I Q :=
-      KP (fun rt =>
-            match rt with
-            | Normal | Continue => I
-            | _ => Q rt
-            end).
+      KP $ Kpost_inner I Q.
 
     Definition for_unroll ρ test incr body (Q : Kpred) :=
       let Kinc :=
@@ -686,12 +692,15 @@ Module Type Stmt.
         end
       end.
 
+    Definition Kswitch_inner (k : Kpred) (rt : ReturnType) : mpred :=
+      match rt with
+      | Break => k Normal
+      | rt => k rt
+      end.
+    #[global] Arguments Kswitch_inner _ !rt /.
+
     Definition Kswitch (k : Kpred) : Kpred :=
-      KP (fun rt =>
-            match rt with
-            | Break => k Normal
-            | rt => k rt
-            end).
+      KP $ Kswitch_inner k.
 
     Axiom wp_switch_decl : forall ρ d e ls Q,
         wp ρ (Sseq (Sdecl (d :: nil) :: Sswitch None e ls :: nil)) Q
