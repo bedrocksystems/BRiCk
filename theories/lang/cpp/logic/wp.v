@@ -150,13 +150,16 @@ Section KP.
   Proof. done. Qed.
 End KP.
 
-Definition Kreturn `{Σ : cpp_logic, σ : genv} (Q : ptr -> mpred) : Kpred :=
-  KP $ funI rt =>
+Definition Kreturn_inner `{Σ : cpp_logic, σ : genv} (Q : ptr -> mpred) (rt : ReturnType) : mpred :=
   match rt with
   | Normal | ReturnVoid => Forall p : ptr, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p
   | ReturnVal p => Q p
   | _ => False
   end.
+#[global] Arguments Kreturn_inner _ _ _ _ _ !rt /.
+
+Definition Kreturn `{Σ : cpp_logic, σ : genv} (Q : ptr -> mpred) : Kpred :=
+  KP $ Kreturn_inner Q.
 #[global] Hint Opaque Kreturn : typeclass_instances.
 
 Section Kreturn.
@@ -171,12 +174,15 @@ Section Kreturn.
   Qed.
 End Kreturn.
 
-Definition Kseq `{Σ : cpp_logic} (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
-  KP $ funI rt =>
+Definition Kseq_inner  `{Σ : cpp_logic} (Q : Kpred -> mpred) (k : Kpred) (rt : ReturnType) : mpred :=
   match rt with
   | Normal => Q k
   | rt => k rt
   end.
+#[global] Arguments Kseq_inner _ _ _ _ _ !rt /.
+
+Definition Kseq `{Σ : cpp_logic} (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
+  KP $ Kseq_inner Q k.
 #[global] Hint Opaque Kseq : typeclass_instances.
 
 Section Kseq.
@@ -193,13 +199,16 @@ Section Kseq.
 End Kseq.
 
 (* loop with invariant `I` *)
-Definition Kloop `{Σ : cpp_logic} (I : mpred) (Q : Kpred) : Kpred :=
-  KP $ funI rt =>
+Definition Kloop_inner `{Σ : cpp_logic} (I : mpred) (Q : Kpred) (rt : ReturnType) : mpred := 
   match rt with
   | Break | Normal => Q Normal
   | Continue => I
   | ReturnVal _ | ReturnVoid => Q rt
   end.
+#[global] Arguments Kloop_inner _ _ _ _ _ !rt /.
+
+Definition Kloop `{Σ : cpp_logic} (I : mpred) (Q : Kpred) : Kpred :=
+  KP $ Kloop_inner I Q.
 #[global] Hint Opaque Kloop : typeclass_instances.
 
 Section Kloop.
