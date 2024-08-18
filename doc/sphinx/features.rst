@@ -12,16 +12,16 @@ Limitations of |project|
 |project| does not cover the full feature set of C++. Some features that are explicitly **not supported** are:
 
 * The |project| program logic *assumes* that the abstract syntax tree is well-typed and uses this assumption to avoid performing type checking within the semantics. If you are using `cpp2v` to generate the AST, then Clang will ensure that the syntax tree is well typed.
-* |project| is based on the Clang frontend IR. We believe that this is a reasonable proxy for source-level C++.
+* |project| is based on the Clang front-end IR. We believe that this is a reasonable proxy for source-level C++.
 * Exceptions. In addition to not supporting :cpp:`throw` and :cpp:`try`, |project| additionally assumes that function calls do not throw exceptions.
-* :cpp:`virtual` inheritence.
+* :cpp:`virtual` inheritance.
 * Floating point values and operations
 * Labeled statements and :cpp:`goto` are not supported.
 * :cpp:`switch` statements have restricted semantics when mixed with control flow.
 * Bitfields
 * :cpp:`[packed]` data structures.
 
-While not supported right now, some features are on our roadmap.
+While not supported right now, some features are on our road map.
 
 * Translation unit initialization (i.e. initialization of globals)
 * :cpp:`template` code can only be reasoned about *after* instantiating it to specific arguments.
@@ -52,7 +52,7 @@ Extensions to the Standard
 ===========================
 
 |project| also extends the C++ standard in limited ways to make low-level program verification possible.
-For example, interoperation with assembly (see :ref:`machine-interop`), sharing data across address spaces, etc.
+For example, inter-operation with assembly (see :ref:`machine-interop`), sharing data across address spaces, etc.
 We believe that our extensions are conservative and characterize the way that low-level programmers rely on compilers to work.
 
 .. [#weak-mem] We plan to support weak memory C++ in the future based on other work in Iris.
