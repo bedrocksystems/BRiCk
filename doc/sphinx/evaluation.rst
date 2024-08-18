@@ -144,5 +144,4 @@ C++ leaves the lifetime of *trivially destructible* function arguments unspecifi
 
 
 .. rubric:: Footnotes
-.. [#parallel-destruction] We use `par` to under approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call `f(a,b,c)`, the expressions `a`, `b`, and `c` can be evaluated in any order and we can approximate the ordering provided by c++ by saying they are destroyed in parallel.
-.. [#non-observable-destructors] Part of the justification for this is that the arguments to functions do not have names in the callees stack frame, so the locations of those objects are not accessible to other objects (something that could influence the semantics due to live pointers).
+.. [#parallel-destruction] `par` can be used to describe the semantics of destruction in C, it is not needed for the semantics of C++ because C++ defines evaluation order as non-deterministic interleaving.
