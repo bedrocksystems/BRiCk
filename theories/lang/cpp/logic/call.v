@@ -63,6 +63,7 @@ Definition setup_args (ts : list decltype) (ar : function_arity) (es : list Expr
     end).
 
 (**
+  BEGIN destruction-of-function-arguments
   Destruction of function arguments is left implementation defined
   in C++. See <https://eel.is/c++draft/expr.call#6> which states:
 
@@ -76,6 +77,7 @@ Definition setup_args (ts : list decltype) (ar : function_arity) (es : list Expr
   trivially destructible objects immediately and otherwise destroys
   objects at the end of the full expression. See
   <https://refspecs.linuxbase.org/cxxabi-1.83.html#call>.
+  END destruction-of-function-arguments
  *)
 
 Section with_resolve.
