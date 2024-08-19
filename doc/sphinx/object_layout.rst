@@ -330,7 +330,7 @@ While this concept has been deprecated - and redefined in terms of - the more gr
 :ref:`trivial class <object_layout.concepts.trivial>`
 concepts, it is an easier-to-characterize side-condition as it is stronger than either
 of the previous two concepts. Furthermore, the data which we've encountered while
-reasoning explicitly about the layout of structs within the BedRock Hypervisor™
+reasoning explicitly about the layout of structs within `BlueRock <https://bluerock.io>`_ Ultra™
 has fallen into the category of **POD**. In the future we will want to refine the
 C++-concepts which we expose within the semantics and relax our axioms accordingly.
 
