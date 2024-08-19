@@ -6,8 +6,8 @@
 #
 
 # General information about the project.
-project = 'BedRock BRiCk'
-copyright = '2021 BedRock Systems'
+project = 'BlueRock BRiCk'
+copyright = '2021-24 BlueRock Security'
 author = 'Jasper Haag'
 
 version = "0.5.0"
@@ -248,7 +248,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pragmaticFM.tex', 'BedRock BRiCk',
+    (master_doc, 'pragmaticFM.tex', 'BlueRock BRiCk',
      'Jasper Haag', 'manual'),
 ]
 
@@ -258,7 +258,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pragmaticfm', 'BedRock BRiCk',
+    (master_doc, 'pragmaticfm', 'BlueRock BRiCk',
      [author], 1)
 ]
 
@@ -269,8 +269,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'PragmaticFMDocumentation', 'BedRock BRiCk',
-     author, 'PragmaticFMDocumentation', 'A pragmatic guide to formal methods within BedRock.',
+    (master_doc, 'PragmaticFMDocumentation', 'BlueRock BRiCk',
+     author, 'PragmaticFMDocumentation', 'A pragmatic guide to formal methods within BlueRock.',
      'Miscellaneous'),
 ]
 
@@ -296,7 +296,7 @@ epub_exclude_files = ['search.html']
 # https://github.com/sphinx-doc/sphinx/issues/2173
 global_substitutions = {
     'project' : 'BRiCk',
-    'full_project': 'BedRock BRiCk',
+    'full_project': 'BlueRock BRiCk',
     'cpp2v': 'cpp2v'
 }
 

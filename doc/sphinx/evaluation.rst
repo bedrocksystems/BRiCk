@@ -12,7 +12,7 @@ The general form of these rules is the following:
    Parameter wp : input_1 -> .. -> input_n -> (output_1 -> ... -> output_n -> PROP) -> PROP
 
 Note that `wp` is a predicate in our separation logic (the fact that it returns a `PROP`).
-Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that the code is safe and if the expression terminates, it terminates in a state in which its outputs statisfy the "continuation" (i.e. the final function argument to `wp`).
+Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that the code is safe and if the expression terminates, it terminates in a state in which its outputs satisfy the "continuation" (i.e. the final function argument to `wp`).
 
 Due to the structure of C++, |project| contains a separate weakest pre-condition modality for each syntactic category. These are defined in |link:bedrock.lang.cpp.logic.wp|.
 
@@ -75,7 +75,7 @@ These are characterized by two predicate transformers.
 Operands
 ~~~~~~~~~~~
 |link:bedrock.lang.cpp.logic.wp#WPE.wp_operand| is used to evaluate a operand of a primitive operator.
-These operands are *always* primitives, since operators that accept aggregates are desugared to functions or methods.
+These operands are *always* primitives, since operators that accept aggregates are de-sugared to functions or methods.
 
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_operand *)
@@ -127,13 +127,21 @@ To capture this, |project| *defines* `wp_initialize` which provides the semantic
 Function Call Semantics
 ------------------------
 
-The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) recieve the return value.
+The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) receive the return value.
 We note that it is important to handle the passing of primitives as well as aggregates, both of which are very common in C++.
 The semantics for function calls specifies how to pass arguments to functions and (potentially) get back the return value, both for primitives and for aggregates.
 
 |project| follows the C++ standard by `using initialization semantics to pass (and return) data to (and from) functions <https://eel.is/c++draft/expr.call#7>`_.
 It is also the style taken by `Cerberus <https://www.cl.cam.ac.uk/~pes20/cerberus/>`_.
 
+C++ leaves the lifetime of *trivially destructible* function arguments unspecified, as it is *generally* not visible to client programs.
+|project| follows the Itanium ABI as is documented in |link:bedrock.lang.cpp.logic.call|.
+
+.. literalinclude:: ../../theories/lang/cpp/logic/call.v
+   :start-after: BEGIN destruction-of-function-arguments
+   :end-before: END destruction-of-function-arguments
+   :dedent:
+
+
 .. rubric:: Footnotes
-.. [#parallel-destruction] We use `par` to under approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call `f(a,b,c)`, the expressions `a`, `b`, and `c` can be evaluated in any order and we can approximate the ordering provided by c++ by saying they are destroyed in parallel.
-.. [#non-observable-destructors] Part of the justification for this is that the arguments to functions do not have names in the callees stack frame, so the locations of those objects are not accessible to other objects (something that could influence the semantics due to live pointers).
+.. [#parallel-destruction] `par` can be used to describe the semantics of destruction in C, it is not needed for the semantics of C++ because C++ defines evaluation order as non-deterministic interleaving.
