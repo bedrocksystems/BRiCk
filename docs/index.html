@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The BRiCk C++ Program Logic &mdash; BedRock BRiCk alpha documentation</title>
+  <title>The BRiCk C++ Program Logic &mdash; BlueRock BRiCk alpha documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="_static/alectryon.css" />
@@ -35,7 +35,7 @@
           
           
           <a href="#" class="icon icon-home">
-            BedRock BRiCk
+            BlueRock BRiCk
           </a>
               <div class="version">
                 0.5.0
@@ -68,7 +68,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">BedRock BRiCk</a>
+          <a href="#">BlueRock BRiCk</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -86,14 +86,15 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="the-brick-c-program-logic">
-<h1>The BRiCk C++ Program Logic<a class="headerlink" href="#the-brick-c-program-logic" title="Permalink to this heading"></a></h1>
+  <div class="section" id="the-project-c-program-logic">
+<h1>The BRiCk C++ Program Logic<a class="headerlink" href="#the-project-c-program-logic" title="Permalink to this heading"></a></h1>
 <p>BRiCk is a program logic for low-level, concurrent C++ built on the Iris separation logic.
-BRiCk’s goal is to develop a clear and compositional semantics of C++ programs, that can be used across many levels of abstraction.
-It is not meant to provide usable verification tooling to apply these principles to real C++ programs.</p>
+BRiCk’s goal is to develop a clear and compositional semantics of C++ programs, that can be used across many levels of abstraction.</p>
 <div class="topic">
-<p class="topic-title">Disclaimer</p>
-<p>This code is experimental and not feature complete. If it breaks, you get to keep both pieces.</p>
+<p class="topic-title">Note</p>
+<p>This repository does not provide usable verification tooling to apply these principles to real C++ programs.
+If you are interested in verifying real, concurrent C++ programs using this logic, please open an issue an issue on this repository.
+<a class="reference external" href="https://bluerock.io/">BlueRock Security</a> has developed verification tools on top of this semantics that can be used to verify real C++ programs.</p>
 </div>
 <p>The BRiCk release contains two pieces:</p>
 <ul class="simple">
@@ -103,7 +104,7 @@ It is not meant to provide usable verification tooling to apply these principles
 <p>BRiCk focuses on a tailored (but relatively large) portion of modern C++.
 Some high-level features (and non-features) include the following:</p>
 <ul class="simple">
-<li><p>BRiCk does not support some C++ features: e.g. member pointers, exceptions, goto, and virtual inheritance.</p></li>
+<li><p>BRiCk does not <em>currently</em> support some C++ features: e.g. member pointers, exceptions, goto, and virtual inheritance.</p></li>
 <li><p>BRiCk is currently limited to reasoning about templated code after it has been instantiated.</p></li>
 <li><p>Some features have restricted use: e.g. BRiCk’s support for switch statements does not support Duff’s device.</p></li>
 <li><p>BRiCk adopts (limited) extensions to the C++ standard, based on existing research, e.g. for multi-address spaces, assembly interoperability, integer-to-pointer casts, and pointer provenance.</p></li>
@@ -179,7 +180,7 @@ Some high-level features (and non-features) include the following:</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021 BedRock Systems.</p>
+    <p>&#169; Copyright 2021-24 BlueRock Security.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

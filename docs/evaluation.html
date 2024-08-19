@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Evaluation &mdash; BedRock BRiCk alpha documentation</title>
+  <title>Evaluation &mdash; BlueRock BRiCk alpha documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="_static/alectryon.css" />
@@ -36,7 +36,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            BedRock BRiCk
+            BlueRock BRiCk
           </a>
               <div class="version">
                 0.5.0
@@ -83,7 +83,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">BedRock BRiCk</a>
+          <a href="index.html">BlueRock BRiCk</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -106,7 +106,7 @@
 <p>The semantics of C++ programs in BRiCk are written in <a class="reference external" href="https://en.wikipedia.org/wiki/Predicate_transformer_semantics">weakest (liberal) pre-condition style</a>.
 The general form of these rules is the following:</p>
 <p>Note that <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp</span></span></code> is a predicate in our separation logic (the fact that it returns a <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">PROP</span></span></code>).
-Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that the code is safe and if the expression terminates, it terminates in a state in which its outputs statisfy the “continuation” (i.e. the final function argument to <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp</span></span></code>).</p>
+Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that the code is safe and if the expression terminates, it terminates in a state in which its outputs satisfy the “continuation” (i.e. the final function argument to <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp</span></span></code>).</p>
 <p>Due to the structure of C++, BRiCk contains a separate weakest pre-condition modality for each syntactic category. These are defined in <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html">bedrock.lang.cpp.logic.wp</a>.</p>
 <div class="section" id="expressions">
 <h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this heading"></a></h2>
@@ -171,7 +171,7 @@ The <a class="reference external" href="http://eel.is/c++draft/expr.prop#basic.l
 <div class="section" id="operands">
 <h4>Operands<a class="headerlink" href="#operands" title="Permalink to this heading"></a></h4>
 <p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_operand">wp_operand</a> is used to evaluate a operand of a primitive operator.
-These operands are <em>always</em> primitives, since operators that accept aggregates are desugared to functions or methods.</p>
+These operands are <em>always</em> primitives, since operators that accept aggregates are de-sugared to functions or methods.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(* evaluate a prvalue that &quot;computes the value of an operand of an operator&quot;
  *)
 Parameter wp_operand : forall {resolve:genv}, translation_unit -&gt; region -&gt; Expr -&gt; M val.
@@ -343,18 +343,32 @@ Definition wp_initialize `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (�
 </div>
 <div class="section" id="function-call-semantics">
 <h3>Function Call Semantics<a class="headerlink" href="#function-call-semantics" title="Permalink to this heading"></a></h3>
-<p>The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) recieve the return value.
+<p>The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) receive the return value.
 We note that it is important to handle the passing of primitives as well as aggregates, both of which are very common in C++.
 The semantics for function calls specifies how to pass arguments to functions and (potentially) get back the return value, both for primitives and for aggregates.</p>
 <p>BRiCk follows the C++ standard by <a class="reference external" href="https://eel.is/c++draft/expr.call#7">using initialization semantics to pass (and return) data to (and from) functions</a>.
 It is also the style taken by <a class="reference external" href="https://www.cl.cam.ac.uk/~pes20/cerberus/">Cerberus</a>.</p>
+<p>C++ leaves the lifetime of <em>trivially destructible</em> function arguments unspecified, as it is <em>generally</em> not visible to client programs.
+BRiCk follows the Itanium ABI as is documented in <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.call.html">bedrock.lang.cpp.logic.call</a>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Destruction of function arguments is left implementation defined
+in C++. See &lt;https://eel.is/c++draft/expr.call#6&gt; which states:
+
+&gt; It is implementation-defined whether the lifetime of a parameter
+&gt; ends when the function in which it is defined returns or at the
+&gt; end of the enclosing full-expression. The initialization and
+&gt; destruction of each parameter occurs within the context of the
+&gt; calling function.
+
+In the BRiCk semantics, we follow the Itanium ABI which destroys
+trivially destructible objects immediately and otherwise destroys
+objects at the end of the full expression. See
+&lt;https://refspecs.linuxbase.org/cxxabi-1.83.html#call&gt;.
+</pre></div>
+</div>
 <p class="rubric">Footnotes</p>
 <dl class="footnote brackets">
 <dt class="label" id="parallel-destruction"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
-<dd><p>We use <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">par</span></span></code> to under approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">(</span></span><span class="n"><span class="pre">a</span></span><span class="o"><span class="pre">,</span></span><span class="n"><span class="pre">b</span></span><span class="o"><span class="pre">,</span></span><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">)</span></span></code>, the expressions <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">a</span></span></code>, <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">b</span></span></code>, and <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">c</span></span></code> can be evaluated in any order and we can approximate the ordering provided by c++ by saying they are destroyed in parallel.</p>
-</dd>
-<dt class="label" id="non-observable-destructors"><span class="brackets">2</span></dt>
-<dd><p>Part of the justification for this is that the arguments to functions do not have names in the callees stack frame, so the locations of those objects are not accessible to other objects (something that could influence the semantics due to live pointers).</p>
+<dd><p><code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">par</span></span></code> can be used to describe the semantics of destruction in C, it is not needed for the semantics of C++ because C++ defines evaluation order as non-deterministic interleaving.</p>
 </dd>
 </dl>
 </div>
@@ -372,7 +386,7 @@ It is also the style taken by <a class="reference external" href="https://www.cl
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021 BedRock Systems.</p>
+    <p>&#169; Copyright 2021-24 BlueRock Security.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -2,7 +2,7 @@
 Code Documentation
 ###############################
 
-You can find the ``coqdoc`` documentation for BRiCk and related packages at
+You can find the ``coqdoc`` documentation for |project| and related packages at
 the following links.
 
 - `bedrock.prelude <./_static/coqdoc/bedrock.prelude.html/toc.html>`__.
@@ -15,8 +15,8 @@ the following links.
 
 - `Lens.Elpi <./_static/coqdoc/Lens.Elpi.html/toc.html>`__.
 
-Some BRiCk-specific examples are linked below. These are *not* sufficient for
-learning how to use BRiCk.
+Some |project|-specific examples are linked below. These are *not* sufficient for
+learning how to use |project|.
 
 - `Logic <./_static/coqdoc/bedrock.noimport.html/bedrock.noimport.doc.cpp.logic.html>`__
 

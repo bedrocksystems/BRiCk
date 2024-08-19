@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Object representation, layout and padding &mdash; BedRock BRiCk alpha documentation</title>
+  <title>Object representation, layout and padding &mdash; BlueRock BRiCk alpha documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
       <link rel="stylesheet" type="text/css" href="_static/alectryon.css" />
@@ -36,7 +36,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            BedRock BRiCk
+            BlueRock BRiCk
           </a>
               <div class="version">
                 0.5.0
@@ -107,7 +107,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">BedRock BRiCk</a>
+          <a href="index.html">BlueRock BRiCk</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -153,7 +153,7 @@ In practice, many C++ programs do not require this level of reasoning.</p>
 <li><p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr">Vptr</a> - for C++ pointer and reference values</p></li>
 <li><p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vint">Vint</a> - for C++ integral values (excluding floating-point values)</p></li>
 <li><p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vraw">Vraw</a> - for the low-level representation of C++ objects; refer to <a class="reference internal" href="#object-layout-axiomatized-object-model"><span class="std std-ref">this section</span></a> for more details</p></li>
-<li><p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vundef">Vundef</a> - for uninitialized values, upon which all operationrs yield <a class="reference internal" href="undefined_behavior.html#undefined-behavior"><span class="std std-ref">Undefined Behavior</span></a></p></li>
+<li><p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vundef">Vundef</a> - for uninitialized values, upon which all operations yield <a class="reference internal" href="undefined_behavior.html#undefined-behavior"><span class="std std-ref">Undefined Behavior</span></a></p></li>
 </ul>
 <p>This characterization enables us to use a single abstraction to model the in-memory representation of C++ values - called <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.heap_pred.html#primR">primR</a> <code class="code highlight coq docutils literal notranslate"><span class="o"><span class="pre">:</span></span> <span class="n"><span class="pre">type</span></span> <span class="o"><span class="pre">-&gt;</span></span> <span class="n"><span class="pre">Qp</span></span> <span class="o"><span class="pre">-&gt;</span></span> <span class="n"><span class="pre">val</span></span> <span class="o"><span class="pre">-&gt;</span></span> <span class="n"><span class="pre">Rep</span></span></code> - which reflects the fractional ownership (<code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">Qp</span></span></code>) of some Coq-model <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">val</span></span></code>ue of a given C++ <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">type</span></span></code>.
 <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">Rep</span></span> <span class="o"><span class="pre">~=</span></span> <span class="n"><span class="pre">ptr</span></span> <span class="o"><span class="pre">-&gt;</span></span> <span class="n"><span class="pre">mpred</span></span></code> models the location agnostic in-memory representation of some resource, and for any given <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">p</span></span> <span class="o"><span class="pre">:</span></span> <span class="n"><span class="pre">ptr</span></span></code> and <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">R</span></span> <span class="o"><span class="pre">:</span></span> <span class="n"><span class="pre">Rep</span></span></code>, <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">p</span></span> <span class="o"><span class="pre">|-&gt;</span></span> <span class="n"><span class="pre">R</span></span></code> reflects the materialization of the resource modeled by <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">R</span></span></code> at the logical pointer <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">p</span></span></code>.</p>
@@ -238,8 +238,8 @@ compilers only insert padding between fields if it is necessary to achieve align
 <p>The address offset of a <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.offset">offset</a> is determined by <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.eval_offset">eval_offset</a>.
 BRiCk currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the BRiCk abstract syntax tree (see <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.syntax.translation_unit.html#Struct">Struct</a> and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.syntax.translation_unit.html#Union">Union</a>).</p>
 <p>In particular, <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#struct_def">struct_def</a> uses the information from the Clang front-end to enumerate the properly-<a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.offset">offset</a> bases and fields of a given struct.
-Furthermore, <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#struct_paddingR">struct_paddingR</a> tracks the padding which the compiler (may have) inserted and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.heap_pred.html#identityR">identityR</a> tracks the object identity for objects which have a vtable.
-<a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#anyR_struct">anyR_struct</a> enables the “shattering” of a (potentially uninitialized) struct into its (potentially uninitialized) constitutent pieces (as well as its <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#struct_paddingR">struct_paddingR</a> and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.heap_pred.html#identityR">identityR</a>, if necessary).</p>
+Furthermore, <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.pred.html#struct_padding">struct_padding</a> tracks the padding which the compiler (may have) inserted and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.pred.html#mdc_path">mdc_path</a> tracks the most derived class for objects which have a vtable.
+<a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#anyR_struct">anyR_struct</a> enables the “shattering” of a (potentially uninitialized) struct into its (potentially uninitialized) constitutent pieces (as well as its <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.pred.html#struct_padding">struct_padding</a> and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.pred.html#mdc_path">mdc_path</a>, if necessary).</p>
 <p>Because the C++ standard only requires portability of the layout of certain types of aggregates, we limit the use of this information in our axioms to POD and standard layout classes (see <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.eval_o_field">eval_o_field</a>).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -271,7 +271,7 @@ a member which is not the <strong>active</strong> member of a union is UB.</p>
 <p>The virtual address offset of a <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.offset">offset</a> is determined by <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.eval_offset">eval_offset</a>.
 BRiCk currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the BRiCk abstract syntax tree (see <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.syntax.translation_unit.html#Struct">Struct</a> and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.syntax.translation_unit.html#Union">Union</a>).</p>
 <p>In particular, <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#union_def">union_def</a> uses the information from the Clang front-end to provide a disjunction of all of the properly-<a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.offset">offset</a> fields of a given union.
-Furthermore, <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#union_paddingR">union_paddingR</a> tracks the padding which the compiler (may have) inserted <em>as well as</em> an identifier which reflects the <strong>active member</strong>.
+Furthermore, <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.pred.html#union_padding">union_padding</a> tracks the padding which the compiler (may have) inserted <em>as well as</em> an identifier which reflects the <strong>active member</strong>.
 <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.layout.html#anyR_union">anyR_union</a> enables “translating between” different members of the union.</p>
 <p>Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.ptrs.html#PTRS.eval_o_field">eval_o_field</a>).</p>
 <div class="admonition note">
@@ -395,7 +395,7 @@ a POD class, an array of such a type, or a cv-qualified version of one of these 
 <a class="reference internal" href="#object-layout-concepts-trivial"><span class="std std-ref">trivial class</span></a>
 concepts, it is an easier-to-characterize side-condition as it is stronger than either
 of the previous two concepts. Furthermore, the data which we’ve encountered while
-reasoning explicitly about the layout of structs within the BedRock Hypervisor™
+reasoning explicitly about the layout of structs within <a class="reference external" href="https://bluerock.io">BlueRock</a> Ultra™
 has fallen into the category of <strong>POD</strong>. In the future we will want to refine the
 C++-concepts which we expose within the semantics and relax our axioms accordingly.</p>
 <div class="section" id="standard-layout-data">
@@ -486,7 +486,7 @@ are known as <strong>Trivially Destructible Objects</strong>.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021 BedRock Systems.</p>
+    <p>&#169; Copyright 2021-24 BlueRock Security.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

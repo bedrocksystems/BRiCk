@@ -39,7 +39,7 @@ Given that we materialize all aggregates, we can provide a simple characterizati
 - |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vptr| - for C++ pointer and reference values
 - |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vint| - for C++ integral values (excluding floating-point values)
 - |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vraw| - for the low-level representation of C++ objects; refer to :ref:`this section <object_layout.axiomatized_object_model>` for more details
-- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vundef| - for uninitialized values, upon which all operationrs yield :ref:`Undefined Behavior <undefined_behavior>`
+- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vundef| - for uninitialized values, upon which all operations yield :ref:`Undefined Behavior <undefined_behavior>`
 
 This characterization enables us to use a single abstraction to model the in-memory representation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: type -> Qp -> val -> Rep` - which reflects the fractional ownership (`Qp`\ ) of some Coq-model `val`\ ue of a given C++ `type`.
 `Rep ~= ptr -> mpred` models the location agnostic in-memory representation of some resource, and for any given `p : ptr` and `R : Rep`\ , `p |-> R` reflects the materialization of the resource modeled by `R` at the logical pointer `p`.
@@ -139,8 +139,8 @@ The address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is de
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 
 In particular, |link:bedrock.lang.cpp.logic.layout#struct_def| uses the information from the Clang front-end to enumerate the properly-|link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| bases and fields of a given struct.
-Furthermore, |link:bedrock.lang.cpp.logic.layout#struct_paddingR| tracks the padding which the compiler (may have) inserted and |link:bedrock.lang.cpp.logic.heap_pred#identityR| tracks the object identity for objects which have a vtable.
-|link:bedrock.lang.cpp.logic.layout#anyR_struct| enables the "shattering" of a (potentially uninitialized) struct into its (potentially uninitialized) constitutent pieces (as well as its |link:bedrock.lang.cpp.logic.layout#struct_paddingR| and |link:bedrock.lang.cpp.logic.heap_pred#identityR|, if necessary).
+Furthermore, |link:bedrock.lang.cpp.logic.pred#struct_padding| tracks the padding which the compiler (may have) inserted and |link:bedrock.lang.cpp.logic.pred#mdc_path| tracks the most derived class for objects which have a vtable.
+|link:bedrock.lang.cpp.logic.layout#anyR_struct| enables the "shattering" of a (potentially uninitialized) struct into its (potentially uninitialized) constitutent pieces (as well as its |link:bedrock.lang.cpp.logic.pred#struct_padding| and |link:bedrock.lang.cpp.logic.pred#mdc_path|, if necessary).
 
 Because the C++ standard only requires portability of the layout of certain types of aggregates, we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
 
@@ -179,7 +179,7 @@ The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offse
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 
 In particular, |link:bedrock.lang.cpp.logic.layout#union_def| uses the information from the Clang front-end to provide a disjunction of all of the properly-|link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| fields of a given union.
-Furthermore, |link:bedrock.lang.cpp.logic.layout#union_paddingR| tracks the padding which the compiler (may have) inserted *as well as* an identifier which reflects the **active member**.
+Furthermore, |link:bedrock.lang.cpp.logic.pred#union_padding| tracks the padding which the compiler (may have) inserted *as well as* an identifier which reflects the **active member**.
 |link:bedrock.lang.cpp.logic.layout#anyR_union| enables "translating between" different members of the union.
 
 Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
@@ -330,7 +330,7 @@ While this concept has been deprecated - and redefined in terms of - the more gr
 :ref:`trivial class <object_layout.concepts.trivial>`
 concepts, it is an easier-to-characterize side-condition as it is stronger than either
 of the previous two concepts. Furthermore, the data which we've encountered while
-reasoning explicitly about the layout of structs within the BedRock Hypervisor™
+reasoning explicitly about the layout of structs within `BlueRock <https://bluerock.io>`_ Ultra™
 has fallen into the category of **POD**. In the future we will want to refine the
 C++-concepts which we expose within the semantics and relax our axioms accordingly.
 
