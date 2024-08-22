@@ -135,6 +135,31 @@ Section with_prop.
       rewrite bi.wand_curry. done.
   Qed.
 
+  Lemma all_args_ok (wp : WpSpec) acc_args acc_pre acc_post args K
+    : spec_internal wp acc_args acc_pre acc_post args K ⊣⊢ ∃ aa : list ARG, [| args = rev acc_args ++ aa |] ∗ spec_internal wp [] acc_pre acc_post aa K.
+  Proof.
+    intros. change acc_args with ([] ++ acc_args). rewrite args_ok /=. eauto.
+  Qed.
+  Lemma all_pres_ok (wp : WpSpec) acc_args acc_pre acc_post args K :
+    spec_internal wp acc_args acc_pre acc_post args K ⊣⊢ [∗] acc_pre ∗ spec_internal wp acc_args [] acc_post args K.
+  Proof.
+    intros. have ->: acc_pre = acc_pre ++ nil by rewrite app_nil_r. rewrite pres_ok app_nil_r/=; eauto.
+  Qed.
+  Lemma all_posts_ok (wp : WpSpec) acc_args acc_pre acc_post args K :
+      spec_internal wp acc_args acc_pre acc_post args K ⊣⊢ spec_internal wp acc_args acc_pre [] args (λ x : RESULT, ([∗ list] p ∈ acc_post, p x) -∗ K x).
+  Proof.
+    intros. have ->: acc_post = [] ++ acc_post by done. rewrite posts_ok/=; eauto.
+  Qed.
+
+  Lemma all_accs_ok (wp : WpSpec) acc_args acc_pre acc_post args K :
+    spec_internal wp acc_args acc_pre acc_post args K
+    ⊣⊢ ∃ aa : list ARG, [| args = rev acc_args ++ aa |] ∗ [∗] acc_pre ∗ spec_internal wp [] [] [] aa (λ x : RESULT, ([∗ list] p ∈ acc_post, p x) -∗ K x).
+  Proof.
+    rewrite all_args_ok. f_equiv; intro. f_equiv.
+    rewrite all_pres_ok; f_equiv.
+    apply all_posts_ok.
+  Qed.
+
   Lemma spec_internal_denote wp acc_arg acc_pre acc_post args K :
         wp.(spec_internal) acc_arg acc_pre acc_post args K
     ⊣⊢ ([∗list] P ∈ acc_pre, P) ∗
