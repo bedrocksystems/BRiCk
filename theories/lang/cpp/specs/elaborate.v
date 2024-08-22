@@ -19,17 +19,17 @@ Section with_cpp.
 
   (** Determine if an argument is already materialized in the operand style.
       If it is, return [None], otherwise, return [Some (cv, ty)] used for [primR].
-
-      NOTE: arrays are treated as primitives because they are passed as pointers
    *)
   Definition mtype (t : type) : option (type_qualifiers * type) :=
     let '(cv, t) := decompose_type t in
-    match t with
-    | Tnamed cls => None
-    | Tref ty
-    | Trv_ref ty => Some (cv, Tref $ erase_qualifiers ty)
-    | _ => Some (cv, erase_qualifiers t)
-    end.
+    pair cv <$> match t with
+                | Tnamed cls => None
+                | Tref ty
+                | Trv_ref ty => Some (Tref $ erase_qualifiers ty)
+                | _ => Some (erase_qualifiers t)
+                end.
+
+  #[local] Notation add_with name t := (fun K => add_with (T:=t) K name).
 
   (** [elaborate ret ts wpp args] builds a function specification around [wpp]
       assuming that [wpp] takes the arguments in [args] (in reverse order) and the
@@ -47,23 +47,30 @@ Section with_cpp.
               wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]) "pr")
           | Some (cv, t) =>
               wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr =>
-                   DONE pr (_at pr (primR t (cQp.mk (q_const cv) 1) rv))) "pr")
+                   DONE pr (pr |-> primR t (cQp.mk (q_const cv) 1) rv)) "pr")
           end
         in
         match ar with
         | Ar_Definite => finish args
         | Ar_Variadic =>
-            add_with (fun pv : ptr => add_arg pv $ finish (args ++ [Vptr pv])) "pv"
-        end
+            letI* pv := add_with "pv" ptr in
+            letI* := add_arg pv in
+            finish (args ++ [Vptr pv])
+        end%I
     | t :: ts =>
         match mtype t with
         | None =>
-            add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar (args ++ [Vptr pv]) wpp)) "pv"
+            letI* pv := add_with "pv" ptr in
+            letI* := add_arg pv in
+            elaborate ret ts ar (args ++ [Vptr pv]) wpp
         | Some (_, t) => (* arguments are always passed as mutable *)
-            add_with (fun pv : ptr => add_with (fun v : val => add_arg pv (
-                                           add_pre (_at pv (primR t (cQp.mut 1) v)) (add_post (Exists v, _at pv (primR t (cQp.mut 1) v))
-                                                                                    (elaborate ret ts ar (args ++ [v]) wpp)))) "v") "pv"
-        end
+            letI* pv := add_with "pv" ptr in
+            letI* v := add_with "v" val in
+            letI* := add_arg pv in
+            letI* := add_pre (pv |-> primR t (cQp.mut 1) v) in (* TODO: this could use [tptsto_fuzzyR] *)
+            letI* := add_post (pv |-> anyR t (cQp.mut 1)) in
+            elaborate ret ts ar (args ++ [v]) wpp
+        end%I
     end.
 
   (** [cpp_spec ret ts spec] is the elaborated version of the [spec]
