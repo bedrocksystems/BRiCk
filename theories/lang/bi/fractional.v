@@ -54,12 +54,16 @@ Module Export nary.
     (∀ (q1 q2 : Qp) a1 a2, Observe2 (▷ (a1 ≡ a2)) (P q1 a1) (P q2 a2)).
 End nary.
 
-#[global] Instance fractional_exist {PROP : bi} {A} (P : A → Qp → PROP)
-  (Hfrac : ∀ oa, Fractional (P oa))
-  (Hobs : ∀ a1 a2 q1 q2, Observe2 [| a1 = a2 |] (P a1 q1) (P a2 q2)) :
-  Fractional (λ q, ∃ a : A, P a q)%I.
-Proof.
-  intros q1 q2.
-  rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
-  f_equiv=>oa. apply: fractional.
-Qed.
+Section with_bi.
+  Context {PROP : bi}.
+
+  #[global] Instance fractional_exist {A} (P : A → Qp → PROP)
+    (Hfrac : ∀ oa, Fractional (P oa))
+    (Hobs : ∀ a1 a2 q1 q2, Observe2 [| a1 = a2 |] (P a1 q1) (P a2 q2)) :
+    Fractional (λ q, ∃ a : A, P a q)%I.
+  Proof.
+    intros q1 q2.
+    rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
+    f_equiv=>oa. apply: fractional.
+  Qed.
+End with_bi.

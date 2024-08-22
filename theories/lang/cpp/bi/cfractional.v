@@ -128,7 +128,7 @@ Section cfractional.
     by rewrite -EQ Frac. by rewrite EQ Frac.
   Qed.
 
-  (** *** Compatiblity for [CFractional] *)
+  (** *** Compatibility for [CFractional] *)
 
   #[global] Instance persistent_cfractional `{!Persistent P, !TCOr (Affine P) (Absorbing P)} :
     CFractional (fun _ => P).
