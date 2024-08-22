@@ -789,9 +789,13 @@ printInitType(const CXXConstructorDecl &decl, const CXXCtorInitializer &init,
 		return use_qualtype(fd->getType());
 	else if (auto type = init.getBaseClass())
 		return use_type(*type);
-	else if (init.isDelegatingInitializer())
-		return use_qualtype(decl.getThisType());
-	else
+	else if (init.isDelegatingInitializer()) {
+		// getThisType() returns a pointer type.
+		if (const auto *OPT = decl.getThisType().getTypePtr()->getAs<clang::PointerType>())
+			return use_qualtype(OPT->getPointeeType());
+	  else
+			fatal("[getThisType] on delegating initializer unexpectedly returned a non-pointer type!");
+	} else
 		fatal("initializer not memeber, base class, or indirect");
 }
 

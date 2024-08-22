@@ -664,7 +664,7 @@ Definition wp_struct_initializer_list `{Σ : cpp_logic, σ : genv} (tu : transla
   | Some {| init_type := ty ; init_init := e |} =>
     match inits with
     | _ :: nil =>
-      if bool_decide (drop_qualifiers ty = Tptr (Tnamed cls)) then
+      if bool_decide (drop_qualifiers ty = Tnamed cls) then
         (* this is a delegating constructor, simply delegate. *)
         wp_init tu ρ (Tnamed cls) this e (fun frees => interp tu frees Q)
       else
