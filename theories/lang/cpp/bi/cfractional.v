@@ -130,12 +130,15 @@ Section cfractional.
 
   (** *** Compatibility for [CFractional] *)
 
+  (** This follows by unfolding, but that was surprising. *)
+  Lemma cfractional_dup P :
+    (P -|- P ** P) ->
+    CFractional (λ _, P).
+  Proof. by rewrite /CFractional. Qed.
+
   #[global] Instance persistent_cfractional `{!Persistent P, !TCOr (Affine P) (Absorbing P)} :
     CFractional (fun _ => P).
-  Proof.
-    rewrite /CFractional=>q1 q2.
-    by rewrite {1}(bi.persistent_sep_dup P).
-  Qed.
+  Proof. apply /cfractional_dup /bi.persistent_sep_dup. Qed.
 
   #[global] Instance cfractional_sep (F G : cQp.t -> PROP) :
     CFractional F -> CFractional G ->

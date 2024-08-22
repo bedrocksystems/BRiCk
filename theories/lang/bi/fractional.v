@@ -67,3 +67,9 @@ Section with_bi.
     f_equiv=>oa. apply: fractional.
   Qed.
 End with_bi.
+
+(** This follows by unfolding, but that was surprising. *)
+Lemma fractional_dup P :
+  (P ⊣⊢ P ** P) ->
+  Fractional (λ _, P).
+Proof. by rewrite /CFractional. Qed.
