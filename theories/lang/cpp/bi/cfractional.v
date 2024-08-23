@@ -420,6 +420,17 @@ Section proofmode.
   Qed.
 End proofmode.
 
+(** Useful in rare cases. Here because the proof reuses IPM. *)
+#[global] Instance cfractional_ignore_exist {PROP : bi} (P : cQp.t -> PROP)
+  `{HcfP : CFractional0 P} :
+  CFractional (λI _, ∃ q, P q).
+Proof.
+  have ? : AsCFractional0 P by solve_as_cfrac.
+  apply cfractional_dup. iSplit.
+  { by iIntros "[% [$ $]]". }
+  iIntros "[[% A] [% B]]". iCombine "A B" as "$".
+Qed.
+
 (** ** Observations from validity *)
 (**
 The [CFracValidN] enable several related, but easier to apply,

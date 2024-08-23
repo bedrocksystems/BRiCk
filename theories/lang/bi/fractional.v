@@ -8,6 +8,7 @@ Require Export iris.bi.lib.fractional.
 
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.proofmode.proofmode.
 
 (** * Simple extensions to iris.bi.lib.fractional *)
 (**
@@ -30,6 +31,7 @@ Module Export nary.
   [FractionalN] states that predicate [P] taking a fraction and then [N]
   arguments is [Fractional]
   *)
+  Notation Fractional0 := Fractional (only parsing).
   Notation Fractional1 P := (∀ a, Fractional (fun q => P q a)).
   Notation Fractional2 P := (∀ a b, Fractional (fun q => P q a b)).
   Notation Fractional3 P := (∀ a b c, Fractional (fun q => P q a b c)).
@@ -66,10 +68,19 @@ Section with_bi.
     rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
     f_equiv=>oa. apply: fractional.
   Qed.
-End with_bi.
 
-(** This follows by unfolding, but that was surprising. *)
-Lemma fractional_dup P :
-  (P ⊣⊢ P ** P) ->
-  Fractional (λ _, P).
-Proof. by rewrite /CFractional. Qed.
+  (** This follows by unfolding, but that was surprising. *)
+  Lemma fractional_dup (P : PROP) :
+    (P ⊣⊢ P ∗ P) ->
+    Fractional (λ _, P).
+  Proof. by rewrite /Fractional. Qed.
+
+  #[global] Instance fractional_ignore_exist (P : Qp -> PROP) {HcfP : Fractional0 P} :
+    Fractional (λI _, ∃ q, P q).
+  Proof.
+    have ? : AsFractional0 P by solve_as_frac.
+    apply fractional_dup. iSplit.
+    { by iIntros "[% [$ $]]". }
+    iIntros "[[% A] [% B]]". iCombine "A B" as "$".
+  Qed.
+End with_bi.
