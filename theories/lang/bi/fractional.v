@@ -8,6 +8,7 @@ Require Export iris.bi.lib.fractional.
 
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.observe.
+Require Import bedrock.lang.proofmode.proofmode.
 
 (** * Simple extensions to iris.bi.lib.fractional *)
 (**
@@ -30,6 +31,7 @@ Module Export nary.
   [FractionalN] states that predicate [P] taking a fraction and then [N]
   arguments is [Fractional]
   *)
+  Notation Fractional0 := Fractional (only parsing).
   Notation Fractional1 P := (∀ a, Fractional (fun q => P q a)).
   Notation Fractional2 P := (∀ a b, Fractional (fun q => P q a b)).
   Notation Fractional3 P := (∀ a b c, Fractional (fun q => P q a b c)).
@@ -54,12 +56,31 @@ Module Export nary.
     (∀ (q1 q2 : Qp) a1 a2, Observe2 (▷ (a1 ≡ a2)) (P q1 a1) (P q2 a2)).
 End nary.
 
-#[global] Instance fractional_exist {PROP : bi} {A} (P : A → Qp → PROP)
-  (Hfrac : ∀ oa, Fractional (P oa))
-  (Hobs : ∀ a1 a2 q1 q2, Observe2 [| a1 = a2 |] (P a1 q1) (P a2 q2)) :
-  Fractional (λ q, ∃ a : A, P a q)%I.
-Proof.
-  intros q1 q2.
-  rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
-  f_equiv=>oa. apply: fractional.
-Qed.
+Section with_bi.
+  Context {PROP : bi}.
+
+  #[global] Instance fractional_exist {A} (P : A → Qp → PROP)
+    (Hfrac : ∀ oa, Fractional (P oa))
+    (Hobs : ∀ a1 a2 q1 q2, Observe2 [| a1 = a2 |] (P a1 q1) (P a2 q2)) :
+    Fractional (λ q, ∃ a : A, P a q)%I.
+  Proof.
+    intros q1 q2.
+    rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
+    f_equiv=>oa. apply: fractional.
+  Qed.
+
+  (** This follows by unfolding, but that was surprising. *)
+  Lemma fractional_dup (P : PROP) :
+    (P ⊣⊢ P ∗ P) ->
+    Fractional (λ _, P).
+  Proof. by rewrite /Fractional. Qed.
+
+  #[global] Instance fractional_ignore_exist (P : Qp -> PROP) {HcfP : Fractional0 P} :
+    Fractional (λI _, ∃ q, P q).
+  Proof.
+    have ? : AsFractional0 P by solve_as_frac.
+    apply fractional_dup. iSplit.
+    { by iIntros "[% [$ $]]". }
+    iIntros "[[% A] [% B]]". iCombine "A B" as "$".
+  Qed.
+End with_bi.

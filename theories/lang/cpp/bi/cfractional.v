@@ -128,14 +128,17 @@ Section cfractional.
     by rewrite -EQ Frac. by rewrite EQ Frac.
   Qed.
 
-  (** *** Compatiblity for [CFractional] *)
+  (** *** Compatibility for [CFractional] *)
+
+  (** This follows by unfolding, but that was surprising. *)
+  Lemma cfractional_dup P :
+    (P -|- P ** P) ->
+    CFractional (λ _, P).
+  Proof. by rewrite /CFractional. Qed.
 
   #[global] Instance persistent_cfractional `{!Persistent P, !TCOr (Affine P) (Absorbing P)} :
     CFractional (fun _ => P).
-  Proof.
-    rewrite /CFractional=>q1 q2.
-    by rewrite {1}(bi.persistent_sep_dup P).
-  Qed.
+  Proof. apply /cfractional_dup /bi.persistent_sep_dup. Qed.
 
   #[global] Instance cfractional_sep (F G : cQp.t -> PROP) :
     CFractional F -> CFractional G ->
@@ -416,6 +419,17 @@ Section proofmode.
     intros. rewrite /CombineSepAs. by rewrite -as_cfractional_combine.
   Qed.
 End proofmode.
+
+(** Useful in rare cases. Here because the proof reuses IPM. *)
+#[global] Instance cfractional_ignore_exist {PROP : bi} (P : cQp.t -> PROP)
+  `{HcfP : CFractional0 P} :
+  CFractional (λI _, ∃ q, P q).
+Proof.
+  have ? : AsCFractional0 P by solve_as_cfrac.
+  apply cfractional_dup. iSplit.
+  { by iIntros "[% [$ $]]". }
+  iIntros "[[% A] [% B]]". iCombine "A B" as "$".
+Qed.
 
 (** ** Observations from validity *)
 (**
