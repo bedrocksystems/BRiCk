@@ -98,11 +98,11 @@ Section with_Σ.
 
   Succeed Definition _5 : WPP :=
     \pre emp ** Exists y : nat, [| y = 3 |]
-    \post{}[Vptr nullptr] emp.
+    \post[Vptr nullptr] emp.
 
   Succeed Definition _6 : WPP :=
     \pre |==> True ** |={∅,⊤}=> False
-    \post{}[Vptr nullptr] emp.
+    \post[Vptr nullptr] emp.
 
 End with_Σ.
 
