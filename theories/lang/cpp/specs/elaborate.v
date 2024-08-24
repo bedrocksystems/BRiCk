@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2022 BedRock Systems, Inc.
+ * Copyright (c) 2022-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -34,9 +34,6 @@ Section with_cpp.
   (** [elaborate ret ts wpp args] builds a function specification around [wpp]
       assuming that [wpp] takes the arguments in [args] (in reverse order) and the
       remaining arguments in [ts].
-
-      Using [tptstoR] would be slightly more liberal, but is rarely needed
-      in practice.
    *)
   Fixpoint elaborate (ret : type) (ts : list type) (ar : function_arity) (args : list val) (wpp : WpSpec_cpp_val) : WpSpec mpredI ptr ptr :=
     match ts with
@@ -47,7 +44,7 @@ Section with_cpp.
               wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]) "pr")
           | Some (cv, t) =>
               wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr =>
-                   DONE pr (pr |-> primR t (cQp.mk (q_const cv) 1) rv)) "pr")
+                   DONE pr (pr |-> tptsto_fuzzyR t (cQp.mk (q_const cv) 1) rv)) "pr")
           end
         in
         match ar with
@@ -67,7 +64,7 @@ Section with_cpp.
             letI* pv := add_with "pv" ptr in
             letI* v := add_with "v" val in
             letI* := add_arg pv in
-            letI* := add_pre (pv |-> primR t (cQp.mut 1) v) in (* TODO: this could use [tptsto_fuzzyR] *)
+            letI* := add_pre (pv |-> tptsto_fuzzyR t (cQp.mut 1) v) in
             letI* := add_post (pv |-> anyR t (cQp.mut 1)) in
             elaborate ret ts ar (args ++ [v]) wpp
         end%I
