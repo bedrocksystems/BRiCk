@@ -32,7 +32,6 @@ Module Type Stmt.
     #[local] Notation wp_initialize := (wp_initialize tu).
     #[local] Notation default_initialize := (default_initialize tu).
 
-
     Implicit Types Q : Kpred.
 
     Definition Kfree (free : FreeTemp) : Kpred -> Kpred :=
@@ -44,6 +43,15 @@ Module Type Stmt.
       iIntros "X". iApply Kat_exit_frame => //.
       iIntros (??) "H"; by iApply interp_frame.
     Qed.
+
+    (** * Attribute Evaluation *)
+
+    (* NOTE: this assumes that attributes do not have a semantic
+       impact on the code. There are some attributes, e.g. <<OMP::for>>
+       that have a semantic impact on the code, but Clang chooses to
+       represent these using different AST nodes. *)
+    Axiom wp_attr : forall ρ attrs s Q,
+        wp ρ s Q |-- wp ρ (Sattr attrs s) Q.
 
     (** * Expression Evaluation *)
 
