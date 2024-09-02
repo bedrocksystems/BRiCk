@@ -8,6 +8,7 @@ Require Export bedrock.lang.algebra.big_op.
 Require Export iris.bi.big_op.
 
 Require Import bedrock.lang.bi.prelude.
+Require Import bedrock.lang.bi.observe.
 Require Import bedrock.lang.proofmode.proofmode.
 Import ChargeNotation.
 
@@ -145,6 +146,36 @@ Section big_sepL.
     (∀ k x, xs !! k = Some x → Affine (f k x)) →
     Affine ([∗ list] k↦x ∈ xs, f k x).
   Proof. apply big_opL_gen; apply _. Qed.
+
+  Lemma big_sepL_hd `{Inhabited A} f xs :
+    xs <> [] ->
+    ([∗ list] k↦x ∈ xs, f k x) ⊢ f 0 (hd inhabitant xs) ** True.
+  Proof. case: xs => [//|x xs] _ /=. iIntros "[$ $]". Qed.
+
+  Lemma bi_opL_sep_forall (P : A -> PROP) xs
+    `{!Persistent1 P} `{!Affine1 P} :
+    ([∗ list] x ∈ xs, P x) ⊣⊢ □ ∀ x, [| x ∈ xs |] -∗ P x.
+  Proof.
+    elim: xs => [//= |x xs /= -> ]. {
+      iSplit; last by iIntros.
+      iIntros "_ !>" (x []%elem_of_nil).
+    }
+    iSplit. {
+      iIntros "[#P #W] !>" (? [->|?]%elem_of_cons);
+        [ iApply "P" | by iApply "W"].
+    }
+    iIntros "#W". iSplitL; last iIntros "!>" (??).
+    all: iApply ("W" with "[%]"); set_solver.
+  Qed.
+
+  Lemma bi_opL_sep_and (P : A -> PROP) xs
+    `{BiAffine PROP} `{!Persistent1 P} :
+    ([∗ list] x ∈ xs, P x) ⊣⊢ [∧list] x ∈ xs, P x.
+  Proof.
+    elim: xs => [//= |x xs /= -> ]. { by rewrite bi.True_emp. }
+    iSplit; iIntros. { by rewrite bi.sep_and. }
+    by rewrite bi.persistent_and_sep_1.
+  Qed.
 End big_sepL.
 
 Lemma big_sepL_mono_elem {PROP : bi} {A : Type} (Φ Ψ : A → PROP) (l : list A):

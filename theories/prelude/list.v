@@ -411,6 +411,9 @@ Proof.
   destruct l; simpl in *; by lia.
 Qed.
 
+Lemma list_ne_length {A} (xs : list A) : length xs ≠ 0 -> xs <> [].
+Proof. by move=> ? /(f_equal length). Qed.
+
 (* Make [take 0 xs] reduce with [cbn] *)
 #[global] Arguments take : simpl nomatch.
 
