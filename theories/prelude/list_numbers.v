@@ -92,6 +92,9 @@ Lemma list_lookupN_fmap {A B} (f : A -> B) (l : list A) (i : N) :
   (f <$> l) !! i = f <$> (l !! i).
 Proof. by rewrite -[i]N2Nat.id /lookupN/list_lookupN list_lookup_fmap. Qed.
 
+Lemma list_ne_lengthN {A} (xs : list A) : lengthN xs ≠ 0 -> xs <> [].
+Proof. by move=> ? /(f_equal lengthN). Qed.
+
 Lemma length_lengthN {A} (xs : list A) :
   length xs = N.to_nat (lengthN xs).
 Proof. by rewrite /lengthN Nat2N.id. Qed.

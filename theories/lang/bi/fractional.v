@@ -83,4 +83,18 @@ Section with_bi.
     { by iIntros "[% [$ $]]". }
     iIntros "[[% A] [% B]]". iCombine "A B" as "$".
   Qed.
+
+  #[global] Instance big_sepL2_agreef1 {A C} {P : A -> Qp -> C -> PROP} xs ys1 ys2 (q1 q2 : Qp)
+    `{∀ a, AgreeF1 (P a)} :
+    Observe2 [| ys1 = ys2 |]
+      ([∗ list] hpa;x ∈ xs;ys1, P hpa q1 x)
+      ([∗ list] hpa;x ∈ xs;ys2, P hpa q2 x).
+  Proof.
+    apply observe_2_intro_only_provable.
+    iIntros "YS1 YS2"; iInduction xs as [|x xs] "IH" forall (ys1 ys2);
+      case: ys1 ys2 => [|y1 ys1] [|y2 ys2] //=; iRevert "YS1 YS2".
+    iIntros "[Y1 YS1] [Y2 YS2]".
+    iDestruct (observe_2_elim_pure (y1 = y2) with "Y1 Y2") as %<-.
+    by iDestruct ("IH" with "YS1 YS2") as %<-.
+  Qed.
 End with_bi.
