@@ -120,6 +120,9 @@ Section with_resolve.
     case_match; eauto. iIntros (?); iApply "X".
   Qed.
 
+  Definition early_destroy : list (decltype * ptr) -> list FreeTemps.t :=
+    omap (fun '(ty, p) => if is_trivially_destructible tu ty then Some (FreeTemps.delete ty p) else None).
+
   (**
      [wp_args eo pre ts_ar es] evaluates [pre ++ es] according to the evaluation order [eo].
      The expressions in [es] are evaluated using initialization semantics for the argument types
@@ -144,7 +147,7 @@ Section with_resolve.
       letI* ps, fs := eval eo (pre ++ map (fun '(t, e) => wp_arg t e) tes) in
         let (pre, ps) := split_at (length pre) ps in
         let early_destroy :=
-          FreeTemps.seqs_rev $ omap id $ zip_with (fun '(ty, _) p => if is_trivially_destructible tu ty then Some (FreeTemps.delete ty p) else None) tes ps in
+          FreeTemps.seqs_rev $ early_destroy $ zip_with (fun '(ty, _) p => (ty, p)) tes ps in
         match va_info with
         | Some non_va =>
             let (real, vargs) := split_at non_va ps in
