@@ -27,6 +27,9 @@ Arguments weakly_objective {_ _} _%_I {_}.
 #[global] Hint Mode WeaklyObjective ! + ! : typeclass_instances.
 #[global] Instance : Params (@WeaklyObjective) 2 := {}.
 
+#[global] Hint Extern 200 (WeaklyObjective (match ?x with | _ => _ end)) =>
+  destruct x : typeclass_instances.
+
 (** [WeaklyObjectiveN] states that predicate [P] taking [N] arguments is [WeaklyObjective] *)
 Notation WeaklyObjective1 P := (∀ a, WeaklyObjective (P a)).
 Notation WeaklyObjective2 P := (∀ a b, WeaklyObjective (P a b)).
