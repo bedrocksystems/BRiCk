@@ -133,6 +133,17 @@ Proof. apply N.bits_inj_iff. Qed.
 Lemma N_ext_iff n m : (∀ i, N.testbit n i = N.testbit m i) <-> n = m.
 Proof. apply N.bits_inj_iff. Qed.
 
+(** Testing bits with [_ `land` (2^_)]  *)
+Lemma N_land_bit (two_pow n : N) :
+  (n `land` (2 ^ two_pow) = (2 ^ two_pow) \/ n `land` (2 ^ two_pow) = 0)%N.
+Proof.
+  case Hn: (N.testbit n two_pow); [left|right].
+  all: intros; apply N_ext_iff => ?.
+  all: rewrite N.land_spec !N.pow2_bits_eqb //.
+  - case: N.eqb_spec => ?; subst; rewrite ?andb_false_r ?Hn //.
+  - case: N.eqb_spec => ?; subst; rewrite ?andb_false_r ?Hn ?N.bits_0 //.
+Qed.
+
 (** Misc cancellation lemmas for odd operators *)
 Lemma N_succ_pos_pred p : N.succ_pos (Pos.pred_N p) = p.
 Proof. rewrite /N.succ_pos. case E: Pos.pred_N=>[|p']; lia. Qed.
@@ -451,6 +462,19 @@ Lemma Z_ext n m : (∀ i, Z.testbit n i = Z.testbit m i) -> n = m.
 Proof. apply Z.bits_inj_iff. Qed.
 Lemma Z_ext_iff n m : (∀ i, Z.testbit n i = Z.testbit m i) <-> n = m.
 Proof. apply Z.bits_inj_iff. Qed.
+
+(** Testing bits with [_ `land` (2^_)]  *)
+Lemma Z_land_bit (two_pow n : Z) :
+  (0 <= two_pow)%Z ->
+  (n `land` (2 ^ two_pow) = (2 ^ two_pow) \/ n `land` (2 ^ two_pow) = 0)%Z.
+Proof.
+  intros H.
+  case Hn: (Z.testbit n two_pow); [left|right].
+  all: intros; apply Z_ext_iff => ?.
+  all: rewrite Z.land_spec !Z.pow2_bits_eqb //.
+  - case: Z.eqb_spec => ?; subst; rewrite ?andb_false_r ?Hn //.
+  - case: Z.eqb_spec => ?; subst; rewrite ?andb_false_r ?Hn ?Z.bits_0 //.
+Qed.
 
 (* Z.max and other operations *)
 Lemma Z_max_add_distr_l (a b c : Z) :
