@@ -7,7 +7,7 @@
 (* This file is a wrapper around [elpi.apps.derive] that doesn't have the side
    effect of setting [Uniform Inductive Parameters]. *)
 
-Require Export elpi.apps.derive.
+Require Export elpi.apps.derive.derive.
 #[global] Unset Uniform Inductive Parameters.
 
 (* Patch for the driver of the derive command. *)

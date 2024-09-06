@@ -5,11 +5,11 @@ Require Import Lens.Lens.
 
    license: GNU Lesser General Public License Version 2.1 or later
    ------------------------------------------------------------------------- *)
-From elpi.apps.derive Extra Dependency "lens.elpi" as lens.
-From elpi.apps.derive Extra Dependency "derive_hook.elpi" as derive_hook.
+From elpi.apps.derive.elpi Extra Dependency "lens.elpi" as lens.
+From elpi.apps.derive.elpi Extra Dependency "derive_hook.elpi" as derive_hook.
 
 Require Import elpi.elpi.
-Require Import elpi.apps.derive.
+Require Import elpi.apps.derive.derive.
 
 Import LensNotations.
 #[local] Open Scope lens_scope.

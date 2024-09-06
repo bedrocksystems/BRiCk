@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import elpi.apps.locker.
+Require Import elpi.apps.locker.locker.
 Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.bi.prelude.
 Require Import bedrock.lang.bi.observe.

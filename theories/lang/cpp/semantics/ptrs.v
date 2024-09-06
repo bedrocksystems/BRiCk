@@ -11,7 +11,7 @@ C++ pointers are subtle to model.
 The definitions in this file are based on the C and C++ standards, and
 formalizations of their memory object models (see [doc/sphinx/bibliography.rst]).
  *)
-Require Import elpi.apps.locker.
+Require Import elpi.apps.locker.locker.
 
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.addr.

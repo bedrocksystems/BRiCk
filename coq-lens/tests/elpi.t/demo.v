@@ -2,7 +2,7 @@
 (* From https://github.com/bedrocksystems/coq-lens/blob/master/test-suite/demo.v *)
 Require Import Coq.Strings.String.
 Require Import elpi.elpi.
-Require Import elpi.apps.derive.
+Require Import elpi.apps.derive.derive.
 Require Import Lens.Lens.
 Require Import Lens.Elpi.Elpi.
 

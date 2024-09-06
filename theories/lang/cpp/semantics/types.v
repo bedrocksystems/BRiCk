@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import elpi.apps.locker.
+Require Import elpi.apps.locker.locker.
 Require Import bedrock.prelude.base.
 Require Export bedrock.prelude.option.
 Require Import bedrock.lang.cpp.syntax.names.

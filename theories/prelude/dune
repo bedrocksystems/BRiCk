@@ -2,7 +2,11 @@
 (coq.theory
  (name bedrock.prelude)
  (package coq-cpp2v)
- (theories iris stdpp bedrock.upoly elpi Lens Lens.Elpi Ltac2)
+ (theories
+  iris stdpp
+  bedrock.upoly
+  elpi elpi.apps.locker elpi.apps.NES
+  Lens Lens.Elpi Ltac2)
 )
 
 ; Copy dependencies --- typically Elpi files needed for `From ⋯ Extra

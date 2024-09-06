@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import elpi.apps.locker.
+Require Import elpi.apps.locker.locker.
 Require Import bedrock.lang.bi.prelude.
 Require Import iris.bi.bi iris.bi.monpred.
 Require Import bedrock.lang.proofmode.proofmode.
