@@ -346,7 +346,7 @@ Section with_ct.
         zs = take (List.length zs - 1) zs ++ [0%N].
       Proof.
         rewrite -[zs](firstn_skipn (List.length zs - 1)). f_equal.
-        { rewrite app_length take_length drop_length.
+        { rewrite app_length length_take length_drop.
           set x := List.length zs.
           have ->: ((x - 1) `min` x + (x - (x - 1)) - 1 = x - 1)%nat by lia.
             by rewrite firstn_skipn. }
@@ -695,7 +695,7 @@ Section with_ct.
             pose proof (size_nonneg zs).
             lia.
           }
-          rewrite arrayR_eq/arrayR_def fmap_app arrR_append fmap_length; unfold size.
+          rewrite arrayR_eq/arrayR_def fmap_app arrR_append length_fmap; unfold size.
           iFrame.
           rewrite arrR_proper; [by iFrame |].
           generalize (Z.to_nat (sz - length zs)); intros n.

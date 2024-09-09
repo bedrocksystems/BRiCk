@@ -414,7 +414,7 @@ Section with_cpp.
           iDestruct "B" as (f) "B". iExists (S f).
           simpl. iFrame.
           rewrite arrayR_eq/arrayR_def arrR_eq/arrR_def.
-          iFrame. rewrite !fmap_length. done. }
+          iFrame. rewrite !length_fmap. done. }
         { case_match; try iIntros "[]".
           case_match; try iIntros "[]".
           { rewrite /union_defR.

@@ -174,7 +174,7 @@ Section with_Σ.
     - destruct rs2; [| simpl in Hlen; lia].
       rewrite /Observe2; iIntros "? ? !>"; by iPureIntro.
     - destruct rs2 as [| r2 ?]; [simpl in Hlen; lia |].
-      rewrite !cons_length in Hlen; inversion Hlen.
+      rewrite !length_cons in Hlen; inversion Hlen.
       rewrite /rawsR !arrayR_cons;
         fold (rawsR q1 rs1);
         fold (rawsR q2 rs2).
