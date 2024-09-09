@@ -304,7 +304,7 @@ Definition count_spec (this : ptr) :=
   cpp_spec Tint [] $
   \with (q : Qp) (t : tree Z)
   \prepost this |-> treeR (fun q z => uintR q z) q t
-  \post{}[Vint (trim 32 (count t))] emp.
+  \post[Vint (trim 32 (count t))] emp.
 
 (**
 For more details the syntax/notations for writing the specifications of functions,
