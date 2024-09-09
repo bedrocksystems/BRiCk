@@ -1001,8 +1001,6 @@ Section listN.
   Definition insertN_simpl :=
     (@insertN_nil, @insertN_cons_zero, @insertN_cons_succ).
 End listN.
-#[global] Notation cons_lengthN := lengthN_cons.
-#[global] Notation nil_lengthN := lengthN_nil.
 
 (* Not necessarily restricted to [Finite] *)
 Lemma nat_fin_iter_lt (c : nat) (P : nat -> Prop) :
