@@ -164,7 +164,7 @@ Definition type_table_le (te1 te2 : type_table) : Prop :=
 
 (* TODO: consider replacing [type_table_le]'s definition with [type_table_le_alt] *)
 Definition type_table_le_alt : type_table -> type_table -> Prop :=
-  map_included GlobDecl_ler.
+  map_included (fun _ => GlobDecl_ler).
 #[global] Instance: PreOrder type_table_le_alt.
 Proof. apply @map_included_preorder, _. Qed.
 
@@ -323,7 +323,7 @@ End ObjValue_ler.
 (** *** Inclusion of [symbol_table]s *)
 (* Ditto. *)
 Definition sym_table_le_alt : symbol_table -> symbol_table -> Prop :=
-  map_included ObjValue_ler.
+  map_included (fun _ => ObjValue_ler).
 #[global] Instance: PreOrder sym_table_le_alt.
 Proof. apply @map_included_preorder, _. Qed.
 

@@ -111,7 +111,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     Rval <$> _Z_to_bytes (bytesNat n) (genv_byte_order σ) sgn v.
 
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bytesNat n.
-  Proof. by rewrite /Z_to_bytes fmap_length _Z_to_bytes_length. Qed.
+  Proof. by rewrite /Z_to_bytes length_fmap _Z_to_bytes_length. Qed.
 
   Record cpp_ghost' : Type :=
     { heap_name : gname
@@ -329,7 +329,7 @@ Module SimpleCPP.
         Z_to_bytes POINTER_BITSZ Unsigned (Z.of_N a).
 
       Lemma length_aptr p : length (aptr p) = POINTER_BYTES.
-      Proof. by rewrite /aptr fmap_length seq_length. Qed.
+      Proof. by rewrite /aptr length_fmap seq_length. Qed.
       Lemma length_cptr a : length (cptr a) = POINTER_BYTES.
       Proof. by rewrite /cptr length_Z_to_bytes. Qed.
 

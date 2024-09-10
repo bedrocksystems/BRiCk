@@ -388,7 +388,7 @@ Section with_array_R.
 
   Lemma arrayR_snoc xs y :
     arrayR ty R (xs ++ [y]) -|- arrayR ty R xs ** .[ ty ! length xs ] |-> (type_ptrR ty ** R y).
-  Proof. by rewrite arrayR_eq /arrayR_def fmap_app arrR_snoc fmap_length. Qed.
+  Proof. by rewrite arrayR_eq /arrayR_def fmap_app arrR_snoc length_fmap. Qed.
 
   Lemma arrayR_snoc_obs p xs y
         `{Hobs : ∀ x, Observe (type_ptrR ty) (R x)} :
@@ -448,14 +448,14 @@ Section with_array_R.
   Lemma arrayR_validR_obs (i : Z) xs :
     (0 ≤ i ≤ Z.of_nat $ length xs)%Z →
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
-  Proof. intros. rewrite arrayR_eq/arrayR_def. apply arrR_valid_obs. rewrite fmap_length. lia. Qed.
+  Proof. intros. rewrite arrayR_eq/arrayR_def. apply arrR_valid_obs. rewrite length_fmap. lia. Qed.
 
   Lemma arrayR_valid_obs i xs
         (Hi : i ≤ length xs) :
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
   Proof.
     rewrite arrayR_eq/arrayR_def.
-    apply arrR_valid_obs. rewrite fmap_length; lia.
+    apply arrR_valid_obs. rewrite length_fmap; lia.
   Qed.
 
   Lemma _at_arrayR_valid_obs i xs p
@@ -485,7 +485,7 @@ Section with_array_R.
   Lemma arrayR_app xs ys :
     arrayR ty R (xs ++ ys) -|- arrayR ty R xs ** .[ ty ! length xs ] |-> arrayR ty R ys.
   Proof.
-      by rewrite arrayR_eq/arrayR_def fmap_app arrR_append fmap_length.
+      by rewrite arrayR_eq/arrayR_def fmap_app arrR_append length_fmap.
   Qed.
 
   (** Compared to [array'_split], this takes [i] as first *)
@@ -496,7 +496,7 @@ Section with_array_R.
   Proof.
     intros. rewrite -{1}(take_drop i xs) arrayR_app.
     f_equiv.
-    rewrite take_length_le; eauto.
+    rewrite length_take_le; eauto.
   Qed.
 
   (** Compared to [array'_combine], this takes [i] is first *)
@@ -507,8 +507,8 @@ Section with_array_R.
   Proof.
     rewrite -{3}(take_drop i xs).
     destruct (decide (i <= length xs)).
-    - rewrite -{3}(take_length_le xs i) // arrayR_app.
-      f_equiv. rewrite take_length_le //.
+    - rewrite -{3}(length_take_le xs i) // arrayR_app.
+      f_equiv. rewrite length_take_le //.
     - rewrite take_ge ?drop_ge /=; [ |lia|lia].
       by rewrite bi.sep_elim_l app_nil_r.
   Qed.
@@ -528,7 +528,7 @@ Section with_array_R.
     f_equiv.
     enough (length (take i xs) = i) as ->.
     { subst. by rewrite _offsetR_sub_sub. }
-    { apply take_length_le.
+    { apply length_take_le.
       apply lookup_lt_Some in Hl. lia. }
   Qed.
 End with_array_R.
@@ -602,7 +602,7 @@ Section arrayR_agree.
     iDestruct (observe_2 [| x = y |] with "X Y") as %->.
     rewrite !_offsetR_dot. iDestruct ("IH" with "[] L K") as %Hlen';
         first by move: Hlen=>//= /le_S_n ?.
-    by rewrite cons_length /= -Hlen'; iIntros "!>".
+    by rewrite length_cons /= -Hlen'; iIntros "!>".
   Qed.
 
 End arrayR_agree.

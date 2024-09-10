@@ -86,7 +86,7 @@ Proof. by rewrite list_alterN_alter Nat2N.id. Qed.
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
-Proof. by rewrite /lengthN fmap_length. Qed.
+Proof. by rewrite /lengthN length_fmap. Qed.
 
 Lemma list_lookupN_fmap {A B} (f : A -> B) (l : list A) (i : N) :
   (f <$> l) !! i = f <$> (l !! i).
@@ -324,19 +324,19 @@ Section listN.
 
   Lemma lengthN_dropN k xs :
     lengthN (dropN k xs) = lengthN xs - k.
-  Proof. by rewrite /lengthN/dropN drop_length Nat2N.inj_sub N2Nat.id. Qed.
+  Proof. by rewrite /lengthN/dropN length_drop Nat2N.inj_sub N2Nat.id. Qed.
 
   Lemma length_dropN (k : N) xs :
     (length (dropN k xs) = length xs - (N.to_nat k))%nat.
-  Proof. by rewrite /dropN drop_length. Qed.
+  Proof. by rewrite /dropN length_drop. Qed.
 
   Lemma lengthN_takeN k xs :
     lengthN (takeN k xs) = k `min` lengthN xs.
-  Proof. by rewrite /lengthN/takeN take_length Nat2N.inj_min N2Nat.id. Qed.
+  Proof. by rewrite /lengthN/takeN length_take Nat2N.inj_min N2Nat.id. Qed.
 
   Lemma length_takeN (k : N) xs :
     (length (takeN k xs) = (N.to_nat k) `min` length xs)%nat.
-  Proof. by rewrite /takeN take_length. Qed.
+  Proof. by rewrite /takeN length_take. Qed.
 
   Lemma lengthN_rotateN k xs :
     lengthN (rotateN k xs) = lengthN xs.
@@ -344,11 +344,11 @@ Section listN.
 
   Lemma lengthN_replicateN n x :
     lengthN (replicateN n x) = n.
-  Proof. by rewrite /lengthN/replicateN replicate_length N2Nat.id. Qed.
+  Proof. by rewrite /lengthN/replicateN length_replicate N2Nat.id. Qed.
 
   Lemma lengthN_insertN i x xs :
     lengthN (<[i:=x]> xs) = lengthN xs.
-  Proof. rewrite /lengthN. f_equal. by apply: insert_length. Qed.
+  Proof. rewrite /lengthN. f_equal. by apply: length_insert. Qed.
 
   Definition lengthN_simpl :=
     (@lengthN_fold,
@@ -380,7 +380,7 @@ Section listN.
 
   Lemma resizeN_lengthN l n x :
     lengthN (resizeN n x l) = n.
-  Proof. by rewrite /lengthN /resizeN /= resize_length N2Nat.id. Qed.
+  Proof. by rewrite /lengthN /resizeN /= length_resize N2Nat.id. Qed.
 
   Lemma resizeN_nil n x : resizeN n x [] = replicateN n x.
   Proof. apply resize_nil. Qed.
@@ -621,8 +621,8 @@ Section listN.
     have ?: (1 < n)%nat by rewrite /n/=; lia.
     have ?: (N.to_nat k `mod` n < n)%nat by apply: Nat.mod_upper_bound=> //.
     have ?: (1 <= n - (N.to_nat k `mod` n))%nat by lia.
-    rewrite drop_app_le; last by rewrite drop_length -/n.
-    rewrite take_app_le; last by rewrite drop_length -/n.
+    rewrite drop_app_le; last by rewrite length_drop -/n.
+    rewrite take_app_le; last by rewrite length_drop -/n.
     rewrite drop_drop -app_assoc take_take_drop.
     rewrite N2Nat.inj_add -[N.to_nat 1]/1%nat -Nat.Div0.add_mod_idemp_l//.
     case/decide: (N.to_nat k `mod` n + 1 = n)%nat=> E.
@@ -1001,8 +1001,6 @@ Section listN.
   Definition insertN_simpl :=
     (@insertN_nil, @insertN_cons_zero, @insertN_cons_succ).
 End listN.
-#[global] Notation cons_lengthN := lengthN_cons.
-#[global] Notation nil_lengthN := lengthN_nil.
 
 (* Not necessarily restricted to [Finite] *)
 Lemma nat_fin_iter_lt (c : nat) (P : nat -> Prop) :
@@ -1173,7 +1171,7 @@ Section listZ.
   Proof.
     rewrite /lengthN /insert /list_insertZ.
     case: bool_decide_reflect => [Hnneg|//].
-    by rewrite insert_length.
+    by rewrite length_insert.
   Qed.
 
   Lemma insertZ_oob {A} (i : Z) (x : A) (xs : list A) (Hi : (i < 0 ∨ lengthZ xs ≤ i)) :
@@ -1282,7 +1280,7 @@ Section listZ.
       + rewrite list_lookup_insert_ne //; lia.
       + contradiction.
       + have ? : (length xs <= Z.to_nat k)%nat by lia.
-        rewrite !(lookup_ge_None_2, insert_length) //.
+        rewrite !(lookup_ge_None_2, length_insert) //.
   Qed.
 
   Lemma lookupZ_insertZ_eq {A} x (xs : list A) (k : Z)

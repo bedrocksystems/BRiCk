@@ -336,7 +336,7 @@ Section lists.
     Forall (fun x => ∀ y, f x = Some y -> g y = x) l ->
     g <$> k = l.
   Proof.
-    intros Hmap Hl. have Hlen := mapM_length _ _ _ Hmap.
+    intros Hmap Hl. have Hlen := length_mapM _ _ _ Hmap.
     apply mapM_Some_1 in Hmap. elim: Hl k Hmap Hlen; intros.
     - by rewrite (nil_length_inv k).
     - decompose_Forall_hyps. auto with f_equal.

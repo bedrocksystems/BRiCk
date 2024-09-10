@@ -146,9 +146,6 @@ Notation "'\post' { x .. y } [ r ] post" :=
 Notation "'\post' [ r ] post" :=
   (start_post (post_ret r post%I)).
 
-#[deprecated(since="2024-07-31",note="avoid [\post{}], simply use [\post].")]
-Notation "'\post' { } [ r ]  post" := (\post[r] post) (only parsing).
-
 Notation "'\post' post" := (start_post (post_void post%I)).
 
 Notation "'\exact' wpp" := (exact_spec wpp).

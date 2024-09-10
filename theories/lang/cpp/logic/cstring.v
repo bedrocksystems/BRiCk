@@ -199,7 +199,7 @@ Module cstring.
                      by rewrite map_id.
                   ** apply WFs_equiv in H; inversion H as [Hhead [Hty [Hnonzero Hnull]]].
                      assert (Z.of_nat (S n0) = strlen (n :: zs)) as Hn
-                       by (unfold strlen, size; rewrite cons_length Hlen'; lia).
+                       by (unfold strlen, size; rewrite length_cons Hlen'; lia).
                      specialize (Hnull (S n0) Hn); simpl in Hnull.
                      rewrite -Hnull.
                      under map_ext_in => x HIn. 1: {
