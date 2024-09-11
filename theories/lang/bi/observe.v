@@ -207,6 +207,14 @@ Section observe.
   Lemma observe_intro_intuitionistically_if b Q P : Observe Q P → Observe (□?b Q) P.
   Proof. rewrite/Observe=>->. case: b => //=. iIntros "#$". Qed.
 
+  Lemma observe_alt Q P : Observe Q P ↔ (P ⊢ <absorb> □ Q).
+  Proof.
+    by rewrite /Observe -bi.absorbingly_intuitionistically_into_persistently.
+  Qed.
+
+  Lemma observe_alt_sep_True Q P : Observe Q P ↔ (P ⊢ □ Q ∗ True).
+  Proof. by rewrite observe_alt (comm bi_sep). Qed.
+
   Lemma observe_equiv_sep_True Q P `{!Persistent Q} : (P ⊢ Q ∗ True) ↔ Observe Q P.
   Proof.
     by rewrite (comm bi_sep Q) /Observe bi.persistently_absorbingly.
@@ -239,6 +247,12 @@ Section observe.
 
   Lemma observe_2_intro_intuitionistically_if b Q P1 P2 : Observe2 Q P1 P2 → Observe2 (□?b Q) P1 P2.
   Proof. rewrite/Observe2=>->. f_equiv. case: b => //=. iIntros "#$". Qed.
+
+  Lemma observe_2_alt Q P1 P2 : Observe2 Q P1 P2 ↔ (P1 ∗ P2 ⊢ <absorb> □ Q).
+  Proof. by rewrite observe_2_observe observe_alt. Qed.
+
+  Lemma observe_2_alt_sep_True Q P1 P2 : Observe2 Q P1 P2 ↔ (P1 ∗ P2 ⊢ □ Q ∗ True).
+  Proof. by rewrite observe_2_observe observe_alt_sep_True. Qed.
 
   Lemma observe_2_equiv_sep_True Q P1 P2 `{!Persistent Q} : (P1 ∗ P2 ⊢ Q ∗ True) ↔ Observe2 Q P1 P2.
   Proof. by rewrite observe_2_observe observe_equiv_sep_True. Qed.
