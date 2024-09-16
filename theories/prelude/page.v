@@ -91,11 +91,14 @@ Definition opteT : Set := option pteT.
 #[deprecated(note="")]
 Notation user := uexec (only parsing).
 
-Definition attrs_none : attrs.t := attrs.Build_t false false false false.
-Definition attrs_W := attrs.Build_t false true false false.
+Definition none : t :=
+{| read := false ; write := false ; sexec := false ; uexec := false |}.
 
 Definition R : t :=
 {| read := true ; write := false ; sexec := false ; uexec := false |}.
+
+Definition W : t :=
+{| read := false ; write := true ; sexec := false ; uexec := false |}.
 
 Definition RW : t :=
 {| read := true ; write := true ; sexec := false ; uexec := false |}.
