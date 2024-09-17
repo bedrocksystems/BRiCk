@@ -1440,6 +1440,26 @@ Section with_app.
       (evt : app.(App.evt)) (Q : PROP) :=
     ctor_committer γ (fun _ : unit => evt) (fun _ => Q).
 
+  (* General in masks *)
+  Definition gen_ctor_requester m (γ : AuthSet.gname)
+      {A} (Ctor : A -> app.(App.evt)) (Q : A -> PROP) :=
+    Step.gen_requester app refinement_cur m γ {[ e | exists x, e = Ctor x ]}
+                   (fun e => Exists x, [| e = Ctor x |] ** Q x).
+
+  Definition gen_singleton_requester m (γ : AuthSet.gname)
+      (evt : app.(App.evt)) (Q : PROP) :=
+    gen_ctor_requester m γ (fun _ : unit => evt) (fun _ => Q).
+
+  Definition gen_ctor_committer m (γ : AuthSet.gname)
+      {A} (Ctor : A -> app.(App.evt)) (Q : A -> PROP) :=
+    Step.gen_committer app refinement_cur m γ {[ e | exists x, e = Ctor x ]}
+                   (fun e => Exists x, [| e = Ctor x |] ** Q x).
+
+  Definition gen_singleton_committer m (γ : AuthSet.gname)
+      (evt : app.(App.evt)) (Q : PROP) :=
+    gen_ctor_committer m γ (fun _ : unit => evt) (fun _ => Q).
+
+
   Lemma ctor_requester_wand :
     forall {A} γ (K : A -> App.evt app) (Q Q' : A -> PROP),
       (Forall a, Q a -* Q' a)
@@ -1522,6 +1542,44 @@ Section with_app.
     iApply ("Ac" $! s s' with "[$A //]").
   Qed.
 
+  Lemma gen_singleton_requester_equiv {evt} m γ Q :
+    gen_singleton_requester m γ evt Q ⊣⊢
+    Step.gen_requester app refinement_cur m γ {[ evt ]} (fun _ => Q).
+  Proof.
+    rewrite /gen_singleton_requester/gen_ctor_requester propset_singleton_equiv_unit.
+    exact /Step.gen_requester_proper_strong /simpl_cont.
+  Qed.
+
+  Lemma gen_singleton_committer_equiv {evt} m γ Q :
+    gen_singleton_committer m γ evt Q ⊣⊢
+    Step.gen_committer app refinement_cur m γ {[ evt ]} (fun _ => Q).
+  Proof.
+    rewrite /gen_singleton_committer/gen_ctor_committer propset_singleton_equiv_unit.
+    exact /Step.gen_committer_proper_strong /simpl_cont.
+  Qed.
+
+  Lemma gen_singleton_requester_intro {evt} m γ (Q : PROP) :
+    AC << ∀ s : App.lts app, ∃ s' : App.lts app,
+      [| lts_step (App.lts app) s (Some evt) s' |] ∗
+      AuthSet.frag_exact γ s
+    >> @ masks.O m ∖ refinement_cur, masks.I m <<
+      AuthSet.frag γ {[ s' | lts_step (App.lts app) s (Some evt) s' ]}, COMM Q >>
+    ⊢ gen_singleton_requester m γ evt Q.
+  Proof.
+    iIntros "H". rewrite gen_singleton_requester_equiv /Step.gen_requester/Step.gen_requester_learn.
+    iAcIntro; rewrite /commit_acc/=.
+    iMod "H" as (s) "/= [(%s' & %Hstep & F) Fc]"; iModIntro.
+    rewrite /AuthSet.frag_exact.
+    iExists {[s]}; iFrame "F".
+    iSplitR.
+    { iIntros "!%". split.
+      - exists s. set_solver.
+      - intros s0 e ->%elem_of_singleton ->%elem_of_singleton. by eexists. }
+    iIntros (e) "[%Hin F]". move: Hin => /elem_of_singleton ->.
+    iApply ("Fc" with "[F]").
+    iApply (AuthSet.frag_proper with "F"). set_solver.
+  Qed.
+
   Fixpoint ctor_requesters_seq (γ : AuthSet.gname) {X A I}
       (Ctor : forall (index : I) (input : X), app.(App.evt)) (* e.g. MemRead *)
       (f : forall (so_far : A) (index : I) (input : X), A)
@@ -1575,6 +1633,25 @@ Section singleton_with_ref.
     iIntros (Hdiff Hcancel) "#T R".
     rewrite singleton_requester_equiv singleton_committer_equiv /transports.
     iApply Step.committer_proper_strong; first last. {
+      iApply ("T" $! nl nr Hdiff with "[%] R").
+      exact /Compose.dual_sets_singletons.
+    }
+    move=> _ /elem_of_singleton -> /=.
+    iSplit. { iIntros "$ !% /=". set_solver. } iDestruct 1 as (? ?) "$".
+  Qed.
+
+  Lemma gen_transport_singleton comp γ nl nr m Q
+      (STEPl : Label (Compose.sts_name _ nl)) (STEPr : Label (Compose.sts_name _ nr)) :
+    nl <> nr ->
+    Compose.cancel_evt ComposeN.fam nl nr STEPl STEPr ->
+    gen_transports comp γ ⊢
+    gen_singleton_requester (app := appn nl) m (γ nl) STEPl Q -∗
+    gen_singleton_committer (app := appn nr) m (γ nr) STEPr Q.
+  Proof.
+    iIntros (Hdiff Hcancel) "#T R".
+    rewrite gen_singleton_requester_equiv gen_singleton_committer_equiv /transports.
+    iApply Step.gen_committer_proper_strong; first last. {
+      rewrite /gen_transports.
       iApply ("T" $! nl nr Hdiff with "[%] R").
       exact /Compose.dual_sets_singletons.
     }
