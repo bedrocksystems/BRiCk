@@ -6,7 +6,7 @@
 
 
 Require Import elpi.elpi.
-Require Import elpi.apps.derive.
+Require Import elpi.apps.derive.derive.
 Require Import stdpp.numbers.
 Require Import Lens.Elpi.Elpi.
 

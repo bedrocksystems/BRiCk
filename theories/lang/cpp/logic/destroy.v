@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import elpi.apps.locker.
+Require Import elpi.apps.locker.locker.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.ast.

@@ -11,7 +11,7 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
-Require Import elpi.apps.locker.
+Require Import elpi.apps.locker.locker.
 Require Export bedrock.prelude.addr.
 
 Require Export bedrock.lang.bi.prelude.

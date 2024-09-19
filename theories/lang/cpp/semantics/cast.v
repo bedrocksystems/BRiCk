@@ -7,7 +7,7 @@
 
     This file covers conversions between primitive types.
  *)
-Require Import elpi.apps.locker.
+Require Import elpi.apps.locker.locker.
 
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.numbers.

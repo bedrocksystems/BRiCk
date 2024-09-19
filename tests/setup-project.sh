@@ -19,7 +19,7 @@ cat > dune <<EOF
 (coq.theory
  (name test)
  (theories
-  stdpp iris elpi ExtLib Ltac2
+  stdpp iris elpi elpi_elpi Ltac2
   bedrock.upoly bedrock.prelude bedrock.lang Lens Lens.Elpi))
 EOF
 

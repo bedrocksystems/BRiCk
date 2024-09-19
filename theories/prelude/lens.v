@@ -10,7 +10,7 @@
 Some of them, however, do not satisfy all lens laws ("fake lenses").
 *)
 
-Require Import elpi.apps.NES.
+Require Import elpi.apps.NES.NES.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.finite.
 Require Import bedrock.prelude.functions.
