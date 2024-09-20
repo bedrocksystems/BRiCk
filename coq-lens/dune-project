@@ -12,7 +12,7 @@
  "Gregory Malecha <gregory@bluerock.io>"
  "Paolo Giarrusso <paolo@bluerock.io>")
 
-(source (github bedrocksystems/brick))
+(source (github bedrocksystems/BRiCk))
 
 (package
  (name coq-lens)
