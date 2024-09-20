@@ -4,11 +4,15 @@
 
 (generate_opam_files)
 
+
 (maintainers
- "Gregory Malecha <gregory@bedrocksystems.com>")
+ "Gregory Malecha <gregory@bluerock.io>"
+ "Paolo Giarrusso <paolo@bluerock.io>")
 (authors
- "Gregory Malecha <gregory@bedrocksystems.com>")
-(source (github bedrocksystems/cpp2v))
+ "Gregory Malecha <gregory@bluerock.io>"
+ "Paolo Giarrusso <paolo@bluerock.io>")
+
+(source (github bedrocksystems/BRiCk))
 
 (package
  (name coq-lens)

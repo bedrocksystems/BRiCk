@@ -4,37 +4,21 @@
 
 (generate_opam_files)
 
-(license "BedRock Open-Source License")
+(license LGPL-2.1-only)
 
 (maintainers
- "Gregory Malecha <gregory@bedrocksystems.com>"
- "Abhishek Anand <abhishek@bedrocksystems.com>"
- "Gordon Stewart <gordon@bedrocksystems.com>"
- "Jasper Haag <jasper@bedrocksystems.com>"
- "Yoichi Hirai <yoichi@bedrocksystems.com>"
- "David Swasey <david@bedrocksystems.com>"
- "Jan-Oliver Kaiser <janno@bedrocksystems.com>"
- "Hai Dang <hai@bedrocksystems.com>"
- "Paolo Giarrusso <paolo@bedrocksystems.com>"
- "Simon Hudon <simon@bedrocksystems.com>"
- "František Farka <frantisek@bedrocksystems.com>"
- "Rodolphe Lepigre <rodolphe@bedrocksystems.com>")
+  "David Swasey <david@bluerock.io>"
+  "Gregory Malecha <gregory@bluerock.io>"
+  "Jan-Oliver Kaiser <janno@bluerock.io>"
+  "Rodolphe Lepigre <rodolphe@bluerock.io>")
 
 (authors
- "Gregory Malecha <gregory@bedrocksystems.com>"
- "Abhishek Anand <abhishek@bedrocksystems.com>"
- "Gordon Stewart <gordon@bedrocksystems.com>"
- "Jasper Haag <jasper@bedrocksystems.com>"
- "Yoichi Hirai <yoichi@bedrocksystems.com>"
- "David Swasey <david@bedrocksystems.com>"
- "Jan-Oliver Kaiser <janno@bedrocksystems.com>"
- "Hai Dang <hai@bedrocksystems.com>"
- "Paolo Giarrusso <paolo@bedrocksystems.com>"
- "Simon Hudon <simon@bedrocksystems.com>"
- "František Farka <frantisek@bedrocksystems.com>"
- "Rodolphe Lepigre <rodolphe@bedrocksystems.com>")
+  "David Swasey <david@bluerock.io>"
+  "Gregory Malecha <gregory@bluerock.io>"
+  "Jan-Oliver Kaiser <janno@bluerock.io>"
+  "Rodolphe Lepigre <rodolphe@bluerock.io>")
 
-(source (gitlab bedrocksystems/cpp2v-core))
+(source (github bedrocksystems/BRiCk))
 
 (package
  (name coq-upoly)
