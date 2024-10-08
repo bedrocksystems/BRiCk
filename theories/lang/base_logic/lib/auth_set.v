@@ -120,7 +120,7 @@ Module AuthSet.
         { apply: (@auth_set_update _ s3 s3); set_solver. }
         iModIntro. setoid_rewrite <-own_op; iApply "fa".
       Qed.
-      Lemma frag_auth_sub γ s1 s2 : Observe2 [| s1 ⊆ s2 |] (frag γ s1) (auth γ s2).
+      #[global] Instance frag_auth_sub γ s1 s2 : Observe2 [| s1 ⊆ s2 |] (frag γ s1) (auth γ s2).
       Proof.
         iIntros "f a"; iDestruct (own_valid_2 with "f a") as "%val".
           by move: val; rewrite auth_set_valid_frag_auth => sub; iModIntro.
@@ -161,7 +161,6 @@ Module AuthSet.
     End with_logic.
   End with_authset.
 
-  #[global] Existing Instance frag_exact_auth_sub.
   #[global] Hint Opaque auth frag auth_exact frag_exact
     : br_opacity typeclass_instances.
 End AuthSet.
