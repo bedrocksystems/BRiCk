@@ -41,6 +41,4 @@ Section with_iprop.
   (** * Top-level theorem for iProp *)
   Definition gen_decompose_iprop {R : refinement} :=
     gen_decompose_bi inv_alloc_iprop.
-  Definition decompose_iprop {R : refinement} :=
-    decompose_bi inv_alloc_iprop.
 End with_iprop.

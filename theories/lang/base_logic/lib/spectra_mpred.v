@@ -51,7 +51,5 @@ Section with_mpred.
   (** * Top-level theorem for mpred *)
   Definition gen_decompose {R : refinement} :=
     gen_decompose_bi inv_alloc_mpred.
-  Definition decompose {R : refinement} :=
-    decompose_bi inv_alloc_mpred.
 
 End with_mpred.

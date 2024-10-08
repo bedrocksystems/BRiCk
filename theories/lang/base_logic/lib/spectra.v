@@ -678,18 +678,6 @@ Section with_lts.
   Section with_refinement.
     Context {R : refinement}.
 
-    Definition transports γ : PROP :=
-      □ ∀ (nl nr: Nm) (diff: nl <> nr)
-          (STEPl : propset (Label (Compose.sts_name _ nl)))
-          (STEPr : propset (Label (Compose.sts_name _ nr)))
-          (dual : Compose.dual_sets ComposeN.fam STEPl STEPr) Q,
-            Step.requester (appn nl) refinement_cur (γ nl) STEPl Q -∗
-            Step.committer (appn nr) refinement_cur (γ nr) STEPr
-              (fun e2 => Exists e1, [| e1 ∈ STEPl /\ dual_evts e1 e2 |] ** Q e1).
-
-    #[global] Instance transports_knowledge  : Knowledge1 transports.
-    Proof. solve_knowledge. Qed.
-
     Definition gen_transports γ : PROP :=
       □ ∀ (nl nr : Nm) (diff : nl <> nr)
           (STEPl : propset (Label (Compose.sts_name _ nl)))
@@ -701,15 +689,6 @@ Section with_lts.
 
     #[global] Instance gen_transports_knowledge : Knowledge1 gen_transports.
     Proof. solve_knowledge. Qed.
-
-    Lemma gen_transports_transports γ :
-      gen_transports γ ⊢ transports γ.
-    Proof.
-      iIntros "#T !#" (nl nr diff STEPl STEPr dual Q) "REQ".
-      iApply Step.gen_committer_committer.
-      iApply ("T" $! nl nr diff STEPl STEPr dual Q).
-      by iApply Step.requester_gen_requester.
-    Qed.
 
     Definition external_requests γ γup : PROP :=
       □ ∀ (n : Nm)
@@ -1368,36 +1347,13 @@ Section with_lts.
         iDestruct (refine_inv_commits with "Inv") as "$".
       Qed.
 
-
-      (* Although this lemma holds, [external_requests] and [external_commits] are not
-      useful because they use [gen_requesters] and [gen_committers] which are
-      incompatible with [transports]. Use [gen_decompose] instead. *)
-      Lemma decompose_bi γup sets (nonempty : exists s, s ∈ π_set sets) :
-        (* Assume that the composed app is in state (s1, s2) ... *)
-        AuthSet.frag γup (π_set sets) -∗
-        (* ... and updater for the composed app (the composed app can take
-          tau steps). *)
-        Step.updater ComposeN.app refinement_up γup ={∅}=∗
-        ∃ γ, ([∗list] n ∈ all_names,
-                AuthSet.frag (γ n) (sets n)
-                ** Step.updater (appn n) (@refinement_up (go_down (ComposeN.nsName n) R)) (γ n))
-          ** transports γ
-          ** external_requests γ γup
-          ** external_commits γ γup.
-      Proof using Type* inv_alloc.
-        iIntros "aup #upd".
-        iMod (gen_decompose_bi with "aup upd") as (γ) "(All & T & R & C)"; [assumption..|].
-        iIntros "!>". iExists γ. iFrame.
-        by iApply gen_transports_transports.
-      Qed.
     End with_inv_alloc.
   End refine_inv.
 End with_lts.
 #[global] Hint Opaque
-  transports gen_transports external_requests external_commits
+  gen_transports external_requests external_commits
 : br_opacity typeclass_instances.
 
-#[global] Arguments transports {_ _ _} comp {_} _ : rename.
 #[global] Arguments gen_transports {_ _ _} comp {_} _ : rename.
 
 
@@ -1622,24 +1578,6 @@ Section singleton_with_ref.
   Context `{Ghostly PROP} `{!BiFUpd PROP}.
   Context `{R : !refinement}.
 
-  Lemma transport_singleton comp γ nl nr Q
-      (STEPl : Label (Compose.sts_name _ nl)) (STEPr : Label (Compose.sts_name _ nr)) :
-    nl <> nr ->
-    Compose.cancel_evt ComposeN.fam nl nr STEPl STEPr ->
-    transports comp γ ⊢
-    singleton_requester (app := appn nl) (γ nl) STEPl Q -∗
-    singleton_committer (app := appn nr) (γ nr) STEPr Q.
-  Proof.
-    iIntros (Hdiff Hcancel) "#T R".
-    rewrite singleton_requester_equiv singleton_committer_equiv /transports.
-    iApply Step.committer_proper_strong; first last. {
-      iApply ("T" $! nl nr Hdiff with "[%] R").
-      exact /Compose.dual_sets_singletons.
-    }
-    move=> _ /elem_of_singleton -> /=.
-    iSplit. { iIntros "$ !% /=". set_solver. } iDestruct 1 as (? ?) "$".
-  Qed.
-
   Lemma gen_transport_singleton comp γ nl nr m Q
       (STEPl : Label (Compose.sts_name _ nl)) (STEPr : Label (Compose.sts_name _ nr)) :
     nl <> nr ->
@@ -1649,7 +1587,7 @@ Section singleton_with_ref.
     gen_singleton_committer (app := appn nr) m (γ nr) STEPr Q.
   Proof.
     iIntros (Hdiff Hcancel) "#T R".
-    rewrite gen_singleton_requester_equiv gen_singleton_committer_equiv /transports.
+    rewrite gen_singleton_requester_equiv gen_singleton_committer_equiv.
     iApply Step.gen_committer_proper_strong; first last. {
       rewrite /gen_transports.
       iApply ("T" $! nl nr Hdiff with "[%] R").
