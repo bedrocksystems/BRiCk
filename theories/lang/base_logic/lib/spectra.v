@@ -218,6 +218,17 @@ Module Step.
               AuthSet.auth γ sset',
              COMM Q e }>.
 
+    Definition alt_gen_committer m γ (STEP : propset (evt x)) (Q : evt x -> PROP) : PROP :=
+      ∀ sset0, AuthSet.frag γ sset0
+        ={m.(masks.O), m.(masks.O) ∖ E}=∗
+        ∃ sset, [| sset0 ⊆ sset |] **
+        ∀ sset' e,
+          [| e ∈ STEP |] **
+          [| ∃ s, s ∈ sset' |] **
+          [| ∀ s', s' ∈ sset' -> ∃ s, s ∈ sset /\ x.(lts).(lts_step) s (Some e) s' |]
+          ={m.(masks.O) ∖ E, m.(masks.O)}=∗
+          AuthSet.frag γ sset' ** Q e.
+
     (** This is the AC a requester /proves/ in order to perform its
         own [STEP] action.
     TODO: requester := requester_learn γ STEP (λ _ _ _, True) Q.
@@ -382,6 +393,26 @@ Module Step.
       iIntros "!%". set_solver.
     Qed.
 
+    (* [gen_committer] is stronger than [alt_gen_committer] in that
+    [gen_committer] allows peeking.
+    Meanwhile, the reverse direction needs to know the refinement invariant. *)
+    Lemma gen_committer_alt_gen_committer `{!BiBUpdFUpd PROP} m γ STEP Q :
+      gen_committer m γ STEP Q |-- alt_gen_committer m γ STEP Q.
+    Proof.
+      iIntros "AU".
+      rewrite /gen_committer /alt_gen_committer.
+      iIntros (sset0) "F".
+      iMod "AU" as (sset) "[A Close]".
+      iDestruct (observe_2 [| sset0 ⊆ sset |] with "F A") as "%sub".
+      { apply: AuthSet.frag_auth_sub. }
+      iIntros "!>". iExists sset. iSplit; first done.
+      iIntros (sset' e) "H".
+      rewrite bi.and_elim_r.
+      iMod (AuthSet.frag_auth_upd with "F A") as "[$ A]".
+      iMod ("Close" $! sset' e with "[$A $H]") as "$".
+      done.
+    Qed.
+
     #[global] Instance committer_proper γ :
       Proper ((≡) ==> pointwise_relation _ (≡) ==> (≡)) (committer γ).
     Proof.
@@ -478,6 +509,22 @@ Module Step.
       rewrite atomic.atomic_update_unseal /atomic.atomic_update_def.
       rewrite /atomic_update_pre /atomic_acc /=.
       do 12 f_equiv.
+      rewrite -!bi.wand_curry; apply /bi.equiv_wand_iff_l. iIntros (?).
+      iApply bi.equiv_wand_iff. do 4 f_equiv; exact: HQ.
+    Qed.
+
+    #[global] Instance alt_gen_committer_proper m γ :
+      Proper ((≡) ==> pointwise_relation _ (≡) ==> (≡)) (alt_gen_committer m γ).
+    Proof. rewrite /alt_gen_committer. solve_proper. Qed.
+
+    (** Stronger than the "obvious" statement thanks to the extra [e ∈ STEP]
+    assumption in the hypothesis. *)
+    Lemma alt_gen_committer_proper_strong m γ (STEP : propset (App.evt x)) :
+      Proper ((fun f g => forall e, e ∈ STEP -> f e ≡ g e) ==> (≡))
+            (alt_gen_committer m γ STEP).
+    Proof.
+      rewrite /alt_gen_committer => Q1 Q2 HQ.
+      do 11 f_equiv.
       rewrite -!bi.wand_curry; apply /bi.equiv_wand_iff_l. iIntros (?).
       iApply bi.equiv_wand_iff. do 4 f_equiv; exact: HQ.
     Qed.
@@ -1097,6 +1144,28 @@ Section with_lts.
       - set_solver.
     Qed.
 
+    Lemma alt_gen_transport1l
+        {nr: Nm}
+        (STEPl : propset (Label (Compose.sts_name _ nl)))
+        (STEPr : propset (Label (Compose.sts_name _ nr)))
+        (neq : nl <> nr)
+        ns (E : coPset) m (_ : ↑ns ## E) (_ : ↑ns ⊆ masks.O m) (_ : E ⊆ masks.O m)
+        (dual : Compose.dual_sets ComposeN.fam STEPl STEPr) γ γup Q :
+      let right := appn nr in
+      (* Decompose invariant: *)
+      Decompose ns γ γup -∗
+      Step.updater ComposeN.app E γup -∗
+      (* Requester AC: *)
+      Step.gen_requester left (↑ns) m (γ nl) STEPl Q -∗
+      (* Committer AU: *)
+      Step.alt_gen_committer right (↑ns) m (γ nr) STEPr
+        (fun e2 => Exists e1, [| e1 ∈ STEPl /\ dual_evts e1 e2 |] ** Q e1).
+    Proof using All.
+      iIntros (right) "#inv #updater REQ".
+      iApply Step.gen_committer_alt_gen_committer.
+      by iApply (gen_transport1l with "inv updater REQ").
+    Qed.
+
     Lemma transport1l
         {nr: Nm}
         (STEPl : propset (Label (Compose.sts_name _ nl)))
@@ -1408,7 +1477,7 @@ Section with_app.
 
   Definition gen_ctor_committer m (γ : AuthSet.gname)
       {A} (Ctor : A -> app.(App.evt)) (Q : A -> PROP) :=
-    Step.gen_committer app refinement_cur m γ {[ e | exists x, e = Ctor x ]}
+    Step.alt_gen_committer app refinement_cur m γ {[ e | exists x, e = Ctor x ]}
                    (fun e => Exists x, [| e = Ctor x |] ** Q x).
 
   Definition gen_singleton_committer m (γ : AuthSet.gname)
@@ -1455,10 +1524,9 @@ Section with_app.
 
   Lemma singleton_requester_intro {evt} γ (Q : PROP) :
     AC << ∀ s : App.lts app, ∃ s' : App.lts app,
-      [| lts_step (App.lts app) s (Some evt) s' |] ∗
-      AuthSet.frag_exact γ s
-    >> @ ⊤ ∖ refinement_cur, ∅ <<
-      AuthSet.frag γ {[ s' | lts_step (App.lts app) s (Some evt) s' ]}, COMM Q >>
+          [| lts_step (App.lts app) s (Some evt) s' |] ∗
+          AuthSet.frag_exact γ s >> @ ⊤ ∖ refinement_cur, ∅
+      << AuthSet.frag γ {[ s' | lts_step (App.lts app) s (Some evt) s' ]}, COMM Q >>
     ⊢ singleton_requester γ evt Q.
   Proof.
     iIntros "H". rewrite singleton_requester_equiv /Step.requester.
@@ -1508,18 +1576,17 @@ Section with_app.
 
   Lemma gen_singleton_committer_equiv {evt} m γ Q :
     gen_singleton_committer m γ evt Q ⊣⊢
-    Step.gen_committer app refinement_cur m γ {[ evt ]} (fun _ => Q).
+    Step.alt_gen_committer app refinement_cur m γ {[ evt ]} (fun _ => Q).
   Proof.
     rewrite /gen_singleton_committer/gen_ctor_committer propset_singleton_equiv_unit.
-    exact /Step.gen_committer_proper_strong /simpl_cont.
+    exact /Step.alt_gen_committer_proper_strong /simpl_cont.
   Qed.
 
   Lemma gen_singleton_requester_intro {evt} m γ (Q : PROP) :
     AC << ∀ s : App.lts app, ∃ s' : App.lts app,
-      [| lts_step (App.lts app) s (Some evt) s' |] ∗
-      AuthSet.frag_exact γ s
-    >> @ masks.O m ∖ refinement_cur, masks.I m <<
-      AuthSet.frag γ {[ s' | lts_step (App.lts app) s (Some evt) s' ]}, COMM Q >>
+          [| lts_step (App.lts app) s (Some evt) s' |] ∗
+          AuthSet.frag_exact γ s >> @ masks.O m ∖ refinement_cur, masks.I m
+      << AuthSet.frag γ {[ s' | lts_step (App.lts app) s (Some evt) s' ]}, COMM Q >>
     ⊢ gen_singleton_requester m γ evt Q.
   Proof.
     iIntros "H". rewrite gen_singleton_requester_equiv /Step.gen_requester/Step.gen_requester_learn.
@@ -1575,7 +1642,7 @@ End with_app.
 #[global] Hint Opaque singleton_committer : br_opacity.
 
 Section singleton_with_ref.
-  Context `{Ghostly PROP} `{!BiFUpd PROP}.
+  Context `{Ghostly PROP} `{!BiFUpd PROP} `{!BiBUpdFUpd PROP}.
   Context `{R : !refinement}.
 
   Lemma gen_transport_singleton comp γ nl nr m Q
@@ -1585,9 +1652,10 @@ Section singleton_with_ref.
     gen_transports comp γ ⊢
     gen_singleton_requester (app := appn nl) m (γ nl) STEPl Q -∗
     gen_singleton_committer (app := appn nr) m (γ nr) STEPr Q.
-  Proof.
+  Proof using All.
     iIntros (Hdiff Hcancel) "#T R".
     rewrite gen_singleton_requester_equiv gen_singleton_committer_equiv.
+    iApply Step.gen_committer_alt_gen_committer.
     iApply Step.gen_committer_proper_strong; first last. {
       rewrite /gen_transports.
       iApply ("T" $! nl nr Hdiff with "[%] R").
