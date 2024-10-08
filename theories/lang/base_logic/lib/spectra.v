@@ -402,11 +402,10 @@ Module Step.
       iIntros "AU".
       rewrite /gen_committer /alt_gen_committer.
       iIntros (sset0) "F".
-      iMod "AU" as (sset) "[A Close]".
+      iMod "AU" as (sset) "[A [_ Close]]".
       iDestruct (observe_2 [| sset0 ⊆ sset |] with "F A") as "%sub".
       iIntros "!>". iExists sset. iSplit; first done.
       iIntros (sset' e) "H".
-      rewrite bi.and_elim_r.
       iMod (AuthSet.frag_auth_upd with "F A") as "[$ A]".
       iMod ("Close" $! sset' e with "[$A $H]") as "$".
       done.
