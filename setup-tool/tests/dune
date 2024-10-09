@@ -1,0 +1,14 @@
+(cram
+ (applies_to :whole_subtree)
+ (deps
+  %{bin:coqc}
+  %{bin:coqdep}
+  (package coq-stdpp)
+  (package coq-iris)
+  (package coq-upoly)
+  (package coq-elpi)
+  (package coq-cpp2v)
+  (package coq-cpp2v-bin)
+  (package coq-upoly)
+  (package coq-equations)
+  setup.sh))

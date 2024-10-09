@@ -1,0 +1,3 @@
+[clang]
+extra_includes = ["include"]
+extra_flags = []
