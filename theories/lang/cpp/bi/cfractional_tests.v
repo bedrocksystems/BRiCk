@@ -18,6 +18,9 @@ Some representative examples. For the full story see
 *)
 
 Module Type EXAMPLES.
+  Section with_all.
+  Set Default Proof Using "Type*".
+
   Context {PROP : bi}.
   Context (R : cQp.t -> PROP) `{!cfractional.CFractional R}.
 
@@ -241,4 +244,5 @@ Module Type EXAMPLES.
     R (cQp.mut (q1 / p)) ** R (cQp.mut (q2 / p)) |-- R (cQp.mut ((q1 + q2) / p)).
   Proof. iIntros "[R1 R2]"; iCombine "R1 R2" as "R". by iFrame "R". Qed.
 
+  End with_all.
 End EXAMPLES.
