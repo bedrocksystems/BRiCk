@@ -402,12 +402,10 @@ Module Step.
       iIntros "AU".
       rewrite /gen_committer /alt_gen_committer.
       iIntros (sset0) "F".
-      iMod "AU" as (sset) "[A Close]".
+      iMod "AU" as (sset) "[A [_ Close]]".
       iDestruct (observe_2 [| sset0 ⊆ sset |] with "F A") as "%sub".
-      { apply: AuthSet.frag_auth_sub. }
       iIntros "!>". iExists sset. iSplit; first done.
       iIntros (sset' e) "H".
-      rewrite bi.and_elim_r.
       iMod (AuthSet.frag_auth_upd with "F A") as "[$ A]".
       iMod ("Close" $! sset' e with "[$A $H]") as "$".
       done.
@@ -582,7 +580,6 @@ Section with_app.
     case: nonempty => s nonempty; case: (safe s nonempty) => s' step.
     iInv "inv" as (sset' inits) "(>auth & FACTS)" "Close".
     iDestruct (observe_2 [| sset ⊆ sset' |] with "frag auth") as "%sub".
-    { apply: AuthSet.frag_auth_sub. }
     set (sset'' := {[ s' | exists s, s ∈ sset /\ root.(lts).(lts_step) s None s' ]}).
     have nonempty'' : exists s, s ∈ sset''.
     { exists s'. rewrite /sset'' elem_of_PropSet. exists s. by split. }
@@ -847,7 +844,6 @@ Section with_lts.
       iDestruct "A" as "[Al A]".
       iDestruct (observe_2 [| ssl ⊆ slr_set nl |] with "Fl Al")
         as "%s1_in_set".
-      { apply: AuthSet.frag_auth_sub. }
 
       set sset := π_set (updl slr_set ssl).
       assert (NEsset : ∃ s, s ∈ sset).
@@ -949,7 +945,6 @@ Section with_lts.
       rewrite difference_difference_l_L union_comm_L.
       iDestruct (observe_2 [| (π_set slr_set) ⊆ slr_frag |] with "Fup Aup")
         as "%SUBsup".
-      { apply: AuthSet.frag_auth_sub. }
       iIntros "!>".
       iExists _. iFrame "Al". iSplit.
       { (* abort *)
@@ -1048,7 +1043,6 @@ Section with_lts.
       destruct step_left as [NEl step_left].
       iDestruct (observe_2 [| ssl ⊆ slr_set nl |] with "fragl authl")
         as "%s1_in_set".
-      { apply: AuthSet.frag_auth_sub. }
       set ssl' := {[ s' | (∃ s : Compose.sts_name fam nl, s ∈ ssl ∧ lts_step (Compose.sts_name fam nl) s (Some el) s' ∧ True)%type ]}.
       iMod (AuthSet.frag_auth_upd (γ nl) ssl' with "fragl authl") as "(fraglf & authlf)".
       iMod ("Q" $! el with "[$fraglf //]") as "M".
@@ -1204,7 +1198,6 @@ Section with_lts.
 
       iDestruct (observe_2 [| setl ⊆ setlr nl |] with "fragl authl")
         as "%sl_in_set".
-      { apply: AuthSet.frag_auth_sub. }
       set (setle := (π_set (updl setlr setl))).
       iMod (AuthSet.frag_upd γup setle with "up") as "fragup".
       {
