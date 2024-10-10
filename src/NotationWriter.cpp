@@ -79,6 +79,15 @@ print_path(llvm::raw_string_ostream &print, const DeclContext *dc,
 	return true;
 }
 
+static inline bool
+starts_with(llvm::StringRef &s, const char *what) {
+#if 19 <= CLANG_VERSION_MAJOR
+	return s.starts_with(what);
+#else
+	return s.startswith(what);
+#endif
+}
+
 void
 write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 	print.output() << "Module _'." << fmt::indent << fmt::line;
@@ -89,8 +98,8 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 		std::string s_notation;
 		llvm::raw_string_ostream notation{s_notation};
 		llvm::StringRef def_name = def->getName();
-		if (def_name == "__builtin_va_list" || def_name.startswith("__SV") ||
-			def_name.startswith("__clang_sv"))
+		if (def_name == "__builtin_va_list" || starts_with(def_name, "__SV") ||
+			starts_with(def_name, "__clang_sv"))
 			return;
 		if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
 			if (not print_path(notation, fd->getParent(), true))
