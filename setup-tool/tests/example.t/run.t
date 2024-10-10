@@ -96,3 +96,27 @@
   _build/default/include/proof/util_hpp/code.vo
   _build/default/include/proof/util_hpp/names.vo
   $ cat src/client/proof/client_cpp/dune
+  (include_subdirs qualified)
+  (coq.theory
+   (name my.project.src.client.client_cpp)
+   (package dummy)
+   (theories
+    stdpp
+    iris
+    elpi
+    elpi_elpi
+    Lens
+    bedrock.upoly
+    bedrock.prelude
+    bedrock.lang
+    Equations))
+  (rule
+   (targets code.v names.v)
+   (deps
+    (:input ../../client.cpp)
+    (glob_files_rec ../../../../include/*.hpp)
+    (glob_files_rec ../../include/*.hpp))
+   (action
+    (run cpp2v -v %{input} -o code.v -names names.v --
+     -I../../../../include
+     -I../../include)))
