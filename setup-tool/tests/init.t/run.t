@@ -2,49 +2,35 @@
   $ find | sort
   .
   ./Makefile
-  ./br-project.toml
   ./dummy.opam
   ./dune-project
   ./include
-  ./include/junk.hpp
   ./include/util.hpp
   ./src
   ./src/client
-  ./src/client/br-config.toml
   ./src/client/client.cpp
   ./src/client/include
   ./src/client/include/client.hpp
   ./src/server
-  ./src/server/attic
-  ./src/server/attic/junk.cpp
-  ./src/server/attic/todo.cpp
-  ./src/server/br-config.toml
   ./src/server/include
   ./src/server/include/server.hpp
   ./src/server/server.cpp
-  $ br gen --debug
-  Changed directory to [$TESTCASE_ROOT].
-  Initial directory was [.].
-  File [include/util.hpp]:
-   - coq_dirpath: my.project.include
-   - clang_includes: ../include
-  Creating directory [include/proof/util_hpp].
-  File [src/client/client.cpp]:
-   - coq_dirpath: my.project.src.client
-   - clang_includes: ../../include, include
-  Creating directory [src/client/proof/client_cpp].
-  File [src/client/include/client.hpp]:
-   - coq_dirpath: my.project.src.client.include
-   - clang_includes: ../../../include, ../include
-  Creating directory [src/client/include/proof/client_hpp].
-  File [src/server/include/server.hpp]:
-   - coq_dirpath: my.project.src.server.include
-   - clang_includes: ../../../include, ../include
-  Creating directory [src/server/include/proof/server_hpp].
-  File [src/server/server.cpp]:
-   - coq_dirpath: my.project.src.server
-   - clang_includes: ../../include, include
-  Creating directory [src/server/proof/server_cpp].
+  $ br init --coq-dirpath my.project --coq-package dummy -I include -I src/client/include -I src/server/include --flags=-Werror,-Wall,-Wextra
+  $ cat br-project.toml
+  # Project configuration file (at the root of the workspace).
+  
+  [coq]
+  dirpath = "my.project"
+  package = "dummy"
+  theories = []
+  
+  [clang]
+  includes = ["include", "src/client/include", "src/server/include"]
+  flags = ["-Werror", "-Wall", "-Wextra"]
+  
+  [project]
+  ignored = []
+  $ br gen
   $ find | sort
   .
   ./Makefile
@@ -52,14 +38,12 @@
   ./dummy.opam
   ./dune-project
   ./include
-  ./include/junk.hpp
   ./include/proof
   ./include/proof/util_hpp
   ./include/proof/util_hpp/dune
   ./include/util.hpp
   ./src
   ./src/client
-  ./src/client/br-config.toml
   ./src/client/client.cpp
   ./src/client/include
   ./src/client/include/client.hpp
@@ -70,10 +54,6 @@
   ./src/client/proof/client_cpp
   ./src/client/proof/client_cpp/dune
   ./src/server
-  ./src/server/attic
-  ./src/server/attic/junk.cpp
-  ./src/server/attic/todo.cpp
-  ./src/server/br-config.toml
   ./src/server/include
   ./src/server/include/proof
   ./src/server/include/proof/server_hpp
@@ -108,15 +88,17 @@
     Lens
     bedrock.upoly
     bedrock.prelude
-    bedrock.lang
-    Equations))
+    bedrock.lang))
   (rule
    (targets code.v names.v)
    (deps
     (:input ../../client.cpp)
     (glob_files_rec ../../../../include/*.hpp)
-    (glob_files_rec ../../include/*.hpp))
+    (glob_files_rec ../../../../src/client/include/*.hpp)
+    (glob_files_rec ../../../../src/server/include/*.hpp))
    (action
     (run cpp2v -v %{input} -o code.v -names names.v --
      -I../../../../include
-     -I../../include)))
+     -I../../../../src/client/include
+     -I../../../../src/server/include
+     -Werror -Wall -Wextra)))

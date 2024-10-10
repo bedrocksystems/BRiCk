@@ -94,6 +94,7 @@ module Filename = struct
         | false -> chdir ~dir ~base state
       in
       let new_files = Sys.readdir path in
+      Array.sort String.compare new_files;
       let fn name files = (state, path, name) :: files in
       iter (Array.fold_right fn new_files files)
     in

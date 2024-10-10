@@ -27,10 +27,9 @@ type member
 val member_of_string : string -> member
 
 (** [fixup_string_member s] tries to build a resonable (valid) Coq module path
-    member name from the string [s]. This is done by replacing diacritic marks
-    by corresponding ASCII sequences if applicable, and by using ['_'] instead
-    of invalid characters like ['-']. If a result string is produced, applying
-    the [member_of_string] function to it is guaranteed to succeed. *)
+    member name from [s]. This is done by replacing ['-'] with ['_']. If there
+    is a return value, then it can be passed to [member_of_string] and it will
+    not raise an exception. *)
 val fixup_string_member : string -> string option
 
 (** Coq module path. *)

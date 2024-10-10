@@ -30,23 +30,23 @@ let member_of_string : string -> member = fun s ->
   | c                   -> invalid "starts with '%c'" c
 
 let fixup_string_member : string -> string option = fun s ->
-  (* Remove non-ASCII characters. *)
-  (*let s = Ubase.from_utf8 ~malformed:"" ~strip:"" s in*)
-  (* Use underscores for invalid characters. *)
-  let fn c =
-    match c with
-    | 'a'..'z' | 'A'..'Z' | '0'..'9' -> c
-    | _                              -> '_'
-  in
-  let s = String.map fn s in
-  (* Remove leading underscores. *)
-  let s = String.trim_leading '_' s in
-  (* Check non-empty. *)
-  if String.length s = 0 then None else
-  (* Check starts with letter. *)
-  match s.[0] with
-  | 'a'..'z' | 'A'..'Z' -> Some(s)
-  | _                   -> None
+  let len = String.length s in
+  if len = 0 then None else
+  let exception Invalid in
+  try
+    let _ =
+      match s.[0] with
+      | 'a'..'z' | 'A'..'Z' -> ()
+      | _                   -> raise Invalid
+    in
+    let fn c =
+      match c with
+      | 'a'..'z' | 'A'..'Z' | '0'..'9' -> c
+      | '-' | '_'                      -> '_'
+      | _                              -> raise Invalid
+    in
+    Some(String.map fn s)
+  with Invalid -> None
 
 type path = Path of member * member list
 type t = path
