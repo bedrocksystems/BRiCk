@@ -84,7 +84,7 @@ let gen_cmd =
   Cmd.(v (info "gen" ~version ~doc) Term.(const gen $ debug))
 
 let _ =
-  let cmds = [gen_cmd] in
+  let cmds = [Init.init_cmd; gen_cmd] in
   let default = Term.(ret (const (`Help(`Pager, None)))) in
   let default_info =
     let doc = "BlueRock C++ program verification setup tool." in
