@@ -8,6 +8,7 @@
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/ExprCXX.h>
+#include <clang/Basic/Version.h>
 
 using namespace clang;
 
@@ -179,7 +180,11 @@ Loc::dump(raw_ostream& os, const ASTContext& context) const {
 		u.type->dump(os, context);
 		return os;
 	case Kind::Tal:
+#if 19 <= CLANG_VERSION_MAJOR
+		u.tal->getArgument().dump(os, context);
+#else
 		u.tal->getArgument().dump(os);
+#endif
 		return os;
 	}
 }

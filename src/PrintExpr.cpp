@@ -1365,17 +1365,22 @@ public:
 	void VisitAtomicExpr(const clang::AtomicExpr* expr, CoqPrinter& print,
 						 ClangPrinter& cprint, const ASTContext&,
 						 OpaqueNames& li) {
-		print.ctor("Eatomic");
-
 		switch (expr->getOp()) {
 #define BUILTIN(ID, TYPE, ATTRS)
 #define ATOMIC_BUILTIN(ID, TYPE, ATTRS)                                        \
 	case clang::AtomicExpr::AO##ID:                                            \
-		print.output() << "AO" #ID << fmt::nbsp;                               \
+		print.ctor("Eatomic") << "AO" #ID << fmt::nbsp;                        \
 		break;
+#if 19 <= CLANG_VERSION_MAJOR
+#include "clang/Basic/Builtins.inc"
+#else
 #include "clang/Basic/Builtins.def"
+#endif
 #undef BUILTIN
 #undef ATOMIC_BUILTIN
+		default:
+			llvm::errs() << "atomic (" << expr->getOp() << ")\n";
+			return unsupported_expr(expr, print, cprint);
 		}
 
 		print.begin_list();

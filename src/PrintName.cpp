@@ -804,7 +804,11 @@ printTemplateArgument(const TemplateArgument& arg, CoqPrinter& print,
 			os << "template argument of kind "
 			   << templateArgumentKindName(kind);
 			unsupported(cprint, loc, false) << what << "\n";
+#if 19 <= CLANG_VERSION_MAJOR
+			arg.dump();
+#else
 			arg.dump(logging::debug());
+#endif
 			guard::ctor _(print, "Aunsupported", false);
 			return print.str(what);
 		} else
