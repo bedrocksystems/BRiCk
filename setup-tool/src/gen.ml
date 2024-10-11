@@ -1,7 +1,5 @@
 open Extra
 open Panic
-open Project
-open Coq_path
 
 let command : bool -> unit = fun debug ->
   let path_to_initial_cwd = Project.move_to_root () in

@@ -6,8 +6,6 @@
 
 (** Output and debugging utilities. *)
 
-open Extra
-
 (** Short name for a standard formatter. *)
 type 'a outfmt = ('a, Format.formatter, unit) format
 

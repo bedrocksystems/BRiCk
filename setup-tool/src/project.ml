@@ -158,7 +158,7 @@ let items_of_toml : Toml.Types.table -> (string * item) list = fun table ->
 
 type error = string * string
 
-let report_error : Filepath.t -> error -> unit = fun file (path, msg) ->
+let report_error : error -> unit = fun (path, msg) ->
   err "Error on field [%s]: %s." path msg
 
 let read_br_project : Filepath.t -> br_project = fun file ->
@@ -194,7 +194,7 @@ let read_br_project : Filepath.t -> br_project = fun file ->
   in
   List.iter handle_item items;
   let errors = List.rev !errors in
-  List.iter (report_error file) errors;
+  List.iter report_error errors;
   if errors <> [] then panic "There were %i errors." (List.length errors);
   let (brp_coq_dirpath, brp_coq_package) =
     match (!coq_dirpath, !coq_package) with
@@ -268,7 +268,7 @@ let read_br_config : Filepath.t -> br_config = fun file ->
   in
   List.iter handle_item items;
   let errors = List.rev !errors in
-  List.iter (report_error file) errors;
+  List.iter report_error errors;
   if errors <> [] then panic "There were %i errors." (List.length errors);
   let brc_coq_dirpath = !coq_dirpath in
   let brc_coq_package = !coq_package in
@@ -286,6 +286,20 @@ let read_br_config : Filepath.t -> br_config = fun file ->
 let project_file_name : string = "br-project.toml"
 
 let config_file_name : string = "br-config.toml"
+
+let locate_root : unit -> (Filepath.t * Filepath.t) option = fun _ ->
+  let rec locate_root cur_candidate path_to_cwd =
+    let candidate = Filename.concat cur_candidate project_file_name in
+    match Sys.file_exists candidate with
+    | true  -> Some(cur_candidate, path_to_cwd)
+    | false ->
+    let new_candidate = Filename.dirname cur_candidate in
+    if new_candidate = cur_candidate then None else
+    let dir = Filename.basename cur_candidate in
+    let path_to_cwd = Filename.concat dir path_to_cwd in
+    locate_root new_candidate path_to_cwd
+  in
+  locate_root (Sys.getcwd ()) Filename.current_dir_name
 
 let move_to_root : unit -> Filepath.t = fun _ ->
   let rec locate_root cur_candidate path_to_cwd =

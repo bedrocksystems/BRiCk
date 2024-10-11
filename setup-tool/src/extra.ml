@@ -145,7 +145,7 @@ module String = struct
   let trim_leading : char -> string -> string = fun c s ->
     let len = length s in
     let index = ref 0 in
-    while !index < len && s.[!index] = '_' do incr index done;
+    while !index < len && s.[!index] = c do incr index done;
     sub_from s !index
 end
 

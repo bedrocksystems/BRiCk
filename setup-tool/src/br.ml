@@ -1,9 +1,6 @@
 open Cmdliner
-
 open Extra
 open Panic
-open Project
-open Coq_path
 
 let version = "dev"
 
