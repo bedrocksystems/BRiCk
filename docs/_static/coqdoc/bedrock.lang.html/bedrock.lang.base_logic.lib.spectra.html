@@ -753,7 +753,21 @@ Stronger than the "obvious" statement thanks to the extra <span class="inlinecod
 <span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#Step"><span class="id" title="module">Step</span></a>.<br/>
 
 <br/>
-<span class="comment">(***&nbsp;Root&nbsp;Invariant&nbsp;*)</span><br/>
+<span class="comment">(***&nbsp;Satisfiability<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;We&nbsp;provide&nbsp;a&nbsp;simple&nbsp;invariant&nbsp;to&nbsp;demonstrate&nbsp;that&nbsp;Spectra&nbsp;is&nbsp;satisfiable.<br/>
+&nbsp;&nbsp;The&nbsp;definition&nbsp;of&nbsp;<span class="inlinecode"><span class="id" title="var">root_inv</span></span>&nbsp;below&nbsp;bundles&nbsp;the&nbsp;authoritative&nbsp;state&nbsp;of<br/>
+&nbsp;&nbsp;the&nbsp;LTS&nbsp;but&nbsp;does&nbsp;**not**&nbsp;connect&nbsp;it&nbsp;to&nbsp;the&nbsp;physical&nbsp;state&nbsp;of&nbsp;the&nbsp;system,<br/>
+&nbsp;&nbsp;which&nbsp;is&nbsp;necessary&nbsp;to&nbsp;use&nbsp;Spectra&nbsp;to&nbsp;prove&nbsp;an&nbsp;actual&nbsp;refinement.<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;In&nbsp;order&nbsp;to&nbsp;connect&nbsp;to&nbsp;the&nbsp;physical&nbsp;state,&nbsp;the&nbsp;WP&nbsp;of&nbsp;the&nbsp;physical&nbsp;system<br/>
+&nbsp;&nbsp;must&nbsp;expose&nbsp;the&nbsp;visible&nbsp;events&nbsp;that&nbsp;it&nbsp;takes&nbsp;(which&nbsp;can&nbsp;be&nbsp;exposed&nbsp;as&nbsp;a&nbsp;trace).<br/>
+&nbsp;&nbsp;Using&nbsp;this&nbsp;trace&nbsp;we&nbsp;can&nbsp;construct&nbsp;a&nbsp;true&nbsp;root&nbsp;invariant&nbsp;by&nbsp;bundling&nbsp;the&nbsp;physical<br/>
+&nbsp;&nbsp;trace&nbsp;into&nbsp;the&nbsp;root&nbsp;invariant&nbsp;anc&nbsp;connecting&nbsp;it&nbsp;to&nbsp;the&nbsp;trace&nbsp;<span class="inlinecode"><span class="id" title="var">evts</span></span>&nbsp;in&nbsp;<span class="inlinecode"><span class="id" title="var">root_inv</span></span>.<br/>
+&nbsp;&nbsp;With&nbsp;this,&nbsp;unpacking&nbsp;this&nbsp;invariant&nbsp;allows&nbsp;us&nbsp;to&nbsp;prove&nbsp;the&nbsp;standard<br/>
+&nbsp;&nbsp;termination-insensitive&nbsp;refinement&nbsp;property&nbsp;characterized&nbsp;by&nbsp;trace&nbsp;equivalence<br/>
+&nbsp;&nbsp;up&nbsp;to&nbsp;stuttering.<br/>
+&nbsp;*)</span><br/>
 <span class="id" title="keyword">Section</span> <a id="with_app" class="idref" href="#with_app"><span class="id" title="section">with_app</span></a>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.base_logic.lib.spectra.html#App"><span class="id" title="module">App</span></a>.<br/>
 
