@@ -552,7 +552,21 @@ Module Step.
   : br_opacity.
 End Step.
 
-(*** Root Invariant *)
+(*** Satisfiability
+  
+  We provide a simple invariant to demonstrate that Spectra is satisfiable.
+  The definition of [root_inv] below bundles the authoritative state of
+  the LTS but does **not** connect it to the physical state of the system,
+  which is necessary to use Spectra to prove an actual refinement.
+  
+  In order to connect to the physical state, the WP of the physical system
+  must expose the visible events that it takes (which can be exposed as a trace).
+  Using this trace we can construct a true root invariant by bundling the physical
+  trace into the root invariant anc connecting it to the trace [evts] in [root_inv].
+  With this, unpacking this invariant allows us to prove the standard
+  termination-insensitive refinement property characterized by trace equivalence
+  up to stuttering.
+ *)
 Section with_app.
   Import App.
 
