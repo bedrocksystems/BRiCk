@@ -570,6 +570,34 @@ Section FromToBytes.
       by rewrite Z.lor_0_r.
     Qed.
 
+    Lemma _Z_from_bytes_unsigned_le_singleton a :
+      _Z_from_bytes_unsigned_le [a] = (_get_byte (Z.of_N a) 0).
+    Proof.
+      by rewrite /_Z_from_bytes_unsigned_le _Z_from_bytes_unsigned_le'_singleton _get_0_set_0_eq.
+    Qed.
+
+    Lemma _Z_from_bytes_le_singleton sgn a :
+      _Z_from_bytes_le sgn [a] =
+        match sgn with
+        | Signed => to_signed_bits 8 (_get_byte a 0)
+        | Unsigned => _get_byte a 0
+        end.
+    Proof.
+      rewrite /_Z_from_bytes_le _Z_from_bytes_unsigned_le_singleton.
+      by rewrite /= N.mul_1_r.
+    Qed.
+
+    Lemma _Z_from_bytes_def_singleton endianness sgn a :
+      _Z_from_bytes_def endianness sgn [a] =
+        match sgn with
+        | Signed => to_signed_bits 8 (_get_byte a 0)
+        | Unsigned => _get_byte a 0
+        end.
+    Proof.
+      rewrite /_Z_from_bytes_def /=.
+      by destruct endianness; rewrite _Z_from_bytes_le_singleton.
+    Qed.
+
     Lemma _Z_from_bytes_unsigned_le'_bounds bytes idx b :
       (256 ^ (length bytes + Z.of_nat idx)%Z <= b)%Z ->
       (0 ≤ _Z_from_bytes_unsigned_le' idx bytes < b)%Z.
@@ -1106,6 +1134,17 @@ Section FromToBytes.
     Proof.
       move=> *; rewrite/lengthN length_lengthN Nat2N.id nat_N_Z.
       exact: _Z_from_bytes_Unsigned_bound.
+    Qed.
+
+    Lemma _Z_from_bytes_singleton endianness sgn a :
+      _Z_from_bytes endianness sgn [a] =
+        match sgn with
+        | Signed => to_signed_bits 8 (_get_byte a 0)
+        | Unsigned => _get_byte a 0
+        end.
+    Proof.
+      rewrite _Z_from_bytes_eq.
+      exact: _Z_from_bytes_def_singleton.
     Qed.
   End FromBytesFacts_external.
 
