@@ -57,13 +57,20 @@ let command : bool -> unit = fun debug ->
     out " (deps\n";
     out "  (:input ../../%s.%s)" base ext;
     let dep_include dir =
-      out "\n  (glob_files_rec ../../%s/*.hpp)" dir
+      if Filename.is_relative dir then
+        out "\n  (glob_files_rec ../../%s/*.hpp)" dir
     in
     List.iter dep_include clang_includes;
     out ")\n";
     out " (action\n";
     out "  (run cpp2v -v %%{input} -o code.v -names names.v --";
-    List.iter (out "\n   -I../../%s") clang_includes;
+    let out_include dir =
+      if Filename.is_relative dir then
+        out "\n   -I../../%s" dir
+      else
+        out "\n   -I%s" dir
+    in
+    List.iter out_include clang_includes;
     if clang_flags <> [] then out "\n   %s" (String.concat " " clang_flags);
     out ")))\n"
   in
