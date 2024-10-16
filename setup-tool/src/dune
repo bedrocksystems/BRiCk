@@ -1,0 +1,4 @@
+(executable
+ (public_name br)
+ (package coq-cpp2v-bin)
+ (libraries cmdliner toml))
