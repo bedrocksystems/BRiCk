@@ -8,6 +8,8 @@ Require Export stdpp.telescopes.
 Require Export bedrock.prelude.base.
 
 #[local] Set Universe Polymorphism.
+#[local] Set Polymorphic Inductive Cumulativity.
+#[local] Unset Universe Minimization ToSet.
 
 Fixpoint tele_append (t : tele) {struct t}: (t -t> tele) -> tele :=
   match t as t return (t -t> tele) -> tele with
