@@ -8,8 +8,8 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 ALECTRYON = $(shell which alectryon)
 export ALECTRYON
 
-COQBIN       = $(shell dirname $(shell which coqc))
-COQLIB       = $(shell coqc -where)
+COQBIN       = ${PWD}/../../../_build/install/default/bin
+COQLIB       = ${PWD}/../../../_build/install/default/lib/coq
 # NOTE: We will likely want to re-enable this when we have a src/ subdirectory
 #COQPATHEXTRA = $(ROOT_DIR)/src
 

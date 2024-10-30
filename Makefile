@@ -36,17 +36,19 @@ cpp2v: build/Makefile
 
 BUILD_ROOT=../../_build/default/fmdeps/cpp2v-core
 COQDOC_DIR=doc/sphinx/_static/coqdoc
+COQLIB=${PWD}/../../_build/install/default/lib/coq
 
 doc:
 	@dune clean
 	@dune build
+	#@dune build @../coq/install
 	@rm -rf /tmp/coqdocjs
 	@cp -r coqdocjs /tmp
 	@rm -rf doc/sphinx/_static/coqdoc
 	@mkdir -p doc/sphinx/_static/css/coqdocjs doc/sphinx/_static/js/coqdocjs
 	@cp -r coqdocjs/extra/resources/*.css doc/sphinx/_static/css/coqdocjs
 	@cp -r coqdocjs/extra/resources/*.js doc/sphinx/_static/js/coqdocjs
-	@dune build --cache=disabled @doc
+	@COQLIB=${COQLIB} dune build --cache=disabled @doc
 	@mkdir -p ${COQDOC_DIR}
 	@cp -r -t ${COQDOC_DIR} $$(find ${BUILD_ROOT} -type d -name '*.html')
 	+@$(MAKE) -C doc html

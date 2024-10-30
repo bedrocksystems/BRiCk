@@ -1,4 +1,5 @@
 export COQPATH="$DUNE_SOURCEROOT/_build/install/default/lib/coq/user-contrib"
+export COQLIB="$DUNE_SOURCEROOT/_build/install/default/lib/coq"
 
 check_cpp2v_versions() {
     input="$1"

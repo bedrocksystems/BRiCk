@@ -1,8 +1,8 @@
 (cram
  (applies_to :whole_subtree)
  (deps
-  %{bin:coqc}
-  %{bin:coqdep}
+  (package coq-core)
+  (package coq-stdlib)
   (package coq-cpp2v)
   (package coq-cpp2v-bin)
   (package coq-upoly)
