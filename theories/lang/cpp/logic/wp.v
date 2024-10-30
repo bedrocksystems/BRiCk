@@ -619,7 +619,7 @@ Section with_cpp.
         iIntros "[$ K]".
         iDestruct (IHls with "K") as "$". eauto. }
       { iIntros (???); iApply "K".
-        rewrite rev_length. eauto. rewrite -(rev_length ls). eauto. }
+        rewrite length_rev. eauto. rewrite -(length_rev ls). eauto. }
   Qed.
 
 

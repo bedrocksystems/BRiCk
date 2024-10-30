@@ -60,6 +60,6 @@ Section with_σ.
     intros * Hlength.
     rewrite _Z_from_bytes_eq/_Z_from_bytes_def.
     eapply _Z_from_bytes_le_has_type_prop.
-    case_match; auto; unfold lengthN in *; by rewrite rev_length.
+    case_match; auto; unfold lengthN in *; by rewrite length_rev.
   Qed.
 End with_σ.

@@ -256,7 +256,7 @@ Module Endian.
         rewrite z_to_bytes._Z_from_bytes_eq/z_to_bytes._Z_from_bytes_def in Hdecode;
         [ | replace l with (rev (rev l)) by (apply rev_involutive)];
         erewrite z_to_bytes._Z_from_bytes_unsigned_le_bswap; eauto;
-        now rewrite rev_length.
+        now rewrite length_rev.
     Qed.
 
     Lemma decodes_Z_to_bytes_Unsigned:

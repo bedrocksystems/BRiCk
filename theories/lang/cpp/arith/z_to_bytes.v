@@ -196,7 +196,7 @@ Section FromToBytes.
         length (_Z_to_bytes_def cnt endianness sgn v) = cnt.
     Proof.
       rewrite /_Z_to_bytes_def => cnt [ | ] sgn v //=;
-        try rewrite rev_length;
+        try rewrite length_rev;
         by apply _Z_to_bytes_le_length.
     Qed.
 
@@ -1002,7 +1002,7 @@ Section FromToBytes.
       rewrite _Z_to_from_bytes_le_round_trip.
       { exact: rev_involutive. }
       { exact: Forall_rev. }
-      by rewrite rev_length.
+      by rewrite length_rev.
     Qed.
 
     Lemma _Z_from_unsigned_to_signed_bytes_def:
@@ -1039,7 +1039,7 @@ Section FromToBytes.
       rewrite/_Z_from_bytes_le.
       move => lst.
       apply _Z_from_bytes_unsigned_le_bounds.
-      case_match; by rewrite !rev_length.
+      case_match; by rewrite !length_rev.
     Qed.
   End FromToFacts_internal.
 
