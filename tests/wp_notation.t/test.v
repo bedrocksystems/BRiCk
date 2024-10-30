@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import ZArith.
+Require Import Stdlib.ZArith.ZArith.
 
 Require Import bedrock.lang.cpp.notations.
 Require Import bedrock.lang.cpp.code_notations.
@@ -11,9 +11,11 @@ Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.cpp.logic.builtins.
 
 Module WpTestDefns.
-  Context (ti : biIndex) (_Σ : gFunctors) (Σ : cpp_logic ti _Σ) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)
+  Parameters (ti : biIndex) (_Σ : gFunctors) (Σ : cpp_logic ti _Σ) (σ : genv) (tu : translation_unit) (q_c : bool) (ρ : region)
           (v : val) (p p' p'' p''' this : ptr)
           (free : FreeTemps) (E : epred) (K : Kpred).
+  Existing Instances ti _Σ Σ σ.
+
   #[local] Notation cv := (types.QC).
   #[local] Notation ty := (types.Tptr types.Tvoid).
   #[local] Notation e := (expr.Ebinop expr.Badd
