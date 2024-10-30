@@ -18,7 +18,7 @@ Lemma insert_seq (i j k : nat) :
 Proof.
   destruct (decide (k < j)).
   by rewrite list_insert_id // lookup_seq_lt.
-  by rewrite list_insert_ge // seq_length; lia.
+  by rewrite list_insert_ge // length_seq; lia.
 Qed.
 
 Lemma fmap_add_seq_0 j n :
@@ -135,7 +135,7 @@ Section seqN.
   Proof. by rewrite -{1}(N.succ_pred_pos len) // seqN_S_end_app. Qed.
 
   Lemma seqN_lengthN len start : lengthN (seqN start len) = len.
-  Proof. by rewrite /seqN fmap_lengthN /lengthN seq_length N2Nat.id. Qed.
+  Proof. by rewrite /seqN fmap_lengthN /lengthN length_seq N2Nat.id. Qed.
 
   Lemma NoDup_seqN j n : NoDup (seqN j n).
   Proof. apply /NoDup_fmap_2 /NoDup_seq. Qed.

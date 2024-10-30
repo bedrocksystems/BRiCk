@@ -90,7 +90,7 @@ Section big_op.
     ([^o set] _ ∈ X, m) ≡
     ([^o list] _ ∈ seq 0 (size X), m).
   Proof.
-    intros. by rewrite big_opS_power big_opL_power /lengthN seq_length.
+    intros. by rewrite big_opS_power big_opL_power /lengthN length_seq.
   Qed.
 
 End big_op.
@@ -135,7 +135,7 @@ Section encodings.
   (** Powers encoded with [seq] *)
 
   Lemma big_opL_seq_power x n : ([^o list] _ ∈ seq 0 n, x) ≡ x ^^{o} N.of_nat n.
-  Proof. by rewrite big_opL_power /lengthN seq_length. Qed.
+  Proof. by rewrite big_opL_power /lengthN length_seq. Qed.
 
   (** Powers encoded with [set_seq] *)
 
