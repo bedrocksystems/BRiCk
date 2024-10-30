@@ -4,9 +4,9 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Lists.List.
-Require Export Coq.Strings.Ascii.
+Require Import Stdlib.ZArith.BinInt.
+Require Import Stdlib.Lists.List.
+Require Export Stdlib.Strings.Ascii.
 
 Require Import bedrock.lang.proofmode.proofmode.
 

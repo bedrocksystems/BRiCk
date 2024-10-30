@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.ZArith.ZArith.
+Require Import Stdlib.ZArith.ZArith.
 
 Require bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.syntax.type_notations.

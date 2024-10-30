@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Export Coq.ssr.ssreflect.
+Require Export Stdlib.ssr.ssreflect.
 Require Export stdpp.base.
 
 #[export] Set Typeclasses Unique Instances.

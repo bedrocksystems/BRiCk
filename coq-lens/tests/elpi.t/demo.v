@@ -1,6 +1,6 @@
 (* TODO: copyright header. *)
 (* From https://github.com/bedrocksystems/coq-lens/blob/master/test-suite/demo.v *)
-Require Import Coq.Strings.String.
+Require Import Stdlib.Strings.String.
 Require Import elpi.elpi.
 Require Import elpi.apps.derive.derive.
 Require Import Lens.Lens.
