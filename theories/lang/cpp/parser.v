@@ -41,17 +41,36 @@ Module Import translation_unit.
     (raw_symbol_table -> raw_type_table -> raw_alias_table -> list name -> translation_unit * list name) ->
     translation_unit * list name.
 
+  Require Import bedrock.lang.cpp.semantics.sub_module.
+  Definition merge_obj_value (a b : ObjValue) : option ObjValue :=
+    if ObjValue_le a b then
+      Some b
+    else if ObjValue_le b a then Some a
+         else None.
+
   Definition _symbols (n : name) (v : ObjValue) : t :=
     fun s t a dups k =>
       match s !! n with
       | None => k (<[n := v]> s) t a dups
-      | _ => k s t a (n :: dups)
+      | Some v' => match merge_obj_value v v' with
+                  | Some v => k (<[n:=v]> s) t a dups
+                  | None => k s t a (n :: dups)
+                  end
       end.
+  Definition merge_glob_decl (a b : GlobDecl) : option GlobDecl :=
+    if GlobDecl_le a b then
+      Some b
+    else if GlobDecl_le b a then Some a
+         else None.
+
   Definition _types (n : name) (v : GlobDecl) : t :=
     fun s t a dups k =>
       match t !! n with
       | None => k s (<[n := v]> t) a dups
-      | _ => k s t a (n :: dups)
+      | Some v' => match merge_glob_decl v v' with
+                   | Some v => k s (<[n:=v]> t) a dups
+                   | None => k s t a (n :: dups)
+                   end
       end.
   Definition _aliases (n : name) (v : type) : t :=
     fun s t a dups k =>

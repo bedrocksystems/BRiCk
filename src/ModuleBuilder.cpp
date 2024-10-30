@@ -176,9 +176,24 @@ public:
 		if (!templates_ && decl->isDependentContext())
 			return;
 
+		// TODO: in some instances, clang does not link all definitions together
+		// which can cause both 'defn == decl' and 'first-decl' to succeed on what
+		// is, effectively, the same declaration.
+		// It would be good to figure out why this happens and fix it, but, for the
+		// time being we fix this within Coq by de-duplicating the definition.
+		auto debug = [=](const char *info) {
+#ifdef DEBUG
+			llvm::errs() << info << ": ";
+			decl->getNameForDiagnostic(
+				llvm::errs(), PrintingPolicy(context_->getLangOpts()), true);
+			llvm::errs() << ' ' << (void *)decl->getCanonicalDecl() << "\n";
+#endif
+		};
+
 		using namespace comment;
 		auto defn = decl->getDefinition();
 		if (defn == decl) {
+			debug("defn == decl");
 			if (auto c = context_->getRawCommentForDeclNoCache(decl)) {
 				this->specs_.add_specification(decl, c, *context_);
 			}
@@ -197,8 +212,12 @@ public:
 					}
 				}
 			}
-		} else if (defn == nullptr && decl->getPreviousDecl() == nullptr)
+		} else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
+			debug("first-decl");
 			go(decl, flags, false);
+		} else {
+			debug("skipped");
+		}
 	}
 
 	void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
