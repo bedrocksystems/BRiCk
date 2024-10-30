@@ -425,7 +425,7 @@ Section with_cpp.
       revert H0 H1. rewrite !length_app/=.
       intros. iPureIntro.
       rewrite firstn_length_le; last lia.
-      rewrite skipn_length. lia. }
+      rewrite length_skipn. lia. }
   Qed.
 
   Lemma nd_seqs'_frame {T} n : forall (ls : list (M T)),
