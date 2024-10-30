@@ -45,8 +45,8 @@ Section defs.
     length (fs_arguments fs1) = length (fs_arguments fs2).
   Proof.
     destruct fs1, fs2; rewrite /type_of_spec/=; intros [= _ _ _ Hmap].
-    erewrite <-map_length, Hmap.
-    by rewrite map_length.
+    erewrite <-length_map, Hmap.
+    by rewrite length_map.
   Qed.
 
   Section ofe.

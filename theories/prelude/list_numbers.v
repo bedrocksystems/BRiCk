@@ -320,7 +320,7 @@ Section listN.
 
   Lemma lengthN_map {B} (f : A -> B) xs :
     lengthN (map f xs) = lengthN xs.
-  Proof. by rewrite /lengthN map_length. Qed.
+  Proof. by rewrite /lengthN length_map. Qed.
 
   Lemma lengthN_dropN k xs :
     lengthN (dropN k xs) = lengthN xs - k.

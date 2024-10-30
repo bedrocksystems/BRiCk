@@ -172,7 +172,7 @@ Section FromToBytes.
         length (_Z_to_bytes_unsigned_le' idx cnt v) = cnt.
     Proof.
       rewrite /_Z_to_bytes_unsigned_le' => idx cnt v //=;
-        by rewrite map_length seq_length.
+        by rewrite length_map seq_length.
     Qed.
 
     Definition _Z_to_bytes_unsigned_le_length:
