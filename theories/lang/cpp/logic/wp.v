@@ -415,14 +415,14 @@ Section with_cpp.
       subst.
       assert (length ls = length (pre ++ post)).
       { have: (length (m :: ls) = length (pre ++ q :: post)) by rewrite P.
-        rewrite !app_length /=. lia. }
+        rewrite !length_app /=. lia. }
       iDestruct (IHn with "[X]") as "X". eassumption.
       2:{
       iDestruct ("X" with "[a c]") as "X".
       iSplitL "a"; eauto.
       iApply "X". }
       simpl. iIntros (??) "%". iApply "X".
-      revert H0 H1. rewrite !app_length/=.
+      revert H0 H1. rewrite !length_app/=.
       intros. iPureIntro.
       rewrite firstn_length_le; last lia.
       rewrite skipn_length. lia. }
@@ -454,7 +454,7 @@ Section with_cpp.
       rewrite -H1.
       iApply IHn.
       { have: (length (m :: ls) = length (pre ++ q :: post)) by rewrite P.
-        rewrite !app_length /=. lia. }
+        rewrite !length_app /=. lia. }
       iSplitL "a"; eauto. }
   Qed.
   Lemma nd_seqs_frame : forall {T} (ms : list (_ T)),

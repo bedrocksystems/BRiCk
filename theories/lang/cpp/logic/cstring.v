@@ -132,7 +132,7 @@ Module cstring.
     Proof.
       unfold from_zstring, to_zstring;
         rewrite map_take map_map
-                map_length app_length
+                map_length length_app
                 Nat.add_sub/=.
       set f := fun x => byte_of_ascii _.
       have ->: forall l, map f l = l.
@@ -379,7 +379,7 @@ Module cstring.
         in H by (rewrite from_to_zstring//).
       rewrite Hzstring in H.
       unfold from_zstring in H.
-      rewrite app_length/= Nat.add_sub take_app_length in H.
+      rewrite length_app/= Nat.add_sub take_app_length in H.
       rewrite BS.parse_print_inv in H.
       rewrite map_map in H.
       match goal with
@@ -497,7 +497,7 @@ Module cstring.
       move=> b cstr; destruct cstr as [| b' cstr'];
         unfold strlen, zstring.strlen, zstring.size, to_zstring.
       1: simpl; by lia.
-      rewrite !map_length !app_length/=.
+      rewrite !map_length !length_app/=.
       replace ((length (BS.print cstr') + 1)%nat - 1)%Z
         with (Z.of_nat (length (BS.print cstr')))
         by lia.
@@ -576,7 +576,7 @@ Module cstring.
       move=> b cstr; destruct cstr as [| b' cstr'];
         unfold size, zstring.size, to_zstring.
       1: simpl; by lia.
-      rewrite !map_length !app_length/=.
+      rewrite !map_length !length_app/=.
       replace ((length (BS.print cstr') + 1)%nat - 1)%Z
         with (Z.of_nat (length (BS.print cstr')))
         by lia.

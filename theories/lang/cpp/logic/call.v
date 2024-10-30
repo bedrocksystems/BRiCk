@@ -186,7 +186,7 @@ Section with_resolve.
       { iIntros (??) "%".
         rewrite split_at_firstn_skipn.
         revert H0.
-        rewrite app_length map_length app_length map_length combine_length firstn_length skipn_length.
+        rewrite length_app map_length length_app map_length combine_length firstn_length skipn_length.
         intros. destruct f.
         { iApply "X"; iPureIntro.
           rewrite firstn_length. lia.
@@ -196,7 +196,7 @@ Section with_resolve.
           iSpecialize ("H" with "V").
           iRevert "H". iApply "X"; iPureIntro.
           - rewrite firstn_length. lia.
-          - rewrite app_length firstn_length skipn_length /=. lia. } } }
+          - rewrite length_app firstn_length skipn_length /=. lia. } } }
     { case_bool_decide; try iIntros "[]".
       rewrite split_at_firstn_skipn.
       iApply (eval_frame_strong with "[PRS]").
@@ -211,11 +211,11 @@ Section with_resolve.
         iIntros "H" (?) "A".
         iSpecialize ("H" with "A").
         revert HH.
-        rewrite app_length map_length app_length map_length combine_length firstn_length skipn_length.
+        rewrite length_app map_length length_app map_length combine_length firstn_length skipn_length.
         intro.
         iRevert "H"; iApply "X"; iPureIntro.
         - rewrite firstn_length. lia.
-        - rewrite app_length firstn_length skipn_length /=. lia. } }
+        - rewrite length_app firstn_length skipn_length /=. lia. } }
   Qed.
 
   Lemma wp_args_frame : forall eo pres ts_ar es Q Q',

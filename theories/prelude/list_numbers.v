@@ -316,7 +316,7 @@ Section listN.
 
   Lemma lengthN_app xs1 xs2 :
     lengthN (xs1 ++ xs2) = lengthN xs1 + lengthN xs2.
-  Proof. by rewrite /lengthN app_length Nat2N.inj_add. Qed.
+  Proof. by rewrite /lengthN length_app Nat2N.inj_add. Qed.
 
   Lemma lengthN_map {B} (f : A -> B) xs :
     lengthN (map f xs) = lengthN xs.
