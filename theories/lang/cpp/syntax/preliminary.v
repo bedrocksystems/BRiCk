@@ -228,36 +228,113 @@ Notation char_type := char_type.t.
 (** ** Integer types
     See <https://en.cppreference.com/w/cpp/language/types>
  *)
-Module int_type.
+Module int_rank.
   (* the rank <https://eel.is/c++draft/conv.rank> *)
-  Notation t := bitsize (only parsing).
+  Variant t : Set :=
+  | Ichar
+  | Ishort
+  | Iint
+  | Ilong
+  | Ilonglong
+  | I128.
+  #[global] Instance t_inh : Inhabited t.
+  Proof. repeat constructor. Qed.
+  #[global] Instance t_eq_dec : EqDecision t.
+  Proof. solve_decision. Defined.
   Notation rank := t (only parsing).
+  #[global] Instance t_countable : Countable t.
+  Proof.
+    apply (inj_countable'
+             (λ cc,
+               match cc with
+               | Ichar => 1 | Ishort => 2 | Iint => 3 | Ilong => 4 | Ilonglong => 5 | I128 => 6
+               end%positive)
+             (λ n,
+               match n with
+               | 1 => Ichar | 2 => Ishort | 3 => Iint | 4 => Ilong | 5 => Ilonglong
+               | _ => I128	(** dummy *)
+               end%positive)).
+    abstract (by intros []).
+  Defined.
 
-  Notation Ichar := W8 (only parsing).
-  Notation Ishort := W16 (only parsing).
-  Notation Iint := W32 (only parsing).
-  Notation Ilong := W64 (only parsing).
-  (** warning: LLP64 model uses [long_bits := W32] *)
-  Notation Ilonglong := W64 (only parsing).
+  (* all of the ranks ordered from smallest to largest *)
+  Definition ranks :=
+    [Ichar; Ishort; Iint; Ilong; Ilonglong; I128].
 
+  Definition bitsize (t : t) : bitsize :=
+    match t with
+    | Ichar => bitsize.W8
+    | Ishort => bitsize.W16
+    | Iint => bitsize.W32
+    | Ilong => bitsize.W64 (* NOTE *)
+    | Ilonglong => bitsize.W64
+    | I128 => bitsize.W128
+    end.
+
+  (* Having this definition not contain multiplication is helpful *)
   Definition bytesN (t : t) : N :=
-    arith.types.bytesN t. (* from [arith.types] *)
+    match t with
+    | Ichar => Evaluate (bitsize.bytesN $ bitsize Ichar)
+    | Ishort  => Evaluate (bitsize.bytesN $ bitsize Ishort)
+    | Iint  => Evaluate (bitsize.bytesN $ bitsize Iint)
+    | Ilong  => Evaluate (bitsize.bytesN $ bitsize Ilong)
+    | Ilonglong  => Evaluate (bitsize.bytesN $ bitsize Ilonglong)
+    | I128  => Evaluate (bitsize.bytesN $ bitsize I128)
+    end.
+  Lemma bytesN_ok (t : t) :
+    bytesN t = bitsize.bytesN (bitsize t).
+  Proof. by destruct t. Qed.
+
+  Notation bytesNat t := (N.to_nat (bytesN t)) (only parsing).
+  Lemma bytesNat_ok (t : t) :
+    bytesNat t = bitsize.bytesNat (bitsize t).
+  Proof. by destruct t. Qed.
 
   Definition bitsN (t : t) : N :=
-    8 * bytesN t.
+    match t with
+    | Ichar => Evaluate (8 * bytesN Ichar)
+    | Ishort => Evaluate (8 * bytesN Ishort)
+    | Iint => Evaluate (8 * bytesN Iint)
+    | Ilong => Evaluate (8 * bytesN Ilong)
+    | Ilonglong => Evaluate (8 * bytesN Ilonglong)
+    | I128 => Evaluate (8 * bytesN I128)
+    end.
 
+  Definition t_leb (a b : t) : bool :=
+    match a , b with
+    | Ichar , _ => true
+    | Ishort , Ichar => false
+    | Ishort , _ => true
+    | Iint , (Ichar | Ishort) => false
+    | Iint , _ => true
+    | Ilong , (Ichar | Ishort | Iint) => false
+    | Ilong , _ => true
+    | Ilonglong , (Ilonglong | I128) => true
+    | Ilonglong , _ => false
+    | I128 , I128 => true
+    | _ , _ => false
+    end.
   Definition t_le (a b : t) : Prop :=
-    (bytesN a <= bytesN b)%N.
+    t_leb a b.
 
   #[global] Instance t_le_dec : RelDecision t_le :=
-    fun a b => N.le_dec (bytesN a) (bytesN b).
+    ltac:(rewrite /RelDecision; refine _).
 
   (* [max] on the rank. *)
-  Definition t_max (a b : rank) : rank :=
+  Definition t_max (a b : t) : t :=
     if bool_decide (t_le a b) then b else a.
 
-End int_type.
-Notation int_type := int_type.t.
+  Notation max_val sz := (bitsize.max_val (bitsize sz)) (only parsing).
+  Notation min_val sz := (bitsize.min_val (bitsize sz)) (only parsing).
+  Notation bound sz  := (bitsize.bound (bitsize sz))   (only parsing).
+
+End int_rank.
+Notation int_rank := int_rank.t.
+#[deprecated(since="2024-06-22",note="use [int_rank]")]
+Notation int_type := int_rank.t (only parsing).
+#[global] Arguments int_rank.bytesN !_ /.
+#[global] Arguments int_rank.bitsN !_ /.
+(* #[global] Arguments int_rank.bitsize !_ /. TODO: do I want this? *)
 
 (** ** Floating point types
     See <https://en.cppreference.com/w/cpp/language/types>

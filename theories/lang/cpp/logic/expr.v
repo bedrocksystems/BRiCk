@@ -863,8 +863,8 @@ Module Type Expr.
         | Tptr _ , Tnum sz sgn =>
           wp_operand e (fun v free => Exists p, [| v = Vptr p |] **
             (Forall va, pinned_ptr va p -* Q (Vint (match sgn with
-                                                    | Signed => to_signed sz
-                                                    | Unsigned => trim (bitsN sz)
+                                                    | Signed => to_signed (int_rank.bitsize sz)
+                                                    | Unsigned => trim (int_rank.bitsN sz)
                                                     end (Z.of_N va))) free))
         | _ , _ => False
         end
@@ -1442,7 +1442,7 @@ Module Type Expr.
       eapply has_type_prop_drop_qualifiers; revert H.
       destruct (drop_qualifiers ty) eqn:Heq; simpl; try inversion 1; subst.
       - apply has_nullptr_type.
-      - apply has_int_type. rewrite /bound.
+      - apply has_int_type. rewrite /bitsize.bound.
         destruct sz, sgn; compute; intuition congruence.
       - apply has_type_prop_char_0.
       - eapply has_type_prop_enum.
@@ -1453,7 +1453,7 @@ Module Type Expr.
         intros. do 3 eexists; split; eauto; split; eauto.
         case_match; try congruence; inversion H; subst; simpl; split; try tauto.
         + apply has_nullptr_type.
-        + apply has_int_type. rewrite /bound; destruct sz,sgn; compute; intuition congruence.
+        + apply has_int_type. rewrite /bitsize.bound; destruct sz,sgn; compute; intuition congruence.
         + apply has_type_prop_char_0.
         + apply has_type_prop_bool; eauto.
         + eapply has_type_prop_nullptr; eauto.
@@ -1850,14 +1850,14 @@ Module Type Expr.
                            to the program to make it read-only.
                          NOTE that no "correct" program will ever modify this variable
                            anyways. *)
-                      loop_index |-> primR Tu64 (cQp.c 1) idx -*
+                      loop_index |-> primR Tsize_t (cQp.c 1) idx -*
                       wp_initialize tu ρ ty (targetp .[ erase_qualifiers ty ! idx ]) init
                               (fun free => interp free $
-                                 loop_index |-> primR Tu64 (cQp.c 1) idx **
+                                 loop_index |-> primR Tsize_t (cQp.c 1) idx **
                                  rest (N.succ idx))) sz idx.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) src init ety ty Q,
-          has_type_prop (Vn sz) Tu64 ->
+          has_type_prop (Vn sz) Tsize_t ->
           is_array_of ty ety ->
           wp_glval tu ρ src
                    (fun p free =>

@@ -380,13 +380,13 @@ Section with_Σ.
                   [p; succmemord; expected_p; failmemord; desired_p; weak] Q.
 
   (** Atomic operations use two's complement arithmetic. This
-  definition presupposes that the [n_i] satisfy [n_i = n_i `mod` 2 ^
-  bitsZ sz], which the following axioms ensure via typing
-  side-conditions. *)
-  Definition atomic_eval (sz : bitsize) (sgn : signed)
+  definition presupposes that the [n_i] satisfy
+  [n_i = n_i `mod` 2 ^ bitsZ sz], which the following axioms ensure
+  via typing side-conditions. *)
+  Definition atomic_eval (sz : int_rank) (sgn : signed)
       (op : Z -> Z -> Z) (n1 n2 : Z) : Z :=
     let r := op n1 n2 in
-    if sgn is Signed then to_signed sz r else to_unsigned sz r.
+    if sgn is Signed then to_signed (int_rank.bitsize sz) r else to_unsigned (int_rank.bitsize sz) r.
 
   #[local] Notation at_eval sz sgn op n1 n2 :=
     (Unfold atomic_eval (atomic_eval sz sgn op n1 n2)) (only parsing).

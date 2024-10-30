@@ -78,6 +78,7 @@ Module Export TypeNotations.
          , format "'[' const  volatile  ty ']'"
          , only printing).
 
+  (*
   (* [Tnum] variants *)
   Notation "'int8'" := Ti8 (in custom CPP_type at level 0, only printing).
   Notation "'uint8'" := Tu8 (in custom CPP_type at level 0, only printing).
@@ -89,6 +90,7 @@ Module Export TypeNotations.
   Notation "'uint64'" := Tu64 (in custom CPP_type at level 0, only printing).
   Notation "'int128'" := Ti128 (in custom CPP_type at level 0, only printing).
   Notation "'uint128'" := Tu128 (in custom CPP_type at level 0, only printing).
+   *)
 
   (* [char_type.t] variants *)
   Notation "'char'" := Tchar (in custom CPP_type at level 0, only printing).

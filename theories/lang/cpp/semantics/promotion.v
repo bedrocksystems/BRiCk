@@ -75,8 +75,8 @@ Section representable.
       | _ => None
       end
     in
-    let min ty := (fun '(integral_type.mk sz sgn) => min_val sz sgn) <$> to_equiv ty in
-    let max ty := (fun '(integral_type.mk sz sgn) => max_val sz sgn) <$> to_equiv ty in
+    let min ty := (fun '(integral_type.mk sz sgn) => int_rank.min_val sz sgn) <$> to_equiv ty in
+    let max ty := (fun '(integral_type.mk sz sgn) => int_rank.max_val sz sgn) <$> to_equiv ty in
     match min a , min b , max a , max b with
     | Some an , Some bn , Some ax , Some bx =>
         bool_decide (bn <= an /\ ax <= bx)%Z
@@ -236,16 +236,16 @@ Definition promote_arith (ty1 ty2 : type) : option type :=
   match ty1 , ty2 with
   | Tnum sz1 sgn1 , Tnum sz2 sgn2 =>
       if bool_decide (sgn1 = sgn2) then
-        Some $ Tnum (int_type.t_max sz1 sz2) sgn1
+        Some $ Tnum (int_rank.t_max sz1 sz2) sgn1
       else
         let (ssz, usz) := match sgn1 with
                           | Signed => (sz1, sz2)
                           | Unsigned => (sz2, sz1)
                           end
         in
-        if bool_decide (int_type.t_le ssz usz) then
+        if bool_decide (int_rank.t_le ssz usz) then
           Some $ Tnum usz Unsigned
-        else if bool_decide (int_type.t_le usz ssz) then
+        else if bool_decide (int_rank.t_le usz ssz) then
           Some $ Tnum ssz Signed
         else
           Some $ Tnum ssz Unsigned

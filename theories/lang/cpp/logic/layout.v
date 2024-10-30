@@ -106,9 +106,9 @@ Section with_Σ.
   Lemma tblockR_array_better t n q sz :
         size_of σ t = Some sz ->
         tblockR (Tarray t n) q
-    -|- .[ Tu8 ! Z.of_N (n * sz) ] |-> validR **
+    -|- .[ Tbyte ! Z.of_N (n * sz) ] |-> validR **
         [∗list] i ∈ seq 0 (N.to_nat n),
-           .[ Tu8 ! Z.of_N (N.of_nat i * sz) ] |-> tblockR t q.
+           .[ Tbyte ! Z.of_N (N.of_nat i * sz) ] |-> tblockR t q.
   Proof.
     rewrite /tblockR /= => Hsz.
     rewrite Hsz /= align_of_array.

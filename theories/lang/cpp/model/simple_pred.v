@@ -104,9 +104,9 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
      *)
 
   Definition Z_to_bytes {σ:genv} (n : bitsize) (sgn: signed) (v : Z) : list runtime_val' :=
-    Rval <$> _Z_to_bytes (bytesNat n) (genv_byte_order σ) sgn v.
+    Rval <$> _Z_to_bytes (bitsize.bytesNat n) (genv_byte_order σ) sgn v.
 
-  Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bytesNat n.
+  Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bitsize.bytesNat n.
   Proof. by rewrite /Z_to_bytes length_fmap _Z_to_bytes_length. Qed.
 
   Record cpp_ghost' : Type :=
@@ -314,7 +314,7 @@ Module SimpleCPP.
       Variable σ : genv.
 
       Let POINTER_BITSZ : bitsize := pointer_size_bitsize σ.
-      Notation POINTER_BYTES := (bytesNat POINTER_BITSZ).
+      Notation POINTER_BYTES := (bitsize.bytesNat POINTER_BITSZ).
 
       Definition aptr (p : ptr) : list runtime_val :=
         Rpointer_chunk p <$> (seq 0 POINTER_BYTES).
@@ -329,14 +329,14 @@ Module SimpleCPP.
       Lemma length_cptr a : length (cptr a) = POINTER_BYTES.
       Proof. by rewrite /cptr length_Z_to_bytes. Qed.
 
-      Lemma bytesNat_pos b : bytesNat b > 0.
+      Lemma bytesNat_pos b : bitsize.bytesNat b > 0.
       Proof. by case: b =>/=; lia. Qed.
 
-      Lemma bytesNat_nnonnull b : bytesNat b <> 0.
+      Lemma bytesNat_nnonnull b : bitsize.bytesNat b <> 0.
       Proof. have := bytesNat_pos b. lia. Qed.
       #[local] Hint Resolve bytesNat_nnonnull : core.
 
-      Lemma bytesNat_nnonnull' b : bytesNat b = S (pred (bytesNat b)).
+      Lemma bytesNat_nnonnull' b : bitsize.bytesNat b = S (pred (bitsize.bytesNat b)).
       Proof. by rewrite (Nat.succ_pred _ (bytesNat_nnonnull _)). Qed.
 
       Lemma list_not_nil_cons {T} (xs : list T) : xs <> nil -> ∃ h t, xs = h :: t.
@@ -364,14 +364,14 @@ Module SimpleCPP.
 
       (** WRT pointer equality, see https://eel.is/c++draft/expr.eq#3 *)
       Definition pure_encodes_undef (n : bitsize) (vs : list runtime_val) : Prop :=
-        vs = repeat Rundef (bytesNat n).
+        vs = repeat Rundef (bitsize.bytesNat n).
       Lemma length_pure_encodes_undef n vs :
         pure_encodes_undef n vs ->
-        length vs = bytesNat n.
+        length vs = bitsize.bytesNat n.
       Proof. rewrite /pure_encodes_undef => ->. exact: repeat_length. Qed.
 
       Definition in_Z_to_bytes_bounds (cnt' : bitsize) sgn z :=
-        let cnt := bytesNat cnt' in
+        let cnt := bitsize.bytesNat cnt' in
         match sgn with
         | Signed => (- 2 ^ (8 * cnt - 1) ≤ z)%Z ∧ (z ≤ 2 ^ (8 * cnt - 1) - 1)%Z
         | Unsigned => (0 ≤ z)%Z ∧ (z < 2 ^ (8 * cnt))%Z
@@ -379,13 +379,13 @@ Module SimpleCPP.
 
       Lemma _Z_to_bytes_inj_1 cnt endianness sgn z :
         in_Z_to_bytes_bounds cnt sgn z ->
-        _Z_from_bytes endianness sgn (_Z_to_bytes (bytesNat cnt) endianness sgn z) = z.
+        _Z_from_bytes endianness sgn (_Z_to_bytes (bitsize.bytesNat cnt) endianness sgn z) = z.
       Proof. apply _Z_from_to_bytes_roundtrip. Qed.
 
       Lemma _Z_to_bytes_inj_2 cnt endianness sgn z1 z2 :
         in_Z_to_bytes_bounds cnt sgn z1 ->
         in_Z_to_bytes_bounds cnt sgn z2 ->
-        _Z_to_bytes (bytesNat cnt) endianness sgn z1 = _Z_to_bytes (bytesNat cnt) endianness sgn z2 ->
+        _Z_to_bytes (bitsize.bytesNat cnt) endianness sgn z1 = _Z_to_bytes (bitsize.bytesNat cnt) endianness sgn z2 ->
         z1 = z2.
       Proof.
         intros Hb1 Hb2 Heq%(f_equal (_Z_from_bytes endianness sgn)).
@@ -409,9 +409,9 @@ Module SimpleCPP.
         | Tnum sz sgn =>
           match v with
           | Vint v =>
-            in_Z_to_bytes_bounds sz sgn v /\
-            vs = Z_to_bytes sz sgn v
-          | Vundef => pure_encodes_undef sz vs
+            in_Z_to_bytes_bounds (int_rank.bitsize sz) sgn v /\
+            vs = Z_to_bytes (int_rank.bitsize sz) sgn v
+          | Vundef => pure_encodes_undef (int_rank.bitsize sz) vs
           | _ => False
           end
         | Tchar_ ct => False (* TODO *)
@@ -481,21 +481,23 @@ Module SimpleCPP.
       Lemma length_encodes t v vs :
         pure_encodes t v vs ->
           length vs = match erase_qualifiers t with
-          | Tbool => 1
-          | Tnum sz _ => bytesNat sz
+                      | Tbool => 1
+                      | Tnum sz _ => int_rank.bytesNat sz
 
-          | Tmember_pointer _ _ | Tnullptr | Tptr _
-          | Tfunction _ | Tref _ | Trv_ref _ =>
-            POINTER_BYTES
+                      | Tmember_pointer _ _ | Tnullptr | Tptr _
+                      | Tfunction _ | Tref _ | Trv_ref _ =>
+                                                 POINTER_BYTES
 
-          | _ => 1	(* dummy for absurd case, but useful for length_encodes_pos. *)
-          end.
+                      | _ => 1	(* dummy for absurd case, but useful for length_encodes_pos. *)
+                      end.
       Proof.
         rewrite /pure_encodes => ?.
         destruct (erase_qualifiers _) => //;
           destruct v => //; destruct_and? => //;
           repeat case_decide => //;
            simplify_eq; eauto.
+        by destruct sz.
+        erewrite length_pure_encodes_undef; eauto. by destruct sz.
       Qed.
 
       Lemma length_encodes_pos t v vs :
@@ -503,7 +505,8 @@ Module SimpleCPP.
         length vs > 0.
       Proof.
         move=> /length_encodes ->. have ?: 1 > 0 by exact: le_n.
-        repeat case_match; by [ | exact: bytesNat_pos].
+        induction t; simpl; try solve [ lia | exact: bytesNat_pos ].
+        destruct sz; compute; lia.
       Qed.
 
       #[global] Instance Inj_aptr: Inj eq eq aptr.
@@ -1084,13 +1087,13 @@ Module SimpleCPP.
            |  [type_ptr ty p] fact to a collection of [type_ptr Tu8 (p ,, .[Tu8 ! i])]
            |  facts - where [i] is a byte-offset within the [ty] ([0 <= i < sizeof(ty)]).
            v *)
-        type_ptr ty p |-- type_ptr Tu8 (p ,, (o_sub σ Tu8 i)).
+        type_ptr ty p |-- type_ptr Tbyte (p ,, (o_sub σ Tbyte i)).
     Proof. Admitted.
 
     Lemma type_ptr_obj_repr :
       forall (σ : genv) (ty : type) (p : ptr) (sz : N),
         size_of σ ty = Some sz ->
-        type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tu8 (p ,, o_sub σ Tu8 (Z.of_N i)).
+        type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tbyte (p ,, o_sub σ Tbyte (Z.of_N i)).
     Proof.
       intros * Hsz; iIntros "#tptr".
       iApply big_sepL_intro; iIntros "!>" (k n) "%Hn'".
@@ -1107,15 +1110,15 @@ Module SimpleCPP.
       [| offset_cong σ o1 o2 |].
 
     (* [ptr_congP σ p1 p2] is an [mpred] which quotients [ptr_cong σ p1 p2]
-       by requiring that [type_ptr Tu8] holds for both [p1] /and/ [p2]. This property
+       by requiring that [type_ptr Tbyte] holds for both [p1] /and/ [p2]. This property
        is intended to be sound and sufficient for transporting certain physical
        resources between [p1] and [p2] - and we hypothesize that it is also
        necessary.
      *)
     Definition ptr_congP (σ : genv) (p1 p2 : ptr) : mpred :=
-      [| ptr_cong σ p1 p2 |] ** type_ptr Tu8 p1 ** type_ptr Tu8 p2.
+      [| ptr_cong σ p1 p2 |] ** type_ptr Tbyte p1 ** type_ptr Tbyte p2.
 
-    (* All [tptsto Tu8] facts can be transported over [ptr_congP] [ptr]s.
+    (* All [tptsto Tbyte] facts can be transported over [ptr_congP] [ptr]s.
 
        High level meaning:
        In the C++ object model, a single byte of storage can be accessed through different pointers,
@@ -1129,16 +1132,16 @@ Module SimpleCPP.
        The standard justifies this as follows:
        1) (cf. [tptsto] comment) [tptsto ty q p v] ensures that [p] points to a memory
           location with C++ type [ty] and which has some value [v].
-       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tu8] holds for all of the
+       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tbyte] holds for all of the
           bytes (i.e. the "object reprsentation") constituting well-typed C++ objects.
        3) NOTE (JH): the following isn't quite true yet, but we'll want this when we flesh
           out [rawR]/[RAW_BYTES]:
           a) all values [v] can be converted into (potentially many) [raw_byte]s -
              which capture its "object representation"
           b) all [tptsto ty] facts can be shattered into (potentially many)
-             [tptsto Tu8 _ _ (Vraw _)] facts corresponding to its "object representation"
-       4) [tptsto Tu8 _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
-          a) [tptso Tu8 _ _ (Vraw _)] facts deal with the "object representation" directly
+             [tptsto Tbyte _ _ (Vraw _)] facts corresponding to its "object representation"
+       4) [tptsto Tbyte _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
+          a) [tptso Tbyte _ _ (Vraw _)] facts deal with the "object representation" directly
              and thus permit erasing the structure of pointers in favor of reasoning about
              relative byte offsets from a shared [ptr]-prefix.
           b) the [ptr]s are [ptr_congP] so we know that:
@@ -1153,7 +1156,7 @@ Module SimpleCPP.
        [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
      *)
     Lemma tptsto_ptr_congP_transport : forall {σ} q p1 p2 v,
-      ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tu8 q p1 v -* tptsto (σ:=σ) Tu8 q p2 v.
+      ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tbyte q p1 v -* tptsto (σ:=σ) Tbyte q p2 v.
     Proof. Admitted.
 
     Definition strict_valid_if_not_empty_array (ty : type) : ptr -> mpred :=

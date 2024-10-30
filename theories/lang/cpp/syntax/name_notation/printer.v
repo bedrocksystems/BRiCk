@@ -182,10 +182,10 @@ Section with_lang.
     | Tushort => mret "unsigned short"
     | Tlong => mret "long"
     | Tulong => mret "unsigned long"
-(*    | Tlonglong => mret "long long"
-    | Tulonglong => mret "unsigned long long" *)
-    | Tnum W128 Signed => mret "int128_t"
-    | Tnum W128 Unsigned => mret "uint128_t"
+    | Tlonglong => mret "long long"
+    | Tulonglong => mret "unsigned long long"
+    | Tnum int_rank.I128 Signed => mret "int128_t"
+    | Tnum int_rank.I128 Unsigned => mret "uint128_t"
     | Twchar => mret "wchar_t"
     | Tchar8 => mret "char8_t"
     | Tchar16 => mret "char16_t"
@@ -336,7 +336,7 @@ Module Type TESTS.
   Succeed Example _0 : TEST "span<const int, 1ull>::span(const int*, unsigned long)"
                          (Nscoped (Ninst (Nglobal (Nid "span")) [Atype (Tqualified QC Tint);
                                                                  Avalue (Eint 1 Tulonglong)])
-                            (Nfunction function_qualifiers.N Nctor [Tptr (Tqualified QC Tint); Tulonglong])) := eq_refl.
+                            (Nfunction function_qualifiers.N Nctor [Tptr (Tqualified QC Tint); Tulong])) := eq_refl.
   Succeed Example _0 : TEST "integral" (Nglobal $ Nid "integral") := eq_refl.
   Succeed Example _0 : TEST "f<int>(int, int)" (Ninst (Nglobal $ Nfunction function_qualifiers.N (Nf "f") [Tint; Tint]) [Atype Tint]) := eq_refl.
   Succeed Example _0 : TEST "f<int>(enum @1, enum en)" (Ninst (Nglobal $ Nfunction function_qualifiers.N (Nf "f") [Tenum (Nglobal (Nanon 1)); Tenum (Nglobal (Nid "en"))]) [Atype Tint]) := eq_refl.

@@ -8,41 +8,49 @@ Require Import bedrock.lang.cpp.logic.
 
 Notation boolR q v := (primR Tbool q (Vbool v)).
 
-(* integers with explict sizes *)
-
-Notation u8R  q v := (primR Tu8  q (Vint v)).
-Notation u16R q v := (primR Tu16 q (Vint v)).
-Notation u32R q v := (primR Tu32 q (Vint v)).
-Notation u64R q v := (primR Tu64 q (Vint v)).
-
-Notation i8R  q v := (primR Ti8  q (Vint v)).
-Notation i16R q v := (primR Ti16 q (Vint v)).
-Notation i32R q v := (primR Ti32 q (Vint v)).
-Notation i64R q v := (primR Ti64 q (Vint v)).
-
 (* integers with implicit sizes *)
 (* note(gmm): these might need to become definitions if we want to be generic
  * across sizes
  *)
-Notation scharR q v := (i8R q v) (only parsing).
-Notation ucharR q v := (u8R q v) (only parsing).
+Notation scharR q v := (primR Tschar q (Vint v)).
+Notation ucharR q v := (primR Tuchar q (Vint v)).
 
-Notation sshortR q v := (i16R q v) (only parsing).
-Notation ushortR q v := (u16R q v) (only parsing).
-Notation shortR q v := (i16R q v) (only parsing).
+Notation sshortR q v := (primR Tshort q (Vint v)) (only parsing).
+Notation ushortR q v := (primR Tushort q (Vint v)).
+Notation shortR q v := (sshortR q v).
 
 
-Notation sintR q v := (i32R q v) (only parsing).
-Notation uintR q v := (u32R q v) (only parsing).
-Notation intR q v := (i32R q v) (only parsing).
+Notation sintR q v := (primR Tint q (Vint v)) (only parsing).
+Notation uintR q v := (primR Tuint q (Vint v)).
+Notation intR q v := (sintR q v).
 
-Notation slongR q v := (i64R q v) (only parsing).
-Notation ulongR q v := (u64R q v) (only parsing).
-Notation longR q v := (i64R q v) (only parsing).
+Notation slongR q v := (primR Tlong q (Vint v)) (only parsing).
+Notation ulongR q v := (primR Tulong q (Vint v)).
+Notation longR q v := (slongR q v).
 
-Notation slonglongR q v := (i64R q v) (only parsing).
-Notation ulonglongR q v := (u64R q v) (only parsing).
-Notation longlongR q v := (i64R q v) (only parsing).
+Notation slonglongR q v := (primR Tlonglong q (Vint v)) (only parsing).
+Notation ulonglongR q v := (primR Tulonglong q (Vint v)).
+Notation longlongR q v := (slonglongR q v).
+
+(* integers with explict sizes *)
+
+#[deprecated(since="20240624",note="use [ucharR]")]
+Notation u8R  q v := (primR Tuchar  q (Vint v)) (only parsing).
+#[deprecated(since="20240624",note="use [ushortR]")]
+Notation u16R q v := (primR Tushort q (Vint v)) (only parsing).
+#[deprecated(since="20240624",note="use [uintR]")]
+Notation u32R q v := (primR Tuint q (Vint v)) (only parsing).
+#[deprecated(since="20240624",note="use [ulongR] or [ulonglongR]")]
+Notation u64R q v := (primR Tulonglong q (Vint v)) (only parsing).
+
+#[deprecated(since="20240624",note="use [scharR]")]
+Notation i8R  q v := (primR Tschar  q (Vint v)) (only parsing).
+#[deprecated(since="20240624",note="use [shortR]")]
+Notation i16R q v := (primR Tshort q (Vint v)) (only parsing).
+#[deprecated(since="20240624",note="use [intR]")]
+Notation i32R q v := (primR Tint q (Vint v)) (only parsing).
+#[deprecated(since="20240624",note="use [longR] or [longlongR]")]
+Notation i64R q v := (primR Tlonglong q (Vint v)) (only parsing).
 
 (** Character notations *)
 Notation charR q v := (primR Tchar q (Vchar v)).

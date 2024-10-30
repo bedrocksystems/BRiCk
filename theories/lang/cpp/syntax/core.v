@@ -445,7 +445,7 @@ with type' {lang : lang.t} : Set :=
 | Tptr (t : type')
 | Tref (t : type')
 | Trv_ref (t : type')
-| Tnum (sz : int_type.rank) (sgn : signed)
+| Tnum (sz : int_rank.t) (sgn : signed)
 | Tchar_ (_ : char_type.t)
 | Tvoid
 | Tarray (t : type') (n : N)
@@ -929,31 +929,44 @@ Notation Tchar8 := (Tchar_ char_type.C8).
 Notation Tchar16 := (Tchar_ char_type.C16).
 Notation Tchar32 := (Tchar_ char_type.C32).
 
-Notation Ti8 := (Tnum W8 Signed).
-Notation Tu8 := (Tnum W8 Unsigned).
-Notation Ti16 := (Tnum W16 Signed).
-Notation Tu16 := (Tnum W16 Unsigned).
-Notation Ti32 := (Tnum W32 Signed).
-Notation Tu32 := (Tnum W32 Unsigned).
-Notation Ti64 := (Tnum W64 Signed).
-Notation Tu64 := (Tnum W64 Unsigned).
-Notation Ti128 := (Tnum W128 Signed).
-Notation Tu128 := (Tnum W128 Unsigned).
+#[deprecated(since="20240624", note="use [Tschar]")]
+Notation Ti8 := (Tnum bitsize.W8 Signed).
+#[deprecated(since="20240624", note="use [Tuchar]")]
+Notation Tu8 := (Tnum bitsize.W8 Unsigned).
+#[deprecated(since="20240624", note="use [Tshort]")]
+Notation Ti16 := (Tnum bitsize.W16 Signed).
+#[deprecated(since="20240624", note="use [Tushort]")]
+Notation Tu16 := (Tnum bitsize.W16 Unsigned).
+#[deprecated(since="20240624", note="use [Tint]")]
+Notation Ti32 := (Tnum bitsize.W32 Signed).
+#[deprecated(since="20240624", note="use [Tuint]")]
+Notation Tu32 := (Tnum bitsize.W32 Unsigned).
+#[deprecated(since="20240624", note="use [Tlong] or [Tlonglong]")]
+Notation Ti64 := (Tnum bitsize.W64 Signed).
+#[deprecated(since="20240624", note="use [Tulong] or [Tulonglong]")]
+Notation Tu64 := (Tnum bitsize.W64 Unsigned).
+#[deprecated(since="20240624", note="use [Tint128_t]")]
+Notation Ti128 := (Tnum bitsize.W128 Signed).
+#[deprecated(since="20240624", note="use [Tuint128_t]")]
+Notation Tu128 := (Tnum bitsize.W128 Unsigned).
 
-Notation Tschar := (Tnum int_type.Ichar Signed) (only parsing).
-Notation Tuchar := (Tnum int_type.Ichar Unsigned) (only parsing).
+Notation Tschar := (Tnum int_rank.Ichar Signed).
+Notation Tuchar := (Tnum int_rank.Ichar Unsigned).
 
-Notation Tushort := (Tnum int_type.Ishort Unsigned) (only parsing).
-Notation Tshort := (Tnum int_type.Ishort Signed) (only parsing).
+Notation Tushort := (Tnum int_rank.Ishort Unsigned).
+Notation Tshort := (Tnum int_rank.Ishort Signed).
 
-Notation Tint := (Tnum int_type.Iint Signed) (only parsing).
-Notation Tuint := (Tnum int_type.Iint Unsigned) (only parsing).
+Notation Tint := (Tnum int_rank.Iint Signed).
+Notation Tuint := (Tnum int_rank.Iint Unsigned).
 
-Notation Tulong := (Tnum int_type.Ilong Unsigned) (only parsing).
-Notation Tlong := (Tnum int_type.Ilong Signed) (only parsing).
+Notation Tulong := (Tnum int_rank.Ilong Unsigned) (only parsing).
+Notation Tlong := (Tnum int_rank.Ilong Signed) (only parsing).
 
-Notation Tulonglong := (Tnum int_type.Ilonglong Unsigned) (only parsing).
-Notation Tlonglong := (Tnum int_type.Ilonglong Signed) (only parsing).
+Notation Tulonglong := (Tnum int_rank.Ilonglong Unsigned).
+Notation Tlonglong := (Tnum int_rank.Ilonglong Signed).
+
+Notation Tuint128_t := (Tnum int_rank.I128 Unsigned).
+Notation Tint128_t := (Tnum int_rank.I128 Signed).
 
 Notation Tfloat16 := (Tfloat_ float_type.Ffloat16).
 Notation Tfloat := (Tfloat_ float_type.Ffloat).
@@ -963,6 +976,9 @@ Notation Tfloat128 := (Tfloat_ float_type.Ffloat128).
 
 (* TODO: This is determined by the compiler. *)
 Notation Tsize_t := Tulong (only parsing).
+(* NOTE Use [Tbyte] when talking about the offsets for "raw bytes" *)
+Notation Tbyte := (Tnum int_rank.Ichar Unsigned) (only parsing).
+
 
 (** ** Dependent names, types, and terms *)
 

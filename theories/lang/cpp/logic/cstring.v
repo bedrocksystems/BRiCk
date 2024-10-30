@@ -193,7 +193,7 @@ Module cstring.
                destruct (length zs) eqn:Hlen'=> //=.
                f_equal.
                ++ inversion H3; apply has_type_prop_char in H4;
-                    rewrite /bound/= in H4; subst.
+                    rewrite /bitsize.bound/= in H4; subst.
                   destruct H4 as [?[Hchar?]].
                   inversion Hchar; subst.
                     rewrite ascii_of_byte_of_ascii N_ascii_embedding;
@@ -205,7 +205,7 @@ Module cstring.
                        inversion H3.
                        rewrite -> (@List.Forall_forall _ _ zs) in H5.
                        specialize (H5 x HIn).
-                       apply has_type_prop_char in H5; rewrite /bound/= in H5.
+                       apply has_type_prop_char in H5; rewrite /bitsize.bound/= in H5.
                        inversion H5 as [?[Hchar?]]; inversion Hchar;
                        rewrite -> ascii_of_byte_of_ascii, N_ascii_embedding by lia.
                        over.
@@ -220,7 +220,7 @@ Module cstring.
                        inversion H3.
                        rewrite -> (@List.Forall_forall _ _ zs) in H5.
                        specialize (H5 x HIn).
-                       apply has_type_prop_char in H5; rewrite /bound/= in H5.
+                       apply has_type_prop_char in H5; rewrite /bitsize.bound/= in H5.
                        destruct H5 as [?[Hchar?]]; inversion Hchar; subst.
                        rewrite /=.
                        rewrite -> ascii_of_byte_of_ascii, N_ascii_embedding by lia.

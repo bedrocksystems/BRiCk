@@ -385,7 +385,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
      transport resources - when the resources are even transportable in the first place.
      However, in certain limited circumstances where the integral values of pointers are
      meaningful - such as reasoning at the level of the byte-representation of an
-     object - [ptr_cong σ p1 p2] (in conjunction with [type_ptr Tu8 p1 ** type_ptr Tu8 p2])
+     object - [ptr_cong σ p1 p2] (in conjunction with [type_ptr Tbyte p1 ** type_ptr Tbyte p2])
      /can/ be used to transport select resources.
    *)
   Definition ptr_cong : genv -> relation ptr :=
@@ -397,7 +397,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
 
   #[global] Instance ptr_cong_reflexive {σ : genv} : Reflexive (ptr_cong σ).
   Proof.
-    red; unfold ptr_cong; intros p; exists p, (.[ Tu8 ! 0 ]), (.[ Tu8 ! 0]).
+    red; unfold ptr_cong; intros p; exists p, (.[ Tbyte ! 0 ]), (.[ Tbyte ! 0]).
     intuition; try solve [rewrite o_sub_0; auto; rewrite offset_ptr_id//].
     unfold offset_cong; apply same_property_iff.
     rewrite eval_o_sub/= Z.mul_0_r; eauto.

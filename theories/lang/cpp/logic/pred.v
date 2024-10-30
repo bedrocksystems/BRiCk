@@ -613,7 +613,7 @@ Module Type CPP_LOGIC
           for an object pointed to by [ptr] [p] is /also/ accessible via [p].
        e) (a)+(b)+(d) implies that a (potentially dead) object representation for type [ty]
           exists at [ptr] [p]
-       f) (a)+(c)+(e) implies that [type_ptr Tu8 (p .[ Tu8 ! i ])] holds (regardless of whether
+       f) (a)+(c)+(e) implies that [type_ptr Tbyte (p .[ Tbyte ! i ])] holds (regardless of whether
           not the object/"object representation" is alive)
 
        NOTE: There is no need to deal with past-the-end pointers explicitly since
@@ -638,7 +638,7 @@ Module Type CPP_LOGIC
          at once:
          | ... ->
          |     type_ptr ty p
-         | |-- [∗list] i ∈ seqN 0 (sizeof ty), type_ptr Tu8 (p .[ Tu8 ! i ])
+         | |-- [∗list] i ∈ seqN 0 (sizeof ty), type_ptr Tbyte (p .[ Tbyte ! i ])
        *)
       Section conservative.
         Axiom type_ptr_obj_repr_byte :
@@ -656,10 +656,10 @@ Module Type CPP_LOGIC
                                        *)
             (* 4) The existence of the "object representation" of an object of type [ty] -
                |  in conjunction with the premises - justifies "lowering" any
-               |  [type_ptr ty p] fact to a collection of [type_ptr Tu8 (p ,, .[Tu8 ! i])]
+               |  [type_ptr ty p] fact to a collection of [type_ptr Tbyte (p ,, .[Tbyte ! i])]
                |  facts - where [i] is a byte-offset within the [ty] ([0 <= i < sizeof(ty)]).
                v *)
-            type_ptr ty p |-- type_ptr Tu8 (p ,, .[ Tu8 ! i ]).
+            type_ptr ty p |-- type_ptr Tbyte (p ,, .[ Tbyte ! i ]).
       End conservative.
 
       (* NOTE: This might be reasonable to axiomatize directly; cf. the [NOTE] above
@@ -669,7 +669,7 @@ Module Type CPP_LOGIC
         Lemma type_ptr_obj_repr :
           forall (σ : genv) (ty : Rtype) (p : ptr) (sz : N),
             size_of σ ty = Some sz ->
-            type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tu8 (p .[ Tu8 ! Z.of_N i ]).
+            type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tbyte (p .[ Tbyte ! Z.of_N i ]).
         Proof.
           intros * Hsz; iIntros "#tptr".
           iApply big_sepL_intro; iIntros "!>" (k n) "%Hn'".
@@ -688,15 +688,15 @@ Module Type CPP_LOGIC
       [| offset_cong σ o1 o2 |].
 
     (* [ptr_congP σ p1 p2] is an [mpred] which quotients [ptr_cong σ p1 p2]
-       by requiring that [type_ptr Tu8] holds for both [p1] /and/ [p2]. This property
+       by requiring that [type_ptr Tbyte] holds for both [p1] /and/ [p2]. This property
        is intended to be sound and sufficient for transporting certain physical
        resources between [p1] and [p2] - and we hypothesize that it is also
        necessary.
      *)
     Definition ptr_congP (σ : genv) (p1 p2 : ptr) : mpred :=
-      [| ptr_cong σ p1 p2 |] ** type_ptr Tu8 p1 ** type_ptr Tu8 p2.
+      [| ptr_cong σ p1 p2 |] ** type_ptr Tbyte p1 ** type_ptr Tbyte p2.
 
-    (* All [tptsto Tu8] facts can be transported over [ptr_congP] [ptr]s.
+    (* All [tptsto Tbyte] facts can be transported over [ptr_congP] [ptr]s.
 
        High level meaning:
        In the C++ object model, a single byte of storage can be accessed through different pointers,
@@ -710,16 +710,16 @@ Module Type CPP_LOGIC
        The standard justifies this as follows:
        1) (cf. [tptsto] comment) [tptsto ty q p v] ensures that [p] points to a memory
           location with C++ type [ty] and which has some value [v].
-       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tu8] holds for all of the
+       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tbyte] holds for all of the
           bytes (i.e. the "object reprsentation") constituting well-typed C++ objects.
        3) NOTE (JH): the following isn't quite true yet, but we'll want this when we flesh
           out [rawR]/[RAW_BYTES]:
           a) all values [v] can be converted into (potentially many) [raw_byte]s -
              which capture its "object representation"
           b) all [tptsto ty] facts can be shattered into (potentially many)
-             [tptsto Tu8 _ _ (Vraw _)] facts corresponding to its "object representation"
-       4) [tptsto Tu8 _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
-          a) [tptso Tu8 _ _ (Vraw _)] facts deal with the "object representation" directly
+             [tptsto Tbyte _ _ (Vraw _)] facts corresponding to its "object representation"
+       4) [tptsto Tbyte _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
+          a) [tptso Tbyte _ _ (Vraw _)] facts deal with the "object representation" directly
              and thus permit erasing the structure of pointers in favor of reasoning about
              relative byte offsets from a shared [ptr]-prefix.
           b) the [ptr]s are [ptr_congP] so we know that:
@@ -734,7 +734,7 @@ Module Type CPP_LOGIC
        [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
      *)
     Axiom tptsto_ptr_congP_transport : forall {σ} q p1 p2 v,
-      ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tu8 q p1 v -* tptsto (σ:=σ) Tu8 q p2 v.
+      ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tbyte q p1 v -* tptsto (σ:=σ) Tbyte q p2 v.
 
     (**
      ** Deducing pointer equalities
@@ -1368,8 +1368,8 @@ Section with_cpp.
 
   Lemma offset_ptr_congP (p : ptr) o1 o2 :
     offset_congP σ o1 o2 |--
-    type_ptr Tu8 (p ,, o1) -*
-    type_ptr Tu8 (p ,, o2) -*
+    type_ptr Tbyte (p ,, o1) -*
+    type_ptr Tbyte (p ,, o2) -*
     ptr_congP σ (p ,, o1) (p ,, o2).
   Proof.
     iIntros "% T1 T2". rewrite /ptr_congP. iFrame "T1 T2".

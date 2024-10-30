@@ -383,6 +383,14 @@ Module bitsize.
 End bitsize.
 #[global] Instance bitsize_compare : Compare bitsize := bitsize.compare.
 
+Module int_rank.
+  #[prefix="", only(tag)] derive int_rank.t.
+
+  Definition compare (x y : int_rank.t) : comparison :=
+    Pos.compare (tag x) (tag y).
+End int_rank.
+#[global] Instance int_rank_compare : Compare int_rank := int_rank.compare.
+
 Module signed.
   Definition compare (x y : signed) : comparison :=
     match x , y with
@@ -1138,11 +1146,12 @@ Module type.
       bs_cmp b1.(box_Tresult_member_1) b2.(box_Tresult_member_1).
 
     Record box_Tnum : Set := Box_Tnum {
-      box_Tnum_0 : bitsize;
+      box_Tnum_0 : int_rank.t;
       box_Tnum_1 : signed;
     }.
+
     Definition box_Tnum_compare (b1 b2 : box_Tnum) : comparison :=
-      compare_lex (bitsize.compare b1.(box_Tnum_0) b2.(box_Tnum_0)) $ fun _ =>
+      compare_lex (int_rank.compare b1.(box_Tnum_0) b2.(box_Tnum_0)) $ fun _ =>
       signed.compare b1.(box_Tnum_1) b2.(box_Tnum_1).
 
     Record box_Tarray : Set := Box_Tarray {

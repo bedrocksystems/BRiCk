@@ -181,8 +181,6 @@ Section with_lang.
     | overloadable.Rsubscript => "[]"
     end.
 
-  Search (list (list _) -> _).
-
   Section printTA.
     Context (printT : type -> bs) (printE : Expr -> bs).
 
@@ -217,10 +215,10 @@ Section with_lang.
     | Tushort => "unsigned short"
     | Tlong => "long"
     | Tulong => "unsigned long"
-(*    | Tlonglong => "long long"
-    | Tulonglong => "unsigned long long" *)
-    | Tnum W128 Signed => "int128_t"
-    | Tnum W128 Unsigned => "uint128_t"
+    | Tlonglong => "long long"
+    | Tulonglong => "unsigned long long"
+    | Tnum int_rank.I128 Signed => "int128_t"
+    | Tnum int_rank.I128 Unsigned => "uint128_t"
     | Twchar => "wchar_t"
     | Tchar8 => "char8_t"
     | Tchar16 => "char16_t"

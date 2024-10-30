@@ -105,7 +105,7 @@ Module parser.
       ; (["signed"; "char"], Tschar) ]%bs ++
       s_or_u "short"%bs Tshort Tushort ++
       s_or_u "int"%bs Tint Tuint ++
-      s_or_u_l ["long";"long"]%bs Tlong Tulong ++
+      s_or_u_l ["long";"long"]%bs Tlonglong Tulonglong ++
       s_or_u "long"%bs Tlong Tulong ++
       [ (["unsigned"], Tuint)
       ; (["signed"], Tint) ]%bs.
