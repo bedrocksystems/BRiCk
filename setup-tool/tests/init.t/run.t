@@ -80,6 +80,7 @@
   (coq.theory
    (name my.project.src.client.client_cpp)
    (package dummy)
+   (flags (:standard -w -notation-incompatible-prefix))
    (theories
     stdpp
     iris

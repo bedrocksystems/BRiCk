@@ -4,6 +4,8 @@ cat > dune <<EOF
   (coq
    (flags
     (:standard
+     ; temporarily disable verbose incompatible prefix warnings
+     -w -notation-incompatible-prefix
      ;see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/_CoqProject
      -w -notation-overridden
      ; Similar to notation warnings.

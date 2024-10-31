@@ -8,5 +8,5 @@
       int a[10] = { [9] = 1 };
                     ^~~
   2 warnings generated.
-  coqc -w -notation-overridden test_cpp_names.v
-  coqc -w -notation-overridden test_cpp.v
+  coqc -w -notation-overridden -w -notation-incompatible-prefix test_cpp_names.v
+  coqc -w -notation-overridden -w -notation-incompatible-prefix test_cpp.v

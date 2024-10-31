@@ -31,7 +31,6 @@
        Definition value : State → N.
        Definition _value : Lens.Lens State State N N.
      End
-  
   Derivation lens on indt «State»
   Module
   prim_projs
@@ -40,7 +39,6 @@
        Definition value : State → N.
        Definition _value : Lens.Lens State State N N.
      End
-  
   Starting module State
   Declaring inductive 
   record State (sort (typ «Set»)) MkState 
@@ -56,7 +54,6 @@
        Record State2 : Set := MkState2 { value : N }.
        Definition value : State2 → N.
      End
-  
   Module
   State
   := Struct
@@ -64,11 +61,11 @@
        Definition value : bar.State → N.
        Definition _value : Lens.Lens bar.State bar.State N N.
      End
-  
   State.value =
   λ record : State, let (value) := record in value
        : State → N
   
+  State.value is a projection of State.State
   Arguments State.value record
   Module
   State
@@ -77,7 +74,6 @@
        Definition value : bar.State → N.
        Definition _value : Lens.Lens bar.State bar.State N N.
      End
-  
   Module
   State
   := Struct
@@ -85,9 +81,9 @@
        Definition value : bar.State → N.
        Definition _value : Lens.Lens bar.State bar.State N N.
      End
-  
   State.value =
   λ record : bar.State, let (value) := record in value
        : bar.State → N
   
+  State.value is a projection of State
   Arguments State.value record

@@ -9,5 +9,5 @@
           ^
   1 error generated.
   Error while processing $TESTCASE_ROOT/test.cpp.
-  coqc -w -notation-overridden test_cpp_names.v
-  coqc -w -notation-overridden test_cpp.v
+  coqc -w -notation-overridden -w -notation-incompatible-prefix test_cpp_names.v
+  coqc -w -notation-overridden -w -notation-incompatible-prefix test_cpp.v

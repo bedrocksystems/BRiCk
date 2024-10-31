@@ -49,6 +49,8 @@ let command : bool -> unit = fun debug ->
     out "(coq.theory\n";
     out " (name %s.%s)\n" (Coq_path.to_string coq_dirpath) mod_name;
     out " (package %s)\n" coq_package;
+    (* temporarily disable verbose incompatible prefix warnings *)
+    out " (flags (:standard -w -notation-incompatible-prefix))\n";
     out " (theories";
     List.iter (out "\n  %s") theories;
     out "))\n";
