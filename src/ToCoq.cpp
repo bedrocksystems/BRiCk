@@ -153,8 +153,9 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 			}
 
 			print.output()
-				<< "Definition module_check := " << fmt::indent << fmt::line
-				<< "Eval reduce_translation_unit in translation_unit.decls"
+        << fmt::line
+				<< "Definition module : translation_unit := " << fmt::indent << fmt::line
+				<< "translation_unit.check "
 				<< fmt::nbsp;
 
 			print.begin_list();
@@ -180,16 +181,19 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 
 			print.output() << "." << fmt::outdent << fmt::line;
 
-			print.output() << fmt::line
-						   << "Succeed Example test : module_check.2 = [] := "
-							  "ltac:(compute; reflexivity)."
-						   << fmt::line;
+      /*
+			print.output()
+				<< fmt::line
+				<< "Succeed Example test : module_check.2 = [] := eq_refl."
+				<< fmt::line;
 
 			print.output() << fmt::line
-						   << "Definition module : translation_unit := Eval "
-							  "reduce_translation_unit in "
-							  "translation_unit.the_tu module_check."
-						   << fmt::line;
+						   << "Definition module : translation_unit := "
+                "Eval lazy [fst] in "
+							  "fst module_check."
+        //						   << fmt::line << "Arguments module : simpl never."
+						   << fmt::line << fmt::line;
+      */
 
 			if (check_types_) {
 				print.output()

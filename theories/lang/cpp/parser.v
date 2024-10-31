@@ -3,11 +3,12 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-
+Require Ltac2.Ltac2.
 Require Export bedrock.prelude.base.	(* for, e.g., <<::>> *)
 Require Export bedrock.prelude.bytestring.	(* for <<%bs>> *)
 Require Import bedrock.prelude.avl.
 Require Export bedrock.lang.cpp.syntax. (* NOTE: too much *)
+Require bedrock.lang.cpp.semantics.sub_module.
 Require Export bedrock.lang.cpp.parser.stmt.
 Require Import bedrock.lang.cpp.parser.lang.
 Require Import bedrock.lang.cpp.parser.type.
@@ -41,11 +42,10 @@ Module Import translation_unit.
     (raw_symbol_table -> raw_type_table -> raw_alias_table -> list name -> translation_unit * list name) ->
     translation_unit * list name.
 
-  Require Import bedrock.lang.cpp.semantics.sub_module.
   Definition merge_obj_value (a b : ObjValue) : option ObjValue :=
-    if ObjValue_le a b then
+    if sub_module.ObjValue_le a b then
       Some b
-    else if ObjValue_le b a then Some a
+    else if sub_module.ObjValue_le b a then Some a
          else None.
 
   Definition _symbols (n : name) (v : ObjValue) : t :=
@@ -58,9 +58,9 @@ Module Import translation_unit.
                   end
       end.
   Definition merge_glob_decl (a b : GlobDecl) : option GlobDecl :=
-    if GlobDecl_le a b then
+    if sub_module.GlobDecl_le a b then
       Some b
-    else if GlobDecl_le b a then Some a
+    else if sub_module.GlobDecl_le b a then Some a
          else None.
 
   Definition _types (n : name) (v : GlobDecl) : t :=
@@ -96,6 +96,7 @@ Module Import translation_unit.
       byte_order := e;
     |}.
 
+  (*
   Definition the_tu (result : translation_unit * list name)
     : match result.2 with
       | [] => translation_unit
@@ -105,6 +106,31 @@ Module Import translation_unit.
     | [] => result.1
     | _ => tt
     end.
+   *)
+
+  Module make.
+    Import Ltac2.Ltac2.
+
+    Ltac2 Type exn ::= [DuplicateSymbols (constr)].
+
+    (* [check_translation_unit tu]
+     *)
+    Ltac2 check_translation_unit (tu : preterm) (en : preterm) :=
+      let endian := Constr.Pretype.pretype Constr.Pretype.Flags.constr_flags (Constr.Pretype.expected_oftype '(endian)) en in
+      let tu := Constr.Pretype.pretype Constr.Pretype.Flags.constr_flags (Constr.Pretype.expected_oftype '(list t)) tu in
+      let term := Constr.Unsafe.make (Constr.Unsafe.App ('decls) (Array.of_list [tu; endian])) in
+      let rtu := Std.eval_vm None term in
+      lazy_match! rtu with
+      | pair ?tu nil => Std.exact_no_check tu
+      | pair _ ?dups =>
+          let _ := Message.print (Message.concat (Message.of_string "Duplicate symbols found in translation unit: ") (Message.of_constr dups)) in
+          Control.throw (DuplicateSymbols dups)
+      end.
+
+  End make.
+
+  Notation check tu en :=
+    ltac2:(translation_unit.make.check_translation_unit tu en) (only parsing).
 
 End translation_unit.
 Export translation_unit(decls).

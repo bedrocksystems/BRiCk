@@ -12,6 +12,7 @@ Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.option.
 Require Import bedrock.prelude.numbers.
 
+Require Import bedrock.lang.cpp.reserved_notation. (* TODO *)
 Require Import bedrock.lang.cpp.arith.operator.
 Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.syntax.
@@ -446,6 +447,8 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
   TODO: Currently, [has_type_prop] isn't the maximal pure part of [has_type].
     *)
   Parameter has_type_prop : forall {σ : genv}, val -> Rtype -> Prop.
+  #[global] Notation "'valid<' ty > v" := (has_type_prop v ty%cpp_type)
+       (at level 30, ty at level 20, v at level 1, format "valid< ty >  v") : type_scope.
 
   #[global]
   Declare Instance has_type_prop_mono : Proper (genv_leq ==> eq ==> eq ==> Basics.impl) (@has_type_prop).

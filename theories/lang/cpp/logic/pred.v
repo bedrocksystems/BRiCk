@@ -17,6 +17,7 @@ Require Export bedrock.prelude.addr.
 Require Export bedrock.lang.bi.prelude.
 Require Export bedrock.lang.bi.observe.
 Require Export bedrock.lang.bi.spec.knowledge.
+Require Export bedrock.lang.cpp.reserved_notation.
 Require Export bedrock.lang.cpp.logic.mpred.
 Require Export bedrock.lang.cpp.logic.rep.
 (** ^^ Delicate; export types and canonical structures (CS) for [monPred], [mpred] and [Rep].
@@ -1546,3 +1547,6 @@ Section has_type.
     all: by rewrite !has_type_nonptr// has_type_prop_raw_bytes_of_val.
   Qed.
 End has_type.
+
+#[global] Notation "'validP<' ty > v" := (has_type v ty%cpp_type)
+  (at level 30, ty at level 20, v at level 1, format "validP< ty >  v") : bi_scope.

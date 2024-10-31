@@ -39,7 +39,7 @@ let command : bool -> unit = fun debug ->
     mkdir gen_dir;
     let dune_file = Filename.concat gen_dir "dune" in
     let default_theories =
-      [ "stdpp"; "iris"; "elpi"; "elpi_elpi"; "Lens";
+      [ "stdpp"; "iris"; "elpi"; "elpi_elpi"; "Lens"; "Ltac2";
         "bedrock.upoly"; "bedrock.prelude"; "bedrock.lang" ]
     in
     let theories = default_theories @ coq_theories in
