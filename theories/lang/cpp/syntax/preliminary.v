@@ -330,7 +330,7 @@ Module int_rank.
 
 End int_rank.
 Notation int_rank := int_rank.t.
-#[deprecated(since="2024-06-22",note="use [int_rank]")]
+#[deprecated(since="2024-06-22",note="use [int_rank].")]
 Notation int_type := int_rank.t (only parsing).
 #[global] Arguments int_rank.bytesN !_ /.
 #[global] Arguments int_rank.bitsN !_ /.

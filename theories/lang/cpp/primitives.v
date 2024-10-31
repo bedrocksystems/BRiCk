@@ -34,22 +34,22 @@ Notation longlongR q v := (slonglongR q v).
 
 (* integers with explict sizes *)
 
-#[deprecated(since="20240624",note="use [ucharR]")]
+#[deprecated(since="20240624",note="use [ucharR].")]
 Notation u8R  q v := (primR Tuchar  q (Vint v)) (only parsing).
-#[deprecated(since="20240624",note="use [ushortR]")]
+#[deprecated(since="20240624",note="use [ushortR].")]
 Notation u16R q v := (primR Tushort q (Vint v)) (only parsing).
-#[deprecated(since="20240624",note="use [uintR]")]
+#[deprecated(since="20240624",note="use [uintR].")]
 Notation u32R q v := (primR Tuint q (Vint v)) (only parsing).
-#[deprecated(since="20240624",note="use [ulongR] or [ulonglongR]")]
+#[deprecated(since="20240624",note="use [ulongR] or [ulonglongR].")]
 Notation u64R q v := (primR Tulonglong q (Vint v)) (only parsing).
 
-#[deprecated(since="20240624",note="use [scharR]")]
+#[deprecated(since="20240624",note="use [scharR].")]
 Notation i8R  q v := (primR Tschar  q (Vint v)) (only parsing).
-#[deprecated(since="20240624",note="use [shortR]")]
+#[deprecated(since="20240624",note="use [shortR].")]
 Notation i16R q v := (primR Tshort q (Vint v)) (only parsing).
-#[deprecated(since="20240624",note="use [intR]")]
+#[deprecated(since="20240624",note="use [intR].")]
 Notation i32R q v := (primR Tint q (Vint v)) (only parsing).
-#[deprecated(since="20240624",note="use [longR] or [longlongR]")]
+#[deprecated(since="20240624",note="use [longR] or [longlongR].")]
 Notation i64R q v := (primR Tlonglong q (Vint v)) (only parsing).
 
 (** Character notations *)
