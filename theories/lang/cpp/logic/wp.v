@@ -715,7 +715,7 @@ Section with_cpp.
 
   Section wp_lval.
     Context {σ : genv} (tu : translation_unit) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_lval tu ρ e) (only parsing).
+    #[local] Notation WP := (wp_lval tu ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : ptr → FreeTemps → epred.
 
@@ -858,7 +858,7 @@ Section with_cpp.
 
   Section wp_init.
     Context {σ : genv} (tu : translation_unit) (ρ : region) (ty : type) (p : ptr) (e : Expr).
-    Local Notation WP := (wp_init tu ρ ty p e) (only parsing).
+    #[local] Notation WP := (wp_init tu ρ ty p e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : FreeTemps → epred.
 
@@ -935,7 +935,7 @@ Section with_cpp.
 
   Section wp_operand.
     Context {σ : genv} (tu : translation_unit) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_operand tu ρ e) (only parsing).
+    #[local] Notation WP := (wp_operand tu ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : val → FreeTemps → epred.
 
@@ -1018,7 +1018,7 @@ Section with_cpp.
 
   Section wp_xval.
     Context {σ : genv} (tu : translation_unit) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_xval tu ρ e) (only parsing).
+    #[local] Notation WP := (wp_xval tu ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : ptr → FreeTemps → epred.
 
@@ -1095,9 +1095,9 @@ Section with_cpp.
 
   Section wp_glval.
     Context {σ : genv} (tu : translation_unit) (ρ : region).
-    Local Notation wp_glval := (wp_glval tu ρ) (only parsing).
-    Local Notation wp_lval := (wp_lval tu ρ) (only parsing).
-    Local Notation wp_xval := (wp_xval tu ρ) (only parsing).
+    #[local] Notation wp_glval := (wp_glval tu ρ) (only parsing).
+    #[local] Notation wp_lval := (wp_lval tu ρ) (only parsing).
+    #[local] Notation wp_xval := (wp_xval tu ρ) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : ptr → FreeTemps → epred.
 
@@ -1220,7 +1220,7 @@ Section with_cpp.
 
   Section wp.
     Context {σ : genv} (tu : translation_unit) (ρ : region) (s : Stmt).
-    Local Notation WP := (wp tu ρ s) (only parsing).
+    #[local] Notation WP := (wp tu ρ s) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : KpredI.
 
@@ -1335,7 +1335,7 @@ Section with_cpp.
 
   Section wp_fptr.
     Context {tt : type_table} {tf : type} (addr : ptr) (ls : list ptr).
-    Local Notation WP := (wp_fptr tt tf addr ls) (only parsing).
+    #[local] Notation WP := (wp_fptr tt tf addr ls) (only parsing).
     Implicit Types Q : ptr → epred.
 
     Lemma wp_fptr_wand_fupd Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* |={top}=> Q2 v) -* WP Q2.
