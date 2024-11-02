@@ -1351,7 +1351,7 @@ Section with_cpp.
     Qed.
   End wp_fptr.
 
-  (** [mspec tt this_ty fty ..] is the analogue of [wp_fptr] for member functions.
+  (** [wp_mfptr tt this_ty fty ..] is the analogue of [wp_fptr] for member functions.
 
       NOTE this includes constructors and destructors.
 
@@ -1365,30 +1365,47 @@ Section with_cpp.
            exploit this is to use [reinterpret_cast< >] to cast a function pointer
            to an member pointer or vice versa.
    *)
-  Definition mspec (tt : type_table) (this_type : exprtype) (fun_type : functype)
+  Definition wp_mfptr (tt : type_table) (this_type : exprtype) (fun_type : functype)
     : ptr -> list ptr -> (ptr -> epred) -> mpred :=
     wp_fptr tt (Tmember_func this_type fun_type).
 
-  Lemma mspec_frame_fupd_strong tt1 tt2 t t0 v l Q1 Q2 :
+  #[global] Declare Instance wp_mfptr_ne :
+    `{forall n, Proper (pointwise_relation _ (dist n) ==> dist n) (@wp_mfptr t ft addr this ls)}.
+
+  Lemma wp_mfptr_frame_fupd_strong tt1 tt2 t t0 v l Q1 Q2 :
     type_table_le tt1 tt2 ->
     (Forall v, Q1 v -* |={top}=> Q2 v)
-    |-- mspec tt1 t t0 v l Q1 -* mspec tt2 t t0 v l Q2.
+    |-- wp_mfptr tt1 t t0 v l Q1 -* wp_mfptr tt2 t t0 v l Q2.
   Proof. apply wp_fptr_frame_fupd. Qed.
 
-  Lemma mspec_shift tt t t0 v l Q :
-    (|={top}=> mspec tt t t0 v l (λ v, |={top}=> Q v)) |-- mspec tt t t0 v l Q.
+  Lemma wp_mfptr_shift tt t t0 v l Q :
+    (|={top}=> wp_mfptr tt t t0 v l (λ v, |={top}=> Q v)) |-- wp_mfptr tt t t0 v l Q.
   Proof. apply wp_fptr_shift. Qed.
 
-  Lemma mspec_frame:
+  Lemma wp_mfptr_frame:
     ∀ (t : type) (l : list ptr) (v : ptr) (t0 : type) (t1 : type_table) (Q Q' : ptr -> _),
-      Forall v, Q v -* Q' v |-- mspec t1 t t0 v l Q -* mspec t1 t t0 v l Q'.
+      Forall v, Q v -* Q' v |-- wp_mfptr t1 t t0 v l Q -* wp_mfptr t1 t t0 v l Q'.
   Proof. intros; apply wp_fptr_frame. Qed.
 
-  Lemma mspec_frame_fupd :
+  Lemma wp_mfptr_frame_fupd :
     ∀ (t : type) (l : list ptr) (v : ptr) (t0 : type) (t1 : type_table) (Q Q' : ptr -> _),
-      (Forall v, Q v -* |={top}=> Q' v) |-- mspec t1 t t0 v l Q -* mspec t1 t t0 v l Q'.
+      (Forall v, Q v -* |={top}=> Q' v) |-- wp_mfptr t1 t t0 v l Q -* wp_mfptr t1 t t0 v l Q'.
   Proof. intros; apply wp_fptr_frame_fupd; reflexivity. Qed.
+
+
 End with_cpp.
+
+(* DEPRECATIONS *)
+#[deprecated(since="20241102",note="use [wp_mfptr].")]
+Notation mspec := wp_mfptr.
+#[deprecated(since="20241102",note="use [wp_mfptr_frame_fupd_strong].")]
+Notation mspec_frame_fupd_strong := wp_mfptr_frame_fupd_strong.
+#[deprecated(since="20241102",note="use [wp_mfptr_shift].")]
+Notation mspec_shift := wp_mfptr_shift.
+#[deprecated(since="20241102",note="use [wp_mfptr_frame].")]
+Notation mspec_frame := wp_mfptr_frame.
+#[deprecated(since="20241102",note="use [wp_mfptr_frame].")]
+Notation mspec_frame_fupd := wp_mfptr_frame_fupd.
 End WPE.
 
 Export WPE.
