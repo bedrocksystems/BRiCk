@@ -186,7 +186,7 @@ Section with_resolve.
       { iIntros (??) "%".
         rewrite split_at_firstn_skipn.
         revert H0.
-        rewrite length_app length_map length_app length_map combine_length length_firstn length_skipn.
+        rewrite length_app length_map length_app length_map length_combine length_firstn length_skipn.
         intros. destruct f.
         { iApply "X"; iPureIntro.
           rewrite length_firstn. lia.
@@ -211,7 +211,7 @@ Section with_resolve.
         iIntros "H" (?) "A".
         iSpecialize ("H" with "A").
         revert HH.
-        rewrite length_app length_map length_app length_map combine_length length_firstn length_skipn.
+        rewrite length_app length_map length_app length_map length_combine length_firstn length_skipn.
         intro.
         iRevert "H"; iApply "X"; iPureIntro.
         - rewrite length_firstn. lia.
