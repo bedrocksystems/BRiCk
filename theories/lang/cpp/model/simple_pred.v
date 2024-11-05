@@ -329,7 +329,7 @@ Module SimpleCPP.
         Z_to_bytes POINTER_BITSZ Unsigned (Z.of_N a).
 
       Lemma length_aptr p : length (aptr p) = POINTER_BYTES.
-      Proof. by rewrite /aptr length_fmap seq_length. Qed.
+      Proof. by rewrite /aptr length_fmap length_seq. Qed.
       Lemma length_cptr a : length (cptr a) = POINTER_BYTES.
       Proof. by rewrite /cptr length_Z_to_bytes. Qed.
 

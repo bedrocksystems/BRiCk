@@ -5,7 +5,7 @@
  *)
 
 (** The "operational" style definitions about C++ values. *)
-Require Import Coq.Strings.Ascii.
+Require Import Stdlib.Strings.Ascii.
 Require Import stdpp.gmap.
 
 Require Import bedrock.prelude.base.

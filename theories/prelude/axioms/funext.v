@@ -10,7 +10,7 @@ Re-export functional extensionality axiom; this is a well-understood consistent
 extension of Coq.
 *)
 
-Require Export Coq.Logic.FunctionalExtensionality.
+Require Export Stdlib.Logic.FunctionalExtensionality.
 Require Import bedrock.prelude.base.
 
 Ltac funext := apply: functional_extensionality.

@@ -5,5 +5,5 @@
     static_cast<A*>(d);
     ^~~~~~~~~~~~~~~~~~
   1 warning generated.
-  coqc -w -notation-overridden test_cpp_names.v
-  coqc -w -notation-overridden test_cpp.v
+  coqc -w -notation-overridden -w -notation-incompatible-prefix test_cpp_names.v
+  coqc -w -notation-overridden -w -notation-incompatible-prefix test_cpp.v

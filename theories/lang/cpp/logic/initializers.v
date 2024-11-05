@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.prelude.numbers.
 Require Import bedrock.prelude.bool.

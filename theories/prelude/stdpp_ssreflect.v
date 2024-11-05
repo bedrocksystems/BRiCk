@@ -13,7 +13,7 @@
  *)
 
 (* Load both ssreflect and stdpp, using the same settings as Iris. *)
-Require Export Coq.ssr.ssreflect.
+Require Export Stdlib.ssr.ssreflect.
 Require Export stdpp.prelude.
 #[global] Open Scope general_if_scope.
 #[global] Set SsrOldRewriteGoalsOrder. (* See Coq issue #5706 *)

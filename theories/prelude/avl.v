@@ -7,7 +7,7 @@ Require Import stdpp.fin_maps.
 Require Import stdpp.strings.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.bytestring.
-Require Import Coq.FSets.FMapAVL.
+Require Import Stdlib.FSets.FMapAVL.
 
 Module IM := FMapAVL.Make OT_bs.
 

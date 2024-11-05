@@ -12,7 +12,7 @@
  * Another option would be to completely pre-process the
  * AST and remove these nodes.
  *)
-Require Import Coq.ZArith.ZArith_base.
+Require Import Stdlib.ZArith.ZArith_base.
 Require Import bedrock.lang.cpp.ast.
 
 (* this function determines whether the type is an aggregate type, i.e.

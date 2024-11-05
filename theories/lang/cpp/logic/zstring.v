@@ -4,8 +4,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Lists.List.
+Require Import Stdlib.ZArith.BinInt.
+Require Import Stdlib.Lists.List.
 
 Require Import bedrock.lang.proofmode.proofmode.
 
@@ -63,13 +63,13 @@ Section with_ct.
   Proof.
     rewrite /_WF /_WF_alt elem_of_list_In; setoid_rewrite <-has_type_prop_char'; split. {
       move=> [] zs' [] -> [].
-      rewrite last_app /= app_length Nat.add_sub take_app_length Forall_app Forall_singleton.
+      rewrite last_app /= length_app Nat.add_sub take_app_length Forall_app Forall_singleton.
       naive_solver.
     }
     move=> [] Hl [] Hin Hall; exists (take (length zs - 1) zs).
     destruct zs as [|z zs] using rev_ind => //= {IHzs}.
     move: Hl Hin Hall;
-      rewrite last_app app_length /=. rewrite Nat.add_sub take_app_length.
+      rewrite last_app length_app /=. rewrite Nat.add_sub take_app_length.
       rewrite Forall_app Forall_singleton.
     intros [= ->]; intros; split_and! => //.
     lia.
@@ -179,7 +179,7 @@ Section with_ct.
     Proof.
       move=>[xs [-> [Nin _]]] [xs' [-> [Nin' _]]] H.
       f_equal; move: xs' H Nin'.
-      rewrite app_length //= Nat.add_1_r.
+      rewrite length_app //= Nat.add_1_r.
       induction xs.
       - by case=>[//|??[<-][]];left.
       - rewrite -app_comm_cons.
@@ -346,7 +346,7 @@ Section with_ct.
         zs = take (List.length zs - 1) zs ++ [0%N].
       Proof.
         rewrite -[zs](firstn_skipn (List.length zs - 1)). f_equal.
-        { rewrite app_length length_take length_drop.
+        { rewrite length_app length_take length_drop.
           set x := List.length zs.
           have ->: ((x - 1) `min` x + (x - (x - 1)) - 1 = x - 1)%nat by lia.
             by rewrite firstn_skipn. }
@@ -446,7 +446,7 @@ Section with_ct.
       { destruct zs'; simpl; first by exists 0%N.
         by exists n. }
       split.
-      { move => i. unfold strlen, size; rewrite app_length Nat2Z.inj_add /= => h2.
+      { move => i. unfold strlen, size; rewrite length_app Nat2Z.inj_add /= => h2.
         assert (i < List.length zs' \/ i = List.length zs')%nat
           as [h2' | h2'] by lia; clear h2. 2: {
           subst; exists 0%N; clear h1; split.
@@ -469,7 +469,7 @@ Section with_ct.
 
       split. 1: {
         move => i; unfold strlen, size.
-        rewrite app_length/=; intros Hi.
+        rewrite length_app/=; intros Hi.
         assert (i < length zs')%nat as Hzs' by lia; clear Hi.
         pose proof (nth_error_app1 zs' [0%N] Hzs') as Hnth.
         pose proof (nth_In zs' 0%N Hzs') as Hin.
@@ -479,7 +479,7 @@ Section with_ct.
         inversion h1; by congruence.
       }
       move => i; unfold strlen, size.
-      rewrite app_length Nat2Z.inj_add /= => h2.
+      rewrite length_app Nat2Z.inj_add /= => h2.
       have ->: i = List.length zs' by lia. clear h2.
       rewrite nth_error_app2 //.
       have ->: (List.length zs' - List.length zs' = 0)%nat by lia. by [].
@@ -681,7 +681,7 @@ Section with_ct.
             with "[array rest]" as "array'". 2: {
             assert (Z.to_nat sz <= length (zs ++ repeat 0%N (Z.to_nat (sz - size zs))))%nat
               as AUX. 1: {
-              rewrite app_length repeat_length.
+              rewrite length_app repeat_length.
               unfold strlen in Hsz.
               unfold size in *.
               lia.

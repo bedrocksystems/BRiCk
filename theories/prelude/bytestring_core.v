@@ -3,11 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.Lists.List.
-Require Import Coq.NArith.NArith.
-Require Import Coq.Structures.OrderedType.
-Require Import Coq.micromega.Lia.
-Require Coq.Strings.Byte.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.NArith.NArith.
+Require Import Stdlib.Structures.OrderedType.
+Require Import Stdlib.micromega.Lia.
+Require Stdlib.Strings.Byte.
 Import ListNotations.
 
 (** Bytestring core definitions. Depends only on the stdlib, and could in
