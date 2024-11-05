@@ -56,7 +56,7 @@
 <span class="id" title="keyword">Section</span> <a id="with_env" class="idref" href="#with_env"><span class="id" title="section">with_env</span></a>.<br/>
 
 <br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="037d1dbc1a02d6ef6874dcc89df346e1" class="idref" href="#037d1dbc1a02d6ef6874dcc89df346e1"><span class="id" title="binder">σ</span></a> : <span class="id" title="class">genv</span>} `{<a id="9c6d78f4cdf6dede5e109a175164bdaa" class="idref" href="#9c6d78f4cdf6dede5e109a175164bdaa"><span class="id" title="binder">Σ</span></a> : <span class="id" title="class">cpp_logic</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="76ffb81254d2c09e9f09e371a8a83b6e" class="idref" href="#76ffb81254d2c09e9f09e371a8a83b6e"><span class="id" title="variable">σ</span></a> : <span class="id" title="class">genv</span>} `{<a id="d6b82c2bda5b3a311077e036299675f7" class="idref" href="#d6b82c2bda5b3a311077e036299675f7"><span class="id" title="variable">Σ</span></a> : <span class="id" title="class">cpp_logic</span>}.<br/>
 
 <br/>
 </div>
@@ -75,7 +75,7 @@
    
 </div>
 <div class="code">
-&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="R:5" class="idref" href="#R:5"><span class="id" title="binder">R</span></a> : <span class="id" title="definition">Rep</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="with_env.R" class="idref" href="#with_env.R"><span class="id" title="variable">R</span></a> : <span class="id" title="definition">Rep</span>).<br/>
 
 <br/>
 </div>
@@ -90,7 +90,7 @@
       these types, i.e. <span class="inlinecode"><span class="id" title="axiom">ptr</span></span>, <span class="inlinecode"><span class="id" title="inductive">val</span></span>, <span class="inlinecode"><span class="id" title="axiom">ptr</span></span>, act like locations 
 </div>
 <div class="code">
-&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="p:6" class="idref" href="#p:6"><span class="id" title="binder">p</span></a> : <span class="id" title="axiom">ptr</span>) (<a id="v:7" class="idref" href="#v:7"><span class="id" title="binder">v</span></a> : <span class="id" title="inductive">val</span>) (<a id="l:8" class="idref" href="#l:8"><span class="id" title="binder">l</span></a> : <span class="id" title="axiom">ptr</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="with_env.p" class="idref" href="#with_env.p"><span class="id" title="variable">p</span></a> : <span class="id" title="axiom">ptr</span>) (<a id="with_env.v" class="idref" href="#with_env.v"><span class="id" title="variable">v</span></a> : <span class="id" title="inductive">val</span>) (<a id="with_env.l" class="idref" href="#with_env.l"><span class="id" title="variable">l</span></a> : <span class="id" title="axiom">ptr</span>).<br/>
 
 <br/>
 </div>
@@ -101,13 +101,13 @@
       these types act like offsets, i.e. relative locations 
 </div>
 <div class="code">
-&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="f:9" class="idref" href="#f:9"><span class="id" title="binder">f</span></a> : <span class="id" title="record">field</span>) (<a id="o:10" class="idref" href="#o:10"><span class="id" title="binder">o</span></a> : <span class="id" title="axiom">offset</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="with_env.f" class="idref" href="#with_env.f"><span class="id" title="variable">f</span></a> : <span class="id" title="record">field</span>) (<a id="with_env.o" class="idref" href="#with_env.o"><span class="id" title="variable">o</span></a> : <span class="id" title="axiom">offset</span>).<br/>
 
 <br/>
 </div>
 
 <div class="doc">
-to state that a representation predicates <span class="inlinecode"><span class="id" title="var">R</span></span> holds at a location <span class="inlinecode"><span class="id" title="var">l</span></span>,
+to state that a representation predicates <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.notations.html#with_env.R"><span class="id" title="variable">R</span></a></span> holds at a location <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.notations.html#with_env.l"><span class="id" title="variable">l</span></a></span>,
       you use the <span class="inlinecode">|-&gt;</span> operator. 
 </div>
 <div class="code">
@@ -193,7 +193,7 @@ note that this also works for offsets, but with slightly different syntax:
 
 <div class="doc">
 using this notation, you can also assert that a <span class="inlinecode"><span class="id" title="definition">Rep</span></span> holds at a compound
-      location, e.g. the following means that <span class="inlinecode"><span class="id" title="var">R</span></span> holds at the location `l.f`.
+      location, e.g. the following means that <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.notations.html#with_env.R"><span class="id" title="variable">R</span></a></span> holds at the location `l.f`.
    
 </div>
 <div class="code">
