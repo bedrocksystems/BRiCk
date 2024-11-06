@@ -257,7 +257,7 @@ Module Endian.
         [ | replace l with (rev (rev l)) by (apply rev_involutive)];
         erewrite z_to_bytes._Z_from_bytes_unsigned_le_bswap; eauto.
       by destruct sz.
-      rewrite /bitsize.bytesNat rev_length.
+      rewrite /bitsize.bytesNat length_rev.
       destruct sz; simpl in *; lia.
     Qed.
 
