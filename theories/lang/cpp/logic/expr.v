@@ -64,7 +64,7 @@ Module Type Expr.
     #[local] Notation interp := (interp tu).
     (* TODO Fix these *)
     #[local] Notation wp_fptr := (wp_fptr resolve.(genv_tu).(types)).
-    #[local] Notation mspec := (mspec resolve.(genv_tu).(types)).
+    #[local] Notation wp_mfptr := (wp_mfptr resolve.(genv_tu).(types)).
 
     #[local] Notation size_of := (@size_of resolve) (only parsing).
 
@@ -1005,10 +1005,10 @@ Module Type Expr.
           | (tq, Tnamed cls) =>
               letI* fimpl_addr, impl_class, thisp := resolve_virtual obj cls fn in
               let this_type := tqualified tq (Tnamed impl_class) in
-              |> mspec this_type fty fimpl_addr (thisp :: args) Q
+              |> wp_mfptr this_type fty fimpl_addr (thisp :: args) Q
           | _ => False
           end
-      | Direct => |> mspec this_type fty (_global fn) (obj :: args) Q
+      | Direct => |> wp_mfptr this_type fty (_global fn) (obj :: args) Q
       end.
 
     Lemma dispatch_frame ct fty fn this_type obj args Q Q' :
@@ -1020,8 +1020,8 @@ Module Type Expr.
       iIntros "Q".
       repeat case_match; try iIntros "[]".
       { iApply resolve_virtual_frame.
-        iIntros (???). iIntros "X"; iNext; iRevert "X"; iApply mspec_frame. eauto. }
-      { iIntros "X"; iNext; iRevert "X"; iApply mspec_frame. eauto. }
+        iIntros (???). iIntros "X"; iNext; iRevert "X"; iApply wp_mfptr_frame. eauto. }
+      { iIntros "X"; iNext; iRevert "X"; iApply wp_mfptr_frame. eauto. }
     Qed.
 
     (** [wp_mcall invoke ooe obj fty es Q] calls a member function on [obj].
