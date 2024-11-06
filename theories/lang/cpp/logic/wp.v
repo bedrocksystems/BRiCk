@@ -313,9 +313,10 @@ Section with_cpp.
   #[local] Definition M (T : Type) : Type :=
     (T -> FreeTemps.t -> epred) -> mpred.
 
-  (* the natural relation for [M] *)
+  (** The [Proper]ness relation that should typically be used for [M]. *)
   #[local] Definition Mrel T : M T -> M T -> Prop :=
     (pointwise_relation _ (pointwise_relation _ (⊢)) ==> (⊢))%signature.
+  (** This relation is _weaker_ because it requires the argument to respect [FreeTemps.t_eq]. *)
   #[local] Definition Mequiv T : M T -> M T -> Prop :=
     (pointwise_relation _ (FreeTemps.t_eq ==> (⊣⊢)) ==> (⊣⊢))%signature.
 
@@ -739,11 +740,10 @@ Section with_cpp.
   Section wp_lval_proper.
     Context {σ : genv}.
 
-    #[global] Instance: Params (@wp_lval) 4 := {}.
     #[local] Notation PROPER M R :=
-      (Proper (M ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ R) ==> R) wp_lval) (only parsing).
+      (Proper (M ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ R) ==> R) (@wp_lval σ)) (only parsing).
 
-    #[global] Declare Instance wp_lval_ne n : PROPER eq (dist n).
+    #[global] Declare Instance wp_lval_ne : forall n, PROPER eq (dist n).
 
     #[global] Instance wp_lval_mono : PROPER sub_module (⊢).
     Proof.
@@ -853,8 +853,6 @@ Section with_cpp.
                         (FreeTemps -> epred) -> (* free -> post *)
                         mpred. (* pre-condition *)
   (* END wp_init *)
-  #[global] Declare Instance wp_init_ne :
-    `{forall n, Proper (eq ==> eq ==> eq ==> eq ==> eq ==> pointwise_relation _ (dist n) ==> dist n) (@wp_init σ)}.
 
   Axiom wp_init_shift : forall {σ:genv} tu ρ ty p e Q,
       (|={top}=> wp_init tu ρ ty p e (fun frees => |={top}=> Q frees))
@@ -882,13 +880,14 @@ Section with_cpp.
   Section wp_init_proper.
     Context {σ : genv}.
 
-    #[global] Instance: Params (@wp_init) 4 := {}.
     #[local] Notation PROPER T R := (
       Proper (
         T ==> eq ==> equiv ==> eq ==> eq ==>
         pointwise_relation _ R ==> R
-      ) wp_init
+      ) (@wp_init σ)
     ) (only parsing).
+
+    #[global] Declare Instance wp_init_ne : forall n, PROPER eq (dist n).
 
     #[global] Instance wp_init_mono : PROPER sub_module bi_entails.
     Proof.
@@ -949,13 +948,9 @@ Section with_cpp.
     ∀ p : ptr, wp_init tu ρ (type_of e) p e (Q p).
   (* END wp_prval *)
 
-
-  #[global] Instance wp_prval_ne :
-    `{forall n, Proper (eq ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ (dist n)) ==> dist n) (@wp_prval σ)}.
-  Proof.
-    do 14 intro. apply bi.forall_ne; intro; subst.
-    apply wp_init_ne => // ?? HH.
-  Qed.
+  #[global] Instance wp_prval_ne : forall σ n,
+    Proper (eq ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ (dist n)) ==> dist n) (@wp_prval σ).
+  Proof. solve_proper. Qed.
 
   (** TODO prove instances for [wp_prval] *)
 
@@ -987,11 +982,10 @@ Section with_cpp.
   Section wp_operand_proper.
     Context {σ : genv}.
 
-    #[global] Instance: Params (@wp_operand) 4 := {}.
     #[local] Notation PROPER M R :=
-      (Proper (M ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ R) ==> R) wp_operand) (only parsing).
+      (Proper (M ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ R) ==> R) (@wp_operand σ)) (only parsing).
 
-    #[global] Declare Instance wp_operand_ne n : PROPER eq (dist n).
+    #[global] Declare Instance wp_operand_ne : forall n, PROPER eq (dist n).
 
     #[global] Instance wp_operand_mono : PROPER sub_module (⊢).
     Proof.
@@ -1060,15 +1054,9 @@ Section with_cpp.
   #[global] Hint Opaque wp_test : br_opacity.
   #[global] Arguments wp_test /.
 
-  #[global] Instance wp_test_ne :
-    `{forall n, Proper (eq ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ (dist n)) ==> dist n)
-             (@wp_test σ)}.
-  Proof.
-    do 14 intro; rewrite /wp_test; subst.
-    apply wp_operand_ne => // ??.
-    case_match; try reflexivity.
-    apply H2.
-  Qed.
+  #[global] Instance wp_test_ne : forall σ n,
+    Proper (eq ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ (dist n)) ==> dist n) (@wp_test σ).
+  Proof. solve_proper. Qed.
 
   Lemma wp_test_frame {σ : genv} tu ρ test (Q Q' : _ -> _ -> epred) :
     Forall b free, Q b free -* Q' b free |-- wp_test tu ρ test Q -* wp_test tu ρ test Q'.
@@ -1100,7 +1088,6 @@ Section with_cpp.
   Section wp_xval_proper.
     Context {σ : genv}.
 
-    #[global] Instance: Params (@wp_xval) 4 := {}.
     #[local] Notation PROPER M R :=
       (Proper (M ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ R) ==> R) wp_xval) (only parsing).
 
@@ -1176,15 +1163,12 @@ Section with_cpp.
       | vc => wp_glval_mismatch ρ vc e
       end%I.
 
-  #[global] Instance wp_glval_ne :
-    `{forall n, Proper (eq ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ (dist n)) ==> dist n)
-             (@wp_glval σ)}.
+  #[global] Instance wp_glval_ne σ n :
+    Proper (eq ==> eq ==> eq ==> pointwise_relation _ (pointwise_relation _ (dist n)) ==> dist n)
+             (@wp_glval σ).
   Proof.
-    do 14 intro. rewrite /wp_glval; subst.
-    case_match.
-    - apply wp_lval_ne => // ????; rewrite H2.
-    - reflexivity.
-    - apply wp_xval_ne => // ????; rewrite H2.
+    do 12 intro. rewrite /wp_glval; subst.
+    case_match; solve_proper.
   Qed.
 
   (**
@@ -1272,20 +1256,11 @@ Section with_cpp.
       | Xvalue => wp_xval tu ρ e (fun _ => Q)
       end.
 
-    #[global] Instance wp_discard_ne :
-      `{forall n, Proper ((pointwise_relation _ (dist n)) ==> dist n) (@wp_discard e)}.
-    Proof.
-      rewrite /wp_discard. intros; intro; intros.
-      case_match.
-      { apply wp_lval_ne => //. by move =>??; rewrite H. }
-      { case_match.
-        - apply wp_operand_ne => //. do 2 intro; rewrite H => //.
-        - apply bi.forall_ne. intro.
-          apply wp_init_ne => //. by intro; rewrite H => //; rewrite H2.  }
-      { apply wp_xval_ne => //. by move =>??; rewrite H. }
-    Qed.
-
   End wp_discard.
+
+  #[global] Instance wp_discard_ne σ n :
+    Proper (eq ==> eq ==> eq ==> pointwise_relation _ (dist n) ==> dist n) (@wp_discard σ).
+  Proof. solve_proper. Qed.
 
   Lemma wp_discard_frame {σ : genv} tu1 tu2 ρ e k1 k2:
     sub_module tu1 tu2 ->
@@ -1306,8 +1281,8 @@ Section with_cpp.
       iIntros "h" (v f) "x"; iApply "h"; iFrame.
   Qed.
 
-  #[global] Instance Proper_wp_discard σ :
-    Proper (sub_module ==> eq ==> eq ==> (pointwise_relation _ (⊢)) ==> (⊢))
+  #[global] Instance wp_discard_mono σ :
+    Proper (sub_module ==> eq ==> eq ==> pointwise_relation _ (⊢) ==> (⊢))
            (@wp_discard σ).
   Proof.
     repeat red; intros; subst.
@@ -1315,14 +1290,10 @@ Section with_cpp.
     iIntros (?); iApply H2; reflexivity.
   Qed.
 
-  #[global] Instance Proper_wp_discard' σ :
-    Proper (sub_module ==> eq ==> eq ==> (pointwise_relation _ lentails) ==> lentails)
+  #[global] Instance wp_discard_flip_mono σ :
+    Proper (flip sub_module ==> eq ==> eq ==> pointwise_relation _ (flip (⊢)) ==> flip (⊢))
            (@wp_discard σ).
-  Proof.
-    repeat red; intros; subst.
-    iIntros "X"; iRevert "X"; iApply wp_discard_frame; eauto.
-    iIntros (?); iApply H2; reflexivity.
-  Qed.
+  Proof. solve_proper. Qed.
 
   (** * Statements *)
 
@@ -1330,8 +1301,8 @@ Section with_cpp.
   Parameter wp
     : forall {resolve:genv}, translation_unit -> region -> Stmt -> KpredI -> mpred.
 
-  #[global] Declare Instance wp_ne :
-    `{forall n, Proper (eq ==> eq ==> eq ==> dist n ==> dist n) (@wp σ)}.
+  #[global] Declare Instance wp_ne : forall σ n,
+    Proper (eq ==> eq ==> eq ==> dist n ==> dist n) (@wp σ).
 
   Axiom wp_shift : forall σ tu ρ s Q,
       (|={top}=> wp tu ρ s (|={top}=> Q))
@@ -1401,6 +1372,7 @@ Section with_cpp.
     : forall (tt : type_table) (fun_type : functype)
         (addr : ptr) (ls : list ptr) (Q : ptr -> epred), mpred.
 
+  (* (bind [n] last for consistency with [NonExpansive]). *)
   #[global] Declare Instance wp_fptr_ne :
     `{forall n, Proper (pointwise_relation _ (dist n) ==> dist n) (@wp_fptr t ft addr ls)}.
 
@@ -1508,6 +1480,7 @@ Section with_cpp.
     : ptr -> list ptr -> (ptr -> epred) -> mpred :=
     wp_fptr tt (Tmember_func this_type fun_type).
 
+  (* (bind [n] last for consistency with [NonExpansive]). *)
   #[global] Declare Instance wp_mfptr_ne :
     `{forall n, Proper (pointwise_relation _ (dist n) ==> dist n) (@wp_mfptr t ft addr this ls)}.
 
@@ -1533,6 +1506,24 @@ Section with_cpp.
 
 
 End with_cpp.
+
+(** Forbid rewriting in the [`{Σ : cpp_logic, σ : genv}] arguments.
+Keep in sync with [Proper] instances. *)
+#[global] Instance: Params (@wp_lval) 4 := {}.
+#[global] Instance: Params (@wp_init) 4 := {}.
+#[global] Instance: Params (@wp_prval) 4 := {}.
+#[global] Instance: Params (@wp_operand) 4 := {}.
+#[global] Instance: Params (@wp_test) 4 := {}.
+#[global] Instance: Params (@wp_xval) 4 := {}.
+#[global] Instance: Params (@wp_glval) 4 := {}.
+#[global] Instance: Params (@wp_discard) 4 := {}.
+#[global] Instance: Params (@wp) 4 := {}.
+
+(** Also forbid rewriting in the extra arguments except the continuation.
+Keep in sync with [Proper] instances.
+TODO: maybe be more uniform in the future. *)
+#[global] Instance: Params (@wp_fptr) 7 := {}.
+#[global] Instance: Params (@wp_mfptr) 8 := {}.
 
 (* DEPRECATIONS *)
 #[deprecated(since="20241102",note="use [wp_mfptr].")]
