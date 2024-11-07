@@ -707,6 +707,26 @@ Module Qp.
   Lemma half_half_quarter : (1/2/2 = 1/4)%Qp.
   Proof. compute_done. Qed.
 
+  Section Qp_all.
+    Context {C} `{!Elements Qp C}.
+    Implicit Types (p q : Qp) (Qs : C).
+
+    (** [add_all q0 {[q1, ..., qn]}] is [q0 + q1 + ... + qn] *)
+    Definition add_all `{Elements Qp C} (q0 : Qp) (Qs : C) : Qp :=
+      set_fold (fun q acc => acc + q)%Qp q0 Qs.
+
+    (** [sub_all q0 {[q1, ..., qn]}] is [Some (q0 - q1 - ... - qn)] if
+    the sum is [>0]; otherwise, it is [None] *)
+    Definition sub_all `{Elements Qp C} (q0 : Qp) (Qs : C) : option Qp :=
+      set_fold (fun q acc => q' ← acc; (q' - q)%Qp) (Some q0) Qs.
+
+    Lemma sub_all_add_all p Qs : sub_all (add_all p Qs) Qs = Some p.
+    Abort. (* TODO *)
+
+    Lemma sub_all_Some p Qs r : sub_all p Qs = Some r <-> p = add_all r Qs.
+    Abort. (* TODO *)
+  End Qp_all.
+
 End Qp.
 #[deprecated(since="20221223", note="use [Qp.mul_left_id]")]
 Notation Qp_mul_left_id := Qp.mul_left_id (only parsing).
@@ -716,6 +736,9 @@ Notation Qp_mul_right_id := Qp.mul_right_id (only parsing).
 Notation Qp_div_right_id := Qp.div_right_id (only parsing).
 
 #[global] Typeclasses Opaque Qp.le Qp.lt.
+
+#[global] Hint Resolve Qp.three_quarter_quarter | 0 : core.
+#[global] Hint Resolve Qp.quarter_three_quarter | 0 : core.
 
 (** ** [N_to_Qp] *)
 

@@ -597,6 +597,22 @@ Section derived.
   Context `{BiFUpd PROP} {TA TB : tele}.
   Implicit Types (α : TA → PROP) (β Φ : TA → TB → PROP).
 
+  (** Framing invariants into an AC mask
+  This is the kind of framing we need when we are given an AU/AC
+  with masks [top\E, ∅] and we want an AU/AC with masks [(top\E) ∪ Ef, Ef].
+  Such adjustments let us, e.g., open an AC and then an invariant in Ef. *)
+  Lemma atomic_commit_frame_mask Ef b Eo Ei α β Φ :
+    Eo ## Ef ->
+    atomic_commit b Eo Ei α β Φ ⊢
+    atomic_commit b (Eo ∪ Ef) (Ei ∪ Ef) α β Φ.
+  Proof.
+    iIntros (Ho) "AC". iAcIntro. rewrite/commit_acc.
+    iApply fupd_mask_frame_r'; first done. iMod "AC" as (x) "(pre & cl)".
+    iIntros "!>" (Hi). iExists x. iFrame "pre".
+    iIntros "!>" (y) "post".
+    iApply fupd_mask_frame_r; first done. by iApply "cl".
+  Qed.
+
   (* ppost = (thread-)private postcondition, as opposed to the public or
   _atomic_ postcondition. *)
   Lemma atomic_commit1_ppost_wand Eo Ei α β Φ1 Φ2 :
