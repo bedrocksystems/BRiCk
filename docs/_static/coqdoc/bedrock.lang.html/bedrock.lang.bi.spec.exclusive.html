@@ -160,6 +160,9 @@ exclusive token per argument, then use <span class="inlinecode"><span class="id"
 ; #[<span class="id" title="var">global</span>] <a id="token6_excl" class="idref" href="#token6_excl"><span class="id" title="projection">token6_excl</span></a> :: <a class="idref" href="bedrock.lang.bi.spec.exclusive.html#Exclusive6"><span class="id" title="abbreviation">Exclusive6</span></a> <a class="idref" href="bedrock.lang.bi.spec.exclusive.html#P:95"><span class="id" title="variable">P</span></a><br/>
 }.<br/>
 <span class="id" title="keyword">Arguments</span> <a class="idref" href="bedrock.lang.bi.spec.exclusive.html#ExclusiveToken6"><span class="id" title="class">ExclusiveToken6</span></a> {<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>} <span class="id" title="var">_</span> : <span class="id" title="tactic">assert</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_exclusive</span> := <span class="id" title="tactic">solve</span> [<span class="id" title="tactic">intros</span>; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">apply</span> <span class="id" title="var">_</span>].<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.

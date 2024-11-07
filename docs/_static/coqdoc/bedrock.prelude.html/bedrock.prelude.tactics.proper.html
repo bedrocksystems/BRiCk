@@ -46,6 +46,9 @@
 &nbsp;*)</span><br/>
 
 <br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.ofe.html#"><span class="id" title="library">iris.algebra.ofe</span></a>. <span class="comment">(*&nbsp;f_contractive&nbsp;*)</span><br/>
+
+<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.telescopes.html#"><span class="id" title="library">bedrock.prelude.telescopes</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.tactics.telescopes.html#"><span class="id" title="library">bedrock.prelude.tactics.telescopes</span></a>.<br/>
 
@@ -135,6 +138,61 @@ TODO: Revisit now that we bumped stdpp:
 &nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">first</span> [<span class="id" title="var">f_equiv_tidy</span> | <span class="id" title="var">tac</span> <span class="id" title="keyword">ltac</span>:(())]).<br/>
 <span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_proper_tidy</span> :=<br/>
 &nbsp;&nbsp;<span class="id" title="var">solve_proper_tidy_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">trivial</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Extends <span class="inlinecode"><span class="id" title="var">iris.algebra.ofe.solve_contractive</span></span> to "solve_contractive by tac". 
+</div>
+<div class="code">
+<span class="id" title="keyword">Tactic Notation</span> "solve_contractive" "by" <span class="id" title="var">tactic3</span>(<span class="id" title="var">tac</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">first</span> [ <span class="id" title="var">f_contractive</span> | <span class="id" title="var">f_equiv</span> | <span class="id" title="var">tac</span> ]).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Handy for higher-order functions, especially those involving implicit arguments. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Tactic Notation</span> "solve_proper" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem</span>|<span class="id" title="var">f_equiv</span>]).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_proper" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem1</span>) ","<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">uconstr</span>(<span class="id" title="var">lem2</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem1</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem2</span>|<span class="id" title="var">f_equiv</span>]<br/>
+&nbsp;&nbsp;).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_proper" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem1</span>) ","<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">uconstr</span>(<span class="id" title="var">lem2</span>) "," <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem3</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem1</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem2</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem3</span>|<span class="id" title="var">f_equiv</span>]<br/>
+&nbsp;&nbsp;).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_proper" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem1</span>) ","<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">uconstr</span>(<span class="id" title="var">lem2</span>) "," <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem3</span>) "," <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem4</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem1</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem2</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem3</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem4</span>|<span class="id" title="var">f_equiv</span>]<br/>
+&nbsp;&nbsp;).<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_contractive" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem</span>|<span class="id" title="var">f_contractive</span>|<span class="id" title="var">f_equiv</span>]).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_contractive" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem1</span>) ","<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">uconstr</span>(<span class="id" title="var">lem2</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem1</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem2</span>|<span class="id" title="var">f_contractive</span>|<span class="id" title="var">f_equiv</span>]<br/>
+&nbsp;&nbsp;).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_contractive" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem1</span>) ","<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">uconstr</span>(<span class="id" title="var">lem2</span>) "," <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem3</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem1</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem2</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem3</span>|<span class="id" title="var">f_contractive</span>|<span class="id" title="var">f_equiv</span>]<br/>
+&nbsp;&nbsp;).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_contractive" "using" <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem1</span>) ","<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">uconstr</span>(<span class="id" title="var">lem2</span>) "," <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem3</span>) "," <span class="id" title="var">uconstr</span>(<span class="id" title="var">lem4</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">solve_proper_core</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem1</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem2</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem3</span>|<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">lem4</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<span class="id" title="var">f_contractive</span>|<span class="id" title="var">f_equiv</span>]<br/>
+&nbsp;&nbsp;).<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
