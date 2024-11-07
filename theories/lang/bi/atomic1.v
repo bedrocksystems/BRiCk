@@ -679,6 +679,22 @@ Section derived.
   Context `{BiFUpd PROP} {TA TB : tele}.
   Implicit Types (α : TA → PROP) (β Φ : TA → TB → PROP).
 
+  (* Framing invariants into an AU/AC inner mask *)
+  Lemma atomic_update1_frame_mask Ef Eo Ei α β Φ :
+    Eo ## Ef ->
+    atomic1_update Eo Ei α β Φ ⊢
+    atomic1_update (Eo ∪ Ef) (Ei ∪ Ef) α β Φ.
+  Proof.
+    iIntros (Ho) "AU". iAuIntro1.
+    iDestruct (aupd1_aacc with "AU") as "AC". rewrite/atomic1_acc.
+    iApply fupd_mask_frame_r'; first done. iMod "AC" as (x) "(pre & cl)".
+    iIntros "!>" (Hi). iExists x. iFrame "pre". iSplit.
+    - iDestruct "cl" as "[abort _]". iIntros "pre".
+      iApply fupd_mask_frame_r; first done. by iApply "abort".
+    - iDestruct "cl" as "[_ commit]". iIntros "!>" (y) "post".
+      iApply fupd_mask_frame_r; first done. by iApply "commit".
+  Qed.
+
   Lemma atomic_update1_ppost_wand Eo Ei α β Φ1 Φ2 :
     atomic1_update Eo Ei α β Φ1 ⊢
     ▷ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
