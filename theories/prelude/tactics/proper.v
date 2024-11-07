@@ -5,8 +5,11 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
+Require Import iris.algebra.ofe. (* f_contractive *)
+
 Require Import bedrock.prelude.telescopes.
 Require Import bedrock.prelude.tactics.telescopes.
+
 
 (** * Tactics for [Proper] instances *)
 (**
@@ -53,3 +56,45 @@ Ltac solve_proper_tidy_core tac :=
   solve_proper_core ltac:(fun _ => first [f_equiv_tidy | tac ltac:(())]).
 Ltac solve_proper_tidy :=
   solve_proper_tidy_core ltac:(fun _ => trivial).
+
+(** Extends [iris.algebra.ofe.solve_contractive] to "solve_contractive by tac". *)
+Tactic Notation "solve_contractive" "by" tactic3(tac) :=
+  solve_proper_core ltac:(fun _ => first [ f_contractive | f_equiv | tac ]).
+
+(** Handy for higher-order functions, especially those involving implicit arguments. *)
+Tactic Notation "solve_proper" "using" uconstr(lem) :=
+  solve_proper_core ltac:(fun _ => first [by apply lem|f_equiv]).
+Tactic Notation "solve_proper" "using" uconstr(lem1) ","
+    uconstr(lem2) :=
+  solve_proper_core ltac:(fun _ =>
+    first [by apply lem1|by apply lem2|f_equiv]
+  ).
+Tactic Notation "solve_proper" "using" uconstr(lem1) ","
+    uconstr(lem2) "," uconstr(lem3) :=
+  solve_proper_core ltac:(fun _ =>
+    first [by apply lem1|by apply lem2|by apply lem3|f_equiv]
+  ).
+Tactic Notation "solve_proper" "using" uconstr(lem1) ","
+    uconstr(lem2) "," uconstr(lem3) "," uconstr(lem4) :=
+  solve_proper_core ltac:(fun _ =>
+    first [by apply lem1|by apply lem2|by apply lem3|by apply lem4|f_equiv]
+  ).
+
+Tactic Notation "solve_contractive" "using" uconstr(lem) :=
+  solve_proper_core ltac:(fun _ => first [by apply lem|f_contractive|f_equiv]).
+Tactic Notation "solve_contractive" "using" uconstr(lem1) ","
+    uconstr(lem2) :=
+  solve_proper_core ltac:(fun _ =>
+    first [by apply lem1|by apply lem2|f_contractive|f_equiv]
+  ).
+Tactic Notation "solve_contractive" "using" uconstr(lem1) ","
+    uconstr(lem2) "," uconstr(lem3) :=
+  solve_proper_core ltac:(fun _ =>
+    first [by apply lem1|by apply lem2|by apply lem3|f_contractive|f_equiv]
+  ).
+Tactic Notation "solve_contractive" "using" uconstr(lem1) ","
+    uconstr(lem2) "," uconstr(lem3) "," uconstr(lem4) :=
+  solve_proper_core ltac:(fun _ =>
+    first [by apply lem1|by apply lem2|by apply lem3|by apply lem4
+      |f_contractive|f_equiv]
+  ).

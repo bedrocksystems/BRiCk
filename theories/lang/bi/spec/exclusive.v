@@ -83,3 +83,5 @@ Class ExclusiveToken6 (PROP : bi) {A B C D E F}
 ; #[global] token6_excl :: Exclusive6 P
 }.
 Arguments ExclusiveToken6 {_ _ _ _ _ _ _} _ : assert.
+
+Ltac solve_exclusive := solve [intros; split; apply _].
