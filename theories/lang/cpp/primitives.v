@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -14,6 +14,7 @@ Notation boolR q v := (primR Tbool q (Vbool v)).
  *)
 Notation scharR q v := (primR Tschar q (Vint v)).
 Notation ucharR q v := (primR Tuchar q (Vint v)).
+Notation byteR q v := (primR Tbyte q (Vint v)) (only parsing). (* TODO: use [N]? *)
 
 Notation sshortR q v := (primR Tshort q (Vint v)) (only parsing).
 Notation ushortR q v := (primR Tushort q (Vint v)).
@@ -27,6 +28,7 @@ Notation intR q v := (sintR q v).
 Notation slongR q v := (primR Tlong q (Vint v)) (only parsing).
 Notation ulongR q v := (primR Tulong q (Vint v)).
 Notation longR q v := (slongR q v).
+Notation size_tR q v := (primR Tsize_t q (Vint v)) (only parsing). (* TODO: use [N]? *)
 
 Notation slonglongR q v := (primR Tlonglong q (Vint v)) (only parsing).
 Notation ulonglongR q v := (primR Tulonglong q (Vint v)).

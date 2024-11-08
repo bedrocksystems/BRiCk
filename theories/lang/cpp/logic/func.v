@@ -224,7 +224,8 @@ Section derivationsR.
 End derivationsR.
 
 (* conveniences for the common pattern *)
-Notation init_derivationR cls path q := (derivationR cls%bs (path%bs ++ [cls%bs]) q).
+Notation init_derivationR cls path q :=
+  (derivationR cls%_cpp_name (path%_cpp_name ++ [cls%_cpp_name]) q).
 
 (**
 [wp_init_identity this tu cls Q] updates the identities of [this] by
