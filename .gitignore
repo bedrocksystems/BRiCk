@@ -28,3 +28,4 @@ cpp2v-tests/reject/*.ERR
 coq-cpp2v.install
 coq-cpp2v-bin.install
 _CoqProject
+.vscode/
