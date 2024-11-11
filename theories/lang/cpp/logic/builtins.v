@@ -96,15 +96,15 @@ Section wp_builtin.
 
   Axiom wp_ctz : forall c Q,
           ctz_spec int_rank.Iint c Q
-      |-- wp_builtin Bin_ctz (Tfunction Tuint (Tuint :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ctz (Tfunction Tint (Tuint :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_ctzl : forall c Q,
           ctz_spec int_rank.Ilong c Q
-      |-- wp_builtin Bin_ctzl (Tfunction Tulong (Tulong :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ctzl (Tfunction Tint (Tulong :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_ctzll : forall c Q,
           ctz_spec int_rank.Ilonglong c Q
-      |-- wp_builtin Bin_ctzll (Tfunction Tulonglong (Tulonglong :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ctzll (Tfunction Tint (Tulonglong :: nil)) (Vint c :: nil) Q.
 
   (* Returns the number of leading 0-bits in x, starting at the most significant
      bit position. If x is 0, the result is undefined. *)
@@ -114,15 +114,15 @@ Section wp_builtin.
 
   Axiom wp_clz : forall c Q,
           clz_spec int_rank.Iint c Q
-      |-- wp_builtin Bin_clz (Tfunction Tuint (Tuint :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_clz (Tfunction Tint (Tuint :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_clzl : forall c Q,
           clz_spec int_rank.Ilong c Q
-      |-- wp_builtin Bin_clzl (Tfunction Tulong (Tulong :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_clzl (Tfunction Tint (Tulong :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_clzll : forall c Q,
           clz_spec int_rank.Ilonglong c Q
-      |-- wp_builtin Bin_clzll (Tfunction Tulonglong (Tulonglong :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_clzll (Tfunction Tint (Tulonglong :: nil)) (Vint c :: nil) Q.
 
   (* Returns x with the order of the bytes reversed; for example, 0xaabb becomes
      0xbbaa. Byte here always means exactly 8 bits. *)
