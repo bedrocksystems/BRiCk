@@ -7,7 +7,7 @@
 
 (*
 Re-export functional extensionality axiom; this is a well-understood consistent
-extension of Coq.
+extension of Rocq.
 *)
 
 Require Export Stdlib.Logic.FunctionalExtensionality.

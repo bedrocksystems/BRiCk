@@ -119,9 +119,9 @@ Proof. constructor. rewrite orb_True. set_solver. Qed.
   SetUnfold P Q → SetUnfold (bool_decide P) Q.
 Proof. constructor. rewrite bool_decide_spec. set_solver. Qed.
 
-(** Simple extensions to Coq's [Bool] *)
+(** Simple extensions to Stdlib's [Bool] *)
 Module Bool.
-  Export Coq.Bool.Bool.
+  Export Stdlib.Bool.Bool.
   #[local] Open Scope bool_scope.
 
   (** Properties of [Bool.le] *)

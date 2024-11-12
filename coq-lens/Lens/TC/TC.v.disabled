@@ -1,6 +1,6 @@
-Require Import Coq.Classes.DecidableClass.
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
+Require Import Stdlib.Classes.DecidableClass.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Strings.String.
 
 (* Avoid [From MetaCoq.Template Require Import utils All.]
 to work around https://github.com/MetaCoq/metacoq/issues/580 *)
