@@ -102,7 +102,11 @@ Module parser.
       ; (["long"; "double"], Tlongdouble)
       ; (["char"], Tchar)
       ; (["unsigned"; "char"], Tuchar)
-      ; (["signed"; "char"], Tschar) ]%bs ++
+      ; (["signed"; "char"], Tschar)
+      ; (["uint128_t"], Tuint128_t)
+      ; (["int128_t"], Tint128_t) ]%bs ++
+      s_or_u "int128"%bs Tint128_t Tuint128_t ++
+      s_or_u "__int128"%bs Tint128_t Tuint128_t ++
       s_or_u "short"%bs Tshort Tushort ++
       s_or_u "int"%bs Tint Tuint ++
       s_or_u_l ["long";"long"]%bs Tlonglong Tulonglong ++
@@ -538,6 +542,8 @@ Module Type TESTS.
                          (Nscoped (Nglobal (Nid "CpuSet")) (Nfunction function_qualifiers.Nc (Nf "forall") [Tmember_pointer (Tnamed (Nglobal $ Nid "C")) $ Tfunction (FunctionType Tvoid [Tint])])) := eq_refl.
   Succeed Example _0 : TEST "CpuSet::forall(void (C::*)(int, ...), ...) const"
                          (Nscoped (Nglobal (Nid "CpuSet")) (Nfunction function_qualifiers.Nc (Nf "forall") [Tmember_pointer (Tnamed (Nglobal $ Nid "C")) $ Tfunction (FunctionType (ft_arity:=Ar_Variadic) Tvoid [Tint])])) := eq_refl.
+
+  Succeed Example _0 : TEST "foo(unsigned int128, int128)" (Nglobal (Nfunction function_qualifiers.N (Nf "foo") [Tuint128_t; Tint128_t])) := eq_refl.
 
   (* NOTE: non-standard names *)
   Succeed Example _0 : TEST "Msg::@msg" (Nscoped Msg (Nfirst_decl "msg")) := eq_refl.
