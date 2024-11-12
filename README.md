@@ -1,6 +1,6 @@
 # BRiCk
 
-A program logic for verifying concurrent C++ in Coq.
+A program logic for verifying concurrent C++ in Rocq.
 
 ## Running
 
