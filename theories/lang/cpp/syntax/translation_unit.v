@@ -319,7 +319,6 @@ Section with_type_table.
   | complete_float sz : complete_basic_type (Tfloat_ sz)
   | complete_int sgn sz : complete_basic_type (Tnum sgn sz)
   | complete_bool : complete_basic_type Tbool
-  | complete_void : complete_basic_type Tvoid
   | complete_nullptr : complete_basic_type Tnullptr
   | complete_char c : complete_basic_type (Tchar_ c)
 
@@ -372,6 +371,7 @@ Section with_type_table.
   | complete_pt_basic t :
     complete_basic_type t ->
     complete_pointee_type t
+  | complete_pointee_void : complete_pointee_type Tvoid
   (* [complete_type t] says that type [t] is well-formed, that is, complete. *)
   with complete_type : type -> Prop :=
   | complete_qualified {q t} (_ : complete_type t)
