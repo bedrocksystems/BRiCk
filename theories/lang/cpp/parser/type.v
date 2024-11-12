@@ -24,6 +24,9 @@ Module ParserType (Import Lang : PARSER_LANG).
   Definition Tunary_xform (name : bs) (arg : type) {result : type} : type :=
     result.
 
+  Notation Tfunction ty cc var ret args :=
+    (normalize_type (Tfunction (@FunctionType ty cc var ret args))) (only parsing).
+
   Notation Tdecay_type original adjusted := (adjusted) (only parsing).
 
 End ParserType.

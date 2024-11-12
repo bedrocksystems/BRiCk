@@ -302,15 +302,15 @@ public:
 	void VisitFunctionProtoType(const FunctionProtoType* type,
 								CoqPrinter& print, ClangPrinter& cprint) {
 		guard::ctor _1(print, "Tfunction");
-		guard::ctor _2(print, "@FunctionType");
 		print.output() << (print.templates() ? "Mtype" : "type") << fmt::nbsp;
 		cprint.printCallingConv(print, type->getCallConv(), loc::of(type))
 			<< fmt::nbsp;
 		cprint.printVariadic(print, type->isVariadic()) << fmt::nbsp;
 		cprint.printQualType(print, type->getReturnType(), loc::of(type))
 			<< fmt::nbsp;
-		print.list(type->param_types(), [&](auto i) {
-			cprint.printQualType(print, i, loc::of(type));
+		print.list(type->param_types(), [&](QualType i) {
+			// Note that we do not need to print top-level qualifiers on argument types
+			cprint.printType(print, i.getTypePtr(), loc::of(type));
 		});
 	}
 
