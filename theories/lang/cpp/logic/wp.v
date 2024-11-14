@@ -1157,7 +1157,7 @@ Section with_cpp.
 
   (* Opaque wrapper of [False]: this represents a [False] obtained by a [ValCat] mismatch in [wp_glval]. *)
   Definition wp_glval_mismatch {resolve : genv} (r : region) (vc : ValCat) (e : Expr)
-    : (ptr -> FreeTemps -> mpred) -> mpred := funI _ => False.
+    : (ptr -> FreeTemps -> mpred) -> mpred := funI _ => |={top}=> False.
   #[global] Arguments wp_glval_mismatch : simpl never.
 
   (* evaluate an expression as a generalized lvalue *)
@@ -1177,7 +1177,7 @@ Section with_cpp.
              (@wp_glval σ).
   Proof.
     do 12 intro. rewrite /wp_glval; subst.
-    case_match; solve_proper.
+    case_match; try solve_proper.
   Qed.
 
   (**
@@ -1223,7 +1223,7 @@ Section with_cpp.
     Proof. by rewrite /wp_glval=>->. Qed.
 
     Lemma wp_glval_prval e Q :
-      valcat_of e = Prvalue -> wp_glval e Q -|- False.
+      valcat_of e = Prvalue -> wp_glval e Q -|- |={top}=> False.
     Proof. by rewrite /wp_glval=>->. Qed.
 
     Lemma wp_glval_wand e Q Q' :
@@ -1232,12 +1232,38 @@ Section with_cpp.
       iIntros "A B". iRevert "A". by iApply wp_glval_frame.
     Qed.
 
+    Lemma fupd_wp_glval e Q :
+      (|={top}=> wp_glval e Q) |-- wp_glval e Q.
+    Proof.
+      rewrite /wp_glval/wp_glval_mismatch. case_match;
+        auto using fupd_wp_lval, fupd_wp_xval.
+      by iIntros ">>$".
+    Qed.
+
     Lemma wp_glval_fupd e Q :
       wp_glval e (fun v f => |={top}=> Q v f) |-- wp_glval e Q.
     Proof.
       rewrite /wp_glval/wp_glval_mismatch. case_match;
       auto using wp_lval_fupd, wp_xval_fupd.
     Qed.
+
+    (* proof mode *)
+    #[global] Instance elim_modal_fupd_wp_glval p e P Q :
+      ElimModal True p false (|={top}=> P) P (wp_glval e Q) (wp_glval e Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_glval.
+    Qed.
+    #[global] Instance elim_modal_bupd_wp_glval p e P Q :
+      ElimModal True p false (|==> P) P (wp_glval e Q) (wp_glval e Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd top). exact: elim_modal_fupd_wp_glval.
+    Qed.
+    #[global] Instance add_modal_fupd_wp_glval e P Q : AddModal (|={top}=> P) P (wp_glval e Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_glval.
+    Qed.
+
   End wp_glval.
 
   (** Discarded values.
@@ -1264,6 +1290,37 @@ Section with_cpp.
           Forall p, wp_init tu ρ (type_of e) p e (fun frees => Q (FreeTemps.delete ty p >*> frees)%free)
       | Xvalue => wp_xval tu ρ e (fun _ => Q)
       end.
+
+    Lemma fupd_wp_discard e Q :
+      (|={top}=> wp_discard e Q) |-- wp_discard e Q.
+    Proof.
+      rewrite /wp_discard. repeat case_match; iIntros  ">$".
+    Qed.
+
+    Lemma wp_discard_fupd e Q :
+      wp_discard e (fun f => |={top}=> Q f) |-- wp_discard e Q.
+    Proof.
+      rewrite /wp_discard. repeat case_match;
+        auto using wp_lval_fupd, wp_xval_fupd, wp_operand_fupd.
+      f_equiv; intro; auto using wp_init_fupd.
+    Qed.
+
+    (* proof mode *)
+    #[global] Instance elim_modal_fupd_wp_discard p e P Q :
+      ElimModal True p false (|={top}=> P) P (wp_discard e Q) (wp_discard e Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_discard.
+    Qed.
+    #[global] Instance elim_modal_bupd_wp_discard p e P Q :
+      ElimModal True p false (|==> P) P (wp_discard e Q) (wp_discard e Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd top). exact: elim_modal_fupd_wp_discard.
+    Qed.
+    #[global] Instance add_modal_fupd_wp_discard e P Q : AddModal (|={top}=> P) P (wp_discard e Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_discard.
+    Qed.
 
   End wp_discard.
 
