@@ -14,7 +14,6 @@ Require Import bedrock.elpi.extra.extra.
 Elpi Program test lp:{{ }}.
 Elpi Accumulate Db extra.Program.
 Elpi Accumulate File test.
-Elpi Typecheck.
 
 Parameter opaque : N.
 Definition numeral : N := 42.

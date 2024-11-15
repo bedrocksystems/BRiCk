@@ -11,4 +11,3 @@ Elpi Tactic test.
 (** Avoid an anomaly --- see tc_tactic_synterp.DISABLED *)
 From bedrock.elpi.extra.Tactic Extra Dependency "synterp.elpi" as extra_synterp.
 #[synterp] Elpi Accumulate File extra_synterp.
-Elpi Typecheck.

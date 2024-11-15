@@ -54,4 +54,3 @@ Example: Elpi AddPred my.db my.predicate \"i:(list string)\" \"o:prop\".
   ].
 }}.
 
-Elpi Typecheck AddPred.

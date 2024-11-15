@@ -11,7 +11,6 @@ Require Import bedrock.elpi.extra.extra.
 Elpi Program test lp:{{ }}.
 Elpi Accumulate Db extra.Program.
 Elpi Accumulate File test.
-Elpi Typecheck.
 
 Definition cats : Ident.rep := Ident.Rep (fun cats => tt).
 

@@ -93,7 +93,6 @@ carrying an arbitrary string.
       attr.parse (msg\ coq.error msg) parse _ Opts,
       Opts => coq.say "flage" {flage} "flagb" {flagb} "flags" {flags} "flagm" {flagm}.
   }}.
-  Elpi Typecheck.
   Elpi Export TestAttr.
 >>
 

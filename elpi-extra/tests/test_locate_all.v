@@ -19,7 +19,6 @@ Elpi Command LocateAll.
 interp found" HaveI "items:" LI.
   main-interp _ _ :- coq.error "usage: SynterpLocate ID WantS WantI".
 }}.
-Elpi Typecheck.
 Elpi Export LocateAll.
 
 Module Type DOGS. End DOGS.

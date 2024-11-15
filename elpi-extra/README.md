@@ -49,7 +49,6 @@ Require Import bedrock.elpi.extra.extra.
 
 Elpi Command example.
 Elpi Accumulate Db extra.Command.
-Elpi Typecheck.
 ```
 
 

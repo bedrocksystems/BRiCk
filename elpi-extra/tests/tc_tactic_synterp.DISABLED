@@ -14,4 +14,3 @@ Anomaly
 "File "src/coq_elpi_programs.ml", line 103, characters 12-18: Assertion failed."
 Please report at http://coq.inria.fr/bugs/.
 *)
-Elpi Typecheck.

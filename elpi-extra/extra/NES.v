@@ -25,7 +25,6 @@ Elpi Command MyCommand.
 #[phase="both"] Elpi Accumulate Db NES.db.
 #[phase="both"] Elpi Accumulate Db bedrock.elpi.extra.NES.db.
 Elpi Accumulate lp:{{ ⋯ }}.
-Elpi Typecheck.
 Elpi Export MyCommand.
 >>
 *)

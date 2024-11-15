@@ -12,7 +12,6 @@ Require Import bedrock.elpi.extra.extra.
 Elpi Program test lp:{{ }}.
 Elpi Accumulate Db extra.Program.
 Elpi Accumulate File test.
-Elpi Typecheck.
 
 Elpi Accumulate lp:{{
   pred no_diag o:diag.	% Fails
@@ -32,7 +31,6 @@ Elpi Accumulate lp:{{
   u.diagnostic A B ok :- A = B, !.
   u.diagnostic _ _ (error "not equal").
 }}.
-Elpi Typecheck.
 
 (* TODO: This should be a CRAM test. Output matters. *)
 

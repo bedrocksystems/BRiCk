@@ -10,7 +10,6 @@ Require Import bedrock.elpi.extra.extra.
 
 Elpi Command TestAttr.
 Elpi Accumulate Db extra.Command.
-Elpi Typecheck.
 
 Fail Elpi Query lp:{{ attr.get-error E }}.	(** Not running *)
 Fail Elpi Query lp:{{ attr.get-value V }}.	(** Not running *)
@@ -61,7 +60,6 @@ Elpi Accumulate lp:{{
   main _ :- coq.error "usage: TestAttr n".
 
 }}.
-Elpi Typecheck.
 Elpi Export TestAttr.
 
 Fail #[e=cats] TestAttr -1.	(** expects no value *)
