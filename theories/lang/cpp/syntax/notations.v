@@ -21,12 +21,12 @@ Delimit Scope cpp_field_scope with cpp_field.
 Declare Scope cpp_name_scope.
 Delimit Scope cpp_name_scope with cpp_name.
 
-(* XXX This is only parsing to work around Coq misusing it outside
-[cpp_field_scope]. See #235. *)
-Notation "` e `" := e (e custom cppglobal at level 200, at level 0,
-                        only parsing) : cpp_field_scope.
-Notation "` e `" := e (e custom cppglobal at level 200, at level 0,
-                        only parsing) : cpp_name_scope.
+(* (* XXX This is only parsing to work around Coq misusing it outside *)
+(* [cpp_field_scope]. See #235. *) *)
+(* Notation "` e `" := e (e custom cppglobal at level 200, at level 0, *)
+(*                         only parsing) : cpp_field_scope. *)
+(* Notation "` e `" := e (e custom cppglobal at level 200, at level 0, *)
+(*                         only parsing) : cpp_name_scope. *)
 
 
 (** Importing [cpp_notation] makes cpp2v-generated names generally
