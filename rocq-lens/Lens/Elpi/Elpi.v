@@ -35,7 +35,6 @@ Elpi Accumulate lp:{{
 
   usage :- coq.error "Usage: derive.lens <record name> [<output prefix>]".
 }}.
-Elpi Typecheck.
 
 (* hook into derive *)
 #[synterp] Elpi Accumulate derive lp:{{

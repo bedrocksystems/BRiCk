@@ -27,7 +27,6 @@ Elpi Db derive.stdpp.countable.db lp:{{
       (before "countable-done.typeclass") (countable-done GR) {{ @Countable lp:{{global GR}} _ }} Bo_.
 }}.
 Elpi Accumulate derive Db derive.stdpp.countable.db.
-Elpi Typecheck derive.
 
 (** This Gallina function is used at code generation time (not at runtime) to produce the
     positive associated to a particular value [a : T], given the list of all constructors [l : list T]. *)
@@ -150,4 +149,3 @@ Example #3:
       (countable-done (indt T))
     ).
 }}.
-Elpi Typecheck derive.

@@ -26,7 +26,6 @@ Elpi Db derive.stdpp.eq_dec.db lp:{{
     typeclass "derive.stdpp.eq_dec.db" (before "eqdec-done.typeclass") (eqdec-done GR) {{ @EqDecision lp:{{global GR}} }} Bo_.
 }}.
 Elpi Accumulate derive Db derive.stdpp.eq_dec.db.
-Elpi Typecheck derive.
 
 #[synterp] Elpi Accumulate derive lp:{{
   derivation _ _ (derive "eq_dec" (cl\ cl = []) true).
@@ -87,4 +86,3 @@ Example #3:
        (eqdec-done (indt T))                % idempotency test
     ).
 }}.
-Elpi Typecheck derive.

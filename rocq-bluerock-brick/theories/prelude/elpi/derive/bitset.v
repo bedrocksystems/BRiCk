@@ -151,4 +151,3 @@ Add an instance of `ToBit` and use #[only(bitset_to_bit)] instead to override th
     ).
 
 }}.
-Elpi Typecheck derive.

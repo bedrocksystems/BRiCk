@@ -20,7 +20,6 @@ Elpi Db derive.stdpp.inhabited.db lp:{{
       (before "inhabited-done.typeclass") (inhabited-done GR) {{ @Inhabited lp:{{global GR}} }} Bo_.
 }}.
 Elpi Accumulate derive Db derive.stdpp.inhabited.db.
-Elpi Typecheck derive.
 
 (***************************************************
  Inhabited
@@ -77,4 +76,3 @@ Example #3:
        (inhabited-done (indt T))
     ).
 }}.
-Elpi Typecheck derive.

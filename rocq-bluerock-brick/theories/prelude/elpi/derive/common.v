@@ -32,4 +32,3 @@ Elpi Accumulate derive lp:{{/*(*/
     constant-adapter-active =>
       unfold-constants (const C) Prefix HasSynterp C' D.
 /*)*/}}.
-Elpi Typecheck derive.

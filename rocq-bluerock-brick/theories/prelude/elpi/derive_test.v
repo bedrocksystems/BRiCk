@@ -22,7 +22,6 @@ Module Type Alias.
         Ty = CTy
       ].
     /*)*/}}.
-    Elpi Typecheck.
     Elpi Export assert_type.
   End Cmd.
 

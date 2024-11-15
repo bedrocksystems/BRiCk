@@ -25,7 +25,6 @@ Elpi Db derive.stdpp.finite.db lp:{{
       (before "finite-done.typeclass") (finite-done GR) {{ @Finite lp:{{global GR}} _ }} Bo_.
 }}.
 Elpi Accumulate derive Db derive.stdpp.finite.db.
-Elpi Typecheck derive.
 
 Elpi Db derive.finite.db lp:{{
   namespace derive.finite {
@@ -176,4 +175,3 @@ Example #3:
       (finite-done (indt T))
     ).
 }}.
-Elpi Typecheck derive.

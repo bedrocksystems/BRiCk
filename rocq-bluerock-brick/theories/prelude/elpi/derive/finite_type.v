@@ -151,4 +151,3 @@ Use an instance of the typeclass `ToN` and #[only(finite_type_to_N)] instead to 
     ).
 
 }}.
-Elpi Typecheck derive.
