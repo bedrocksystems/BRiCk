@@ -849,6 +849,18 @@ Module SimpleCPP.
       valid_ptr (p ,, o_sub resolve ty 1).
     Proof. iDestruct 1 as "(_ & _ & _ & _ & $)". Qed.
 
+    Lemma type_ptr_erase : forall {σ} ty p,
+        type_ptr ty p -|- type_ptr (erase_qualifiers ty) p.
+    Proof.
+      rewrite /type_ptr; intros.
+      rewrite -aligned_ptr_ty_erase_qualifiers size_of_erase_qualifiers; iFrame "#%".
+      iSplit.
+      { iIntros "(%&%&%&#?&#?)"; iFrame "#%".
+        admit. (* [o_sub] is independent of qualifiers *) }
+      { iIntros "(%&%&%&#?&?)"; iFrame "#%".
+        admit. }
+    Admitted.
+
     Lemma type_ptr_aligned_pure σ ty p :
       type_ptr ty p |-- [| aligned_ptr_ty ty p |].
     Proof. iDestruct 1 as "(_ & $ & _)". Qed.

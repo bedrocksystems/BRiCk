@@ -564,21 +564,24 @@ Module Type CPP_LOGIC
   Section with_cpp_logic.
   Context `{cpp_logic}.
 
-    Axiom type_ptr_persistent : forall σ p ty,
+    Axiom type_ptr_persistent : forall {σ} p ty,
       Persistent (type_ptr ty p).
-    Axiom type_ptr_affine : forall σ p ty,
+    Axiom type_ptr_affine : forall {σ} p ty,
       Affine (type_ptr ty p).
-    Axiom type_ptr_timeless : forall σ p ty,
+    Axiom type_ptr_timeless : forall {σ} p ty,
       Timeless (type_ptr ty p).
     #[global] Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
 
-    Axiom type_ptr_aligned_pure : forall σ ty p,
+    Axiom type_ptr_erase : forall {σ} ty p,
+        type_ptr ty p -|- type_ptr (erase_qualifiers ty) p.
+
+    Axiom type_ptr_aligned_pure : forall {σ} ty p,
       type_ptr ty p |-- [| aligned_ptr_ty ty p |].
 
-    Axiom type_ptr_off_nonnull : forall {σ ty p o},
+    Axiom type_ptr_off_nonnull : forall {σ} ty p o,
       type_ptr ty (p ,, o) |-- [| p <> nullptr |].
 
-    Axiom tptsto_type_ptr : forall (σ : genv) ty q p v,
+    Axiom tptsto_type_ptr : forall {σ : genv} ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v).
     #[global] Existing Instance tptsto_type_ptr.
 
