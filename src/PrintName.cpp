@@ -717,7 +717,7 @@ printTemplateParameter(CoqPrinter& print, const NamedDecl* pdecl,
 	case Decl::Kind::NonTypeTemplateParm:
 		if (as_arg) {
 			guard::ctor _1(print, "Avalue", false);
-			guard::ctor _2(print, "Tparam", false);
+			guard::ctor _2(print, "Eparam", false);
 			return print.str(name);
 		} else {
 			auto& param = cast<NonTypeTemplateParmDecl>(decl);

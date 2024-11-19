@@ -234,6 +234,8 @@ public:
 	// TODO: Adjust and use in the structured name printer
 	fmt::Formatter& printTypeTemplateParam(CoqPrinter&, unsigned depth,
 										   unsigned index, loc::loc);
+	fmt::Formatter& printNonTypeTemplateParam(CoqPrinter&, unsigned depth,
+											  unsigned index, loc::loc);
 
 	// Types
 

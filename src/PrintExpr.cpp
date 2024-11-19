@@ -601,8 +601,20 @@ public:
 				guard::ctor _(print, "Eparam", false);
 				cprint.printUnqualifiedName(print, *param);
 			} else {
+				cprint.printNonTypeTemplateParam(
+					print, param->getDepth(), param->getIndex(), loc::of(expr));
+#if 0
+				llvm::errs() << "\n";
+				expr->dump();
+				var_decl->dump();
+				llvm::errs() << "\n";
+
+				llvm::errs().flush();
+
+				always_assert(false);
 				unsupported_expr(expr, std::nullopt,
 								 /*well_known*/ true);
+#endif
 			}
 		} else {
 			cprint.printValueDeclExpr(print, var_decl, names);

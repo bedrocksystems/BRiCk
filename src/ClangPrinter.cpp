@@ -202,6 +202,82 @@ ClangPrinter::printTypeTemplateParam(CoqPrinter &print, unsigned depth,
 }
 
 fmt::Formatter &
+ClangPrinter::printNonTypeTemplateParam(CoqPrinter &print, unsigned depth,
+										unsigned index, loc::loc loc) {
+	// TODO: this needs to be implemented.
+	if (trace(Trace::Name))
+		trace("printNonTypeTemplateParam", loc);
+
+	for (auto d = decl_; d; d = d->getLexicalParent()) {
+		if (auto psd = dyn_cast<ClassTemplatePartialSpecializationDecl>(d)) {
+			for (auto i : psd->getTemplateParameters()->asArray()) {
+				if (auto tpd = dyn_cast<NonTypeTemplateParmDecl>(i)) {
+					if (tpd->getDepth() != depth)
+						break;
+					if (tpd->getIndex() == index) {
+						guard::ctor _{print, "Eparam", false};
+						return print.str(tpd->getName());
+					}
+				}
+			}
+		} else if (auto fd = dyn_cast<FunctionDecl>(d)) {
+			if (auto y = fd->getTemplateSpecializationArgs()) {
+				auto ary = y->asArray();
+				always_assert(index < ary.size());
+				auto &&v = ary[index];
+				switch (v.getKind()) {
+				case TemplateArgument::ArgKind::Integral: {
+					guard::ctor _{print, "Eint"};
+					print.output() << v.getAsIntegral() << fmt::nbsp;
+					return printQualType(print, v.getIntegralType(), loc);
+				}
+				case TemplateArgument::ArgKind::Expression: {
+					return printExpr(print, ary[index].getAsExpr());
+				}
+				default: {
+					guard::ctor _{print, "Eunsupported"};
+					print.output()
+						<< "\"NonTypeTemplateParam " << v.getKind() << "\"";
+					return print.output();
+				}
+				}
+
+			} else if (auto x = fd->getDescribedTemplateParams())
+				for (auto i : x->asArray()) {
+					if (auto tpd = dyn_cast<NonTypeTemplateParmDecl>(i)) {
+						if (tpd->getDepth() != depth)
+							break;
+						if (tpd->getIndex() == index) {
+							always_assert(print.templates());
+							guard::ctor _{print, "Eparam", false};
+							return print.str(tpd->getName());
+						}
+					}
+				}
+		} else if (auto rd = dyn_cast<CXXRecordDecl>(d)) {
+			if (auto x = rd->getDescribedTemplateParams())
+				for (auto i : x->asArray()) {
+					if (auto tpd = dyn_cast<NonTypeTemplateParmDecl>(i)) {
+						if (tpd->getDepth() != depth)
+							break;
+						if (tpd->getIndex() == index) {
+							always_assert(print.templates());
+							guard::ctor _{print, "Eparam", false};
+							return print.str(tpd->getName());
+						}
+					}
+				}
+		}
+	}
+
+	error_prefix(logging::debug(), loc)
+		<< "error: could not infer template parameter name at depth " << depth
+		<< ", index " << index << "\n";
+	debug_dump(loc);
+	logging::die();
+}
+
+fmt::Formatter &
 ClangPrinter::printField(CoqPrinter &print, const ValueDecl *decl) {
 	if (trace(Trace::Decl))
 		trace("printField", loc::of(decl));
