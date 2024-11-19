@@ -40,6 +40,7 @@ class TemplateArgumentLoc;
 class TemplateArgumentList;
 class NestedNameSpecifier;
 class DeclarationName;
+class IdentifierInfo;
 class Qualifiers;
 }
 
@@ -194,6 +195,10 @@ public:
 		CoqPrinter&, const clang::NestedNameSpecifier* /* optional */,
 		const clang::DeclarationName&,
 		llvm::ArrayRef<clang::TemplateArgumentLoc> /* optional */, loc::loc);
+	fmt::Formatter&
+	printUnresolvedName(CoqPrinter&,
+						const clang::NestedNameSpecifier* /* optional */,
+						const clang::IdentifierInfo&, loc::loc);
 
 	// TODO: Can we drop these?
 	fmt::Formatter& printUnsupportedName(CoqPrinter&, llvm::StringRef); // name

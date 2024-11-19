@@ -76,7 +76,6 @@ public:
 	// Several of these are template TODOs
 
 	IGNORE(BlockPointerType)
-	IGNORE(DependentNameType)
 	IGNORE(DependentSizedArrayType)
 	IGNORE(PackExpansionType)
 
@@ -97,6 +96,18 @@ public:
 		}
 	}
 
+	void VisitDependentNameType(const DependentNameType* type,
+								CoqPrinter& print, ClangPrinter& cprint) {
+		if (type->isSugared()) {
+			cprint.printQualType(print, type->desugar(), loc::of(type));
+		} else {
+			guard::ctor _{print, "Tnamed"};
+			cprint.printUnresolvedName(print, type->getQualifier(),
+									   *type->getIdentifier(), loc::of(type));
+			//type->dump();
+			// unsupported_type(print, cprint, type, true);
+		}
+	}
 	void VisitUnaryTransformType(const UnaryTransformType* type,
 								 CoqPrinter& print, ClangPrinter& cprint) {
 		if (type->isDependentType()) {
@@ -382,7 +393,9 @@ public:
 		auto unsupported = [&]() {
 			unsupported_type(print, cprint, type, /*well_known*/ true);
 		};
-		if (type->isSugared()) {
+		if (type->isTypeAlias()) {
+			cprint.printQualType(print, type->getAliasedType(), loc::of(type));
+		} else if (type->isSugared()) {
 			cprint.printQualType(print, type->desugar(), loc::of(type));
 		} else {
 			/*

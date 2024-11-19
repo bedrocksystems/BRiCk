@@ -1522,3 +1522,26 @@ ClangPrinter::printUnresolvedName(
 		return printDeclarationName(print, name, *this);
 	}
 }
+
+fmt::Formatter&
+ClangPrinter::printUnresolvedName(CoqPrinter& print,
+								  const NestedNameSpecifier* nn,
+								  const IdentifierInfo& name, loc::loc loc) {
+	if (not nn) {
+		guard::ctor _(print, "Nglobal", false);
+		print.output() << '\"' << name.getName() << '\n';
+		return print.output();
+	} else if (nn->getKind() == NestedNameSpecifier::Global) {
+		guard::ctor _(print, "Nglobal", false);
+		print.output() << '\"' << name.getName() << '\n';
+		return print.output();
+	} else {
+		guard::ctor _(print, "Nscoped", false);
+		printName(print, nn, loc) << fmt::nbsp;
+		{
+			guard::ctor __{print, "Nid", false};
+			print.str(name.getName());
+		}
+		return print.output();
+	}
+}

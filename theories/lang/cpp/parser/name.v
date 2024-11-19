@@ -27,4 +27,10 @@ Module ParserName (Import Lang : PARSER_LANG).
   Definition Nby_first_decl (nm : bs) : atomic_name' parser_lang :=
     Nfirst_decl nm.
 
+  Definition Ndependent (t : type' parser_lang) : name' parser_lang :=
+    match t with
+    | Tnamed nm => nm
+    | _ => Ndependent t
+    end.
+
 End ParserName.
