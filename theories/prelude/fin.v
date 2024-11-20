@@ -123,6 +123,9 @@ Module fin.
   Lemma to_of_N' {n} (Hn : 0 < n) (m : N) : m < n -> to_N (of_N' Hn m) = m.
   Proof. rewrite /fin.of_N' => H. by case_decide. Qed.
 
+  Lemma to_of_N_gt' {n} (Hn : 0 < n) (m : N) : n <= m -> to_N (of_N' Hn m) = 0.
+  Proof. rewrite /fin.of_N' => H. by case_decide; first lia. Qed.
+
   Lemma of_to_N' {n} (Hn : 0 < n) (x : t n) : of_N' Hn (to_N x) = x.
   Proof. apply t_eq, to_of_N', to_N_lt. Qed.
 
@@ -131,6 +134,12 @@ Module fin.
 
   Lemma of_to_N {p} (x : t (N.pos p)) : of_N p (to_N x) = x.
   Proof. apply of_to_N'. Qed.
+
+  Lemma to_of_N_gt (p : positive) (m : N) : N.pos p <= m -> to_N (of_N p m) = 0.
+  Proof. apply to_of_N_gt'. Qed.
+
+  Lemma proj1_sig_of_N p (m : N) : m < N.pos p -> proj1_sig (of_N p m) = m.
+  Proof. apply to_of_N. Qed.
 
   (** Declared an instance, because it is not redudant after [t] is made opaque. *)
   #[global] Instance to_N_inj n : Inj eq eq (to_N (n := n)) := _.
