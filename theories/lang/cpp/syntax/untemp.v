@@ -31,7 +31,7 @@ Module Import internal.
       handle_Tresult_call _ _ _ _ := mthrow Not_representable;
       handle_Tresult_member_call _ _ _ _ _ _ := mthrow Not_representable;
       handle_Tresult_parenlist _ _ _ _ := mthrow Not_representable;
-      handle_Tresult_member _ _ _ := mthrow Not_representable;
+      handle_Tresult_member _ _ _ _ := mthrow Not_representable;
       handle_Tnamed _ n := Tnamed <$> n ();
       handle_Tref _ t := Tref <$> t ();
       handle_Trv_ref _ t := Trv_ref <$> t ();
@@ -46,7 +46,7 @@ Module Import internal.
       handle_Eunresolved_call _ _ _ _ := mthrow Not_representable;
       handle_Eunresolved_member_call _ _ _ _ _ _ := mthrow Not_representable;
       handle_Eunresolved_parenlist _ _ _ _ := mthrow Not_representable;
-      handle_Eunresolved_member _ _ _ := mthrow Not_representable;
+      handle_Eunresolved_member _ _ _ _ := mthrow Not_representable;
       handle_expr_type := id;
       handle_Eunresolved_cast _ _ _ _ := mthrow Not_representable;
       handle_unresolved_init _ mt me :=

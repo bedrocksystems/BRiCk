@@ -157,7 +157,7 @@ Module MTraverse.
       | Tresult_call on ts => hT.(handle_Tresult_call) on ts (fun _ => traverseN on) (fun _ => traverseT <$> ts)
       | Tresult_member_call on o ts => hT.(handle_Tresult_member_call) on o ts (fun _ => traverseN on) (fun _ => traverseT o) (fun _ => traverseT <$> ts)
       | Tresult_parenlist t ts => hT.(handle_Tresult_parenlist) t ts (fun _ => traverseT t) (fun _ => traverseT <$> ts)
-      | Tresult_member o id => hT.(handle_Tresult_member) o id (fun _ => traverseT o)
+      | Tresult_member o f => hT.(handle_Tresult_member) o f (fun _ => traverseT o) (fun _ => traverseN f)
       | Tnamed gn => hT.(handle_Tnamed) gn (fun _ => traverseN gn)
       | Tref t => hT.(handle_Tref) t (fun _ => traverseT t)
       | Trv_ref t => hT.(handle_Trv_ref) t (fun _ => traverseT t)
@@ -195,7 +195,7 @@ Module MTraverse.
       | Eunresolved_call on es => hE.(handle_Eunresolved_call) on es (fun _ => traverseN on) (fun _ => traverseE <$> es)
       | Eunresolved_member_call on e es => hE.(handle_Eunresolved_member_call) on e es (fun _ => traverseN on) (fun _ => traverseE e) (fun _ => traverseE <$> es)
       | Eunresolved_parenlist t es => hE.(handle_Eunresolved_parenlist) t es (fun _ => traverseT <$> t) (fun _ => traverseE <$> es)
-      | Eunresolved_member e f => hE.(handle_Eunresolved_member) e f (fun _ => traverseE e)
+      | Eunresolved_member e f => hE.(handle_Eunresolved_member) e f (fun _ => traverseE e) (fun _ => traverseN f)
 
       (**
       Everything else is structural

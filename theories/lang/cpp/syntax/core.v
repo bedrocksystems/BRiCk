@@ -440,7 +440,7 @@ with type' {lang : lang.t} : Set :=
 | Tresult_call (on : name') (_ : list type')
 | Tresult_member_call (on : name') (_ : type') (_ : list type')
 | Tresult_parenlist (_ :type') (_ : list type')
-| Tresult_member (_ : type') (_ : ident)
+| Tresult_member (_ : type') (_ : name')
 
 | Tptr (t : type')
 | Tref (t : type')
@@ -490,7 +490,7 @@ var(arg1,…,argN)>> with dependent type <<T>>. Making the type optional
 simplifies cpp2v---we set it from context in ../mparser.v.
 *)
 | Eunresolved_parenlist (_ : option type') (_ : list Expr')
-| Eunresolved_member (_ : Expr') (_ : ident)
+| Eunresolved_member (_ : Expr') (_ : name')
 
 (**
 NOTE: We might need to support template parameters as object names in

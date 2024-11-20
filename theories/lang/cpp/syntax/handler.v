@@ -42,7 +42,7 @@ Record type_handler'@{u} {lang} {N T E : Type@{u}} : Type@{u} := {
     (_ : unit -> N) (_ : unit -> T) (_ : unit -> list T) : T;
   handle_Tresult_parenlist (_ : decltype' lang) (_ : list (decltype' lang))
     (_ : unit -> T) (_ : unit -> list T) : T;
-  handle_Tresult_member (_ : decltype' lang) (_ : ident) (_ : unit -> T) : T;
+  handle_Tresult_member (_ : decltype' lang) (_ : name' lang) (_ : unit -> T) (_ : unit -> N) : T;
   (** Alias expansion *)
   handle_Tnamed (_ : name' lang) (_ : unit -> N) : T;
   (** Reference collapsing *)
@@ -70,7 +70,7 @@ Record expr_handler'@{u} {lang} {N T E : Set} {F : Set -> Type@{u}} : Type@{u} :
     (_ : unit -> F N) (_ : unit -> F E) (_ : unit -> list (F E)) : F E;
   handle_Eunresolved_parenlist (_ : option (type' lang)) (_ : list (Expr' lang))
     (_ : unit -> option (F T)) (_ : unit -> list (F E)) : F E;
-  handle_Eunresolved_member (_ : Expr' lang) (_ : ident) (_ : unit -> F E) : F E;
+  handle_Eunresolved_member (_ : Expr' lang) (_ : name' lang) (_ : unit -> F E) (_ : unit -> F N) : F E;
   (** Embedded expression types *)
   handle_expr_type : F T -> F T;
   (** casts *)
@@ -122,7 +122,7 @@ Section handlers.
     handle_Tresult_call _ _ n ts := Tresult_call <$> n () <*> sequence@{eta list} (ts ());
     handle_Tresult_member_call _ _ _ n t ts := Tresult_member_call <$> n () <*> t () <*> sequence@{eta list} (ts ());
     handle_Tresult_parenlist _ _ t ts := Tresult_parenlist <$> t () <*> sequence@{eta list} (ts ());
-    handle_Tresult_member _ f t := Tresult_member <$> t () <*> mret f;
+    handle_Tresult_member _ _ t n := Tresult_member <$> t () <*> n ();
     handle_Tnamed _ n := Tnamed <$> n ();
     handle_Tref _ t := Tref <$> t ();
     handle_Trv_ref _ t := Trv_ref <$> t ();
@@ -138,7 +138,7 @@ Section handlers.
     handle_Eunresolved_call _ _ n es := Eunresolved_call <$> n () <*> sequence@{eta list} (es ());
     handle_Eunresolved_member_call _ _ _ n e es := Eunresolved_member_call <$> n () <*> e () <*> sequence@{eta list} (es ());
     handle_Eunresolved_parenlist _ _ t es := Eunresolved_parenlist <$> sequence@{eta option} (t ()) <*> sequence@{eta list} (es ());
-    handle_Eunresolved_member _ f o := Eunresolved_member <$> o () <*> mret f;
+    handle_Eunresolved_member _ _ o f := Eunresolved_member <$> o () <*> f ();
     handle_expr_type := id;
     handle_Eunresolved_cast _ Mt _ Me := (fun t e => Ecast (Cdependent t) e) <$> Mt () <*> Me () ;
     handle_unresolved_init _ mt oe :=

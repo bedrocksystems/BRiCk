@@ -151,6 +151,13 @@ ClangPrinter::printValueDeclExpr(CoqPrinter& print, const ValueDecl* decl) {
 	return printValueDeclExpr(print, decl, names);
 }
 
+void
+printDependentMember(ClangPrinter& cprint, CoqPrinter& print,
+					 const CXXDependentScopeMemberExpr* expr) {
+	cprint.printUnresolvedName(print, expr->getQualifier(), expr->getMember(),
+							   expr->template_arguments(), loc::of(expr));
+}
+
 /**
  * This class prints a dependent name (of Coq type [Mname]).
  */
@@ -174,9 +181,7 @@ struct PrintDependentName : public ConstStmtVisitor<PrintDependentName, void> {
 		guard::ctor __{print, "Tresult_member"};
 		cprint.printQualType(print, expr->getBaseType(), loc::of(expr))
 			<< fmt::nbsp;
-		cprint.printUnresolvedName(print, expr->getQualifier(),
-								   expr->getMember(),
-								   expr->template_arguments(), loc::of(expr));
+		printDependentMember(cprint, print, expr);
 	}
 
 	void VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr* expr) {
@@ -984,12 +989,10 @@ public:
 
 	void
 	VisitCXXDependentScopeMemberExpr(const CXXDependentScopeMemberExpr* expr) {
-		print.ctor("Eunresolved_member");
+		guard::ctor _{print, "Eunresolved_member"};
 		print.boolean(expr->isArrow()) << fmt::nbsp;
-		cprint.printExpr(print, expr->getBase(), names);
-		print.output() << fmt::nbsp;
-		print.str(expr->getMember().getAsString());
-		print.end_ctor();
+		cprint.printExpr(print, expr->getBase(), names) << fmt::nbsp;
+		printDependentMember(cprint, print, expr);
 	}
 
 	void VisitArraySubscriptExpr(const ArraySubscriptExpr* expr) {

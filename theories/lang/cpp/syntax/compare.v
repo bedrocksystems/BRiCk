@@ -1139,11 +1139,11 @@ Module type.
 
     Record box_Tresult_member : Set := Box_Tresult_member {
       box_Tresult_member_0 : type;
-      box_Tresult_member_1 : ident;
+      box_Tresult_member_1 : name;
     }.
     Definition box_Tresult_member_compare (b1 b2 : box_Tresult_member) : comparison :=
       compare_lex (compareT b1.(box_Tresult_member_0) b2.(box_Tresult_member_0)) $ fun _ =>
-      bs_cmp b1.(box_Tresult_member_1) b2.(box_Tresult_member_1).
+      compareN b1.(box_Tresult_member_1) b2.(box_Tresult_member_1).
 
     Record box_Tnum : Set := Box_Tnum {
       box_Tnum_0 : int_rank.t;
@@ -1415,11 +1415,11 @@ Module Expr.
 
     Record box_Eunresolved_member : Set := Box_Eunresolved_member {
       box_Eunresolved_member_0 : Expr;
-      box_Eunresolved_member_1 : ident;
+      box_Eunresolved_member_1 : name;
     }.
     Definition box_Eunresolved_member_compare (b1 b2 : box_Eunresolved_member) : comparison :=
       compare_lex (compareE b1.(box_Eunresolved_member_0) b2.(box_Eunresolved_member_0)) $ fun _ =>
-      bs_cmp b1.(box_Eunresolved_member_1) b2.(box_Eunresolved_member_1).
+      compareN b1.(box_Eunresolved_member_1) b2.(box_Eunresolved_member_1).
 
     Record box_Evar : Set := Box_Evar {
       box_Evar_0 : localname;

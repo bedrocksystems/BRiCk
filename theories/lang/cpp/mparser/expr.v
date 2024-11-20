@@ -237,7 +237,7 @@ Definition Epostdec : UnOp.t := UnOp.infer Rpostdec UnOp.is_ptr.
 Definition Ederef : UnOp.t := UnOp.infer Rstar UnOp.is_ptr.
 
 (* TODO: the handling of [Eunresolved_member] isn't quite right *)
-Definition Eunresolved_member (arrow : bool) (base : MExpr) (i : ident) : MExpr :=
+Definition Eunresolved_member (arrow : bool) (base : MExpr) (i : Mname) : MExpr :=
   if arrow then
     Eunresolved_member (Earrow base None) i
   else
