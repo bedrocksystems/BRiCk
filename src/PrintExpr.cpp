@@ -168,6 +168,17 @@ struct PrintDependentName : public ConstStmtVisitor<PrintDependentName, void> {
 		ConstStmtVisitor<PrintDependentName, void>::Visit(expr);
 	}
 
+	void
+	VisitCXXDependentScopeMemberExpr(const CXXDependentScopeMemberExpr* expr) {
+		guard::ctor _{print, "Ndependent"};
+		guard::ctor __{print, "Tresult_member"};
+		cprint.printQualType(print, expr->getBaseType(), loc::of(expr))
+			<< fmt::nbsp;
+		cprint.printUnresolvedName(print, expr->getQualifier(),
+								   expr->getMember(),
+								   expr->template_arguments(), loc::of(expr));
+	}
+
 	void VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr* expr) {
 		cprint.printUnresolvedName(print, expr->getQualifier(),
 								   expr->getDeclName(),
