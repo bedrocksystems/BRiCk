@@ -76,7 +76,6 @@ public:
 	// Several of these are template TODOs
 
 	IGNORE(BlockPointerType)
-	IGNORE(DependentSizedArrayType)
 	IGNORE(PackExpansionType)
 
 	void VisitAttributedType(const AttributedType* type, CoqPrinter& print,
@@ -94,6 +93,14 @@ public:
 		default:
 			return "unknown";
 		}
+	}
+
+	void VisitDependentSizedArrayType(const DependentSizedArrayType* type,
+									  CoqPrinter& print, ClangPrinter& cprint) {
+		guard::ctor _{print, "Tvariable_array"};
+		cprint.printQualType(print, type->getElementType(), loc::of(type))
+			<< fmt::nbsp;
+		cprint.printExpr(print, type->getSizeExpr());
 	}
 
 	void VisitDependentNameType(const DependentNameType* type,
