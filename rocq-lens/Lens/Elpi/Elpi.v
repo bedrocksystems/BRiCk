@@ -25,6 +25,7 @@ Elpi Db derive.lens.db lp:{{
 
 (* standalone command *)
 Elpi Command derive.lens.
+Elpi Accumulate Db Header derive.lens.db.
 Elpi Accumulate File derive_hook.
 Elpi Accumulate File lens.
 Elpi Accumulate Db derive.lens.db.

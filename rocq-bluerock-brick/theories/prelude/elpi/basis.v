@@ -9,7 +9,20 @@ Require Import elpi.elpi.
 (*Export this tactic to [typeclass] use sites.*)
 Ltac try_typeclasses_eauto := try typeclasses eauto.
 
-Elpi Db bedrock.basis.db lp:{{
+Elpi File bedrock.typeclass.elpi lp:{{
+
+  %% typeclass Db Grafting Done Typeclass Bo
+  %% Solve for Bo in (Bo : Typeclass), accumulating Done into Db at Grafting if successful.
+  pred typeclass i:string, i:grafting, i:prop, i:term, o:term.
+    typeclass Db Grafting Done Typeclass Bo :- std.do! [
+      std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Typeclass }} _) "[typeclass] typechecking an instance failed",
+      coq.ltac.collect-goals Bo [SealedGoal] [],
+      coq.ltac.open (coq.ltac.call "try_typeclasses_eauto" []) SealedGoal [],
+      coq.elpi.accumulate library Db (clause _ Grafting Done),
+    ].
+}}.
+
+Elpi File bedrock.basis.elpi lp:{{
 
   %%% Option utilities
 
@@ -259,18 +272,8 @@ Elpi Db bedrock.basis.db lp:{{
  :if "DEBUG"
   debug Prefix Msg L :-
     Prefix' is "DEBUG " ^ Prefix,
-    msg Prefix' Msg L.
+    coq.say Prefix' Msg L.
   debug _Prefix _Msg _L :- !.
-
-  %% typeclass Db Grafting Done Typeclass Bo
-  %% Solve for Bo in (Bo : Typeclass), accumulating Done into Db at Grafting if successful.
-  pred typeclass i:string, i:grafting, i:prop, i:term, o:term.
-    typeclass Db Grafting Done Typeclass Bo :- std.do! [
-      std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Typeclass }} _) "[typeclass] typechecking an instance failed",
-      coq.ltac.collect-goals Bo [SealedGoal] [],
-      coq.ltac.open (coq.ltac.call "try_typeclasses_eauto" []) SealedGoal [],
-      coq.elpi.accumulate library Db (clause _ Grafting Done),
-    ].
 
   namespace bedrock {
     % get-indt VariantGR Indt: Indt is the body of Inductive type VariantGR.

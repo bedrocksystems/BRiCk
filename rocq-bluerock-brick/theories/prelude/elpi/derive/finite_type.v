@@ -11,7 +11,7 @@ Require Export bedrock.prelude.elpi.derive.eq_dec.
 Require Export bedrock.prelude.elpi.derive.finite.
 
 Require Import bedrock.prelude.elpi.basis.
-Elpi Accumulate derive Db bedrock.basis.db.
+Elpi Accumulate derive File bedrock.basis.elpi.
 
 (***************************************************
  Finite Types
@@ -26,7 +26,9 @@ Class ToN (T : Type) (to_N : T -> N) : Prop := {}.
 Elpi Db derive.finite_type.db lp:{{
   pred finite-type-done o:gref.
   pred bitset-done o:gref.
+}}.
 
+Elpi File derive.finite_type.elpi lp:{{
   namespace derive.finite_type {
     pred mk-finite-prelim i:string, i:gref, i:gref.
     mk-finite-prelim TypeName TyGR OrigGR :- std.do! [
@@ -72,6 +74,7 @@ Elpi Db derive.finite_type.db lp:{{
   }
 }}.
 
+Elpi Accumulate derive File derive.finite_type.elpi.
 Elpi Accumulate derive lp:{{
   namespace derive.finite_type {
     pred to-N i:term, o:term.

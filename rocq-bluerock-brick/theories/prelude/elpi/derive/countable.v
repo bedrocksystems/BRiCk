@@ -13,7 +13,7 @@ Require Export bedrock.prelude.elpi.derive.eq_dec.
 
 Require Import bedrock.prelude.elpi.basis.
 
-Elpi Accumulate derive Db bedrock.basis.db.
+Elpi Accumulate derive File bedrock.basis.elpi.
 
 (***************************************************
  Countable
@@ -21,11 +21,16 @@ Elpi Accumulate derive Db bedrock.basis.db.
 Elpi Db derive.stdpp.countable.db lp:{{
   pred countable o:gref, o:gref.
   pred countable-done o:gref.
+}}.
+Elpi Accumulate derive.stdpp.countable.db File bedrock.typeclass.elpi.
+Elpi Accumulate derive.stdpp.countable.db lp:{{
+
   :name "countable-done.typeclass"
   countable-done GR :-
     typeclass "derive.stdpp.countable.db"
       (before "countable-done.typeclass") (countable-done GR) {{ @Countable lp:{{global GR}} _ }} Bo_.
 }}.
+
 Elpi Accumulate derive Db derive.stdpp.countable.db.
 
 (** This Gallina function is used at code generation time (not at runtime) to produce the
@@ -47,7 +52,7 @@ Elpi Accumulate derive Db derive.stdpp.countable.db.
 (** This needs to be exported for use by callers of Deriving but shouldn't be otherwise used outside this module.*)
 Ltac derive_solve_countable := by case. (** TODO: [abstract] *)
 
-Elpi Db derive.countable.db lp:{{
+Elpi File derive.countable.elpi lp:{{
   namespace derive.countable {
     /*
     [mk-countable CtorList Name T] assumes that type [T] has
@@ -104,7 +109,7 @@ Elpi Db derive.countable.db lp:{{
   derivation _ _ (derive "countable" (cl\ cl = []) true).
 }}.
 
-Elpi Accumulate derive Db derive.countable.db.
+Elpi Accumulate derive File derive.countable.elpi.
 Elpi Accumulate derive lp:{{
   namespace derive.countable {
     pred main i:gref, i:string, o:list prop.

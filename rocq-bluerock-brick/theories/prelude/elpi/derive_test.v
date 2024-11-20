@@ -16,7 +16,7 @@ Module Type Alias.
   Module Import Cmd.
     Elpi Command assert_type.
     Elpi Accumulate lp:{{/*(*/
-      pred main i:argument list.
+      pred main i:list argument.
       main [trm (global (const C)), (trm Ty)] :- std.do! [
         coq.env.const C _ CTy,
         Ty = CTy
