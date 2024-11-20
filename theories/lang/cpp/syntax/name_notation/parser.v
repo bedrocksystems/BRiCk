@@ -302,7 +302,8 @@ Module parser.
       mret $ post (List.fold_right (fun f x => f x) t quals).
 
    Definition parse_name': M name :=
-      let* (x : list (atomic_name' _ * _)) :=
+     ((fun _ => Ndependent) <$> spaced "typename" <*> parse_type ()) <|>
+     (let* (x : list (atomic_name' _ * _)) :=
         (fun _ x => x) <$> optional (spaced "::") <*> sepBy (spaced "::") (parse_name_component ())
       in
       match x with
@@ -328,7 +329,7 @@ Module parser.
                                       (sp oinst (Nscoped acc nm), nm)
                                   end) xs
             (root, nm)).1
-      end.
+      end).
 
     (* name components basically amount to atomic names with an optional template
        specialization after them. They are complex because function names include their
@@ -455,7 +456,7 @@ Module parser.
     Fixpoint parse_type (fuel : nat) :=
       parse_type' (fun _ => NEXT fuel parse_type) (fun _ => NEXT fuel parse_name) (fun _ => NEXT fuel parse_expr)
     with parse_name (fuel : nat) :=
-      parse_name' (fun _ => NEXT fuel parse_name_component)
+      parse_name' (fun _ => NEXT fuel parse_type) (fun _ => NEXT fuel parse_name_component)
     with parse_name_component (fuel : nat) :=
       parse_name_component' (fun _ => NEXT fuel parse_type) (fun _ => NEXT fuel parse_expr)
     with parse_expr (fuel : nat) :=
@@ -548,6 +549,9 @@ Module Type TESTS.
   (* NOTE: non-standard names *)
   Succeed Example _0 : TEST "Msg::@msg" (Nscoped Msg (Nfirst_decl "msg")) := eq_refl.
   Succeed Example _0 : TEST "Msg::.msg" (Nscoped Msg (Nfirst_child "msg")) := eq_refl.
+  Succeed Example _0 : TEST "typename foo" (Ndependent (Tnamed (Nglobal (Nid "foo")))) := eq_refl.
+  Succeed Example _0 : TEST "typename foo<int>::type"
+                 (Ndependent (Tnamed (Nscoped (Ninst (Nglobal (Nid "foo")) [Atype Tint]) (Nid "type")))) := eq_refl.
 
   Succeed Example _0 : TEST "Msg<int& &&>" (Ninst (Nglobal (Nid "Msg")) [Atype (Trv_ref (Tref Tint))]) := eq_refl.
 
