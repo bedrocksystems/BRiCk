@@ -66,7 +66,7 @@
 <div class="paragraph"> </div>
 
  Our theories for atomic accessors and updates have a lot in
-common (where <span class="inlinecode"><span class="id" title="var">AU</span></span> <span class="inlinecode">∈</span> <span class="inlinecode">{<span class="id" title="var">aacc</span>,<span class="id" title="var">aupd</span>},</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#tu.M"><span class="id" title="variable">M</span></a></span> <span class="inlinecode">∈</span> <span class="inlinecode">{<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.updates.html#fupd"><span class="id" title="definition">fupd</span></a>,<span class="id" title="var">wand</span>}</span>):
+common (where <span class="inlinecode"><span class="id" title="var">AU</span></span> <span class="inlinecode">∈</span> <span class="inlinecode">{<span class="id" title="var">aacc</span>,<span class="id" title="var">aupd</span>},</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.name_notation.parser.html#parser.M"><span class="id" title="definition">M</span></a></span> <span class="inlinecode">∈</span> <span class="inlinecode">{<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.updates.html#fupd"><span class="id" title="definition">fupd</span></a>,<span class="id" title="var">wand</span>}</span>):
 
 <div class="paragraph"> </div>
 
@@ -120,22 +120,22 @@ An <i>atomic accessor</i>
 <div class="paragraph"> </div>
 
 is a fancy update (call it OPEN) enabling a callee to access a
-caller's <i>atomic precondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#a25b1cab4810459e8ce0ea78e147614f"><span class="id" title="variable">α</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span> (for some x) and then take one
+caller's <i>atomic precondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#a25b1cab4810459e8ce0ea78e147614f"><span class="id" title="variable">α</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span> (for some x) and then take one
 of two fancy updates:
 
 <div class="paragraph"> </div>
 
 <ul class="doclist">
-<li> ABORT lets the callee give <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#a25b1cab4810459e8ce0ea78e147614f"><span class="id" title="variable">α</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span> back to the caller in exchange for
-  the <i>public precondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span>
+<li> ABORT lets the callee give <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#a25b1cab4810459e8ce0ea78e147614f"><span class="id" title="variable">α</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span> back to the caller in exchange for
+  the <i>public precondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span>
 
 <div class="paragraph"> </div>
 
 
 </li>
-<li> COMMIT lets the callee, if she can change <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#a25b1cab4810459e8ce0ea78e147614f"><span class="id" title="variable">α</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span> to the <i>atomic
-  postcondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#4a0c8bf02d82287ebcaf6c814a1ac05b"><span class="id" title="variable">β</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.y"><span class="id" title="variable">y</span></a></span> (for some y), return <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#4a0c8bf02d82287ebcaf6c814a1ac05b"><span class="id" title="variable">β</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.y"><span class="id" title="variable">y</span></a></span> to the callee in
-  exchange for the <i>public postcondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#d56527481c5949ea5815316f50efa650"><span class="id" title="variable">Φ</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.y"><span class="id" title="variable">y</span></a></span>.
+<li> COMMIT lets the callee, if she can change <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#a25b1cab4810459e8ce0ea78e147614f"><span class="id" title="variable">α</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span> to the <i>atomic
+  postcondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#4a0c8bf02d82287ebcaf6c814a1ac05b"><span class="id" title="variable">β</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.y"><span class="id" title="variable">y</span></a></span> (for some y), return <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#4a0c8bf02d82287ebcaf6c814a1ac05b"><span class="id" title="variable">β</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.y"><span class="id" title="variable">y</span></a></span> to the callee in
+  exchange for the <i>public postcondition</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#d56527481c5949ea5815316f50efa650"><span class="id" title="variable">Φ</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.y"><span class="id" title="variable">y</span></a></span>.
 
 </li>
 </ul>
@@ -186,8 +186,8 @@ atomic updates, we go into some detail.
 <div class="paragraph"> </div>
 
 If you run <span class="inlinecode"><span class="id" title="keyword">Print</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.object_repr.html#raw_type_ptrs.Instances"><span class="id" title="section">Instances</span></a></span> <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span>, you'll see that the class of
-<span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span> propositions includes timeless propositions, <span class="inlinecode">▷</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span>,
-<span class="inlinecode"><span class="id" title="var">make_laterable</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span>, and is closed under separating conjuction:
+<span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span> propositions includes timeless propositions, <span class="inlinecode">▷</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span>,
+<span class="inlinecode"><span class="id" title="var">make_laterable</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span>, and is closed under separating conjuction:
 
 <div class="paragraph"> </div>
 
@@ -203,7 +203,7 @@ If you run <span class="inlinecode"><span class="id" title="keyword">Print</span
 
 <div class="paragraph"> </div>
 
-A <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> satisfies
+A <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> satisfies
 
 <div class="paragraph"> </div>
 
@@ -213,8 +213,8 @@ A <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc
 
 <div class="paragraph"> </div>
 
-We can thus decompose a laterable <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> into <span class="inlinecode">▷</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.Q"><span class="id" title="variable">Q</span></a></span> for some <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.Q"><span class="id" title="variable">Q</span></a></span> as well as
-knowledge of a fancy update sending <span class="inlinecode">▷</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.Q"><span class="id" title="variable">Q</span></a></span> back to <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> (with any mask). 
+We can thus decompose a laterable <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> into <span class="inlinecode">▷</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.Q"><span class="id" title="variable">Q</span></a></span> for some <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.Q"><span class="id" title="variable">Q</span></a></span> as well as
+knowledge of a fancy update sending <span class="inlinecode">▷</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#example.Q"><span class="id" title="variable">Q</span></a></span> back to <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> (with any mask). 
 <div class="paragraph"> </div>
 
 <a id="lab28"></a><h2 class="section">Except at zero</h2>
@@ -222,8 +222,8 @@ knowledge of a fancy update sending <span class="inlinecode">▷</span> <span cl
 <div class="paragraph"> </div>
 
  The preceding characterization <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.atomic_update_properties.html#laterable_fupd"><span class="id" title="lemma">laterable_fupd</span></a></span> of <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span>
-assertions is just a lemma (proved below). <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> is <i>defined</i>
-in terms of the modality <span class="inlinecode">◇</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span>, read "except at zero, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span>":
+assertions is just a lemma (proved below). <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.laterable.html#Laterable"><span class="id" title="class">Laterable</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> is <i>defined</i>
+in terms of the modality <span class="inlinecode">◇</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span>, read "except at zero, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span>":
 
 <div class="paragraph"> </div>
 
@@ -233,15 +233,15 @@ in terms of the modality <span class="inlinecode">◇</span> <span class="inline
 
 <div class="paragraph"> </div>
 
-The except at zero modality <span class="inlinecode">◇</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> usually remains hidden during
-verification efforts. In practice, you can read it as "<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> up to
-updates". In the model of Iris' base logic, <span class="inlinecode">◇</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> means precisely the
-same thing as <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <i>except</i> at step-index zero (when all bets are off).
+The except at zero modality <span class="inlinecode">◇</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> usually remains hidden during
+verification efforts. In practice, you can read it as "<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> up to
+updates". In the model of Iris' base logic, <span class="inlinecode">◇</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> means precisely the
+same thing as <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <i>except</i> at step-index zero (when all bets are off).
 
 <div class="paragraph"> </div>
 
 Perhaps a more familiar place where the except at zero modality arises
-is in the definition of timelessness. A <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Timeless"><span class="id" title="class">Timeless</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> satisfies
+is in the definition of timelessness. A <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Timeless"><span class="id" title="class">Timeless</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> satisfies
 
 <div class="paragraph"> </div>
 
@@ -837,7 +837,7 @@ Properties relevant to automation
 
 <div class="doc">
 Learn from an atomic precondition. (To use the bound variables
-    <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span>, pick <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode">:=</span> <span class="inlinecode">∃</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a>,</span> <span class="inlinecode"><span class="id" title="var">P'</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span>.) 
+    <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span>, pick <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode">:=</span> <span class="inlinecode">∃</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a>,</span> <span class="inlinecode"><span class="id" title="var">P'</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span>.) 
 </div>
 <div class="code">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="aupd_obs_fupd" class="idref" href="#aupd_obs_fupd"><span class="id" title="lemma">aupd_obs_fupd</span></a> <a id="P:369" class="idref" href="#P:369"><span class="id" title="binder">P</span></a> <a id="Eo:370" class="idref" href="#Eo:370"><span class="id" title="binder">Eo</span></a> <a id="Ei:371" class="idref" href="#Ei:371"><span class="id" title="binder">Ei</span></a> <a id="5bf5f1c22fe0d30df33f88c3778ff41c" class="idref" href="#5bf5f1c22fe0d30df33f88c3778ff41c"><span class="id" title="binder">α</span></a> <a id="91ba076490234ae0a48ab687a7c6e64a" class="idref" href="#91ba076490234ae0a48ab687a7c6e64a"><span class="id" title="binder">β</span></a> <a id="b1fc276b0e4365076b9df5421a1422b2" class="idref" href="#b1fc276b0e4365076b9df5421a1422b2"><span class="id" title="binder">Φ</span></a> :<br/>

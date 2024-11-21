@@ -387,7 +387,7 @@ Cancelable invariants for monPred
 </div>
 
 <div class="doc">
-The "strong" variants permit any infinite <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.spec.frac_splittable.html#frac_9.I"><span class="id" title="variable">I</span></a></span>, and choosing <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> is delayed
+The "strong" variants permit any infinite <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.spec.frac_splittable.html#frac_9.I"><span class="id" title="variable">I</span></a></span>, and choosing <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> is delayed
   until after <span class="inlinecode"><span class="id" title="var">γ</span></span> was chosen.
 </div>
 <div class="code">
@@ -406,8 +406,8 @@ The "strong" variants permit any infinite <span class="inlinecode"><a class="idr
 
 <div class="doc">
 The "open" variants create the invariant in the open state, and delay
-  having to prove <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span>.
-  These do not imply the other variants because of the extra assumption <span class="inlinecode">↑<a class="idref" href="bedrock.lang.cpp.syntax.types.html#N"><span class="id" title="abbreviation">N</span></a></span> <span class="inlinecode">⊆</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#E"><span class="id" title="module">E</span></a></span>. 
+  having to prove <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span>.
+  These do not imply the other variants because of the extra assumption <span class="inlinecode">↑<a class="idref" href="bedrock.lang.cpp.syntax.handler.html#lens.N"><span class="id" title="variable">N</span></a></span> <span class="inlinecode">⊆</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.handler.html#lens.E"><span class="id" title="variable">E</span></a></span>. 
 </div>
 <div class="code">
 &nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="cinv_alloc_strong_open" class="idref" href="#cinv_alloc_strong_open"><span class="id" title="lemma">cinv_alloc_strong_open</span></a> (<a id="I:92" class="idref" href="#I:92"><span class="id" title="binder">I</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.iprop.html#gname"><span class="id" title="definition">gname</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Unicode.Utf8_core.html#c41c566ddac4c1298b9e7dd2bae1c794"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>) <a id="E:93" class="idref" href="#E:93"><span class="id" title="binder">E</span></a> <a id="N:94" class="idref" href="#N:94"><span class="id" title="binder">N</span></a> :<br/>

@@ -39,7 +39,7 @@
 
 <div class="code">
 <span class="comment">(*<br/>
-&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020-2024&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
@@ -48,8 +48,7 @@
 
 <br/>
 <span class="id" title="keyword">Section</span> <a id="with_Sigma" class="idref" href="#with_Sigma"><span class="id" title="section">with_Sigma</span></a>.<br/>
-
-<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">bs_scope</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="with_Sigma.Sigma" class="idref" href="#with_Sigma.Sigma"><span class="id" title="variable">Sigma</span></a>: <span class="id" title="class">cpp_logic</span>} {<a id="with_Sigma.CU" class="idref" href="#with_Sigma.CU"><span class="id" title="variable">CU</span></a>:<span class="id" title="class">genv</span>}.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Import</span> <span class="id" title="module">primitives</span>.<br/>
 
@@ -89,10 +88,10 @@
 <div class="code">
 
 <br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="18dcb74514353c8df382447bafb91d4c" class="idref" href="#18dcb74514353c8df382447bafb91d4c"><span class="id" title="notation">&quot;</span></a>`::Point::x`" :={| <span class="id" title="projection">f_type</span> := "Z4Point" ; <span class="id" title="projection">f_name</span> := "_Z4Pointx" |} (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="18dcb74514353c8df382447bafb91d4c" class="idref" href="#18dcb74514353c8df382447bafb91d4c"><span class="id" title="notation">&quot;</span></a>`::Point::x`" := (<span class="id" title="constructor">Nscoped</span> (<span class="id" title="constructor">Nglobal</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <span class="id" title="constructor">Nid</span> "Point") (<span class="id" title="constructor">Nid</span> "x")) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0).<br/>
 
 <br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="1b673d57d3069c2e71e7cf8e3f3929db" class="idref" href="#1b673d57d3069c2e71e7cf8e3f3929db"><span class="id" title="notation">&quot;</span></a>`::Point::y`" :={| <span class="id" title="projection">f_type</span> := "Z4Point" ; <span class="id" title="projection">f_name</span> := "_Z4Pointy" |} (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="1b673d57d3069c2e71e7cf8e3f3929db" class="idref" href="#1b673d57d3069c2e71e7cf8e3f3929db"><span class="id" title="notation">&quot;</span></a>`::Point::y`" := (<span class="id" title="constructor">Nscoped</span> (<span class="id" title="constructor">Nglobal</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <span class="id" title="constructor">Nid</span> "Point") (<span class="id" title="constructor">Nid</span> "y")) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0).<br/>
 
 <br/>
 </div>
@@ -106,7 +105,7 @@ the integer value <span class="inlinecode">5</span>
 <div class="code">
 
 <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="PointR15" class="idref" href="#PointR15"><span class="id" title="definition">PointR15</span></a> (<a id="q:13" class="idref" href="#q:13"><span class="id" title="binder">q</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a>) : <span class="id" title="definition">Rep</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="PointR15" class="idref" href="#PointR15"><span class="id" title="definition">PointR15</span></a> (<a id="q:13" class="idref" href="#q:13"><span class="id" title="binder">q</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a>) : <span class="id" title="definition">Rep</span> :=<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="abbreviation">_field</span> <a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#18dcb74514353c8df382447bafb91d4c"><span class="id" title="notation">`::</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#18dcb74514353c8df382447bafb91d4c"><span class="id" title="notation">Point</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#18dcb74514353c8df382447bafb91d4c"><span class="id" title="notation">::</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#18dcb74514353c8df382447bafb91d4c"><span class="id" title="notation">x</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#18dcb74514353c8df382447bafb91d4c"><span class="id" title="notation">`</span></a>  <span class="id" title="notation">|-&gt;</span> <span class="id" title="abbreviation">intR</span> <a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#q:13"><span class="id" title="variable">q</span></a> 1 <span class="id" title="notation">**</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="abbreviation">_field</span> <a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#1b673d57d3069c2e71e7cf8e3f3929db"><span class="id" title="notation">`::</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#1b673d57d3069c2e71e7cf8e3f3929db"><span class="id" title="notation">Point</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#1b673d57d3069c2e71e7cf8e3f3929db"><span class="id" title="notation">::</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#1b673d57d3069c2e71e7cf8e3f3929db"><span class="id" title="notation">y</span></a><a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#1b673d57d3069c2e71e7cf8e3f3929db"><span class="id" title="notation">`</span></a>  <span class="id" title="notation">|-&gt;</span> <span class="id" title="abbreviation">intR</span> <a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#q:13"><span class="id" title="variable">q</span></a> 5.<br/>
 
@@ -207,7 +206,7 @@ to write a representation predicate for a tagged union, we
    
 </div>
 <div class="code">
-&nbsp;&nbsp;<span class="id" title="keyword">Parameters</span> <a id="with_Sigma.tag_field" class="idref" href="#with_Sigma.tag_field"><span class="id" title="variable">tag_field</span></a> <a id="with_Sigma.x_field" class="idref" href="#with_Sigma.x_field"><span class="id" title="variable">x_field</span></a> <a id="with_Sigma.y_field" class="idref" href="#with_Sigma.y_field"><span class="id" title="variable">y_field</span></a> : <span class="id" title="record">field</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Parameters</span> <a id="with_Sigma.tag_field" class="idref" href="#with_Sigma.tag_field"><span class="id" title="variable">tag_field</span></a> <a id="with_Sigma.x_field" class="idref" href="#with_Sigma.x_field"><span class="id" title="variable">x_field</span></a> <a id="with_Sigma.y_field" class="idref" href="#with_Sigma.y_field"><span class="id" title="variable">y_field</span></a> : <span class="id" title="abbreviation">field</span>.<br/>
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="taggedR" class="idref" href="#taggedR"><span class="id" title="definition">taggedR</span></a> (<a id="m:29" class="idref" href="#m:29"><span class="id" title="binder">m</span></a> : <a class="idref" href="bedrock.noimport.doc.cpp.class_representations.html#M"><span class="id" title="inductive">M</span></a>) : <span class="id" title="definition">Rep</span> :=<br/>
@@ -312,7 +311,7 @@ one issue with the above definitions is that they do not capture the
    
 </div>
 <div class="code">
-&nbsp;&nbsp;<span class="id" title="keyword">Parameters</span> <a id="with_Sigma.word_field" class="idref" href="#with_Sigma.word_field"><span class="id" title="variable">word_field</span></a> <a id="with_Sigma.high_field" class="idref" href="#with_Sigma.high_field"><span class="id" title="variable">high_field</span></a> <a id="with_Sigma.low_field" class="idref" href="#with_Sigma.low_field"><span class="id" title="variable">low_field</span></a> : <span class="id" title="record">field</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Parameters</span> <a id="with_Sigma.word_field" class="idref" href="#with_Sigma.word_field"><span class="id" title="variable">word_field</span></a> <a id="with_Sigma.high_field" class="idref" href="#with_Sigma.high_field"><span class="id" title="variable">high_field</span></a> <a id="with_Sigma.low_field" class="idref" href="#with_Sigma.low_field"><span class="id" title="variable">low_field</span></a> : <span class="id" title="abbreviation">field</span>.<br/>
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="OrBytes_wordR" class="idref" href="#OrBytes_wordR"><span class="id" title="definition">OrBytes_wordR</span></a> (<a id="q:43" class="idref" href="#q:43"><span class="id" title="binder">q</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a>) (<a id="w:44" class="idref" href="#w:44"><span class="id" title="binder">w</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>) : <span class="id" title="definition">Rep</span> :=<br/>

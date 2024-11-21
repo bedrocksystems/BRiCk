@@ -39,7 +39,7 @@
 
 <div class="code">
 <span class="comment">(*<br/>
-&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;BedRock&nbsp;Systems&nbsp;Inc.&nbsp;2020-2023<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;BedRock&nbsp;Systems&nbsp;Inc.&nbsp;2020-2024<br/>
 &nbsp;*<br/>
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
@@ -48,6 +48,9 @@
 
 <br/>
 #[<span class="id" title="var">local</span>] <span class="id" title="keyword">Set</span> <span class="id" title="keyword">Printing</span> <span class="id" title="var">Coercions</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="bool_compare" class="idref" href="#bool_compare"><span class="id" title="instance">bool_compare</span></a> : <a class="idref" href="bedrock.prelude.base.html#Compare"><span class="id" title="class">Compare</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> := <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Bool.Bool.html#compare"><span class="id" title="definition">Bool.compare</span></a>.<br/>
 
 <br/>
 <span class="id" title="keyword">Infix</span> <a id="dbd3a2dc20fd0af14e6ea73d970ada94" class="idref" href="#dbd3a2dc20fd0af14e6ea73d970ada94"><span class="id" title="notation">&quot;</span></a>&lt;=" := <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Bool.Bool.html#le"><span class="id" title="definition">Bool.le</span></a> : <span class="id" title="var">bool_scope</span>.<br/>
@@ -125,7 +128,7 @@ instead of <span class="inlinecode"><a class="idref" href="bedrock.prelude.elpi.
 
 <div class="paragraph"> </div>
 
-Typical users will still pick <span class="inlinecode"><a class="idref" href="bedrock.prelude.sts.html#Sts.hide.P"><span class="id" title="variable">P</span></a></span> and <span class="inlinecode"><span class="id" title="var">Q</span></span> such that <span class="inlinecode"><span class="id" title="var">Q</span></span> <span class="inlinecode">↔</span> <span class="inlinecode">¬<a class="idref" href="bedrock.prelude.sts.html#Sts.hide.P"><span class="id" title="variable">P</span></a></span>, even if that's not
+Typical users will still pick <span class="inlinecode"><a class="idref" href="bedrock.prelude.sts.html#Sts.hide.P"><span class="id" title="variable">P</span></a></span> and <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.QArith.QArith_base.html#Q"><span class="id" title="record">Q</span></a></span> such that <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.QArith.QArith_base.html#Q"><span class="id" title="record">Q</span></a></span> <span class="inlinecode">↔</span> <span class="inlinecode">¬<a class="idref" href="bedrock.prelude.sts.html#Sts.hide.P"><span class="id" title="variable">P</span></a></span>, even if that's not
 strictly enforced.
 
 </div>

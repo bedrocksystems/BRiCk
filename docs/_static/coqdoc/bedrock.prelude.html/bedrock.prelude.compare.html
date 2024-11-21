@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index for the theory </a>
+      <a href="./toc.html"> Table of contents for the theory </a>
+      <a href="../../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.prelude.compare</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;BedRock&nbsp;Systems&nbsp;Inc.&nbsp;2024<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.numbers.html#"><span class="id" title="library">bedrock.prelude.numbers</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab8"></a><h2 class="section">Generic comparison</h2>
+
+<div class="paragraph"> </div>
+
+Inspired by:
+
+<div class="paragraph"> </div>
+
+Benjamin Grégoire, Jean-Christophe Léchenet, Enrico Tassi.
+Practical and Sound Equality Tests, Automatically: Deriving eqType
+Instances for Jasmin's Data Types with Coq-Elpi.
+CPP 2023.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="compare" class="idref" href="#compare"><span class="id" title="section">compare</span></a>.<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">positive</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#EqNotations"><span class="id" title="module">EqNotations</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+  Compare constructors represented as tags and data.
+  
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="compare_ctor" class="idref" href="#compare_ctor"><span class="id" title="definition">compare_ctor</span></a> {<a id="A:1" class="idref" href="#A:1"><span class="id" title="binder">A</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div class="doc">
+      constructor numbers (<code>#[only(tag)] derive</code>)
+      
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="tag:2" class="idref" href="#tag:2"><span class="id" title="binder">tag</span></a> : <a class="idref" href="bedrock.prelude.compare.html#A:1"><span class="id" title="variable">A</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div class="doc">
+      constructor data (<code>#[only(fields)] derive</code>)
+      
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="car:3" class="idref" href="#car:3"><span class="id" title="binder">car</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">Type</span>) (<a id="data:5" class="idref" href="#data:5"><span class="id" title="binder">data</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">∀</span></a> <a id="a:4" class="idref" href="#a:4"><span class="id" title="binder">a</span></a><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.prelude.compare.html#car:3"><span class="id" title="variable">car</span></a> (<a class="idref" href="bedrock.prelude.compare.html#tag:2"><span class="id" title="variable">tag</span></a> <a class="idref" href="bedrock.prelude.compare.html#a:4"><span class="id" title="variable">a</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="compare:7" class="idref" href="#compare:7"><span class="id" title="binder">compare</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">∀</span></a> <a id="p:6" class="idref" href="#p:6"><span class="id" title="binder">p</span></a><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.prelude.compare.html#car:3"><span class="id" title="variable">car</span></a> <a class="idref" href="bedrock.prelude.compare.html#p:6"><span class="id" title="variable">p</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.compare.html#car:3"><span class="id" title="variable">car</span></a> <a class="idref" href="bedrock.prelude.compare.html#p:6"><span class="id" title="variable">p</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#comparison"><span class="id" title="inductive">comparison</span></a>)	</div>
+
+<div class="doc">
+data comparison 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="t:8" class="idref" href="#t:8"><span class="id" title="binder">t</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a>) (<a id="d:9" class="idref" href="#d:9"><span class="id" title="binder">d</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#unit"><span class="id" title="inductive">unit</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.compare.html#car:3"><span class="id" title="variable">car</span></a> <a class="idref" href="bedrock.prelude.compare.html#t:8"><span class="id" title="variable">t</span></a>)	<span class="comment">(*&nbsp;deconstructed&nbsp;inhabitant&nbsp;of&nbsp;&lt;&lt;A&gt;&gt;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="a:10" class="idref" href="#a:10"><span class="id" title="binder">a</span></a> : <a class="idref" href="bedrock.prelude.compare.html#A:1"><span class="id" title="variable">A</span></a>) : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#comparison"><span class="id" title="inductive">comparison</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <a id="ta:11" class="idref" href="#ta:11"><span class="id" title="binder">ta</span></a> := <a class="idref" href="bedrock.prelude.compare.html#tag:2"><span class="id" title="variable">tag</span></a> <a class="idref" href="bedrock.prelude.compare.html#a:10"><span class="id" title="variable">a</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <a id="c:12" class="idref" href="#c:12"><span class="id" title="binder">c</span></a> := <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.PArith.BinPos.html#Pos.compare"><span class="id" title="definition">Pos.compare</span></a> <a class="idref" href="bedrock.prelude.compare.html#ta:11"><span class="id" title="variable">ta</span></a> <a class="idref" href="bedrock.prelude.compare.html#t:8"><span class="id" title="variable">t</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.prelude.compare.html#c:12"><span class="id" title="variable">c</span></a> <span class="id" title="keyword">as</span> <span class="id" title="var">c'</span> <span class="id" title="keyword">return</span> <a class="idref" href="bedrock.prelude.compare.html#c:12"><span class="id" title="variable">c</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.prelude.compare.html#c':13"><span class="id" title="variable">c'</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#comparison"><span class="id" title="inductive">comparison</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Eq"><span class="id" title="constructor">Eq</span></a> =&gt; <span class="id" title="keyword">fun</span> <a id="EQ:14" class="idref" href="#EQ:14"><span class="id" title="binder">EQ</span></a> =&gt; <a class="idref" href="bedrock.prelude.compare.html#compare:7"><span class="id" title="variable">compare</span></a> <a class="idref" href="bedrock.prelude.compare.html#t:8"><span class="id" title="variable">t</span></a> (<a class="idref" href="bedrock.prelude.compare.html#d:9"><span class="id" title="variable">d</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Program.Syntax.html#f5cb26d96fc0400fc3c881290947e554"><span class="id" title="notation">()</span></a>) <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#547692780023ef044153bc0c4f871ef7"><span class="id" title="notation">$</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#EqNotations.:::'rew'_x_'in'_x"><span class="id" title="notation">rew</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#EqNotations.:::'rew'_x_'in'_x"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.prelude.numbers.html#Pos.compare_eq"><span class="id" title="definition">Pos.compare_eq</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <a class="idref" href="bedrock.prelude.compare.html#EQ:14"><span class="id" title="variable">EQ</span></a><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#EqNotations.:::'rew'_x_'in'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#EqNotations.:::'rew'_x_'in'_x"><span class="id" title="notation">in</span></a> <a class="idref" href="bedrock.prelude.compare.html#data:5"><span class="id" title="variable">data</span></a> <a class="idref" href="bedrock.prelude.compare.html#a:10"><span class="id" title="variable">a</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Lt"><span class="id" title="constructor">Lt</span></a> =&gt; <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Gt"><span class="id" title="constructor">Gt</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Gt"><span class="id" title="constructor">Gt</span></a> =&gt; <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Lt"><span class="id" title="constructor">Lt</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+  Compare tags (for trivial constructors)
+  
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="compare_tag" class="idref" href="#compare_tag"><span class="id" title="definition">compare_tag</span></a> {<a id="A:15" class="idref" href="#A:15"><span class="id" title="binder">A</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="tag:16" class="idref" href="#tag:16"><span class="id" title="binder">tag</span></a> : <a class="idref" href="bedrock.prelude.compare.html#A:15"><span class="id" title="variable">A</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="t:17" class="idref" href="#t:17"><span class="id" title="binder">t</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="a:18" class="idref" href="#a:18"><span class="id" title="binder">a</span></a> : <a class="idref" href="bedrock.prelude.compare.html#A:15"><span class="id" title="variable">A</span></a>) : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#comparison"><span class="id" title="inductive">comparison</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.PArith.BinPos.html#Pos.compare"><span class="id" title="definition">Pos.compare</span></a> <a class="idref" href="bedrock.prelude.compare.html#t:17"><span class="id" title="variable">t</span></a> (<a class="idref" href="bedrock.prelude.compare.html#tag:16"><span class="id" title="variable">tag</span></a> <a class="idref" href="bedrock.prelude.compare.html#a:18"><span class="id" title="variable">a</span></a>).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.prelude.compare.html#compare"><span class="id" title="section">compare</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <a id="compare_lex" class="idref" href="#compare_lex"><span class="id" title="definition">compare_lex</span></a> (<a id="a:19" class="idref" href="#a:19"><span class="id" title="binder">a</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#comparison"><span class="id" title="inductive">comparison</span></a>) (<a id="b:20" class="idref" href="#b:20"><span class="id" title="binder">b</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#unit"><span class="id" title="inductive">unit</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#comparison"><span class="id" title="inductive">comparison</span></a>) : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#comparison"><span class="id" title="inductive">comparison</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.prelude.compare.html#a:19"><span class="id" title="variable">a</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Eq"><span class="id" title="constructor">Eq</span></a> =&gt; <a class="idref" href="bedrock.prelude.compare.html#b:20"><span class="id" title="variable">b</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Program.Syntax.html#f5cb26d96fc0400fc3c881290947e554"><span class="id" title="notation">()</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Lt"><span class="id" title="constructor">Lt</span></a> | <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#Gt"><span class="id" title="constructor">Gt</span></a> =&gt; <a class="idref" href="bedrock.prelude.compare.html#a:19"><span class="id" title="variable">a</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

@@ -119,6 +119,7 @@ In BRiCk we capture the stack of objects to be destroyed using the type <a class
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inductive t : Set :=
 | id (* = fun x =&gt; x *)
 | delete (ty : decltype) (p : ptr) (* = delete_val ty p *)
+         (* ^^ this type has qualifiers but is otherwise a runtime type *)
 | delete_va (va : list (type * ptr)) (p : ptr)
 | seq (f g : t) (* = fun x =&gt; f $ g x *)
 | par (f g : t) (* = fun x =&gt; Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x) *)
@@ -274,7 +275,7 @@ To capture this, BRiCk <em>defines</em> <code class="code highlight coq docutils
       *)
       (addr |-&gt; primR Tvoid qf Vvoid -* |={top}=&gt;?u Q frees)
 
-    | Tpointer _
+    | Tptr _
     | Tmember_pointer _ _
     | Tbool
     | Tnum _ _
@@ -290,11 +291,11 @@ To capture this, BRiCk <em>defines</em> <code class="code highlight coq docutils
     | Tarray _ _
     | Tnamed _ =&gt; wp_init tu ρ (tqualified cv ty) addr init Q
     | Tincomplete_array _ =&gt; UNSUPPORTED (initializing_type ty init)
-    | Tvariable_array _ =&gt; UNSUPPORTED (initializing_type ty init)
+    | Tvariable_array _ _ =&gt; UNSUPPORTED (initializing_type ty init)
 
     | Tref ty =&gt;
       let rty := Tref $ erase_qualifiers ty in
-      letI* p, free := wp_lval tu ρ init in
+      letI* p, free := wp_glval tu ρ init in (* TODO this needs to permit initialization from xval if [ty] is &lt;&lt;const&gt;&gt; *)
       let qf := cQp.mk (q_const cv) 1 in
       (*
       [primR] is enough because C++ code never uses the raw bytes
@@ -318,11 +319,17 @@ To capture this, BRiCk <em>defines</em> <code class="code highlight coq docutils
       *)
       addr |-&gt; primR rty qf (Vref p) -* |={top}=&gt;?u Q free
 
-    | Tfunction _ _ =&gt; UNSUPPORTED (initializing_type ty init)
+    | Tfunction _ =&gt; UNSUPPORTED (initializing_type ty init)
 
     | Tqualified _ ty =&gt; |={top}=&gt;?u False (* unreachable *)
     | Tarch _ _ =&gt; UNSUPPORTED (initializing_type ty init)
     | Tunsupported _ =&gt; UNSUPPORTED (initializing_type ty init)
+    | Tdecltype _ =&gt;  UNSUPPORTED (initializing_type ty init)
+    | Texprtype _ =&gt;  UNSUPPORTED (initializing_type ty init)
+    | Tparam _ | Tresult_param _ | Tresult_global _
+    | Tresult_unop _ _ | Tresult_binop _ _ _
+    | Tresult_call _ _ | Tresult_member_call _ _ _
+    | Tresult_member _ _ | Tresult_parenlist _ _ =&gt; UNSUPPORTED (initializing_type ty init)
     end%I.
 
 mlock

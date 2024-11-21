@@ -39,7 +39,7 @@
 
 <div class="code">
 <span class="comment">(*<br/>
-&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2021-2023&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2021-2024&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
 &nbsp;*<br/>
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
@@ -60,6 +60,25 @@
 &nbsp;*&nbsp;Original&nbsp;Iris&nbsp;License:<br/>
 &nbsp;*&nbsp;https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/LICENSE-CODE<br/>
 &nbsp;*)</span><br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Composition (compatible with SSR) 
+</div>
+<div class="code">
+<span class="id" title="keyword">Reserved Notation</span> &quot;f \o g" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50, <span class="id" title="var">format</span> "f  \o '/ '  g").<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+CPS 
+</div>
+<div class="code">
+<span class="id" title="keyword">Reserved Notation</span> &quot;'let*' x , .. , z := t 'in' f" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">x</span> <span class="id" title="var">closed</span> <span class="id" title="var">binder</span>, <span class="id" title="var">z</span> <span class="id" title="var">closed</span> <span class="id" title="var">binder</span>).<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'let*' := t 'in' f" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200).<br/>
 
 <br/>
 </div>
@@ -132,26 +151,66 @@ Fancy updates
 </div>
 
 <div class="doc">
-<a id="lab45"></a><h2 class="section">Iris big ops</h2>
+<a id="lab52"></a><h2 class="section">Monads</h2>
 
 <div class="paragraph"> </div>
 
-<a id="lab46"></a><h1 class="section">We stick with the levels and associativity used in Iris' big ops</h1>
+Recall
+<ul class="doclist">
+<li> \/ (right) at 85
 
-<a id="lab47"></a><h1 class="section">notation. Compared to that notation, we:</h1>
+</li>
+<li> &lt;*&gt; (left), &lt;
+
+</li>
+</ul>
+</div>
+<div class="code">
+<span class="id" title="keyword">Reserved Infix</span> &quot;&gt;&gt;=" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;&gt;&gt;=@{ M }" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;&lt;|&gt;" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;&lt;|&gt;@{ F } " (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Variations on <code>&lt;*&gt; </code> used by parsers 
+</div>
+<div class="code">
+<span class="id" title="keyword">Reserved Infix</span> &quot;&lt;*" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;*&gt;" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Compatible&nbsp;with&nbsp;letstar.v&nbsp;*)</span><br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'letM*' x , .. , z := t 'in' f" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">x</span> <span class="id" title="var">closed</span> <span class="id" title="var">binder</span>, <span class="id" title="var">z</span> <span class="id" title="var">closed</span> <span class="id" title="var">binder</span>).<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'letM*' := t 'in' f" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200).<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'funM' x .. y =&gt; t" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">x</span> <span class="id" title="var">binder</span>, <span class="id" title="var">y</span> <span class="id" title="var">binder</span>, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab53"></a><h2 class="section">Iris big ops</h2>
+
+<div class="paragraph"> </div>
+
+<a id="lab54"></a><h1 class="section">We stick with the levels and associativity used in Iris' big ops</h1>
+
+<a id="lab55"></a><h1 class="section">notation. Compared to that notation, we:</h1>
 
  *
-<a id="lab48"></a><h1 class="section">- add an optional break and indentation after binders</h1>
+<a id="lab56"></a><h1 class="section">- add an optional break and indentation after binders</h1>
 
-<a id="lab49"></a><h1 class="section">(significantly improving readability)</h1>
-
- *
-<a id="lab50"></a><h1 class="section">- use <span class="inlinecode">**</span>, <span class="inlinecode">/\</span>, <span class="inlinecode">\/</span>, <span class="inlinecode"></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"></span> instead of <span class="inlinecode">∗</span>, <span class="inlinecode">∧</span>, <span class="inlinecode">∨</span>, <span class="inlinecode">↦</span></h1>
-
-<a id="lab51"></a><h1 class="section">(slightly improving typeability)</h1>
+<a id="lab57"></a><h1 class="section">(significantly improving readability)</h1>
 
  *
-<a id="lab52"></a><h1 class="section">TODO: Upstream the formatting box changes.</h1>
+<a id="lab58"></a><h1 class="section">- use <span class="inlinecode">**</span>, <span class="inlinecode">/\</span>, <span class="inlinecode">\/</span>, <span class="inlinecode"></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"></span> instead of <span class="inlinecode">∗</span>, <span class="inlinecode">∧</span>, <span class="inlinecode">∨</span>, <span class="inlinecode">↦</span></h1>
+
+<a id="lab59"></a><h1 class="section">(slightly improving typeability)</h1>
+
+ *
+<a id="lab60"></a><h1 class="section">TODO: Upstream the formatting box changes.</h1>
 
  
 <div class="paragraph"> </div>
@@ -217,6 +276,22 @@ Big disjunction
 <span class="id" title="keyword">Reserved Notation</span> &quot;'[\/' 'list]' x ∈ l , P"<br/>
 &nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">l</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
 &nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [\/  list]  x  ∈  l ,  '/' P ']'").<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab61"></a><h2 class="section">Comparisons</h2>
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;?=@{ A }" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70, <span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;&lt;@{ A }" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70, <span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;&lt;=@{ A }" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70, <span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;&gt;@{ A }" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70, <span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Reserved Infix</span> &quot;&gt;=@{ A }" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70, <span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>).<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.

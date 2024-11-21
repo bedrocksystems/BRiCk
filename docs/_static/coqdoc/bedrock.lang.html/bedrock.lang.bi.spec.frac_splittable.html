@@ -90,7 +90,7 @@ Overview:
 
 <div class="paragraph"> </div>
 
-<span class="inlinecode"><span class="id" title="var">FracSplittable_N</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#with_AR.R"><span class="id" title="variable">R</span></a></span>, where <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#N"><span class="id" title="abbreviation">N</span></a></span> counts the number of arguments taken
+<span class="inlinecode"><span class="id" title="var">FracSplittable_N</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#with_AR.R"><span class="id" title="variable">R</span></a></span>, where <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.handler.html#lens.N"><span class="id" title="variable">N</span></a></span> counts the number of arguments taken
 by <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#with_AR.R"><span class="id" title="variable">R</span></a></span> after its fraction, is short-hand for:
 
 <div class="paragraph"> </div>
@@ -126,8 +126,8 @@ predicate <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs
 
 <div class="paragraph"> </div>
 
-<span class="inlinecode"><span class="id" title="var">FracValidN</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> observes <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode">≤</span> <span class="inlinecode">1</span> from <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> applied to fraction <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> and
-then <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#N"><span class="id" title="abbreviation">N</span></a></span> arguments.
+<span class="inlinecode"><span class="id" title="var">FracValidN</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> observes <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">≤</span> <span class="inlinecode">1</span> from <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> applied to fraction <span class="inlinecode"><span class="id" title="var">q</span></span> and
+then <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.handler.html#lens.N"><span class="id" title="variable">N</span></a></span> arguments.
 
 </div>
 <div class="code">
@@ -142,8 +142,8 @@ then <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.typ
 </div>
 
 <div class="doc">
-<span class="inlinecode"><span class="id" title="var">Frac2ValidN</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> is a useful corollary of <span class="inlinecode"><span class="id" title="var">FracValidN</span></span>, observing <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode">+</span>
-<span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode">≤</span> <span class="inlinecode">1</span> given <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode"><span class="id" title="var">a1</span></span> <span class="inlinecode">..</span> <span class="inlinecode"><span class="id" title="var">aN</span></span> <span class="inlinecode">**</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode"><span class="id" title="var">b1</span></span> <span class="inlinecode">..</span> <span class="inlinecode"><span class="id" title="var">bN</span></span>.
+<span class="inlinecode"><span class="id" title="var">Frac2ValidN</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> is a useful corollary of <span class="inlinecode"><span class="id" title="var">FracValidN</span></span>, observing <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode">+</span>
+<span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode">≤</span> <span class="inlinecode">1</span> given <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode"><span class="id" title="var">a1</span></span> <span class="inlinecode">..</span> <span class="inlinecode"><span class="id" title="var">aN</span></span> <span class="inlinecode">**</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode"><span class="id" title="var">b1</span></span> <span class="inlinecode">..</span> <span class="inlinecode"><span class="id" title="var">bN</span></span>.
 
 </div>
 <div class="code">

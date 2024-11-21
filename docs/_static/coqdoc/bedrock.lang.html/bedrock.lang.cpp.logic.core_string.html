@@ -53,7 +53,6 @@
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">bedrock.lang.cpp.semantics.values</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.arr.html#"><span class="id" title="library">bedrock.lang.cpp.logic.arr</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#"><span class="id" title="library">bedrock.lang.cpp.logic.heap_pred</span></a>.<br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.bi.spec.html#"><span class="id" title="library">bedrock.lang.cpp.bi.spec</span></a>.<br/>
 
 <br/>
 <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#ChargeNotation"><span class="id" title="module">ChargeNotation</span></a>.<br/>
@@ -66,7 +65,7 @@
 Core C++ string theory: part of the semantics. 
 <div class="paragraph"> </div>
 
- <span class="inlinecode"><span class="id" title="var">strings_bytesR</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.with_ct.ct"><span class="id" title="variable">ct</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode"><span class="id" title="var">chars</span></span> is <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> (const) fractional ownership of
+ <span class="inlinecode"><span class="id" title="var">strings_bytesR</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.with_ct.ct"><span class="id" title="variable">ct</span></a></span> <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">chars</span></span> is <span class="inlinecode"><span class="id" title="var">q</span></span> (const) fractional ownership of
     <span class="inlinecode"><span class="id" title="var">chars</span></span> with a trailing <span class="inlinecode">0</span>.
 <ul class="doclist">
 <li> Unlike <span class="inlinecode"><span class="id" title="var">zstring.t</span></span>, does not assume the contents avoid `0` elements, since that property might not be guaranteed in all character types/encodings.
@@ -80,7 +79,7 @@ Core C++ string theory: part of the semantics.
 <div class="paragraph"> </div>
 
     NOTE that <span class="inlinecode"><span class="id" title="var">chars</span></span> is in units of *characters* using the standard
-          character encoding (see <span class="inlinecode"><span class="id" title="var">syntax</span>/<span class="id" title="var">expr.v</span></span>). This is *not* the
+          character encoding (see <span class="inlinecode"><span class="id" title="library">syntax</span>/<span class="id" title="var">expr.v</span></span>). This is *not* the
           same as bytes, and will not be for multi-byte characters.
   
 </div>
@@ -96,7 +95,7 @@ Core C++ string theory: part of the semantics.
 Arguments&nbsp;char_type.bytesN&nbsp;!_&nbsp;/.&nbsp;*)</span><br/>
 <span class="id" title="keyword">Lemma</span> <a id="N_to_char_Cchar_eq" class="idref" href="#N_to_char_Cchar_eq"><span class="id" title="lemma">N_to_char_Cchar_eq</span></a> (<a id="c:17" class="idref" href="#c:17"><span class="id" title="binder">c</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) :<br/>
 &nbsp;&nbsp;(<a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:17"><span class="id" title="variable">c</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.NArith.BinNat.html#::N_scope:x_'&lt;'_x"><span class="id" title="notation">&lt;</span></a> 2 <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.NArith.BinNat.html#7878de73cb557151570f9fd311801cb8"><span class="id" title="notation">^</span></a> 8)%<span class="id" title="var">N</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
-&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.N_to_char"><span class="id" title="definition">N_to_char</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#char_type.Cchar"><span class="id" title="constructor">char_type.Cchar</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:17"><span class="id" title="variable">c</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.Vchar"><span class="id" title="constructor">Vchar</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:17"><span class="id" title="variable">c</span></a>.<br/>
+&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.N_to_char"><span class="id" title="definition">N_to_char</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.preliminary.html#char_type.Cchar"><span class="id" title="constructor">char_type.Cchar</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:17"><span class="id" title="variable">c</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.Vchar"><span class="id" title="constructor">Vchar</span></a> <a class="idref" href="bedrock.lang.cpp.logic.core_string.html#c:17"><span class="id" title="variable">c</span></a>.<br/>
 <span class="id" title="keyword">Proof</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="tactic">intros</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.N_to_char"><span class="id" title="definition">N_to_char</span></a> /<a class="idref" href="bedrock.lang.cpp.arith.operator.html#trimN"><span class="id" title="definition">operator.trimN</span></a>/=. <span class="id" title="var">f_equiv</span>.<br/>

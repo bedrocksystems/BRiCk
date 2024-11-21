@@ -175,12 +175,6 @@ similarly, <span class="inlinecode"><span class="id" title="abbreviation">ulongR
 
 <div class="doc">
 similarly, <span class="inlinecode"><span class="id" title="var">ulonglongR</span></span> and <span class="inlinecode"><span class="id" title="var">slonglongR</span></span> 
-</div>
-<div class="code">
-<span class="id" title="keyword">Example</span> <a id="e_i8" class="idref" href="#e_i8"><span class="id" title="definition">e_i8</span></a> : <span class="id" title="definition">Rep</span> := <span class="id" title="abbreviation">i8R</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.z"><span class="id" title="variable">z</span></a>. </div>
-
-<div class="doc">
-similarly, <span class="inlinecode"><span class="id" title="var">int16</span></span>, <span class="inlinecode"><span class="id" title="var">int32</span></span>, <span class="inlinecode"><span class="id" title="var">uint64</span></span>. Prefix 'u' for the unsigned variants 
 <div class="paragraph"> </div>
 
  Character types work a little bit differently because they are represented
@@ -207,7 +201,7 @@ Some locations (e.g. the "next" field of linked list) store pointers.
  
 </div>
 <div class="code">
-<span class="id" title="keyword">Variable</span> <a id="with_Sigma.ctype" class="idref" href="#with_Sigma.ctype"><span class="id" title="variable">ctype</span></a>:<span class="id" title="inductive">type</span>.<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.ctype" class="idref" href="#with_Sigma.ctype"><span class="id" title="variable">ctype</span></a>:<span class="id" title="abbreviation">type</span>.<br/>
 <span class="id" title="keyword">Variable</span> <a id="with_Sigma.p" class="idref" href="#with_Sigma.p"><span class="id" title="variable">p</span></a>:<span class="id" title="axiom">ptr</span>.<br/>
 <span class="id" title="keyword">Example</span> <a id="eptr" class="idref" href="#eptr"><span class="id" title="definition">eptr</span></a> : <span class="id" title="definition">Rep</span> := <span class="id" title="notation">ptrR</span><span class="id" title="notation">&lt;</span><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.ctype"><span class="id" title="variable">ctype</span></a><span class="id" title="notation">&gt;</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
 
@@ -218,10 +212,10 @@ Some locations (e.g. the "next" field of linked list) store pointers.
 <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.ctype"><span class="id" title="variable">ctype</span></a></span> is the C++ type of the pointer.
 Click at <span class="inlinecode"><span class="id" title="keyword">type</span></span> to see the current definition of C++ types.
 For example, below, we are saying that the pointer is of type
-signed 64 bit (long * ) 
+<code>long*</code> 
 </div>
 <div class="code">
-<span class="id" title="keyword">Example</span> <a id="eptr2" class="idref" href="#eptr2"><span class="id" title="definition">eptr2</span></a> : <span class="id" title="definition">Rep</span> := <span class="id" title="notation">ptrR</span><span class="id" title="notation">&lt;</span><span class="id" title="abbreviation">Ti64</span><span class="id" title="notation">&gt;</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
+<span class="id" title="keyword">Example</span> <a id="eptr2" class="idref" href="#eptr2"><span class="id" title="definition">eptr2</span></a> : <span class="id" title="definition">Rep</span> := <span class="id" title="notation">ptrR</span><span class="id" title="notation">&lt;</span><span class="id" title="abbreviation">Tlong</span><span class="id" title="notation">&gt;</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
 
 <br/>
 </div>
@@ -234,7 +228,7 @@ unmangled names. More about this in the next chapters.
 
 </div>
 <div class="code">
-<span class="id" title="keyword">Example</span> <a id="eptr3" class="idref" href="#eptr3"><span class="id" title="definition">eptr3</span></a> : <span class="id" title="definition">Rep</span> := <span class="id" title="notation">ptrR</span><span class="id" title="notation">&lt;</span><span class="id" title="constructor">Tnamed</span> "listZ5"<span class="id" title="notation">&gt;</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
+<span class="id" title="keyword">Example</span> <a id="eptr3" class="idref" href="#eptr3"><span class="id" title="definition">eptr3</span></a> : <span class="id" title="definition">Rep</span> := <span class="id" title="notation">ptrR</span><span class="id" title="notation">&lt;</span><span class="id" title="constructor">Tnamed</span> "list"<span class="id" title="notation">&gt;</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
 
 <br/>
 </div>
@@ -329,7 +323,7 @@ defined by a field or an array index and type (size of elements) of array.
 <div class="code">
 
 <br/>
-<span class="id" title="keyword">Variable</span> <a id="with_Sigma.struct_field" class="idref" href="#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <a id="with_Sigma.struct_field2" class="idref" href="#with_Sigma.struct_field2"><span class="id" title="variable">struct_field2</span></a> : <span class="id" title="record">field</span>.<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.struct_field" class="idref" href="#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <a id="with_Sigma.struct_field2" class="idref" href="#with_Sigma.struct_field2"><span class="id" title="variable">struct_field2</span></a> : <span class="id" title="abbreviation">field</span>.<br/>
 
 <br/>
 <span class="id" title="keyword">Example</span> <a id="structRep1" class="idref" href="#structRep1"><span class="id" title="definition">structRep1</span></a> : <span class="id" title="definition">Rep</span> := <span class="id" title="abbreviation">_field</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <span class="id" title="notation">|-&gt;</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a>.<br/>

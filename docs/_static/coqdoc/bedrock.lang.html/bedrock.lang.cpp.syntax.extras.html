@@ -1,0 +1,96 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index for the theory </a>
+      <a href="./toc.html"> Table of contents for the theory </a>
+      <a href="../../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.lang.cpp.syntax.extras</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2024&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.prelude.html#"><span class="id" title="library">bedrock.lang.cpp.syntax.prelude</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.core.html#"><span class="id" title="library">bedrock.lang.cpp.syntax.core</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.compare.html#"><span class="id" title="library">bedrock.lang.cpp.syntax.compare</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <a id="by_tag_comparison" class="idref" href="#by_tag_comparison"><span class="id" title="definition">by_tag_comparison</span></a> {<a id="T:1" class="idref" href="#T:1"><span class="id" title="binder">T</span></a>} (<a id="f:2" class="idref" href="#f:2"><span class="id" title="binder">f</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.extras.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a>)<br/>
+&nbsp;&nbsp;: <span class="id" title="class">Comparison</span> (<span class="id" title="keyword">fun</span> <a id="a:3" class="idref" href="#a:3"><span class="id" title="binder">a</span></a> <a id="b:4" class="idref" href="#b:4"><span class="id" title="binder">b</span></a> =&gt; <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.PArith.BinPos.html#Pos.compare"><span class="id" title="definition">Pos.compare</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.extras.html#f:2"><span class="id" title="variable">f</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.extras.html#a:3"><span class="id" title="variable">a</span></a>) (<a class="idref" href="bedrock.lang.cpp.syntax.extras.html#f:2"><span class="id" title="variable">f</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.extras.html#b:4"><span class="id" title="variable">b</span></a>)).<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">constructor</span>; <span class="id" title="tactic">intros</span> *; <span class="id" title="tactic">apply</span> <span class="id" title="instance">numbers.positive_comparison</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="function_qualifiers_comparison" class="idref" href="#function_qualifiers_comparison"><span class="id" title="instance">function_qualifiers_comparison</span></a> : <span class="id" title="class">Comparison</span> <a class="idref" href="bedrock.lang.cpp.syntax.core.html#function_qualifiers.compare"><span class="id" title="definition">function_qualifiers.compare</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">eapply</span> <a class="idref" href="bedrock.lang.cpp.syntax.extras.html#by_tag_comparison"><span class="id" title="definition">by_tag_comparison</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="function_qualifiers_leibniz_cmp" class="idref" href="#function_qualifiers_leibniz_cmp"><span class="id" title="instance">function_qualifiers_leibniz_cmp</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.compare.html#LeibnizComparison"><span class="id" title="class">LeibnizComparison</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.core.html#function_qualifiers.compare"><span class="id" title="definition">function_qualifiers.compare</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.cpp.syntax.compare.html#by_tag_leibniz"><span class="id" title="definition">by_tag_leibniz</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">compute</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">x</span>, <span class="id" title="var">y</span>; <span class="id" title="tactic">congruence</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="function_quailfiers_eq_dec" class="idref" href="#function_quailfiers_eq_dec"><span class="id" title="instance">function_quailfiers_eq_dec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.core.html#function_qualifiers.t"><span class="id" title="inductive">function_qualifiers.t</span></a> :=<br/>
+&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.compare.html#from_comparison"><span class="id" title="definition">from_comparison</span></a>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="atomic_name__eq_dec" class="idref" href="#atomic_name__eq_dec"><span class="id" title="instance">atomic_name__eq_dec</span></a> {<a id="A:5" class="idref" href="#A:5"><span class="id" title="binder">A</span></a> : <span class="id" title="keyword">Set</span>} `{<a id="EqDecision0:6" class="idref" href="#EqDecision0:6"><span class="id" title="binder">!</span></a><a id="EqDecision0:6" class="idref" href="#EqDecision0:6"><span class="id" title="binder">EqDecision</span></a> <a id="EqDecision0:6" class="idref" href="#EqDecision0:6"><span class="id" title="binder">A</span></a>} : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.core.html#atomic_name_"><span class="id" title="inductive">atomic_name_</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.extras.html#A:5"><span class="id" title="variable">A</span></a>).<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="classname_eq_dec" class="idref" href="#classname_eq_dec"><span class="id" title="instance">classname_eq_dec</span></a> {<a id="lang:7" class="idref" href="#lang:7"><span class="id" title="binder">lang</span></a>} : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.core.html#classname'"><span class="id" title="definition">classname'</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.extras.html#lang:7"><span class="id" title="variable">lang</span></a>).<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">lang</span>; <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

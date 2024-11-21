@@ -60,7 +60,7 @@
 </div>
 
 <div class="doc">
-<a id="lab88"></a><h1 class="section">Splitting and combining const/mutable fractional things</h1>
+<a id="lab81"></a><h1 class="section">Splitting and combining const/mutable fractional things</h1>
 
 <div class="paragraph"> </div>
 
@@ -111,7 +111,7 @@ opaque. (We choose not to touch the opacity of <span class="inlinecode"><a class
 </div>
 
 <div class="doc">
-<a id="lab89"></a><h2 class="section">Operations on const/mutable fractions</h2>
+<a id="lab82"></a><h2 class="section">Operations on const/mutable fractions</h2>
 
 </div>
 <div class="code">
@@ -121,7 +121,7 @@ opaque. (We choose not to touch the opacity of <span class="inlinecode"><a class
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#cQpTC.IsConst"><span class="id" title="record">IsConst</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode"><span class="id" title="var">b</span></span> sets <span class="inlinecode"><span class="id" title="var">b</span></span> <span class="inlinecode">:=</span> <span class="inlinecode"><span class="id" title="var">cQp.is_const</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> with simplifications. 
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#cQpTC.IsConst"><span class="id" title="record">IsConst</span></a></span> <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">b</span></span> sets <span class="inlinecode"><span class="id" title="var">b</span></span> <span class="inlinecode">:=</span> <span class="inlinecode"><span class="id" title="var">cQp.is_const</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> with simplifications. 
 </div>
 <div class="code">
 &nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="cQpTC.IsConst" class="idref" href="#cQpTC.IsConst"><span class="id" title="inductive, record"><span id="cQpTC.IsConst" class="id">IsConst</span></span></a> (<a id="q:1" class="idref" href="#q:1"><span class="id" title="binder">q</span></a> : <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#cQp.t"><span class="id" title="record">cQp.t</span></a>) (<a id="b:2" class="idref" href="#b:2"><span class="id" title="binder">b</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>) : <span class="id" title="keyword">Prop</span> := <a id="cQpTC.is_const" class="idref" href="#cQpTC.is_const"><span class="id" title="constructor, projection"><span id="cQpTC.is_const" class="id">is_const</span></span></a> : <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#cQp.is_const"><span class="id" title="projection">cQp.is_const</span></a> <a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#q:1"><span class="id" title="variable">q</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#b:2"><span class="id" title="variable">b</span></a>.<br/>
@@ -134,7 +134,7 @@ opaque. (We choose not to touch the opacity of <span class="inlinecode"><a class
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#cQpTC.Frac"><span class="id" title="record">Frac</span></a></span> <span class="inlinecode"><span class="id" title="var">cq</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> sets <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode">:=</span> <span class="inlinecode"><span class="id" title="var">cQp.frac</span></span> <span class="inlinecode"><span class="id" title="var">cq</span></span> with simplifications. 
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#cQpTC.Frac"><span class="id" title="record">Frac</span></a></span> <span class="inlinecode"><span class="id" title="var">cq</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> sets <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">:=</span> <span class="inlinecode"><span class="id" title="var">cQp.frac</span></span> <span class="inlinecode"><span class="id" title="var">cq</span></span> with simplifications. 
 </div>
 <div class="code">
 &nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="cQpTC.Frac" class="idref" href="#cQpTC.Frac"><span class="id" title="inductive, record"><span id="cQpTC.Frac" class="id">Frac</span></span></a> (<a id="cq:5" class="idref" href="#cq:5"><span class="id" title="binder">cq</span></a> : <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#cQp.t"><span class="id" title="record">cQp.t</span></a>) (<a id="q:6" class="idref" href="#q:6"><span class="id" title="binder">q</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a>) : <span class="id" title="keyword">Prop</span> := <a id="cQpTC.frac" class="idref" href="#cQpTC.frac"><span class="id" title="constructor, projection"><span id="cQpTC.frac" class="id">frac</span></span></a> : <a class="idref" href="bedrock.lang.cpp.algebra.cfrac.html#cQp.frac"><span class="id" title="projection">cQp.frac</span></a> <a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#cq:5"><span class="id" title="variable">cq</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#q:6"><span class="id" title="variable">q</span></a>.<br/>
@@ -217,11 +217,11 @@ opaque. (We choose not to touch the opacity of <span class="inlinecode"><a class
 </div>
 
 <div class="doc">
-<a id="lab90"></a><h2 class="section">Splitting const/mutable fractions</h2>
+<a id="lab83"></a><h2 class="section">Splitting const/mutable fractions</h2>
 
 <div class="paragraph"> </div>
 
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#SplitCFrac"><span class="id" title="record">SplitCFrac</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode"><span class="id" title="var">q2</span></span> splits <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cQp.t</span></span> into <span class="inlinecode"><span class="id" title="var">q1</span></span>, <span class="inlinecode"><span class="id" title="var">q2</span></span> s.t. <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode">+</span>
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#SplitCFrac"><span class="id" title="record">SplitCFrac</span></a></span> <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode"><span class="id" title="var">q2</span></span> splits <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cQp.t</span></span> into <span class="inlinecode"><span class="id" title="var">q1</span></span>, <span class="inlinecode"><span class="id" title="var">q2</span></span> s.t. <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode">+</span>
 <span class="inlinecode"><span class="id" title="var">q2</span></span>, adjusting the outputs <span class="inlinecode"><span class="id" title="var">q1</span></span>, <span class="inlinecode"><span class="id" title="var">q2</span></span> for readabilty.
 
 </div>
@@ -268,7 +268,7 @@ Splitting on <span class="inlinecode"><span class="id" title="var">cQp.add</span
 </div>
 
 <div class="doc">
-Splitting on <span class="inlinecode"><span class="id" title="var">cQp.scale</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> preserves the factor <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> 
+Splitting on <span class="inlinecode"><span class="id" title="var">cQp.scale</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> preserves the factor <span class="inlinecode"><span class="id" title="var">q</span></span> 
 </div>
 <div class="code">
 
@@ -311,12 +311,12 @@ Default: Split componentwise
 </div>
 
 <div class="doc">
-<a id="lab91"></a><h2 class="section">Combining const/mutable fractions</h2>
+<a id="lab84"></a><h2 class="section">Combining const/mutable fractions</h2>
 
 <div class="paragraph"> </div>
 
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#CombineCFrac"><span class="id" title="record">CombineCFrac</span></a></span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> combine <span class="inlinecode"><span class="id" title="var">q1</span>,</span> <span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cQp.t</span></span> into <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">q2</span></span>,
-adjusting the output <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> for readability.
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#CombineCFrac"><span class="id" title="record">CombineCFrac</span></a></span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> combine <span class="inlinecode"><span class="id" title="var">q1</span>,</span> <span class="inlinecode"><span class="id" title="var">q2</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">cQp.t</span></span> into <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">q1</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">q2</span></span>,
+adjusting the output <span class="inlinecode"><span class="id" title="var">q</span></span> for readability.
 
 </div>
 <div class="code">
@@ -332,8 +332,8 @@ adjusting the output <span class="inlinecode"><a class="idref" href="bedrock.lan
 </div>
 
 <div class="doc">
-  <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#combine_cfrac.Fold"><span class="id" title="record">Fold</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.prim.html#with_cpp.TEST.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> folds occurrences of <span class="inlinecode"><span class="id" title="var">cQp.add</span></span> and eliminates occurrences
-  of eta-expanded <span class="inlinecode"><span class="id" title="var">cQp.mk</span></span> in <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.prim.html#with_cpp.TEST.p"><span class="id" title="variable">p</span></a></span> to produce <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span>.
+  <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.split_cfrac.html#combine_cfrac.Fold"><span class="id" title="record">Fold</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.prim.html#with_cpp.TEST.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode"><span class="id" title="var">q</span></span> folds occurrences of <span class="inlinecode"><span class="id" title="var">cQp.add</span></span> and eliminates occurrences
+  of eta-expanded <span class="inlinecode"><span class="id" title="var">cQp.mk</span></span> in <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.prim.html#with_cpp.TEST.p"><span class="id" title="variable">p</span></a></span> to produce <span class="inlinecode"><span class="id" title="var">q</span></span>.
   
 </div>
 <div class="code">
@@ -352,7 +352,7 @@ adjusting the output <span class="inlinecode"><a class="idref" href="bedrock.lan
 </div>
 
 <div class="doc">
-Account for <span class="inlinecode"><span class="id" title="var">Qp.Add</span></span>'s <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode">+</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> <span class="inlinecode">--&gt;</span> <span class="inlinecode">2<a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.q"><span class="id" title="variable">q</span></a></span> 
+Account for <span class="inlinecode"><span class="id" title="var">Qp.Add</span></span>'s <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">--&gt;</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> 
 </div>
 <div class="code">
 &nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="combine_cfrac.fold_add_diag" class="idref" href="#combine_cfrac.fold_add_diag"><span class="id" title="instance">fold_add_diag</span></a> <a id="q:70" class="idref" href="#q:70"><span class="id" title="binder">q</span></a> :<br/>

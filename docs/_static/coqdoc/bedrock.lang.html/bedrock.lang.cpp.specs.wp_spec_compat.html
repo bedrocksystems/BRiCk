@@ -93,7 +93,7 @@ The canonical type of function specifications.
       Universes:
       The universe constraints here are very important note that the universe
       of the entire type is <span class="inlinecode"><span class="id" title="var">bi.u0</span></span> which is the universe of the logic. Since
-      the logic is able to quantify over itself, e.g. <span class="inlinecode"><span class="id" title="keyword">forall</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers_utils.html#merge_elems.merge_elem.X"><span class="id" title="variable">X</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.proofmode.proofmode.html#class_instances_intuitionistically_if.PROP"><span class="id" title="variable">PROP</span></a>,</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#as_ref'.x"><span class="id" title="variable">x</span></a></span>, we are
+      the logic is able to quantify over itself, e.g. <span class="inlinecode"><span class="id" title="keyword">forall</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers_utils.html#merge_elems.merge_elem.X"><span class="id" title="variable">X</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.proofmode.proofmode.html#class_instances_intuitionistically_if.PROP"><span class="id" title="variable">PROP</span></a>,</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#with_lang.as_ref'.x"><span class="id" title="variable">x</span></a></span>, we are
       free to quantify over specifications without any universe issues. Deeper
       embeddings of this type do not enjoy this property and can introduce
       universe subtle universe issues that can be very difficult to debug.
@@ -252,7 +252,7 @@ The meaning of a <span class="inlinecode"><a class="idref" href="bedrock.lang.cp
 
 <br/>
 <span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#with_prop"><span class="id" title="section">with_prop</span></a>.<br/>
-#[<span class="id" title="var">global</span>,<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-02-28",<span class="id" title="var">note</span>="use [wp_specD_frame]")]<br/>
+#[<span class="id" title="var">global</span>,<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-02-28",<span class="id" title="var">note</span>="use [wp_specD_frame].")]<br/>
 <span class="id" title="keyword">Notation</span> <a id="wpp_frame" class="idref" href="#wpp_frame"><span class="id" title="abbreviation">wpp_frame</span></a> := (<a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#wp_specD_frame"><span class="id" title="lemma">wp_specD_frame</span></a>) (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
 
 <br/>
@@ -291,7 +291,7 @@ Relations between WPPs.
 &nbsp;&nbsp;</div>
 
 <div class="doc">
-We use a single <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#fractional.K"><span class="id" title="variable">K</span></a></span> rather than pointwise equal <span class="inlinecode"><span class="id" title="var">K1</span></span>, <span class="inlinecode"><span class="id" title="var">K2</span></span> for
+We use a single <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.mparser.tu.html#K"><span class="id" title="abbreviation">K</span></a></span> rather than pointwise equal <span class="inlinecode"><span class="id" title="var">K1</span></span>, <span class="inlinecode"><span class="id" title="var">K2</span></span> for
       compatibility with <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cptr.html#fs_entails"><span class="id" title="definition">fs_entails</span></a></span>, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cptr.html#fs_impl"><span class="id" title="definition">fs_impl</span></a></span>. 
 </div>
 <div class="code">
@@ -312,7 +312,7 @@ We use a single <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp
 &nbsp;&nbsp;</div>
 
 <div class="doc">
-We use a single <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#fractional.K"><span class="id" title="variable">K</span></a></span> rather than pointwise equal <span class="inlinecode"><span class="id" title="var">K1</span></span>, <span class="inlinecode"><span class="id" title="var">K2</span></span> for
+We use a single <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.mparser.tu.html#K"><span class="id" title="abbreviation">K</span></a></span> rather than pointwise equal <span class="inlinecode"><span class="id" title="var">K1</span></span>, <span class="inlinecode"><span class="id" title="var">K2</span></span> for
       compatibility with <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cptr.html#fs_entails_fupd"><span class="id" title="definition">fs_entails_fupd</span></a></span>, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.cptr.html#fs_impl_fupd"><span class="id" title="definition">fs_impl_fupd</span></a></span>. 
 </div>
 <div class="code">
@@ -427,7 +427,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_with"><span class="id" title="definition">add_with</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#list_arg.list_local.T"><span class="id" title="variable">T</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#list_arg.list_local.T"><span class="id" title="variable">T</span></a></span> as logical variable to <span class="inlinecode"><span class="id" title="var">wpp</span></span> 
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_with"><span class="id" title="definition">add_with</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.handler.html#lens.T"><span class="id" title="variable">T</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.handler.html#lens.T"><span class="id" title="variable">T</span></a></span> as logical variable to <span class="inlinecode"><span class="id" title="var">wpp</span></span> 
 </div>
 <div class="code">
 &nbsp;&nbsp;#[<span class="id" title="var">program</span>] <span class="id" title="keyword">Definition</span> <a id="add_with" class="idref" href="#add_with"><span class="id" title="definition">add_with</span></a> {<a id="T:197" class="idref" href="#T:197"><span class="id" title="binder">T</span></a> : <span class="id" title="var">Type@</span>{<span class="id" title="var">universes.Quant</span>}} (<a id="wpp:198" class="idref" href="#wpp:198"><span class="id" title="binder">wpp</span></a> : <a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#T:197"><span class="id" title="variable">T</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#WPP"><span class="id" title="abbreviation">WPP</span></a>) (<a id="name:199" class="idref" href="#name:199"><span class="id" title="binder">name</span></a> : <span class="id" title="inductive">BS.t</span>) : <a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#WPP"><span class="id" title="abbreviation">WPP</span></a> :=<br/>
@@ -459,7 +459,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_pre"><span class="id" title="definition">add_pre</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> as a pre-condition to <span class="inlinecode"><span class="id" title="var">wpp</span></span> 
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_pre"><span class="id" title="definition">add_pre</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> as a pre-condition to <span class="inlinecode"><span class="id" title="var">wpp</span></span> 
 </div>
 <div class="code">
 &nbsp;&nbsp;#[<span class="id" title="var">program</span>] <span class="id" title="keyword">Definition</span> <a id="add_pre" class="idref" href="#add_pre"><span class="id" title="definition">add_pre</span></a> (<a id="P:206" class="idref" href="#P:206"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#with_AR.PROP"><span class="id" title="variable">PROP</span></a>) (<a id="wpp:207" class="idref" href="#wpp:207"><span class="id" title="binder">wpp</span></a> : <a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#WPP"><span class="id" title="abbreviation">WPP</span></a>) : <a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#WPP"><span class="id" title="abbreviation">WPP</span></a> :=<br/>
@@ -483,7 +483,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_post_with"><span class="id" title="definition">add_post_with</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">result</span></span> as a post-condition to <span class="inlinecode"><span class="id" title="var">wpp</span></span>
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_post_with"><span class="id" title="definition">add_post_with</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">result</span></span> as a post-condition to <span class="inlinecode"><span class="id" title="var">wpp</span></span>
 
 <div class="paragraph"> </div>
 
@@ -513,7 +513,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_post"><span class="id" title="definition">add_post</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.proofmode.proofmode.html#class_instances_intuitionistically_if.PROP"><span class="id" title="variable">PROP</span></a></span> as a post-condition to <span class="inlinecode"><span class="id" title="var">wpp</span></span>
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#add_post"><span class="id" title="definition">add_post</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode"><span class="id" title="var">wpp</span></span> adds <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.bi.cfractional.html#valid_5.P"><span class="id" title="variable">P</span></a></span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.proofmode.proofmode.html#class_instances_intuitionistically_if.PROP"><span class="id" title="variable">PROP</span></a></span> as a post-condition to <span class="inlinecode"><span class="id" title="var">wpp</span></span>
    
 </div>
 <div class="code">
@@ -761,7 +761,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#wp_spec_bind"><span class="id" title="definition">wp_spec_bind</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.with_cpp.wp"><span class="id" title="section">wp</span></a></span> <span class="inlinecode"><span class="id" title="var">a</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#fractional.K"><span class="id" title="variable">K</span></a></span> effectively forwards to the specification of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.with_cpp.wp"><span class="id" title="section">wp</span></a></span>
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#wp_spec_bind"><span class="id" title="definition">wp_spec_bind</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.with_cpp.wp"><span class="id" title="section">wp</span></a></span> <span class="inlinecode"><span class="id" title="var">a</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.mparser.tu.html#K"><span class="id" title="abbreviation">K</span></a></span> effectively forwards to the specification of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.with_cpp.wp"><span class="id" title="section">wp</span></a></span>
       evaluated with the arguments <span class="inlinecode"><span class="id" title="var">a</span></span> and binds the result of the call passing
       it to <span class="inlinecode"><span class="id" title="var">cont</span></span>.
 
@@ -776,8 +776,8 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 <div class="paragraph"> </div>
 
       <br/>
-<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<span class="id" title="var">pre</span>{<a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#fractional.K"><span class="id" title="variable">K</span></a>} <a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.with_cpp.wp"><span class="id" title="section">wp</span></a> <span class="id" title="var">a</span> <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#fractional.K"><span class="id" title="variable">K</span></a><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<span class="id" title="var">post</span>{<span class="id" title="var">res'</span> ..}[...] <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#fractional.K"><span class="id" title="variable">K</span></a> <span class="id" title="var">res'</span> ** ...<br/>
+<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<span class="id" title="var">pre</span>{<a class="idref" href="bedrock.lang.cpp.mparser.tu.html#K"><span class="id" title="abbreviation">K</span></a>} <a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.with_cpp.wp"><span class="id" title="section">wp</span></a> <span class="id" title="var">a</span> <a class="idref" href="bedrock.lang.cpp.mparser.tu.html#K"><span class="id" title="abbreviation">K</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<span class="id" title="var">post</span>{<span class="id" title="var">res'</span> ..}[...] <a class="idref" href="bedrock.lang.cpp.mparser.tu.html#K"><span class="id" title="abbreviation">K</span></a> <span class="id" title="var">res'</span> ** ...<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <div class="paragraph"> </div>
 
