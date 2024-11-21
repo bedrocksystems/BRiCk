@@ -14,10 +14,6 @@ namespace list {
   pred app! i:list A, i:A -> prop.
   pred app2! i:list A, i:list B, i:A -> B -> prop.
 
-  :index (1 1 1)
-  pred map3 i:list A, i:list B, i:list C, i:(A -> B -> C -> D -> prop), o:list D.	% May panic
-  type map3.aux prop.
-
   pred uniq i:list A, o:list A.	% The input should be ground
 
   pred partition i:list A, i:(A -> prop), o:list A, o:list A.
@@ -34,16 +30,6 @@ namespace list {
   app! L F :- std.map L (x\ _\ F x, !) _.
 
   app2! L1 L2 F :- std.map2 L1 L2 (x\ y\ _\ F x y, !) _.
-
-  map3 [_|_] [] _ _ _ :- map3.aux.
-  map3 [_|_] _ [] _ _ :- map3.aux.
-  map3 [] [_|_] _ _ _ :- map3.aux.
-  map3 _ [_|_] [] _ _ :- map3.aux.
-  map3 [] _ [_|_] _ _ :- map3.aux.
-  map3 _ [] [_|_] _ _ :- map3.aux.
-  map3 [] [] [] _ [].
-  map3 [A|AS] [B|BS] [C|CS] F [D|DS] :- F A B C D, map3 AS BS CS F DS.
-  map3.aux :- coq.error "list.map3 lengths don't agree".
 
   /*
   The list-based variant using <<std.mem!>> might be faster on small
