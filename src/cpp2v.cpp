@@ -126,9 +126,6 @@ public:
 		llvm::errs() << i << "\n";
 	}
 #endif
-#ifdef CHECK_TYPES
-		CheckTypes = true;
-#endif /* CHECK_TYPES */
 		auto result =
 			new ToCoqConsumer(&Compiler, to_opt(VFileOutput), to_opt(NamesFile),
 							  to_opt(Templates), to_opt(NameTest), !MangledKeys,
