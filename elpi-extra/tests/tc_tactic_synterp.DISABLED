@@ -7,7 +7,7 @@
 Require Import bedrock.elpi.extra.extra.
 
 Elpi Tactic test.
-#[synterp] Elpi Accumulate Db extra.Tactic.
+#[synterp] Elpi Accumulate File extra.Tactic.
 (*
 Error:
 Anomaly

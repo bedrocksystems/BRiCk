@@ -4,7 +4,7 @@ Synopsis:
 ```coq
 Require Import bedrock.elpi.extra.extra.
 (* ... *)
-Elpi Accumulate Db extra.{Program,Tactic,Command}.
+Elpi Accumulate File extra.{Program,Tactic,Command}.
 ```
 The three databases account for the _nature_ of the Elpi program being accumulated.
 Only commands, for example, can parse attributes, and that's reflected in the types, terms, and predicates available from the Elpi command template and database `extra.Command`.
@@ -48,7 +48,7 @@ Example:
 Require Import bedrock.elpi.extra.extra.
 
 Elpi Command example.
-Elpi Accumulate Db extra.Command.
+Elpi Accumulate File extra.Command.
 ```
 
 

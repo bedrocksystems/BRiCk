@@ -23,7 +23,7 @@ Require Import bedrock.elpi.extra.NES.
 
 Elpi Command MyCommand.
 #[phase="both"] Elpi Accumulate Db NES.db.
-#[phase="both"] Elpi Accumulate Db bedrock.elpi.extra.NES.db.
+#[phase="both"] Elpi Accumulate File bedrock.elpi.extra.NES.code.
 Elpi Accumulate lp:{{ ⋯ }}.
 Elpi Export MyCommand.
 >>
@@ -33,11 +33,11 @@ From elpi.apps.NES.elpi Extra Dependency "nes_synterp.elpi" as nes_synterp.
 From elpi.apps.NES.elpi Extra Dependency "nes_interp.elpi" as nes_interp.
 
 #[synterp]
-Elpi Db bedrock.elpi.extra.NES.db lp:{{
+Elpi File bedrock.elpi.extra.NES.code lp:{{
   accumulate "coq://elpi.apps.NES.elpi/nes_synterp".
 }}.
 
 #[interp]
-Elpi Db bedrock.elpi.extra.NES.db lp:{{
+Elpi File bedrock.elpi.extra.NES.code lp:{{
   accumulate "coq://elpi.apps.NES.elpi/nes_interp".
 }}.

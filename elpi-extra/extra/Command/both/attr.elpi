@@ -71,7 +71,7 @@ carrying an arbitrary string.
 <<
   Require Import bedrock.elpi.extra.extra.
   Elpi Command TestAttr.
-  Elpi Accumulate Db extra.Command.
+  Elpi Accumulate File extra.Command.
   Elpi Accumulate lp:{{
 
     % Some defaults

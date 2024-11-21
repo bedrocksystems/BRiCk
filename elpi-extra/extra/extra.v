@@ -66,11 +66,11 @@ From bedrock.elpi.extra.Command Extra Dependency "synterp.elpi" as command_synte
 From bedrock.elpi.extra.Command Extra Dependency "interp.elpi" as command_interp.
 
 #[synterp]
-Elpi Db extra.Program lp:{{
+Elpi File extra.Program lp:{{
   accumulate "coq://bedrock.elpi.extra/Program/synterp".	% Program/synterp.elpi.in
 }}.
 #[interp]
-Elpi Db extra.Program lp:{{
+Elpi File extra.Program lp:{{
   accumulate "coq://bedrock.elpi.extra/Program/interp".	% Program/interp.elpi.in
 }}.
 
@@ -81,19 +81,19 @@ WARNING: Accumulating <<extra.Tactic>> in the synterp phase fails. See
 TODO: Narrow down and report.
 *)
 #[synterp]
-Elpi Db extra.Tactic lp:{{
+Elpi File extra.Tactic lp:{{
   accumulate "coq://bedrock.elpi.extra/Tactic/synterp".	% Tactic/synterp.elpi.in
 }}.
 #[interp]
-Elpi Db extra.Tactic lp:{{
+Elpi File extra.Tactic lp:{{
   accumulate "coq://bedrock.elpi.extra/Tactic/interp".	% Tactic/interp.elpi.in
 }}.
 
 #[synterp]
-Elpi Db extra.Command lp:{{
+Elpi File extra.Command lp:{{
   accumulate "coq://bedrock.elpi.extra/Command/synterp".	% Command/synterp.elpi.in
 }}.
 #[interp]
-Elpi Db extra.Command lp:{{
+Elpi File extra.Command lp:{{
   accumulate "coq://bedrock.elpi.extra/Command/interp".	% Command/interp.elpi.in
 }}.

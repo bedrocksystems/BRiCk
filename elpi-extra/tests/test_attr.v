@@ -9,7 +9,7 @@ Require Import bedrock.elpi.extra.extra.
 (** Test Elpi attribute parsing *)
 
 Elpi Command TestAttr.
-Elpi Accumulate Db extra.Command.
+Elpi Accumulate File extra.Command.
 
 Fail Elpi Query lp:{{ attr.get-error E }}.	(** Not running *)
 Fail Elpi Query lp:{{ attr.get-value V }}.	(** Not running *)
