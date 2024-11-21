@@ -9,7 +9,7 @@ Require Import bedrock.lang.proofmode.proofmode.	(** Early to get the right [ide
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.logic.entailsN.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.rep_proofmode.
 
@@ -43,10 +43,9 @@ implement the part of http://eel.is/c++draft/class.cdtor#3 about
 members. This enables their dereference via [wp_lval_deref].
 *)
 mlock Definition svalid_members `{Σ : cpp_logic, σ : genv}
-    (cls : globname) (members : list (bs * type)) : Rep :=
+    (cls : globname) (members : list (field_name.t lang.cpp * type)) : Rep :=
   reference_toR (Tnamed cls) **
-  [** list] m ∈ members,
-  _field {| f_type := cls ; f_name := m.1 |} |-> reference_toR m.2.
+  [** list] m ∈ members, _field (Field cls m.1) |-> reference_toR m.2.
 #[global] Arguments svalid_members {_ _ _ _} _ _ : assert.
 
 Section svalid_members.
@@ -71,7 +70,7 @@ Definition derivationsR' `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (q
   match f with
   | 0 => ERROR "derivationsR: no fuel"
   | S f =>
-    match tu !! cls with
+    match tu.(types) !! cls with
     | Some (Gstruct st) =>
       (if include_base && has_vtable st then derivationR cls path q else emp) **
       [** list] b ∈ st.(s_bases),
@@ -110,7 +109,7 @@ Definition derivationsR `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
   The number of global entries is an upper bound on the height of the
   derivation tree.
   *)
-  let size := avl.IM.cardinal σ.(genv_tu).(types) in
+  let size := NM.cardinal σ.(genv_tu).(types) in
   derivationsR' tu q size include_base cls path.
 
 Section derivationsR.
@@ -124,7 +123,7 @@ Section derivationsR.
     intros Hsub%types_compat.
     move: include_base cls path. induction f; intros; cbn; first done.
     case_match eqn:Hcls; last by rewrite {1}ERROR_elim; apply bi.False_elim.
-    specialize (Hsub _ _ Hcls). rewrite /lookup/global_lookup. destruct Hsub as (gv' & -> & Hsub).
+    specialize (Hsub _ _ Hcls). destruct Hsub as (gv' & Heq & Hsub); rewrite Heq; clear Heq.
     case_match; try by rewrite {1}ERROR_elim; apply bi.False_elim.
     destruct gv'; try done. cbn in Hsub. case_bool_decide; [simplify_eq|done].
     f_equiv. f_equiv=>_ b. f_equiv. apply IHf.
@@ -142,12 +141,12 @@ Section derivationsR.
      This is the pure part of [derivationsR] *)
   Inductive supports_with_fuel (tu : translation_unit) (cls : globname) : nat -> Prop :=
   | supports_S {f st}
-      (_ : tu !! cls = Some (Gstruct st))
+      (_ : tu.(types) !! cls = Some (Gstruct st))
       (_ : List.Forall (fun b => supports_with_fuel tu b.1 f) st.(s_bases))
     : supports_with_fuel tu cls (S f).
 
   Lemma supports_big_op (PROP : bi) tu cls st f :
-    (tu !! cls = Some (Gstruct st)) ->
+    (tu.(types) !! cls = Some (Gstruct st)) ->
     ([∗list] b ∈ st.(s_bases) , [| supports_with_fuel tu b.1 f |]) |-@{PROP} [| supports_with_fuel tu cls (S f) |].
   Proof.
     intros.
@@ -189,7 +188,7 @@ Section derivationsR.
   Lemma derivationsR_ok tu tu' (sub : sub_module tu tu') :
     forall mdc (p : ptr) cls include_base q,
         p |-> derivationsR tu include_base cls mdc q
-    |-- p |-> derivationsR tu' include_base cls mdc q ** [| supports_with_fuel tu cls (avl.IM.cardinal (types $ genv_tu σ)) |].
+    |-- p |-> derivationsR tu' include_base cls mdc q ** [| supports_with_fuel tu cls (NM.cardinal (types $ genv_tu σ)) |].
   Proof. intros; by apply derivationsR'_ok; eauto. Qed.
 
   Lemma derivationsR'_ok_supports tu tu' (sub : sub_module tu tu') :
@@ -212,7 +211,7 @@ Section derivationsR.
   Qed.
 
   Lemma derivationsR_ok_supports tu tu' (sub : sub_module tu tu') :
-    forall cls, supports_with_fuel tu cls (avl.IM.cardinal (types (genv_tu σ))) ->
+    forall cls, supports_with_fuel tu cls (NM.cardinal (types (genv_tu σ))) ->
              forall mdc (p : ptr) include_base q,
         p |-> derivationsR tu include_base cls mdc q
     -|- p |-> derivationsR tu' include_base cls mdc q.
@@ -225,7 +224,8 @@ Section derivationsR.
 End derivationsR.
 
 (* conveniences for the common pattern *)
-Notation init_derivationR cls path q := (derivationR cls%bs (path%bs ++ [cls%bs]) q).
+Notation init_derivationR cls path q :=
+  (derivationR cls%_cpp_name (path%_cpp_name ++ [cls%_cpp_name]) q).
 
 (**
 [wp_init_identity this tu cls Q] updates the identities of [this] by
@@ -419,7 +419,7 @@ place to support `XX_shift` lemmas. This could be fixed.
       |> wp tu ρ body (Kcleanup tu cleanup $ Kreturn $ fun x => |={top}=>?u |> Q x)
     | Builtin builtin =>
       let ts := List.map snd f.(f_params) in
-      wp_builtin_func builtin (@Tfunction f.(f_cc) f.(f_arity) f.(f_return) ts) args Q
+      wp_builtin_func builtin (Tfunction $ @FunctionType _ f.(f_cc) f.(f_arity) f.(f_return) ts) args Q
     end
   end.
 mlock Definition wp_func `{Σ : cpp_logic, σ : genv} :=
@@ -567,7 +567,7 @@ Definition wpi_members `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ 
       *)
       let* frees :=
         default_initialize tu m.(mem_type)
-          (this ,, _field {| f_type := cls ; f_name := m.(mem_name) |})
+          (this ,, _field (Field cls m.(mem_name)))
       in
       let* := interp tu frees in
       wpi_members members Q
@@ -577,10 +577,10 @@ Definition wpi_members `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ 
         match is' with
         | nil =>
           (* there is a *unique* initializer for this field *)
-          wpi tu ρ cls this i (wpi_members members Q)
+          wpi tu ρ cls this m.(mem_type) i (wpi_members members Q)
         | _ =>
           (* there are multiple initializers for this field *)
-          ERROR ("multiple initializers for field: " ++ cls ++ "::" ++ m.(mem_name))
+          ERROR ("multiple initializers for field", (cls, m))
         end
       | InitIndirect _ _ =>
         (*
@@ -589,7 +589,7 @@ Definition wpi_members `{Σ : cpp_logic, σ : genv} (tu : translation_unit) (ρ 
 
         TODO currently not supported
         *)
-        UNSUPPORTED ("indirect initialization: " ++ cls ++ "::" ++ m.(mem_name))
+        UNSUPPORTED ("indirect initialization", (cls, m))
       | _ => False%I (* unreachable due to the filter *)
       end
     end
@@ -625,18 +625,18 @@ Definition wpi_bases `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
   match bases with
   | nil => Q
   | b :: bases =>
-    match List.filter (fun i => bool_decide (i.(init_path) = InitBase b)) inits with
+    match List.filter (fun i => bool_decide (i.(init_path) = InitBase (lang:=lang.cpp) b)) inits with
     | nil =>
       (*
       There is no initializer for this base class.
       *)
-      ERROR ("wpi_bases: missing base class initializer: " ++ cls)
+      ERROR ("wpi_bases: missing base class initializer: ", cls)
     | i :: nil =>
       (* there is an initializer for this class *)
-      wpi tu ρ cls this i (wpi_bases bases Q)
+      wpi tu ρ cls this (Tnamed b) i (wpi_bases bases Q)
     | _ :: _ :: _ =>
       (* there are multiple initializers for this, so we fail *)
-      ERROR ("wpi_bases: multiple initializers for base: " ++ cls ++ "::" ++ b)
+      ERROR ("wpi_bases: multiple initializers for base: ", cls, b)
     end
   end.
 
@@ -661,15 +661,11 @@ Definition wp_struct_initializer_list `{Σ : cpp_logic, σ : genv} (tu : transla
     (s : Struct) (ρ : region) (cls : globname) (this : ptr)
     (inits : list Initializer) (Q : epred) : mpred :=
   match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
-  | Some {| init_type := ty ; init_init := e |} =>
+  | Some {| init_init := e |} =>
     match inits with
     | _ :: nil =>
-      if bool_decide (ty = Tnamed cls) then
         (* this is a delegating constructor, simply delegate. *)
         wp_init tu ρ (Tnamed cls) this e (fun frees => interp tu frees Q)
-      else
-        (* the type names do not match, this should never happen *)
-        ERROR "wp_struct_initializer_list: type name mismatch"
     | _ =>
       (*
       delegating constructors are not allowed to have any other
@@ -724,10 +720,10 @@ Definition wp_union_initializer_list `{Σ : cpp_logic, σ : genv} (tu : translat
     (inits : list Initializer) (Q : epred) : mpred :=
   match inits with
   | [] => Q
-  | [{| init_path := InitField f ; init_type := te ; init_init := e |} as init] =>
+  | [{| init_path := InitField f ; init_init := e |} as init] =>
     match list_find (fun m => f = m.(mem_name)) u.(u_fields) with
     | None => ERROR "wp_union_initializer_list: field not found"
-    | Some (n, m) => wpi tu ρ cls this init $ this |-> unionR cls (cQp.m 1) (Some n) -* Q
+    | Some (n, m) => wpi tu ρ cls this m.(mem_type) init $ this |-> unionR cls (cQp.m 1) (Some n) -* Q
     end
   | _ =>
     UNSUPPORTED "wp_union_initializer_list: indirect (or self) union initialization is not currently supported"
@@ -821,7 +817,7 @@ that implies [type_ptr].
     match args with
     | thisp :: rest_vals =>
       let ty := Tnamed ctor.(c_class) in
-      match tu !! ctor.(c_class) with
+      match tu.(types) !! ctor.(c_class) with
       | Some (Gstruct cls) =>
         (*
         this is a structure.
@@ -856,7 +852,7 @@ that implies [type_ptr].
         letI* := Kreturn_void in
         |={top}=>?u |> Forall p : ptr, p |-> primR Tvoid (cQp.mut 1) Vvoid -* Q p
 
-      | _ => ERROR ("wp_ctor: constructor for non-aggregate (" ++ ctor.(c_class) ++ ")")
+      | _ => ERROR ("wp_ctor: constructor for non-aggregate", ctor.(c_class))
       end
     | _ => ERROR "wp_ctor: constructor without leading [this] argument"
     end
@@ -943,7 +939,7 @@ End with_cpp.
 
 Definition wpd_members `{Σ : cpp_logic, σ : genv} (tu : translation_unit)
     (cls : globname) (this : ptr) (members : list Member) (Q : epred) : mpred :=
-  let del_member m := FreeTemps.delete m.(mem_type) (this ,, _field {| f_name := m.(mem_name) ; f_type := cls |}) in
+  let del_member m := FreeTemps.delete m.(mem_type) (this ,, _field (Field cls m.(mem_name))) in
   interp tu (FreeTemps.seqs_rev (List.map del_member members)) Q.
 
 Section with_cpp.
@@ -988,7 +984,7 @@ this resource will be consumed immediately.
         in
         Kreturn_void epilog
       in
-      match tu !! dtor.(d_class) with
+      match tu.(types) !! dtor.(d_class) with
       | Some (Gstruct s) =>
         letI* := wp_body in
         thisp |-> structR dtor.(d_class) (cQp.mut 1) **

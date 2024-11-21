@@ -1,11 +1,12 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2021
+ * Copyright (C) BedRock Systems Inc. 2021-2024
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
 Require Import stdpp.base.
+Require Import bedrock.prelude.reserved_notation.
 
 (** * Syntax for straight-line CPS function calls
 
@@ -30,6 +31,5 @@ Require Import stdpp.base.
    [let* (a : unit), '(existT _ _ _), b := ... in ...]
  *)
 Notation "'let*' x , .. , z := t 'in' f" :=
-  (t (fun x => .. (fun z => f) ..))
-    (only parsing, at level 200, x closed binder, z closed binder) : stdpp_scope.
-Notation "'let*' := t 'in' f" := (t f) (only parsing, at level 200) : stdpp_scope.
+  (t (fun x => .. (fun z => f) ..)) (only parsing) : stdpp_scope.
+Notation "'let*' := t 'in' f" := (t f) (only parsing) : stdpp_scope.

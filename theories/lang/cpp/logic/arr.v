@@ -59,7 +59,7 @@ Implicit Types (p : ptr) (σ : genv).
 Section validR.
   Context `{Σ : cpp_logic} {resolve : genv}.
 
-  Lemma type_ptrR_validR_plus_one (ty : type) :
+  Lemma type_ptrR_validR_plus_one ty :
     type_ptrR ty ⊢@{RepI} .[ ty ! 1 ] |-> validR .
   Proof.
     apply Rep_entails_at => p.
@@ -122,7 +122,7 @@ Section validR.
   Proof. by rewrite -!_at_offsetR _offsetR_sub_succ. Qed.
 End validR.
 
-Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : Rep :=
+Definition arrR_def `{Σ : cpp_logic} {σ : genv} ty (Rs : list Rep) : Rep :=
   .[ ty ! length Rs ] |-> validR ** [| is_Some (size_of σ ty) |] **
   (* ^ both of these are only relevant for empty arrays, otherwise, they are implied by the
      following conjunct *)
@@ -130,7 +130,7 @@ Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : 
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
 Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
-Arguments arrR {_ _ _ _} _ _%_list_scope : assert.
+Arguments arrR {_ _ _ _} _%_cpp_type _%_list_scope : assert.
 #[global] Instance: Params (@arrR) 5 := {}.	(** TODO: [genv] weakening *)
 
 Section arrR.
@@ -273,18 +273,18 @@ Section arrR.
   Proof. by rewrite arrR_append arrR_singleton. Qed.
 End arrR.
 
-Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
+Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} ty (P : X → Rep) (xs : list X) : Rep :=
   arrR ty (P <$> xs).
 Definition arrayR_aux : seal (@arrayR_def). Proof. by eexists. Qed.
 Definition arrayR := arrayR_aux.(unseal).
 Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
-Arguments arrayR {_ _ _ _ _} _ _%_function_scope _%_list_scope : assert.
+Arguments arrayR {_ _ _ _ _} _%_cpp_type _%_function_scope _%_list_scope : assert.
 #[global] Instance: Params (@arrayR) 6 := {}.	(** TODO: [genv] weakening *)
 
 Module arrayR_proper_ho.
 Section arrayR_proper_ho.
   Context `{Σ : cpp_logic, resolve : genv}.
-  Context {X : Type} (R : X -> Rep) (ty : type).
+  Context {X : Type} (R : X -> Rep) (ty : Rtype).
 
   #[export] Instance arrayR_ne_ho {T : ofe} t n :
     Proper ((dist n ==> dist n) ==> dist n ==> dist n) (arrayR (X:=T) t).
@@ -325,7 +325,7 @@ End arrayR_proper_ho.
 
 Section with_array_R.
   Context `{Σ : cpp_logic, resolve : genv}.
-  Context {X : Type} (R : X -> Rep) (ty : type).
+  Context {X : Type} (R : X -> Rep) (ty : Rtype).
 
   #[global] Instance arrayR_ne {T : ofe} n :
     Proper (pointwise_relation _ (dist n) ==> (=) ==> dist n) (arrayR (X:=T) ty).
@@ -534,7 +534,7 @@ Section with_array_R.
 End with_array_R.
 
 Section with_array_Rs.
-  Context `{Σ : cpp_logic, resolve : genv} {X : Type} {ty : type}.
+  Context `{Σ : cpp_logic, resolve : genv} {X : Type} {ty : Rtype}.
 
   Lemma arrayR_sep {V} (A B : V -> Rep) xs :
     arrayR ty (fun v : V => A v ** B v) xs -|-
@@ -561,7 +561,7 @@ Section with_array_Rs.
 End with_array_Rs.
 
 Section arrayR_agree.
-  Context `{Σ : cpp_logic, resolve : genv} {X T : Type} (ty : type).
+  Context `{Σ : cpp_logic, resolve : genv} {X T : Type} (ty : Rtype).
   Context (R : T -> X -> Rep).
 
   (** This is not phrased as an instance because TC resolution cannot
@@ -608,7 +608,7 @@ Section arrayR_agree.
 End arrayR_agree.
 
 Section with_array_frac.
-  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : type).
+  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : Rtype).
   Context (R : Qp -> X -> Rep).
 
   #[global] Instance arrayR_fractional l
@@ -627,7 +627,7 @@ Section with_array_frac.
 End with_array_frac.
 
 Section with_array_cfrac.
-  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : type).
+  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : Rtype).
   Context (R : cQp.t -> X -> Rep).
 
   #[global] Instance arrayR_cfractional l `{HF : CFractional1 R} :

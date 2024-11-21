@@ -23,3 +23,12 @@ enum {
 namespace {
   enum { GLOBAL3 = 3 };
 };
+
+void test() {
+  (void) AA;
+  (void) X::AA;
+  (void) C::L;
+  (void) GLOBAL;
+  (void) GLOBAL2;
+  (void) GLOBAL3;
+}

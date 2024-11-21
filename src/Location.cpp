@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #include "Location.hpp"
+#include "Assert.hpp"
 #include "Logging.hpp"
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
@@ -46,6 +47,11 @@ template<>
 loc
 of<>(DeclContext& c) {
 	return of(cast<Decl>(c));
+}
+
+loc
+refine(loc fallback, loc loc) {
+	return loc && loc->getLoc().isValid() ? loc : fallback;
 }
 
 loc
@@ -120,6 +126,8 @@ Loc::getLoc() const {
 		return invalid_loc;
 	case Kind::Tal:
 		return u.tal->getSourceRange().getBegin();
+	case Kind::Location:
+		return SourceLocation::getFromRawEncoding(u.location);
 	}
 }
 
@@ -154,6 +162,12 @@ Loc::describe(raw_ostream& os, const ASTContext& context) const {
 	case Kind::Tal:
 		u.tal->getArgument().print(policy, os, true);
 		return os;
+	case Kind::Location:
+		SourceLocation::getFromRawEncoding(u.location)
+			.print(os, context.getSourceManager());
+		return os;
+	default:
+		always_assert(false);
 	}
 }
 
@@ -186,6 +200,12 @@ Loc::dump(raw_ostream& os, const ASTContext& context) const {
 		u.tal->getArgument().dump(os);
 #endif
 		return os;
+	case Kind::Location:
+		SourceLocation::getFromRawEncoding(u.location)
+			.print(os, context.getSourceManager());
+		return os;
+	default:
+		always_assert(false);
 	}
 }
 

@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
+#include "Assert.hpp"
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
@@ -111,7 +112,7 @@ printFunctionParameterTypes(raw_ostream& os, const FunctionDecl& decl,
 							const PrintingPolicy& policy) {
 	os << '(';
 	auto ps = decl.parameters();
-	for (auto i = 0; i < ps.size(); i++) {
+	for (size_t i = 0; i < ps.size(); i++) {
 		if (auto vd = ps[i])
 			vd->getType().print(os, policy);
 		else
@@ -120,28 +121,6 @@ printFunctionParameterTypes(raw_ostream& os, const FunctionDecl& decl,
 			os << ", ";
 	}
 	os << ')';
-	return os;
-}
-
-static raw_ostream&
-printFunctionQualifiers(raw_ostream& os, const FunctionDecl& decl) {
-	if (auto md = dyn_cast<CXXMethodDecl>(&decl)) {
-		auto add = [&](StringRef what) { os << ' ' << what; };
-		if (md->isConst())
-			add("const");
-		if (md->isVolatile())
-			add("volatile");
-		switch (md->getRefQualifier()) {
-		case RefQualifierKind::RQ_None:
-			break;
-		case RefQualifierKind::RQ_LValue:
-			add("&");
-			break;
-		case RefQualifierKind::RQ_RValue:
-			add("&&");
-			break;
-		}
-	}
 	return os;
 }
 
@@ -154,6 +133,30 @@ recoverFunction(const Decl& decl) {
 	return nullptr;
 }
 
+static raw_ostream&
+printFunctionQualifiersForDiagnostics(raw_ostream& os,
+									  const FunctionDecl& decl) {
+	if (auto md = dyn_cast<CXXMethodDecl>(&decl)) {
+		if (md->isConst()) {
+			os << " const";
+		}
+		if (md->isVolatile()) {
+			os << " volatile";
+		}
+		switch (md->getRefQualifier()) {
+		case RefQualifierKind::RQ_LValue:
+			os << " &";
+			break;
+		case RefQualifierKind::RQ_RValue:
+			os << " &&";
+			break;
+		default:
+			break;
+		}
+	}
+	return os;
+}
+
 raw_ostream&
 printNameForDiagnostics(raw_ostream& os, const NamedDecl& decl,
 						const ASTContext& context) {
@@ -163,7 +166,7 @@ printNameForDiagnostics(raw_ostream& os, const NamedDecl& decl,
 	// TODO: Make template arguments explicit in all cases?
 	if (auto fd = recoverFunction(decl)) {
 		printFunctionParameterTypes(os, *fd, policy);
-		printFunctionQualifiers(os, *fd);
+		printFunctionQualifiersForDiagnostics(os, *fd);
 	}
 	return os;
 }
@@ -208,6 +211,14 @@ NOTE: The existing ItaniumMangler does *almost* what we want
 except it does not produce cross-translation unit unique names
 for anonymous types which renders it largely unusable for
 modular verification purposes.
+
+TODO:
+- Cover all declarations, not just named declarations
+
+- Move away from Itanium mangling (which can crash on template
+parameters and which does not cover enough names for verification
+and which assigns disambiguating numbers different from those used
+in `Nanon` and which does not lend itself to efficient demangling)
 */
 
 static GlobalDecl
@@ -238,13 +249,11 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			// HACK: this mangles an aggregate name by mangling
 			// the destructor and then doing some string manipulation
 			std::string sout;
-			{
-				llvm::raw_string_ostream out(sout);
-				mangle.mangleName(to_gd(dtor), out);
-				out.flush();
-			}
-			// TODO: assertions are generally disabled
-			assert(3 < sout.length() && "mangled string length is too small");
+			llvm::raw_string_ostream out(sout);
+			mangle.mangleName(to_gd(dtor), out);
+			out.flush();
+			always_assert(3 < sout.length() &&
+						  "mangled string length is too small");
 			sout =
 				sout.substr(0, sout.length() - 4); // cut off the final 'DnEv'
 			if (not ts->getDeclContext()->isTranslationUnit() or
@@ -260,7 +269,6 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 			std::string sout;
 			{
 				llvm::raw_string_ostream out(sout);
-
 #if 18 <= CLANG_VERSION_MAJOR
 				mangle.mangleCanonicalTypeName(
 					QualType(ts->getTypeForDecl(), 0), out);
@@ -354,8 +362,8 @@ printSimpleContext(const DeclContext* dc, CoqPrinter& print,
 		llvm::raw_string_ostream out(sout);
 		mangle.mangleName(to_gd(fd), out);
 		out.flush();
-		// TODO: assertions are generally disabled
-		assert(3 < sout.length() && "mangled string length is too small");
+		always_assert(3 < sout.length() &&
+					  "mangled string length is too small");
 		if (not fd->getDeclContext()->isTranslationUnit()) {
 			print.output() << sout << (remaining == 0 ? "E" : "");
 			return 2; // we approximate the whole string by 2
@@ -383,7 +391,7 @@ printQualifiedName(const NamedDecl& decl, CoqPrinter& print,
 }
 
 static fmt::Formatter&
-printTypeName(const TypeDecl& decl, CoqPrinter& print, ClangPrinter& cprint) {
+printTypeName(CoqPrinter& print, const TypeDecl& decl, ClangPrinter& cprint) {
 	switch (decl.getKind()) {
 	case Decl::Kind::CXXRecord:
 	case Decl::Kind::ClassTemplateSpecialization:
@@ -415,14 +423,14 @@ printTypeName(const TypeDecl& decl, CoqPrinter& print, ClangPrinter& cprint) {
 // introduce a distinguished name for destructors. Doing this is a bit
 // more invasive.
 static fmt::Formatter&
-printDtorName(const CXXRecordDecl& decl, CoqPrinter& print,
+printDtorName(CoqPrinter& print, const CXXRecordDecl& decl,
 			  ClangPrinter& cprint) {
 	guard::ctor _(print, "DTOR", false);
-	return mangled::printTypeName(decl, print, cprint);
+	return mangled::printTypeName(print, decl, cprint);
 }
 
 static fmt::Formatter&
-printObjName(const ValueDecl& decl, CoqPrinter& print, ClangPrinter& cprint) {
+printObjName(CoqPrinter& print, const ValueDecl& decl, ClangPrinter& cprint) {
 	// All enumerations introduce types, but only some of them have names.
 	// While positional names work in scoped contexts, they generally
 	// do not work in extensible contexts (e.g. the global context)
@@ -442,8 +450,8 @@ printObjName(const ValueDecl& decl, CoqPrinter& print, ClangPrinter& cprint) {
 		// case.
 		if (auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext())) {
 			guard::ctor _(print, "Nenum_const", false);
-			printTypeName(*ed, print, cprint) << fmt::nbsp;
-			return cprint.printUnqualifiedName(*ecd, print);
+			printTypeName(print, *ed, cprint) << fmt::nbsp;
+			return cprint.printUnqualifiedName(print, *ecd);
 		} else {
 			unsupported(cprint, loc::of(decl))
 				<< "enumeration constant without declaration context\n";
@@ -451,7 +459,7 @@ printObjName(const ValueDecl& decl, CoqPrinter& print, ClangPrinter& cprint) {
 		}
 	} else if (auto dd = dyn_cast<CXXDestructorDecl>(&decl)) {
 		if (auto cls = dd->getParent()) {
-			return printDtorName(*cls, print, cprint);
+			return printDtorName(print, *cls, cprint);
 		} else {
 			unsupported(cprint, loc::of(decl)) << "destructor without parent\n";
 			return print.output() << "~<bad destructor>";
@@ -461,16 +469,16 @@ printObjName(const ValueDecl& decl, CoqPrinter& print, ClangPrinter& cprint) {
 		mangle.mangleName(to_gd(&decl), print.output().nobreak());
 		return print.output() << "\"";
 	} else {
-		return cprint.printUnqualifiedName(decl, print);
+		return cprint.printUnqualifiedName(print, decl);
 	}
 }
 
 static fmt::Formatter&
-printName(const Decl& decl, CoqPrinter& print, ClangPrinter& cprint) {
+printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 	if (isa<TypeDecl>(decl))
-		return printTypeName(cast<TypeDecl>(decl), print, cprint);
+		return printTypeName(print, cast<TypeDecl>(decl), cprint);
 	else if (isa<ValueDecl>(decl))
-		return printObjName(cast<ValueDecl>(decl), print, cprint);
+		return printObjName(print, cast<ValueDecl>(decl), cprint);
 	else {
 		unsupported(cprint, loc::of(decl)) << "cannot mangle declarations\n";
 		return print.output() << "~<bad named declaration>";
@@ -506,7 +514,7 @@ the numbers picked by the ABI (e.g., in its  nonterminals
 <<discriminator>>, <<unnamed-type-name>>).
 
 TODO: Clang does not use declaration contexts to separate names with
-internal linkage inside funciton bodies. To assign disambiguating
+internal linkage inside function bodies. To assign disambiguating
 anonymous indices, we have to traverse the function's body, and not just
 the declaration context chain. See FunctionDecl::getBody and
 Stmt::children.
@@ -537,8 +545,13 @@ classifyContext(const DeclContext& ctx, ClangPrinter& cprint) {
 		return ContextKind::Scope;
 
 	case Decl::Kind::Enum:
+		/*
+		technically, un-scoped enumerations are ignorable, but, for uniformity,
+		   we always use qualifiers on enumeration constants.
 		return cast<EnumDecl>(ctx).isScoped() ? ContextKind::Scope :
 												ContextKind::Ingorable;
+		*/
+		return ContextKind::Scope;
 
 	case Decl::Kind::LinkageSpec:
 	case Decl::Kind::ExternCContext:
@@ -567,7 +580,7 @@ getNonIgnorableAncestor(const Decl& decl, ClangPrinter& cprint) {
 	};
 	auto parent = [&](const DeclContext* ctx) {
 		if (auto p = ctx->getParent()) {
-			if (false && cprint.trace(Trace::Name))
+			if (cprint.trace(Trace::Name))
 				cprint.trace("getNonIgnorableAncestor skipping", loc::of(ctx));
 			return p;
 		} else
@@ -592,13 +605,20 @@ getNonIgnorableAncestor(const Decl& decl, ClangPrinter& cprint) {
 // Decide if a declaration is named or anonymous.
 static const NamedDecl*
 isNamed(const Decl& decl) {
+	if (auto nd = dyn_cast<NamedDecl>(&decl))
+		if (!nd->getIdentifier())
+			return nullptr;
 	if (auto nd = dyn_cast<NamespaceDecl>(&decl))
 		return nd->isAnonymousNamespace() ? nullptr : nd;
-	else if (auto rd = dyn_cast<RecordDecl>(&decl))
+	else if (auto crd = dyn_cast<CXXRecordDecl>(&decl)) {
+		if (crd->isLambda() || crd->isAnonymousStructOrUnion())
+			return nullptr;
+		return crd;
+	} else if (auto rd = dyn_cast<RecordDecl>(&decl))
 		return rd->isAnonymousStructOrUnion() ? nullptr : rd;
 	else if (auto ed = dyn_cast<EnumDecl>(&decl))
 		// unnamed, scoped enums might be impossible
-		return ed->getIdentifier() ? ed : nullptr;
+		return ed;
 	else if (auto nd = dyn_cast<NamedDecl>(&decl))
 		return nd;
 	else
@@ -652,7 +672,7 @@ getAnonymousIndex(const DeclContext& ctx, const Decl& decl,
 }
 
 static fmt::Formatter&
-printTemplateParameter(const NamedDecl* pdecl, CoqPrinter& print,
+printTemplateParameter(CoqPrinter& print, const NamedDecl* pdecl,
 					   ClangPrinter& cprint, loc::loc gloc,
 					   bool as_arg = false) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
@@ -660,15 +680,9 @@ printTemplateParameter(const NamedDecl* pdecl, CoqPrinter& print,
 
 	auto unsupported = [&](StringRef msg) -> auto& {
 		auto loc = loc::refine(gloc, pdecl);
-		if (print.ast2()) {
-			::unsupported(cprint, loc) << msg << "\n";
-			guard::ctor _(print, as_arg ? "Aunsupported" : "Punsupported",
-						  false);
-			return print.str(msg);
-		} else {
-			::fatal(cprint, loc) << "unsupported " << msg << "\n";
-			logging::die();
-		}
+		::unsupported(cprint, loc) << msg << "\n";
+		guard::ctor _(print, as_arg ? "Aunsupported" : "Punsupported", false);
+		return print.str(msg);
 	};
 
 	if (!pdecl)
@@ -679,11 +693,11 @@ printTemplateParameter(const NamedDecl* pdecl, CoqPrinter& print,
 		return unsupported("template parameter pack");
 
 	/*
-    TODO: We could presumably infer a name for some unnamed template
-    parameters.
+	TODO: We could presumably infer a name for some unnamed template
+	parameters.
 
-    See `TemplateParmPosition`, `printNameForAnonTemplateParam`.
-    */
+	See `TemplateParmPosition`, `printTypeTemplateParam`.
+	*/
 	auto id = decl.getIdentifier();
 	if (!id)
 		return unsupported("unnamed template parameter");
@@ -692,27 +706,24 @@ printTemplateParameter(const NamedDecl* pdecl, CoqPrinter& print,
 	switch (decl.getKind()) {
 	case Decl::Kind::TemplateTypeParm:
 		if (as_arg) {
-			guard::ctor _(print, print.ast2() ? "Atype" : "TypeArg", false);
-			guard::ctor t(print, print.ast2() ? "Tparam" : "Tvar", false);
+			guard::ctor _1(print, "Atype", false);
+			guard::ctor _2(print, "Tparam", false);
 			return print.str(name);
 		} else {
-			guard::ctor _(print, print.ast2() ? "Ptype" : "TypeParam", false);
+			guard::ctor _(print, "Ptype", false);
 			return print.str(name);
 		}
 
 	case Decl::Kind::NonTypeTemplateParm:
-		if (!print.ast2())
-			return unsupported("non-type template parameter");
-
 		if (as_arg) {
-			guard::ctor _(print, "Avalue", false);
-			guard::ctor t(print, "Tparam", false);
+			guard::ctor _1(print, "Avalue", false);
+			guard::ctor _2(print, "Eparam", false);
 			return print.str(name);
 		} else {
 			auto& param = cast<NonTypeTemplateParmDecl>(decl);
 			guard::ctor _(print, "Pvalue", false);
 			print.str(name) << fmt::nbsp;
-			return cprint.printQualType(param.getType(), print, loc::of(param));
+			return cprint.printQualType(print, param.getType(), loc::of(param));
 		}
 
 	case Decl::Kind::TemplateTemplateParm:
@@ -722,7 +733,7 @@ printTemplateParameter(const NamedDecl* pdecl, CoqPrinter& print,
 }
 
 static fmt::Formatter&
-printTemplateParameters(const Decl& decl, CoqPrinter& print,
+printTemplateParameters(CoqPrinter& print, const Decl& decl,
 						ClangPrinter& cprint, bool as_arg) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printTemplateParameters", loc::of(decl));
@@ -731,98 +742,89 @@ printTemplateParameters(const Decl& decl, CoqPrinter& print,
 		guard::list _(print);
 		for (auto [params, loc] : lists)
 			for (auto param : params->asArray())
-				printTemplateParameter(param, print, cprint, loc, as_arg)
+				printTemplateParameter(print, param, cprint, loc, as_arg)
 					<< fmt::cons;
 		return print.output();
 	} else
 		return print.output() << "nil";
 }
 
-template<typename Err, typename Val>
-static void
-printTemplateArgumentValue(CoqPrinter& print, Err err, Val val) {
-	if (print.ast2()) {
-		guard::ctor _(print, "Avalue", false);
-		val();
-	} else
-		err();
-}
-
 static fmt::Formatter&
-printTemplateArgument(const TemplateArgument& arg, CoqPrinter& print,
+printTemplateArgument(CoqPrinter& print, const TemplateArgument& arg,
 					  ClangPrinter& cprint, loc::loc loc) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printTemplateArgument", loc);
 	auto kind = arg.getKind();
-	auto ast2_only = [&]() NORETURN {
-		::fatal(cprint, loc) << "unsupported template argument of kind "
-							 << templateArgumentKindName(kind) << "\n";
-		logging::die();
-	};
 	auto Avalue = [&](auto val) -> auto& {
-		printTemplateArgumentValue(print, ast2_only, val);
+		guard::ctor _(print, "Avalue", false);
+		val();
 		return print.output();
 	};
 	switch (kind) {
 	case TemplateArgument::ArgKind::Type: {
-		guard::ctor _(print, print.ast2() ? "Atype" : "TypeArg", false);
-		return cprint.printQualType(arg.getAsType(), print, loc);
+		guard::ctor _(print, "Atype", false);
+		return cprint.printQualType(print, arg.getAsType(), loc);
 	}
 	case TemplateArgument::ArgKind::Expression:
 		return Avalue(
-			[&]() { return cprint.printExpr(arg.getAsExpr(), print); });
+			[&]() { return cprint.printExpr(print, arg.getAsExpr()); });
 
 	case TemplateArgument::ArgKind::Integral:
 		return Avalue([&]() {
 			guard::ctor _(print, "Eint", false);
 			print.output() << arg.getAsIntegral() << fmt::nbsp;
-			return cprint.printQualType(arg.getIntegralType(), print, loc);
+			return cprint.printQualType(print, arg.getIntegralType(), loc);
 		});
 
 	case TemplateArgument::ArgKind::NullPtr:
-		return Avalue([&]() { return print.output() << "Enullptr"; });
+		return Avalue([&]() { return print.output() << "Enull"; });
 
 	case TemplateArgument::ArgKind::Declaration:
 		/*
-        TODO: Examples
-        ```
-        struct B { int next; };
-        template<int(B::*next_ptr)> struct A{};
-        void test() {
-            A<&B::next> a;
-        }
-        ```
-        */
+		TODO: Examples
+		```
+		struct B { int next; };
+		template<int(B::*next_ptr)> struct A{};
+		void test() {
+		A<&B::next> a;
+		}
+		```
+		*/
 		return Avalue([&]() {
-			return cprint.printValueDeclExpr(arg.getAsDecl(), print);
+			return cprint.printValueDeclExpr(print, arg.getAsDecl());
 		});
 
-	default:
-		if (print.ast2()) {
-			std::string what;
-			llvm::raw_string_ostream os{what};
-			os << "template argument of kind "
-			   << templateArgumentKindName(kind);
-			unsupported(cprint, loc, false) << what << "\n";
+	case TemplateArgument::ArgKind::Pack: {
+		guard::ctor _(print, "Apack", false);
+		return print.list(arg.getPackAsArray(), [&](auto value) {
+			printTemplateArgument(print, value, cprint, loc);
+		});
+	}
+
+	default: {
+		auto k = templateArgumentKindName(kind);
+		if (cprint.warn_well_known) {
+			unsupported(cprint, loc, false)
+				<< "template argument of kind " << k << "\n";
 #if 19 <= CLANG_VERSION_MAJOR
 			arg.dump();
 #else
 			arg.dump(logging::debug());
 #endif
-			guard::ctor _(print, "Aunsupported", false);
-			return print.str(what);
-		} else
-			ast2_only();
+		}
+		guard::ctor _(print, "Aunsupported", false);
+		return print.str(k);
+	}
 	}
 }
 
 static fmt::Formatter&
-printTemplateArgumentList(const TemplateArgumentList& args, CoqPrinter& print,
+printTemplateArgumentList(CoqPrinter& print, const TemplateArgumentList& args,
 						  ClangPrinter& cprint, loc::loc loc) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printTemplateArgumentList", loc);
 	return print.list(args.asArray(), [&](auto& arg) {
-		printTemplateArgument(arg, print, cprint, loc);
+		printTemplateArgument(print, arg, cprint, loc);
 	});
 }
 
@@ -853,7 +855,7 @@ collectArgumentLists(const Decl& decl, const ASTContext& context,
 }
 
 static fmt::Formatter&
-printTemplateArguments(const Decl& decl, CoqPrinter& print,
+printTemplateArguments(CoqPrinter& print, const Decl& decl,
 					   ClangPrinter& cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printTemplateArguments", loc::of(decl));
@@ -862,43 +864,38 @@ printTemplateArguments(const Decl& decl, CoqPrinter& print,
 		guard::list _(print);
 		for (auto [args, loc] : lists)
 			for (auto arg : args->asArray())
-				printTemplateArgument(arg, print, cprint, loc) << fmt::cons;
+				printTemplateArgument(print, arg, cprint, loc) << fmt::cons;
 		return print.output();
 	} else
 		return print.output() << "nil";
 }
 
 static fmt::Formatter&
-printFunctionQualifiers(const FunctionDecl& decl, CoqPrinter& print,
+printFunctionQualifiers(CoqPrinter& print, const FunctionDecl& decl,
 						ClangPrinter& cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printFunctionQualifiers", loc::of(decl));
-	auto& os = print.begin_list();
-	auto add = [&](const std::string what) {
-		os << what;
-		print.cons();
-	};
+	const char* const_volatile_cat[2][2][3] = {
+		{{"N", "Nl", "Nr"}, {"Nv", "Nvl", "Nvr"}},
+		{{"Nc", "Ncl", "Ncr"}, {"Ncv", "Ncvl", "Ncvr"}}};
+
 	if (auto md = dyn_cast<CXXMethodDecl>(&decl)) {
-		if (md->isConst())
-			add("Nconst");
-		if (md->isVolatile())
-			add("Nvolatile");
-		switch (md->getRefQualifier()) {
-		case RefQualifierKind::RQ_None:
-			break;
-		case RefQualifierKind::RQ_LValue:
-			add("Nlvalue");
-			break;
-		case RefQualifierKind::RQ_RValue:
-			add("Nrvalue");
-			break;
-		}
+		static_assert(RefQualifierKind::RQ_None == 0);
+		static_assert(RefQualifierKind::RQ_LValue == 1);
+		static_assert(RefQualifierKind::RQ_RValue == 2);
+		return print.output()
+			   << "function_qualifiers."
+			   << const_volatile_cat[md->isConst()][md->isVolatile()]
+									[md->getRefQualifier()];
+	} else {
+		return print.output() << "function_qualifiers.N";
 	}
-	return print.end_list();
+
+	return print.output();
 }
 
 static fmt::Formatter&
-printFunctionName(const FunctionDecl& decl, CoqPrinter& print,
+printFunctionName(CoqPrinter& print, const FunctionDecl& decl,
 				  ClangPrinter& cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printFunctionName", loc::of(decl));
@@ -930,13 +927,13 @@ printFunctionName(const FunctionDecl& decl, CoqPrinter& print,
 
 	case DeclarationName::NameKind::CXXOperatorName: {
 		guard::ctor _(print, "Nop", false);
-		return cprint.printOverloadableOperator(name.getCXXOverloadedOperator(),
-												print, loc::of(decl));
+		return cprint.printOverloadableOperator(
+			print, name.getCXXOverloadedOperator(), loc::of(decl));
 	}
 
 	case DeclarationName::NameKind::CXXConversionFunctionName: {
 		guard::ctor _(print, "Nop_conv", false);
-		return cprint.printQualType(name.getCXXNameType(), print,
+		return cprint.printQualType(print, name.getCXXNameType(),
 									loc::of(decl));
 	}
 
@@ -953,13 +950,13 @@ printFunctionName(const FunctionDecl& decl, CoqPrinter& print,
 }
 
 static fmt::Formatter&
-printFunctionParamTypes(const FunctionDecl& decl, CoqPrinter& print,
+printFunctionParamTypes(CoqPrinter& print, const FunctionDecl& decl,
 						ClangPrinter& cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printFunctionParamTypes", loc::of(decl));
 	auto loc = loc::of(decl);
 	return print.list(decl.parameters(), [&](auto* param) {
-		cprint.printQualType(param->getType(), print, loc);
+		cprint.printQualType(print, param->getType(), loc);
 	});
 }
 
@@ -974,6 +971,15 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 		guard::ctor ctor(print, "Nunsupported_atomic", false);
 		return print.str(what);
 	};
+	auto ident = [&]() -> auto& {
+		if (auto nd = isNamed(decl)) {
+			guard::ctor _(print, "Nid", false);
+			return print.str(nd->getName());
+		}
+		always_assert(false && "ident for un-named term");
+		return unsupported("ident for un-named term");
+	};
+
 	auto ident_or_anon = [&](const std::optional<std::string> anon_error =
 								 std::nullopt) -> auto& {
 		if (auto nd = isNamed(decl)) {
@@ -985,6 +991,88 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 		} else
 			return unsupported(anon_error.value());
 	};
+	auto by_first_decl = [&](const TagDecl* decl) {
+		// this heuristic tries to construct a name using the first declaration
+		// that has that type. For example,
+		//
+		//  struct { } x;
+		//
+		// the name of the struct is essentially [decltype(x)].
+		for (auto by_decl = decl->getNextDeclInContext(); by_decl;
+			 by_decl->getNextDeclInContext()) {
+			if (auto vd = dyn_cast<VarDecl>(by_decl)) {
+				auto type = vd->getType().getTypePtr();
+				if (type->getAsTagDecl() == decl && vd->getIdentifier()) {
+					guard::ctor _(print, "Nby_first_decl", false);
+					print.str(vd->getIdentifier()->getName());
+					return true;
+				}
+				break;
+			}
+			// This returns [false] if [by_decl] is not a lexical child of [decl]
+			for (auto i = by_decl->getLexicalDeclContext(); i;
+				 i = i->getParent()) {
+				if (i->isTranslationUnit())
+					return false;
+			}
+		}
+		return false;
+	};
+
+	if (auto td = dyn_cast<TagDecl>(&decl)) {
+		if (isNamed(*td)) {
+			return ident();
+		}
+		if (auto type_def = td->getTypedefNameForAnonDecl()) {
+			guard::ctor _(print, "Nid", false);
+			return print.str(type_def->getName());
+		}
+		if (by_first_decl(td))
+			return print.output();
+	}
+	if (auto rd = dyn_cast<RecordDecl>(&decl)) {
+		if (rd->getParent()->isTranslationUnit()) {
+			logging::unsupported()
+				<< "Anonymous global records without declarations are not "
+				   "supported. These can not be referenced in C++!\n "
+				<< fmt::dump(*rd);
+			return unsupported("record");
+		}
+		for (auto i : rd->fields()) {
+			if (i->getIdentifier()) {
+				guard::ctor _(print, "Nrecord_by_field", false);
+				return print.str(i->getIdentifier()->getName());
+			}
+		}
+	} else if (auto ed = dyn_cast<EnumDecl>(&decl)) {
+		for (auto i : ed->enumerators()) {
+			if (i->getIdentifier()) {
+				guard::ctor _(print, "Nenum_by_enumerator", false);
+				return print.str(i->getIdentifier()->getName());
+			}
+		}
+		if (ed->getParent()->isTranslationUnit()) {
+			logging::unsupported() << "Unsupported empty enumeration in global "
+									  "context. These can not be "
+									  "referenced in C++!\n"
+								   << fmt::dump(*ed);
+			return unsupported("enum");
+		}
+	} else if (auto ns = dyn_cast<NamespaceDecl>(&decl)) {
+		if (isNamed(*ns)) {
+			return ident();
+		}
+		return print.output() << "Nanonymous";
+		/*
+		for (auto i : ns->decls()) {
+			if (auto nd = dyn_cast<NamedDecl>(i)) {
+				if (nd->getIdentifier()) {
+					guard::ctor _(print, "Nnamespace_by_decl", false);
+					return print.str(nd->getIdentifier()->getName());
+				}
+			}
+		} */
+	}
 
 	switch (decl.getKind()) {
 	case Decl::Kind::Namespace:
@@ -996,6 +1084,20 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 	case Decl::Kind::ClassTemplate:
 		return ident_or_anon();
 
+	case Decl::Kind::Field:
+		/*
+		TODO: Other parts of cpp2v emit anonymous fields using
+		<<field_name.t>>. Here, we use <<Nanon>>.
+		*/
+		return ident_or_anon();
+
+	case Decl::Kind::FunctionTemplate: {
+		auto& fd = *cast<FunctionTemplateDecl>(decl).getTemplatedDecl();
+		guard::ctor _(print, "Nfunction", false);
+		printFunctionQualifiers(print, fd, cprint) << fmt::nbsp;
+		printFunctionName(print, fd, cprint) << fmt::nbsp;
+		return printFunctionParamTypes(print, fd, cprint);
+	}
 	case Decl::Kind::Function:
 	case Decl::Kind::CXXMethod:
 	case Decl::Kind::CXXConstructor:
@@ -1003,12 +1105,11 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 	case Decl::Kind::CXXConversion: {
 		auto& fd = cast<FunctionDecl>(decl);
 		guard::ctor _(print, "Nfunction", false);
-		printFunctionQualifiers(fd, print, cprint) << fmt::nbsp;
-		printFunctionName(fd, print, cprint) << fmt::nbsp;
-		return printFunctionParamTypes(fd, print, cprint);
+		printFunctionQualifiers(print, fd, cprint) << fmt::nbsp;
+		printFunctionName(print, fd, cprint) << fmt::nbsp;
+		return printFunctionParamTypes(print, fd, cprint);
 	}
 
-	case Decl::Kind::FunctionTemplate:
 	case Decl::Kind::TypeAliasTemplate:
 	case Decl::Kind::VarTemplate:
 		return ident_or_anon("anonymous template");
@@ -1018,14 +1119,14 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 
 	case Decl::Kind::EnumConstant:
 		/*
-        Enum constant names should not arise in practice (see
-        `Eenum_const`). They're supported here for `--test-name`.
-        */
+		Enum constant names should not arise in practice (see
+		`Eenum_const`). They're supported here for `--test-name`.
+		*/
 		return ident_or_anon("anonymous enum constant");
-
 		// TODO: Ndecltype
 		// TODO: Nclosure
-
+	case Decl::Kind::Binding:
+		return ident_or_anon("anonymous binding");
 	default:
 		std::string what;
 		llvm::raw_string_ostream os{what};
@@ -1034,49 +1135,35 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 	}
 }
 
-static fmt::Formatter& printName(const Decl&, CoqPrinter&, ClangPrinter&);
+static fmt::Formatter& printName(CoqPrinter&, const Decl&, ClangPrinter&);
 
 static bool
-printTemplateSpecialization(const Decl& decl, CoqPrinter& print,
+printTemplateSpecialization(CoqPrinter& print, const Decl& decl,
 							ClangPrinter& cprint) {
 	if (auto sd = recoverSpecialization(decl)) {
 		if (ClangPrinter::debug && cprint.trace(Trace::Name))
 			cprint.trace("printTemplateSpecialization", loc::of(decl));
-		guard::ctor _(print, "Ninst");
-		printName(sd->temp, print, cprint) << fmt::line;
-		printTemplateArgumentList(sd->args, print, cprint, loc::of(decl));
+		guard::ctor _(print, "Ninst", false);
+		printName(print, sd->temp, cprint) << fmt::line;
+		printTemplateArgumentList(print, sd->args, cprint, loc::of(decl));
 		return true;
 	} else
 		return false;
-#if 0
-    auto go = [&](auto* temp, auto* args) {
-        if (temp && args) {
-            if (ClangPrinter::debug && cprint.trace(Trace::Name))
-                cprint.trace("printTemplateSpecialization", loc::of(decl));
-            guard::ctor _(print, "Ninst");
-            printName(*temp, print, cprint) << fmt::line;
-            printTemplateArgumentList(*args, print, cprint, loc::of(decl));
-            return true;
-        } else
-            return false;
-    };
-    if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(&decl))
-        return go(ts->getSpecializedTemplate(), &ts->getTemplateArgs());
-    else if (auto fd = dyn_cast<FunctionDecl>(&decl))
-        return go(fd->getPrimaryTemplate(),
-                  fd->getTemplateSpecializationArgs());
-    else if (auto ts = dyn_cast<VarTemplateSpecializationDecl>(&decl))
-        return go(ts->getSpecializedTemplate(), &ts->getTemplateArgs());
-    return false;
-#endif
 }
 
 static fmt::Formatter&
-printName(const Decl& decl, CoqPrinter& print, ClangPrinter& cprint) {
+printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
-		cprint.trace("printName", loc::of(decl));
+		cprint.trace("structured::printName", loc::of(decl));
+	if (auto nd = dyn_cast<NamedDecl>(&decl)) {
+		if (print.reference(nd))
+			return print.output();
+	} else {
+		llvm::errs() << "not a named decl\n";
+		decl.dump();
+	}
 
-	if (printTemplateSpecialization(decl, print, cprint))
+	if (printTemplateSpecialization(print, decl, cprint))
 		return print.output();
 	else {
 		auto ctx = getNonIgnorableAncestor(decl, cprint);
@@ -1084,93 +1171,121 @@ printName(const Decl& decl, CoqPrinter& print, ClangPrinter& cprint) {
 			return printAtomicName(ctx, decl, print, cprint);
 		};
 		if (ctx->isTranslationUnit()) {
-			guard::ctor _(print, "Nglobal");
+			guard::ctor _(print, "Nglobal", false);
 			return atomic();
 		} else {
-			guard::ctor _(print, "Nscoped");
-			printName(toDecl(ctx, cprint, loc::of(decl)), print, cprint)
+			guard::ctor _(print, "Nscoped", false);
+			structured::printName(print, toDecl(ctx, cprint, loc::of(decl)),
+								  cprint)
 				<< fmt::nbsp;
+
+			//			cprint.printName(toDecl(ctx, cprint, loc::of(decl)), print)
+			//				<< fmt::nbsp;
+			//			printName(toDecl(ctx, cprint, loc::of(decl)), print, cprint) << fmt::nbsp;
 			return atomic();
 		}
 	}
 }
 
+#if 0
+template<typename DERIVED, typename RetTy>
+struct NameVisitor {
+	RetTy Visit(const Decl* decl) {
+		auto self = static_cast<DERIVED*>(this);
+		if (auto sd = recoverSpecialization(decl)) {
+			return self->VisitInst(decl, sd->temp, sd->args);
+		}
+		auto ctx = getNonIgnorableAncestor(decl);
+		if (auto nd = dyn_cast<NamedDecl>(decl)) {
+			if (ctx->isTranslationUnit()) {
+				return self->VisitScoped(ctx, decl, true);
+			} else {
+				return self->VisitScoped(ctx, decl, false);
+			}
+		} else {
+			llvm::errs() << "decl is not named (" << decl->getDeclKindName()
+						 << ")\n";
+			always_assert(false && "unnamed decl");
+		}
+	}
+
+	RetTy Visit(const DeclContext* dc) {
+		auto self = static_cast<DERIVED*>(this);
+		if (auto tu = dyn_cast<TranslationUnitDecl>(dc))
+			return self->VisitTU(tu);
+		if (auto d = dyn_cast<Decl>(dc)) {
+			return self->Visit(d);
+		} else
+			return self->Visit(dc->getParent())
+	}
+
+	// For override
+	RetTy VisitName(const NamedDecl*) {
+		return RetTy{};
+	}
+
+	RetTy VisitTU(const TranslationUnitDecl*) {
+		return Ty{};
+	}
+
+	RetTy VisitInst(const Decl* whole, const TemplateDecl*,
+					TemplateArgumentList&) {
+		return VisitName(whole);
+	}
+	RetTy VisitScoped(const DeclContext*, const NamedDecl* decl, bool global) {
+		return VisitName(decl);
+	}
+
+	ClangPrinter& cprint_;
+};
+
+struct PrintName : NameVisitor<PrintName, void> {
+
+	void VisitScoped(const DeclContext* ctx, const NamedDecl* decl,
+					 bool global) {
+		auto atomic = [&]() -> auto {
+			printAtomicName(*ctx, *decl, print, cprint);
+		};
+		if (global) {
+			guard::ctor _(print, "Nglobal", false);
+			return atomic();
+		} else {
+			guard::ctor _(print, "Nscoped", false);
+			Visit(ctx);
+			print.output() << fmt::nbsp;
+			return atomic();
+		}
+	}
+
+	void VisitInst(const Decl* whole, const TemplateDecl* temp,
+				   TemplateArgumentList& args) {
+		guard::ctor _(print, "Ninst", false);
+		Visit(temp);
+		print.output() << fmt::nbsp;
+		printTemplateArgumentList(print, args, cprint, loc::of(decl));
+	}
+
+	ClangPrinter& cprint;
+	CoqPrinter& print;
+};
+#endif
+
 static fmt::Formatter&
-printDtorName(const CXXRecordDecl& decl, CoqPrinter& print,
+printDtorName(CoqPrinter& print, const CXXRecordDecl& decl,
 			  ClangPrinter& cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
 		cprint.trace("printDtorName", loc::of(decl));
 
-	guard::ctor _(print, "Nscoped");
-	printName(decl, print, cprint) << fmt::nbsp;
+	guard::ctor _(print, "Nscoped", false);
+	printName(print, decl, cprint) << fmt::nbsp;
 	{
-		guard::ctor _(print, "Nfunction");
-		return print.output()
-			   << "nil" << fmt::nbsp << "Ndtor" << fmt::nbsp << "nil";
+		guard::ctor _(print, "Nfunction", false);
+		return print.output() << "function_qualifiers.N" << fmt::nbsp << "Ndtor"
+							  << fmt::nbsp << "nil";
 	}
 }
 
 } // namespace structured
-
-fmt::Formatter&
-ClangPrinter::printTemplateParameters(const Decl& decl, CoqPrinter& print,
-									  bool as_arg) {
-	if (trace(Trace::Name))
-		trace("printTemplateParameters", loc::of(decl));
-	return structured::printTemplateParameters(decl, print, *this, as_arg);
-}
-
-fmt::Formatter&
-ClangPrinter::printTemplateArgumentList(const TemplateArgumentList& args,
-										CoqPrinter& print, loc::loc loc) {
-	if (trace(Trace::Name))
-		trace("printTemplateArgumentList", loc);
-	return structured::printTemplateArgumentList(args, print, *this, loc);
-}
-
-fmt::Formatter&
-ClangPrinter::printTemplateArgumentList(ArrayRef<TemplateArgument> args,
-										CoqPrinter& print) {
-	if (trace(Trace::Name))
-		trace("printTemplateArgumentList", loc::none);
-	auto& cprint = *this;
-	return print.list(args, [&](auto& arg) {
-		structured::printTemplateArgument(arg, print, cprint, loc::none);
-	});
-}
-
-fmt::Formatter&
-ClangPrinter::printTemplateArgumentList(ArrayRef<TemplateArgumentLoc> args,
-										CoqPrinter& print) {
-	if (trace(Trace::Name))
-		trace("printTemplateArgumentList", loc::none);
-	auto& cprint = *this;
-	return print.list(args, [&](auto& arg) {
-		structured::printTemplateArgument(arg.getArgument(), print, cprint,
-										  loc::of(arg));
-	});
-}
-
-fmt::Formatter&
-ClangPrinter::printTemplateArguments(const Decl& decl, CoqPrinter& print) {
-	if (trace(Trace::Name))
-		trace("printTemplateArguments", loc::of(decl));
-	return structured::printTemplateArguments(decl, print, *this);
-}
-
-fmt::Formatter&
-ClangPrinter::printNameComment(const Decl& decl, CoqPrinter& print) {
-	if (trace(Trace::Name))
-		trace("printNameComment", loc::of(decl));
-	if (comment_)
-		if (auto nd = dyn_cast<NamedDecl>(&decl)) {
-			std::string cmt;
-			llvm::raw_string_ostream os{cmt};
-			structured::printNameForDiagnostics(os, *nd, getContext());
-			return print.cmt(cmt);
-		}
-	return print.output();
-}
 
 template<typename T>
 T&
@@ -1184,15 +1299,104 @@ deref(CoqPrinter& print, ClangPrinter& cprint, const std::string whence, T* p,
 }
 
 fmt::Formatter&
-ClangPrinter::printStructuredName(const Decl& decl, CoqPrinter& print) {
-	assert(print.ast2());
+ClangPrinter::printNameComment(CoqPrinter& print, const Decl& decl) {
 	if (trace(Trace::Name))
-		trace("printStructuredName", loc::of(decl));
-	return structured::printName(decl, print, *this);
+		trace("printNameComment", loc::of(decl));
+	if (comment_)
+		if (auto nd = dyn_cast<NamedDecl>(&decl)) {
+			std::string cmt;
+			llvm::raw_string_ostream os{cmt};
+			structured::printNameForDiagnostics(os, *nd, getContext());
+			return print.cmt(cmt);
+		}
+	return print.output();
 }
 
 fmt::Formatter&
-ClangPrinter::printUnqualifiedName(const NamedDecl& decl, CoqPrinter& print) {
+ClangPrinter::printNameAsKey(CoqPrinter& print, const Decl& decl) {
+	if (trace(Trace::Name))
+		trace("printNameAsKey", loc::of(decl));
+	if (print.structured_keys())
+		return printName(print, decl);
+	else
+		return mangled::printName(print, decl, *this);
+}
+
+fmt::Formatter&
+ClangPrinter::printNameAsKey(CoqPrinter& print, const Decl* p, loc::loc loc) {
+	auto& decl = deref(print, *this, "printNameAsKey", p, loc);
+	return printNameAsKey(print, decl);
+}
+
+fmt::Formatter&
+ClangPrinter::printName(CoqPrinter& print, const Decl& decl, bool full) {
+	if (trace(Trace::Name))
+		trace("printName", loc::of(decl));
+	if (full) {
+		if (auto dc = dyn_cast<DeclContext>(&decl)) {
+			auto temp = withDecl(dc);
+			return structured::printName(print, decl, temp);
+		} else
+			return structured::printName(print, decl, *this);
+
+		//		return structured::printName(print, decl, *this);
+	} else
+		return structured::printAtomicName(*(decl.getDeclContext()), decl,
+										   print, *this);
+}
+
+fmt::Formatter&
+ClangPrinter::printName(CoqPrinter& print, const Decl* p, loc::loc loc,
+						bool full) {
+	auto& decl = deref(print, *this, "printName", p, loc);
+	return printName(print, decl, full);
+}
+
+fmt::Formatter&
+ClangPrinter::printName(CoqPrinter& print, const NestedNameSpecifier* spec,
+						loc::loc loc) {
+	if (auto ns = spec->getAsNamespace()) {
+		printName(print, ns, loc);
+	} else if (auto nsa = spec->getAsNamespaceAlias()) {
+		printName(print, nsa, loc);
+	} else if (auto type = spec->getAsType()) {
+		guard::ctor _(print, "Ndependent", false);
+		printType(print, type, loc);
+	} else if (auto id = spec->getAsIdentifier()) {
+		bool is_global = not spec->getPrefix() ||
+						 spec->getPrefix()->getKind() ==
+							 NestedNameSpecifier::SpecifierKind::Global;
+
+		guard::ctor _(print, is_global ? "Nglobal" : "Nscoped", false);
+		if (not is_global) {
+			printName(print, spec->getPrefix(), loc);
+			print.output() << fmt::nbsp;
+		}
+		guard::ctor __(print, "Nid", false);
+		print.output() << "\"" << id->getName() << "\"";
+	} else {
+		llvm::errs() << "unknown NestedNameSpecifier(" << spec->getKind()
+					 << ")\n";
+		llvm::errs().flush();
+	}
+	return print.output();
+}
+
+fmt::Formatter&
+ClangPrinter::printUnsupportedName(CoqPrinter& print, StringRef msg) {
+	guard::ctor _(print, "Nunsupported", false);
+	return print.str(msg);
+}
+
+fmt::Formatter&
+ClangPrinter::printDtorName(CoqPrinter& print, const CXXRecordDecl& decl) {
+	if (trace(Trace::Name))
+		trace("printDtorName", loc::of(decl));
+	return structured::printDtorName(print, decl, *this);
+}
+
+fmt::Formatter&
+ClangPrinter::printUnqualifiedName(CoqPrinter& print, const NamedDecl& decl) {
 	if (trace(Trace::Name))
 		trace("printUnqualifiedName", loc::of(decl));
 	if (auto id = decl.getIdentifier())
@@ -1204,100 +1408,140 @@ ClangPrinter::printUnqualifiedName(const NamedDecl& decl, CoqPrinter& print) {
 }
 
 fmt::Formatter&
-ClangPrinter::printUnqualifiedName(const NamedDecl* p, CoqPrinter& print,
+ClangPrinter::printUnqualifiedName(CoqPrinter& print, const NamedDecl* p,
 								   loc::loc loc) {
 	auto& decl = deref(print, *this, "printUnqualifiedName", p, loc);
-	return printUnqualifiedName(decl, print);
+	return printUnqualifiedName(print, decl);
 }
 
 fmt::Formatter&
-ClangPrinter::printMangledName(const Decl& decl, CoqPrinter& print) {
+ClangPrinter::printTemplateParameters(CoqPrinter& print, const Decl& decl,
+									  bool as_arg) {
 	if (trace(Trace::Name))
-		trace("printMangledName", loc::of(decl));
-	return mangled::printName(decl, print, *this);
+		trace("printTemplateParameters", loc::of(decl));
+	return structured::printTemplateParameters(print, decl, *this, as_arg);
 }
 
 fmt::Formatter&
-ClangPrinter::printMangledTypeName(const TypeDecl& decl, CoqPrinter& print) {
+ClangPrinter::printTemplateArguments(CoqPrinter& print, const Decl& decl) {
 	if (trace(Trace::Name))
-		trace("printMangledTypeName", loc::of(decl));
-	return mangled::printTypeName(decl, print, *this);
+		trace("printTemplateArguments", loc::of(decl));
+	return structured::printTemplateArguments(print, decl, *this);
 }
 
 fmt::Formatter&
-ClangPrinter::printMangledTypeName(const TypeDecl* p, CoqPrinter& print,
-								   loc::loc loc) {
-	auto& decl = deref(print, *this, "printMangledTypeName", p, loc);
-	return printMangledTypeName(decl, print);
-}
-
-fmt::Formatter&
-ClangPrinter::printMangledObjName(const ValueDecl& decl, CoqPrinter& print) {
+ClangPrinter::printTemplateArgumentList(CoqPrinter& print,
+										const TemplateArgumentList& args,
+										loc::loc loc) {
 	if (trace(Trace::Name))
-		trace("printMangledObjName", loc::of(decl));
-	return mangled::printObjName(decl, print, *this);
+		trace("printTemplateArgumentList", loc);
+	return structured::printTemplateArgumentList(print, args, *this, loc);
 }
 
 fmt::Formatter&
-ClangPrinter::printMangledObjName(const ValueDecl* p, CoqPrinter& print,
-								  loc::loc loc) {
-	auto& decl = deref(print, *this, "printMangledObjName", p, loc);
-	return printMangledObjName(decl, print);
+ClangPrinter::printTemplateArgumentList(CoqPrinter& print,
+										ArrayRef<TemplateArgument> args) {
+	if (trace(Trace::Name))
+		trace("printTemplateArgumentList", loc::none);
+	auto& cprint = *this;
+	return print.list(args, [&](auto& arg) {
+		structured::printTemplateArgument(print, arg, cprint, loc::none);
+	});
 }
 
 fmt::Formatter&
-ClangPrinter::printUnsupportedName(StringRef msg, CoqPrinter& print) {
-	if (print.ast2()) {
-		guard::ctor _(print, "Nunsupported");
-		return print.str(msg);
+ClangPrinter::printTemplateArgumentList(CoqPrinter& print,
+										ArrayRef<TemplateArgumentLoc> args) {
+	if (trace(Trace::Name))
+		trace("printTemplateArgumentList", loc::none);
+	auto& cprint = *this;
+	return print.list(args, [&](auto& arg) {
+		structured::printTemplateArgument(print, arg.getArgument(), cprint,
+										  loc::of(arg));
+	});
+}
+
+namespace {
+fmt::Formatter&
+printDeclarationName(CoqPrinter& print, const DeclarationName& name,
+					 ClangPrinter& cprint) {
+	/*
+		TODO: This seems
+
+		- A bit limited --- compare to/share code with structured::printFunctionName
+
+		- A bit off --- `name.getAsString` does not account for `Ndtor` etc
+		*/
+	switch (name.getNameKind()) {
+	case DeclarationName::NameKind::Identifier: {
+		/*
+			Example: A function name that couldn't be resolved due to an
+			argument depending on a template parameter.
+			*/
+
+		auto atomic = [&]() -> fmt::Formatter& {
+			{
+				guard::ctor _(print, "Nfunction", false);
+				print.output() << "function_qualifiers.N" << fmt::nbsp;
+				{
+					guard::ctor _(print, "Nf", false);
+					print.str(name.getAsString());
+				}
+				return print.output() << fmt::nbsp << "nil";
+			}
+		};
+
+		atomic();
+		break;
+	}
+
+	default:
+		llvm::errs() << "printDeclarationName(" << name.getNameKind() << ")";
+		name.dump();
+		print.output() << "(Nunsupported \"printDeclarationName("
+					   << name.getNameKind() << ")\")";
+	}
+	return print.output();
+}
+}
+
+fmt::Formatter&
+ClangPrinter::printUnresolvedName(
+	CoqPrinter& print, const NestedNameSpecifier* nn,
+	const DeclarationName& name,
+	llvm::ArrayRef<clang::TemplateArgumentLoc> template_args, loc::loc loc) {
+	if (not nn) {
+		guard::ctor _(print, "Nglobal", false);
+		return printDeclarationName(print, name, *this);
+	} else if (nn->getKind() == NestedNameSpecifier::Global) {
+		guard::ctor _(print, "Nglobal", false);
+		return printDeclarationName(print, name, *this);
 	} else {
-		std::string buf;
-		llvm::raw_string_ostream os{buf};
-		os << "?<" << msg << ">";
-		return print.str(buf);
+		guard::ctor _(print, "Nscoped", false);
+		printName(print, nn, loc) << fmt::nbsp;
+		return printDeclarationName(print, name, *this);
 	}
 }
 
 fmt::Formatter&
-ClangPrinter::printTypeName(const TypeDecl& decl, CoqPrinter& print) {
-	if (trace(Trace::Name))
-		trace("printTypeName", loc::of(decl));
-	if (print.ast2())
-		return structured::printName(decl, print, *this);
-	else
-		return mangled::printTypeName(decl, print, *this);
-}
-
-fmt::Formatter&
-ClangPrinter::printTypeName(const TypeDecl* p, CoqPrinter& print,
-							loc::loc loc) {
-	auto& decl = deref(print, *this, "printTypeName", p, loc);
-	return printTypeName(decl, print);
-}
-
-fmt::Formatter&
-ClangPrinter::printDtorName(const CXXRecordDecl& decl, CoqPrinter& print) {
-	if (trace(Trace::Name))
-		trace("printDtorName", loc::of(decl));
-	if (print.ast2())
-		return structured::printDtorName(decl, print, *this);
-	else
-		return mangled::printDtorName(decl, print, *this);
-}
-
-fmt::Formatter&
-ClangPrinter::printObjName(const ValueDecl& decl, CoqPrinter& print) {
-	if (trace(Trace::Name))
-		trace("printObjName", loc::of(decl));
-	if (print.ast2())
-		return structured::printName(decl, print, *this);
-	else
-		return mangled::printObjName(decl, print, *this);
-}
-
-fmt::Formatter&
-ClangPrinter::printObjName(const ValueDecl* p, CoqPrinter& print,
-						   loc::loc loc) {
-	auto& decl = deref(print, *this, "printObjName", p, loc);
-	return printObjName(decl, print);
+ClangPrinter::printUnresolvedName(CoqPrinter& print,
+								  const NestedNameSpecifier* nn,
+								  const IdentifierInfo& name, loc::loc loc) {
+	if (not nn) {
+		guard::ctor _(print, "Nglobal", false);
+		print.output() << '\"' << name.getName() << '\n';
+		return print.output();
+	} else if (nn->getKind() == NestedNameSpecifier::Global) {
+		guard::ctor _(print, "Nglobal", false);
+		print.output() << '\"' << name.getName() << '\n';
+		return print.output();
+	} else {
+		guard::ctor _(print, "Nscoped", false);
+		printName(print, nn, loc) << fmt::nbsp;
+		{
+			guard::ctor __{print, "Nid", false};
+			print.str(name.getName());
+		}
+		return print.output();
+	}
 }

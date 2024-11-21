@@ -29,17 +29,19 @@ public:
 	explicit ToCoqConsumer(clang::CompilerInstance *compiler,
 						   const path output_file, const path notations_file,
 						   const path templates_file, const path name_test_file,
-						   bool ast2, Trace::Mask trace, bool elaborate = true,
-						   bool comment = false)
+						   bool structured_keys, Trace::Mask trace,
+						   bool comment, bool sharing, bool type_check,
+						   bool elaborate = true)
 		: compiler_(compiler), output_file_(output_file),
 		  notations_file_(notations_file), templates_file_(templates_file),
-		  name_test_file_(name_test_file), ast2_(ast2), trace_(trace),
-		  elaborate_(elaborate), comment_{comment} {}
+		  name_test_file_(name_test_file), structured_keys_(structured_keys),
+		  trace_(trace), comment_{comment}, sharing_{sharing},
+		  elaborate_(elaborate), check_types_{type_check} {}
 
 public:
 	// Implementation of `clang::ASTConsumer`
 	virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
-		toCoqModule(&Context, Context.getTranslationUnitDecl());
+		toCoqModule(&Context, Context.getTranslationUnitDecl(), sharing_);
 	}
 
 	virtual void HandleTagDeclDefinition(TagDecl *decl) override;
@@ -65,7 +67,8 @@ public:
 	}
 
 private:
-	void toCoqModule(clang::ASTContext *ctxt, clang::TranslationUnitDecl *decl);
+	void toCoqModule(clang::ASTContext *ctxt, clang::TranslationUnitDecl *decl,
+					 bool sharing);
 	void elab(Decl *, bool rec = false);
 
 private:
@@ -74,8 +77,10 @@ private:
 	const path notations_file_;
 	const path templates_file_;
 	const path name_test_file_;
-	const bool ast2_;
+	const bool structured_keys_;
 	const Trace::Mask trace_;
+	const bool comment_;
+	const bool sharing_;
 	bool elaborate_;
-	bool comment_;
+	const bool check_types_;
 };

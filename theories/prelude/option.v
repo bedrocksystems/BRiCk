@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -21,6 +21,22 @@ Require Import elpi.apps.locker.locker.
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.bool.
 
+Module option.
+  Definition existsb {A} (f : A -> bool) (m : option A) : bool :=
+    if m is Some x then f x else false.
+
+  (**
+  Haskell's [Data.Function.on]
+  (https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Function.html#v:on).
+
+  Examples:
+  - Lift relation [R] by precomposing with function [f] (with [C := Prop].
+  We provide theory specialized to this use-case.
+  *)
+  Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
+    R (f x) (f y).
+End option.
+
 (** Boolean version of stdpp's [is_Some] *)
 Definition isSome {A} (m : option A) : bool :=
   if m is Some _ then true else false.
@@ -40,24 +56,14 @@ Lemma is_Some_proj_eq {A : Type} {mx : option A} (P : is_Some mx) :
   mx = Some (is_Some_proj P).
 Proof. rewrite /is_Some_proj. case_match; [done|by destruct P]. Qed.
 
-(**
-Haskell's [Data.Function.on]
-(https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Function.html#v:on).
-
-Examples:
-- Lift relation [R] by precomposing with function [f] (with [C := Prop].
-  We provide theory specialized to this use-case.
-*)
-(* TODO: namespace, and move from [option]. This is only _used_ here.*)
-Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
-  R (f x) (f y).
-
 (** Preorder properties lift through [on].
 Only import locally when declaring specialized instances!
 These instances can lead to divergence of setoid rewriting, so they're only
 available when importing [on_props]. *)
 Module on_props.
 Section on_props.
+  Import option.
+
   Context {A B : Type} {f : A -> B}.
   (* We use both [R] and [strict R] *)
   Implicit Type (R : relation B).
@@ -126,8 +132,11 @@ Section on_props.
   Proof. GUARD_TC. split; rewrite -?[strict (on R f)]/(on (strict R) f); apply _. Qed.
 End on_props.
 End on_props.
-#[global] Typeclasses Opaque on.
+#[global] Typeclasses Opaque option.on.
 
+(**
+TODO: Consider calling this <<option.Rleq>> or <<option.leq>>
+*)
 Variant Roption_leq {A} (R : relation A) : relation (option A) :=
 | Rleq_None {x} : Roption_leq R None x
 | Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
@@ -232,7 +241,7 @@ End some_Forall2_eq.
 
 (** ** Define a partial equivalence relation from an observation *)
 Definition same_property `(obs : A → option B) :=
-  on (some_Forall2 eq) obs.
+  option.on (some_Forall2 eq) obs.
 Section same_property.
   Context `{obs : A → option B}.
 
@@ -253,7 +262,7 @@ Section same_property.
   Lemma same_property_iff a1 a2 :
     same_property obs a1 a2 ↔
     ∃ (b : B), obs a1 = Some b ∧ obs a2 = Some b.
-  Proof. by rewrite /same_property /on some_Forall2_eq_iff. Qed.
+  Proof. by rewrite /same_property /option.on some_Forall2_eq_iff. Qed.
 
   Lemma same_property_intro a1 a2 b :
     obs a1 = Some b -> obs a2 = Some b -> same_property obs a1 a2.
@@ -309,3 +318,6 @@ Definition get_some {T : Set} (o : option T) : force_some o :=
   | Some t => t
   | None => tt
   end.
+
+#[deprecated(since="20240317", note="Use [option.on].")]
+Notation on := option.on.

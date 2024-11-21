@@ -7,7 +7,7 @@
  * reflecting virtual function dispatch in the logic.
  *)
 Require Import bedrock.lang.proofmode.proofmode.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.heap_pred.
@@ -17,11 +17,24 @@ Require Import bedrock.lang.cpp.logic.translation_unit.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
+  (* [path_names ls] extracts the names from [ls], failing if any element is not
+     [Tnamed n] for some [n]
+
+     NOTE: this is effectively [traverse].
+   *)
+  Fixpoint path_names (ls : list type) : option (list globname) :=
+    match ls with
+    | nil => Some nil
+    | Tnamed nm :: ls => cons nm <$> path_names ls
+    | _ => None
+    end.
+
+
   (** [base_to_derived derived path] is the offset to [derived]
       from the path [path]. For example,
       [[
-      Eval simpl in base_to_derived "::D" ["::B";"::A";"::X"]%bs.
-      (* = o_id ,, o_derived σ "::X" "::A" ,, o_derived σ "::A" "::B" ,, o_derived σ "::B" "::D" *)
+      Eval simpl in base_to_derived "D" ["B";"A";"X"]%bs.
+      (* = o_id ,, o_derived σ "X" "A" ,, o_derived σ "A" "B" ,, o_derived σ "B" "D" *)
       ]]
 
       NOTE the arguments are the same as [derived_to_base] but the direction
@@ -32,6 +45,14 @@ Section with_cpp.
     | nil => o_id
     | base :: rest => o_dot (base_to_derived base rest) (o_derived σ base derived)
     end.
+
+  Definition base_to_derived_ty {σ : genv} (derived : globname) (path : list type) : option offset :=
+    base_to_derived derived <$> path_names path.
+
+  Example _0 : forall {σ: genv},
+      base_to_derived_ty "D" [Tnamed "C";Tnamed "B";Tnamed "A"] =
+      Some (o_id ,, _derived "A" "B" ,, _derived "B" "C" ,, _derived "C" "D").
+  Proof. reflexivity. Succeed Qed. Abort.
 
   (** [derived_to_base derived path] is the offset from [derived]
       from the path [path]. For example,
@@ -48,6 +69,14 @@ Section with_cpp.
     | nil => o_id
     | base :: rest => o_dot (o_base σ derived base) (derived_to_base base rest)
     end.
+
+  Definition derived_to_base_ty {σ : genv} (derived : globname) (path : list type) : option offset :=
+    derived_to_base derived <$> path_names path.
+
+  Example _0 : forall {σ: genv},
+      derived_to_base_ty "D" [Tnamed "C";Tnamed "B";Tnamed "A"] =
+      Some (_base "D" "C" ,, (_base "C" "B" ,, (_base "B" "A" ,, o_id))).
+  Proof. simpl. reflexivity. Succeed Qed. Abort.
 
   (** If successful, returns a pair of the function pointer to the
    *  implementation and the downcast for [this] pointer. *)

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -8,9 +8,9 @@ Require Import bedrock.prelude.base.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 
-#[deprecated(since="20231103",note="use [ptr]")]
+#[deprecated(since="20231103",note="use [ptr].")]
 Notation Loc := ptr (only parsing).
 
 Section with_Σ.
@@ -48,13 +48,13 @@ Arguments _global {resolve} _ : rename.
 
 
 (* this is for `Indirect` field references *)
-Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
-         (ls : list (ident * globname))
+Fixpoint path_to_Offset {σ:genv} (from : globname) (final : field_name.t lang.cpp)
+         (ls : list (field_name.t lang.cpp * globname))
   : offset :=
   match ls with
-  | [] => o_field resolve {| f_type := from ; f_name := final |}
+  | [] => o_field σ (Field from final)
   | (i, c) :: ls =>
-    o_field resolve {| f_type := from ; f_name := i |} ,, path_to_Offset resolve c final ls
+    o_field σ (Field from i) ,, path_to_Offset c final ls
   end.
 
 (** [offset_for cls f] returns the [offset] of [f] where the base is [this] and has type
@@ -62,11 +62,10 @@ Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
 
     NOTE this function assumes that [f] is well-typed.
  *)
-Definition offset_for {resolve:genv} (cls : globname) (f : InitPath) : offset :=
+Definition offset_for {σ:genv} (cls : globname) (f : InitPath) : offset :=
   match f with
-  | InitBase parent => o_base resolve cls parent
-  | InitField i => o_field resolve {| f_type := cls ; f_name := i |}
-  | InitIndirect ls final =>
-    path_to_Offset resolve cls final ls
+  | InitBase parent => o_base σ cls parent
+  | InitField i => o_field σ $ Field cls i
+  | InitIndirect ls final => path_to_Offset cls final ls
   | InitThis => o_id
   end.

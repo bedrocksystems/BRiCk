@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2021-2023 BedRock Systems, Inc.
+ * Copyright (c) 2021-2024 BedRock Systems, Inc.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -20,6 +20,13 @@
  * Original Iris License:
  * https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/LICENSE-CODE
  *)
+
+(** Composition (compatible with SSR) *)
+Reserved Notation "f \o g" (at level 50, format "f  \o '/ '  g").
+
+(** CPS *)
+Reserved Notation "'let*' x , .. , z := t 'in' f" (at level 200, x closed binder, z closed binder).
+Reserved Notation "'let*' := t 'in' f" (at level 200).
 
 (** Boolean ops (compatible with SSR) *)
 Reserved Notation "~~ b" (at level 35, right associativity).
@@ -55,6 +62,29 @@ Reserved Notation "|={ E1 , E2 }=>? b P"
 Reserved Notation "|={ E }=>? b P"
   (at level 99, b at level 9, E at level 50, P at level 200,
    format "'[  ' |={ E }=>? b  '/' P ']'").
+
+(** ** Monads *)
+(**
+Recall
+- \/ (right) at 85
+- <*> (left), <$> (right) at 61
+- >>= (right), ++ (right) at 60, +++ (?) at 60
+- || (left), + (left) at 50
+- && (left) at 40
+*)
+Reserved Infix ">>=" (at level 60, right associativity).
+Reserved Infix ">>=@{ M }" (at level 60, right associativity).
+Reserved Infix "<|>" (at level 60, right associativity).
+Reserved Infix "<|>@{ F } " (at level 60, right associativity).
+
+(** Variations on << <*> >> used by parsers *)
+Reserved Infix "<*" (at level 60, right associativity).
+Reserved Infix "*>" (at level 60, right associativity).
+
+(* Compatible with letstar.v *)
+Reserved Notation "'letM*' x , .. , z := t 'in' f" (at level 200, x closed binder, z closed binder).
+Reserved Notation "'letM*' := t 'in' f" (at level 200).
+Reserved Notation "'funM' x .. y => t" (at level 200, x binder, y binder, right associativity).
 
 (** ** Iris big ops *)
 (**
@@ -111,3 +141,11 @@ Reserved Notation "'[\/' 'list]' i |-> x ∈ l , P"
 Reserved Notation "'[\/' 'list]' x ∈ l , P"
   (at level 200, l at level 10, x at level 1, right associativity,
    format "'[  ' [\/  list]  x  ∈  l ,  '/' P ']'").
+
+(** ** Comparisons *)
+
+Reserved Infix "?=@{ A }" (at level 70, no associativity).
+Reserved Infix "<@{ A }" (at level 70, no associativity).
+Reserved Infix "<=@{ A }" (at level 70, no associativity).
+Reserved Infix ">@{ A }" (at level 70, no associativity).
+Reserved Infix ">=@{ A }" (at level 70, no associativity).

@@ -6,7 +6,7 @@
 Require Import stdpp.fin_maps.
 Require Export bedrock.prelude.base.
 Require Import bedrock.prelude.avl.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 
 (** TODO rename [sub_module] since it is not actually about modules
     TODO use [⊆] as the "generic" name by declaring [SubsetEq] instances
@@ -26,9 +26,9 @@ Require Import bedrock.lang.cpp.ast.
     | H : False |- _ => contradiction
     | H : Is_true _ |- _ => red in H
     | H : _ && _ = true |- _ => apply andb_true_iff in H; destruct H
-      | H : bool_decide _ = false |- _ => apply bool_decide_eq_false_1 in H
-      | H : bool_decide _ = true |- _ => apply bool_decide_eq_true_1 in H
-      | |- _ && _ = true => apply andb_true_iff; split
+    | H : bool_decide _ = false |- _ => apply bool_decide_eq_false_1 in H
+    | H : bool_decide _ = true |- _ => apply bool_decide_eq_true_1 in H
+    | |- _ && _ = true => apply andb_true_iff; split
     end.
 #[local] Ltac smash :=
   intuition idtac; repeat (do_bool_decide; subst; repeat case_match);
@@ -41,28 +41,28 @@ Section compat_le.
 
   (* NOTE: this is effectively [Decision (map_inclusion)],
      but is significantly more computationally efficient *)
-  Definition compat_le (l r : IM.t T) : bool :=
-    negb $ find_any (fun k v => negb (f (Some v) (r !! k))) l.
+  Definition compat_le (l r : NM.t T) : bool :=
+    negb $ NM.find_any (fun k v => negb (f (Some v) (r !! k))) l.
 
   Lemma compat_le_sound : forall l r,
       (forall x, f None x = true) ->
       if compat_le l r then
-        forall k : ident, f (l !! k) (r !! k) = true
+        forall k, f (l !! k) (r !! k) = true
       else
-        exists k : ident, f (l !! k) (r !! k) = false.
+        exists k, f (l !! k) (r !! k) = false.
   Proof.
     intros.
     unfold compat_le.
-    generalize (find_any_ok (λ (k : bs) (v : T), negb (f (Some v) (r !! k))) l).
-    generalize (find_any (λ (k : bs) (v : T), negb (f (Some v) (r !! k))) l).
+    generalize (NM.find_any_ok (λ k (v : T), negb (f (Some v) (r !! k))) l).
+    generalize (NM.find_any (λ k (v : T), negb (f (Some v) (r !! k))) l).
     destruct b; simpl; intros.
     - destruct H0 as [ ? [ ? [ ? ? ] ] ].
-      exists x. unfold lookup, IM_lookup in *.
+      exists x. unfold lookup in *.
       apply negb_true_iff in H1.
-      erewrite IM.find_1; eauto.
-    - unfold lookup, IM_lookup.
-      destruct (IM.find k l) eqn:Heq; eauto.
-      apply IM.find_2 in Heq.
+      erewrite NM.find_1; eauto.
+    - unfold lookup, NM.map_lookup.
+      destruct (NM.find k l) eqn:Heq; eauto.
+      apply NM.find_2 in Heq.
       eapply H0 in Heq.
       apply negb_false_iff in Heq. eauto.
   Qed.
@@ -75,7 +75,7 @@ End compat_le.
     information than [b].
     For example, [a] might be a type declaration while [b] is a compatible
     definition. *)
-Definition GlobDecl_le (a b : GlobDecl) : bool :=
+Definition GlobDecl_le {lang} (a b : GlobDecl' lang) : bool :=
   match a , b with
   | Gtype , Gtype
   | Gtype , Genum _ _
@@ -100,10 +100,12 @@ Definition GlobDecl_le (a b : GlobDecl) : bool :=
     bool_decide (t = t')
   | _ , _ => false
   end.
-Definition GlobDecl_ler := λ g1 g2, Is_true $ GlobDecl_le g1 g2.
-Arguments GlobDecl_ler !_ _ /.
+Definition GlobDecl_ler {lang} := λ g1 g2, Is_true $ GlobDecl_le (lang:=lang) g1 g2.
+Arguments GlobDecl_ler {lang} !_ _ /.
 
 Section GlobDecl_ler.
+  Context {lang : lang.t}.
+  #[local] Notation GlobDecl_ler := (GlobDecl_ler (lang:=lang)).
   #[local] Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
   Proof.
     intros []; rewrite /= ?require_eq_refl; smash.
@@ -135,17 +137,18 @@ End GlobDecl_ler.
 
    Note this relation is reflexive and symmetric, but *not* transitive.
  *)
-Definition GlobDecl_compat gd1 gd2 :=
-  GlobDecl_ler gd1 gd2 \/ GlobDecl_ler gd2 gd1.
+Definition GlobDecl_compat {lang} gd1 gd2 :=
+  GlobDecl_ler (lang:=lang) gd1 gd2 \/ GlobDecl_ler gd2 gd1.
 
-#[local] Instance GlobDecl_compat_refl : Reflexive GlobDecl_compat.
+#[local] Instance GlobDecl_compat_refl {lang} : Reflexive (@GlobDecl_compat lang).
 Proof. left. reflexivity. Qed.
 
-#[local] Instance GlobDecl_compat_sym : Symmetric GlobDecl_compat.
+#[local] Instance GlobDecl_compat_sym {lang} : Symmetric (@GlobDecl_compat lang).
 Proof. red. rewrite /GlobDecl_compat; destruct 1; tauto. Qed.
 
-Lemma enum_compat {t1 t2 a b} :
-  GlobDecl_compat (Genum t1 a) (Genum t2 b) ->
+(** TODO: consolidate with other definitions *)
+Lemma enum_compat {lang} {t1 t2 a b} :
+  GlobDecl_compat (lang:=lang) (Genum t1 a) (Genum t2 b) ->
   t1 = t2.
 Proof.
   rewrite /GlobDecl_compat/GlobDecl_ler/=.
@@ -158,7 +161,7 @@ Qed.
 (** *** Inclusion of [type_table]s *)
 
 Definition type_table_le (te1 te2 : type_table) : Prop :=
-  forall (gn : globname) gv,
+  forall gn gv,
     te1 !! gn = Some gv ->
     exists gv', te2 !! gn = Some gv' /\ GlobDecl_ler gv gv'.
 
@@ -233,8 +236,12 @@ Definition ObjValue_le (a b : ObjValue) : bool := Eval cbv beta iota zeta delta 
   | Ovar t oe , Ovar t' oe' =>
     bool_decide (t = t') &&
       match oe , oe' with
-      | None , _ => true
-      | Some l , Some r => bool_decide (l = r)
+      | global_init.NoInit , global_init.NoInit => true
+      | global_init.ImplicitInit , global_init.ImplicitInit => true
+      | global_init.ImplicitInit , global_init.Init _ => true
+      | global_init.Extern , _ => true
+      | global_init.Delayed , global_init.Delayed => true
+      | global_init.Init l , global_init.Init r => bool_decide (l = r)
       | _ , _ => false
       end
   | Ofunction f , Ofunction f' =>
@@ -300,21 +307,21 @@ Section ObjValue_ler.
   #[local] Instance ObjValue_le_trans : Transitive ObjValue_ler.
   Proof.
     intros a b c.
-    destruct a, b => //=; destruct c => //=; intros;
+    destruct a, b => //=; (destruct c => //=; intros;
     repeat lazymatch goal with
-           | H : Func' _ _ _ |- _ => destruct H; simpl in *
-           | H : Method' _ _ _ _ |- _ => destruct H; simpl in *
-           | H : Ctor' _ _ _ _ |- _ => destruct H; simpl in *
-           | H : Dtor' _ _ _ _ |- _ => destruct H; simpl in *
+           | H : Func' _ |- _ => destruct H; simpl in *
+           | H : Method' _ |- _ => destruct H; simpl in *
+           | H : Ctor' _ |- _ => destruct H; simpl in *
+           | H : Dtor' _ |- _ => destruct H; simpl in *
            | H : false = true |- _ => inversion H
            | H : true = false |- _ => inversion H
            | H : bool_decide _ = true |- _ => apply bool_decide_eq_true_1 in H; subst
-           | H : context [ if bool_decide ?X then _ else _ ] |- _ =>
-                destruct (bool_decide_reflect X); subst
+           | H : context [ if @bool_decide ?P ?DEC then _ else _ ] |- _ =>
+                destruct (@bool_decide_reflect P DEC); subst
            | H : match ?X with _ => _ end = _ |- _ => destruct X eqn:?
            | |- bool_decide _ = _ => apply bool_decide_eq_true_2
            | |- context [ bool_decide ?X ] => rewrite (bool_decide_eq_true_2 X); [ | by etrans; eauto ]
-           end; solve [ eauto | etrans; eauto ].
+           end; solve [ eauto | etrans; eauto ]).
   Qed.
 
   #[global] Instance: PreOrder ObjValue_ler := {}.
@@ -328,7 +335,7 @@ Definition sym_table_le_alt : symbol_table -> symbol_table -> Prop :=
 Proof. apply @map_included_preorder, _. Qed.
 
 Definition sym_table_le (a b : symbol_table) :=
-  forall (on : obj_name) v,
+  forall on v,
       a !! on = Some v ->
       exists v', b !! on = Some v' /\
             ObjValue_ler v v'.
@@ -382,7 +389,7 @@ Next Obligation.
   red in H2. rewrite H in H2. congruence.
 Qed.
 
-
+(* TODO: complete_decl *)
 #[local] Hint Constructors complete_decl complete_basic_type complete_type
   complete_pointee_type wellscoped_type wellscoped_types : core.
 
@@ -501,9 +508,9 @@ Instance sub_module_dec : RelDecision sub_module :=
 
 Lemma sub_module_preserves_globdecl {m1 m2 gn g1} :
   sub_module m1 m2 ->
-  m1 !! gn = Some g1 ->
-  ∃ g2, m2 !! gn = Some g2 ∧ GlobDecl_ler g1 g2.
-Proof. move=>/types_compat + Heq => /(_ _ _ Heq). rewrite -tu_lookup_globals. eauto. Qed.
+  m1.(types) !! gn = Some g1 ->
+  ∃ g2, m2.(types) !! gn = Some g2 ∧ GlobDecl_ler g1 g2.
+Proof. move=>/types_compat + Heq => /(_ _ _ Heq). eauto. Qed.
 
 Lemma sub_modules_agree_globdecl tu1 tu2 tu3 nm gd1 gd2 :
   sub_module tu1 tu3 ->
@@ -520,8 +527,8 @@ Qed.
 
 Lemma sub_module_preserves_gstruct m1 m2 gn st :
   sub_module m1 m2 ->
-  m1 !! gn = Some (Gstruct st) ->
-  m2 !! gn = Some (Gstruct st).
+  m1.(types) !! gn = Some (Gstruct st) ->
+  m2.(types) !! gn = Some (Gstruct st).
 Proof.
   move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
   destruct g2 => //=. intros; do_bool_decide; subst; smash.
@@ -529,8 +536,8 @@ Qed.
 
 Lemma sub_module_preserves_gunion m1 m2 gn un :
   sub_module m1 m2 ->
-  m1 !! gn = Some (Gunion un) ->
-  m2 !! gn = Some (Gunion un).
+  m1.(types) !! gn = Some (Gunion un) ->
+  m2.(types) !! gn = Some (Gunion un).
 Proof.
   move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
   destruct g2 => //=; smash.
@@ -540,8 +547,8 @@ Qed.
 TODO: https://eel.is/c++draft/basic.def.odr#13 restricts this to anonymous enums. *)
 Lemma sub_module_preserves_genum m1 m2 gn ty names1 :
   sub_module m1 m2 ->
-  m1 !! gn = Some (Genum ty names1) ->
-  exists names2, m2 !! gn = Some (Genum ty names2).
+  m1.(types) !! gn = Some (Genum ty names1) ->
+  exists names2, m2.(types) !! gn = Some (Genum ty names2).
 Proof.
   move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
   destruct g2 => //=; smash.
@@ -549,8 +556,8 @@ Qed.
 
 Lemma sub_module_preserves_gconstant m1 m2 gn t e :
   sub_module m1 m2 ->
-  m1 !! gn = Some (Gconstant t (Some e)) ->
-  m2 !! gn = Some (Gconstant t (Some e)).
+  m1.(types) !! gn = Some (Gconstant t (Some e)) ->
+  m2.(types) !! gn = Some (Gconstant t (Some e)).
 Proof.
   move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
   rewrite /GlobDecl_ler /GlobDecl_le; smash.
@@ -558,8 +565,8 @@ Qed.
 
 Lemma sub_module_preserves_gtypedef m1 m2 gn t :
   sub_module m1 m2 ->
-  m1 !! gn = Some (Gtypedef t) ->
-  m2 !! gn = Some (Gtypedef t).
+  m1.(types) !! gn = Some (Gtypedef t) ->
+  m2.(types) !! gn = Some (Gtypedef t).
 Proof.
   move=> Hsub /(sub_module_preserves_globdecl Hsub) [g2 [->]].
   destruct g2 => //=; intros; smash.
@@ -584,9 +591,9 @@ Proof. move=> /types_compat Hsub Hct. exact: complete_type_respects_sub_table. Q
    this is necessary, e.g. when code in translation unit [a] wants to call
    via a virtual table that was constructed in translation unit [b]
  *)
-Inductive class_compatible (a b : translation_unit) (cls : globname) : Prop :=
+Inductive class_compatible (a b : translation_unit) (cls : name) : Prop :=
 | Class_compat {st}
-               (_ : a !! cls = Some (Gstruct st))
-               (_ : b !! cls = Some (Gstruct st))
+               (_ : a.(types) !! cls = Some (Gstruct st))
+               (_ : b.(types) !! cls = Some (Gstruct st))
                (_ : forall base, In base (map fst st.(s_bases)) ->
                             class_compatible a b base).

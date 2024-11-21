@@ -8,7 +8,7 @@ Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.atomic_commit.
 Require Import bedrock.lang.bi.spec.exclusive.
 
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
@@ -71,7 +71,12 @@ Module Type Stmt.
             interp frees (k (Rbind x addr ρ) (FreeTemps.delete ty addr))
         in
         match init with
-        | Some init => wp_initialize ρ ty addr init finish
+        | Some init =>
+            (* In C++ (and in C) the scope of the name begins immediately after
+               the name is declared, before it is initialized.
+               See <https://eel.is/c++draft/basic.scope.pdecl#1>
+             *)
+            wp_initialize (Rbind x addr ρ) ty addr init finish
         | None => default_initialize ty addr finish
         end.
 
@@ -90,12 +95,14 @@ Module Type Stmt.
     (* the variables declared in a destructing declaration must have initializers *)
     Record destructuring_declaration (d : VarDecl) : Prop := {}.
 
-    Fixpoint wp_destructure (ρ_init : region) (ds : list VarDecl)
+    Fixpoint wp_destructure (ρ_init : region) (ds : list (BindingDecl' lang.cpp))
       (ρ : region) (k : region -> FreeTemps -> epred) (free : FreeTemps) {struct ds} : mpred :=
       match ds with
       | nil => k ρ free
-      | Dvar x _ (Some init) :: ds => wp_glval tu ρ_init init (fun p free' => wp_destructure ρ_init ds (Rbind x p ρ) k (free' >*> free)%free)
-      | decl :: _ => UNSUPPORTED (destructuring_declaration decl) (* unsupported *)
+      | Bvar x ty init :: ds =>
+          Forall p, wp_initialize ρ_init ty p init (fun free' => wp_destructure ρ_init ds (Rbind x p ρ) k (free' >*> free)%free)
+      | Bbind x _ init :: ds =>
+          wp_glval tu ρ_init init (fun p free' => wp_destructure ρ_init ds (Rbind x p ρ) k (free' >*> free)%free)
       end.
 
     Lemma wp_destructure_frame : forall ds ρ ρ_init m m' free,
@@ -104,10 +111,11 @@ Module Type Stmt.
     Proof.
       induction ds; simpl; intros.
       { iIntros "X"; iApply "X". }
-      { iIntros "X H"; case_match; try iDestruct (UNSUPPORTED_elim with "H") as "[]".
-        case_match; try iDestruct (UNSUPPORTED_elim with "H") as "[]".
-        iRevert "H"; iApply wp_glval_frame => //.
-        iIntros (??). by iApply IHds. }
+      { iIntros "X H"; case_match.
+        { iIntros (p); iSpecialize ("H" $! p); iRevert "H"; iApply wp_initialize_frame => //.
+          iIntros (?); by iApply IHds. }
+        { iRevert "H"; iApply wp_glval_frame => //.
+          iIntros (??). by iApply IHds. } }
     Qed.
 
     (* [static_initialized gn b] is ownership of the initialization
@@ -143,6 +151,10 @@ Module Type Stmt.
       | Ddecompose init x ds =>
         let common_type := type_of init in
         Forall common_p : ptr,
+        (* unlike for variables (see [wp_decl_var]), the variables in a structured binding
+           are not available in the initializer.
+           See <https://eel.is/c++draft/dcl.struct.bind#2>
+         *)
         wp_initialize ρ common_type common_p init (fun free =>
            (* NOTE: [free] is used to deallocate temporaries generated in the execution of [init].
               It should not matter if it is destroyed immediately or after the destructuring occurs.
@@ -742,11 +754,11 @@ Module Type Stmt.
   #[global] Arguments wp_decl _ _ _ _ _ _ _ /. (* ! should occur on [d] *)
 
 
-  #[global,deprecated(since="20240204",note="use [wp_for_inv_nolater]")]
+  #[global,deprecated(since="20240204",note="use [wp_for_inv_nolater].")]
   Notation wp_for := wp_for_inv_nolater (only parsing).
-  #[global,deprecated(since="20240204",note="use [wp_do_inv_nolater]")]
+  #[global,deprecated(since="20240204",note="use [wp_do_inv_nolater].")]
   Notation wp_do := wp_do_inv_nolater (only parsing).
-  #[global,deprecated(since="20240204",note="use [wp_while_inv_nolater]")]
+  #[global,deprecated(since="20240204",note="use [wp_while_inv_nolater].")]
   Notation wp_while := wp_while_inv_nolater (only parsing).
 
 End Stmt.

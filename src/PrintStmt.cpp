@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
+#include "Assert.hpp"
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
@@ -38,7 +39,7 @@ public:
 		print.ctor("Sdecl");
 		print.begin_list();
 		for (auto d : stmt->decls()) {
-			if (cprint.printLocalDecl(d, print))
+			if (cprint.printLocalDecl(print, d))
 				print.cons();
 		}
 		print.end_list();
@@ -50,15 +51,15 @@ public:
 		print.ctor("Swhile");
 		if (auto v = stmt->getConditionVariable()) {
 			print.some();
-			cprint.printLocalDecl(v, print);
+			cprint.printLocalDecl(print, v);
 			print.output() << fmt::rparen;
 		} else {
 			print.none();
 		}
 		print.output() << fmt::nbsp;
-		cprint.printExpr(stmt->getCond(), print);
+		cprint.printExpr(print, stmt->getCond());
 		print.output() << fmt::nbsp;
-		cprint.printStmt(stmt->getBody(), print);
+		cprint.printStmt(print, stmt->getBody());
 		print.end_ctor();
 	}
 
@@ -67,7 +68,7 @@ public:
 		print.ctor("Sfor");
 		if (auto v = stmt->getInit()) {
 			print.some();
-			cprint.printStmt(v, print);
+			cprint.printStmt(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
@@ -75,7 +76,7 @@ public:
 		print.output() << fmt::nbsp;
 		if (auto v = stmt->getCond()) {
 			print.some();
-			cprint.printExpr(v, print);
+			cprint.printExpr(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
@@ -83,28 +84,28 @@ public:
 		print.output() << fmt::nbsp;
 		if (auto v = stmt->getInc()) {
 			print.some();
-			cprint.printExpr(v, print);
+			cprint.printExpr(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
 		}
 		print.output() << fmt::nbsp;
-		cprint.printStmt(stmt->getBody(), print);
+		cprint.printStmt(print, stmt->getBody());
 		print.end_ctor();
 	}
 
 	void VisitCXXForRangeStmt(const CXXForRangeStmt *stmt, CoqPrinter &print,
 							  ClangPrinter &cprint, ASTContext &) {
 		print.ctor("Sforeach");
-		cprint.printStmt(stmt->getRangeStmt(), print);
+		cprint.printStmt(print, stmt->getRangeStmt());
 		print.output() << fmt::nbsp;
-		cprint.printStmt(stmt->getBeginStmt(), print);
+		cprint.printStmt(print, stmt->getBeginStmt());
 		print.output() << fmt::nbsp;
-		cprint.printStmt(stmt->getEndStmt(), print);
+		cprint.printStmt(print, stmt->getEndStmt());
 		print.output() << fmt::nbsp;
 		if (auto v = stmt->getInit()) {
 			print.some();
-			cprint.printStmt(v, print);
+			cprint.printStmt(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
@@ -112,7 +113,7 @@ public:
 		print.output() << fmt::nbsp;
 		if (auto v = stmt->getCond()) {
 			print.some();
-			cprint.printExpr(v, print);
+			cprint.printExpr(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
@@ -120,24 +121,24 @@ public:
 		print.output() << fmt::nbsp;
 		if (auto v = stmt->getInc()) {
 			print.some();
-			cprint.printExpr(v, print);
+			cprint.printExpr(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
 		}
 		print.output() << fmt::nbsp;
-		cprint.printStmt(stmt->getLoopVarStmt(), print);
+		cprint.printStmt(print, stmt->getLoopVarStmt());
 		print.output() << fmt::nbsp;
-		cprint.printStmt(stmt->getBody(), print);
+		cprint.printStmt(print, stmt->getBody());
 		print.end_ctor();
 	}
 
 	void VisitDoStmt(const DoStmt *stmt, CoqPrinter &print,
 					 ClangPrinter &cprint, ASTContext &) {
 		print.ctor("Sdo");
-		cprint.printStmt(stmt->getBody(), print);
+		cprint.printStmt(print, stmt->getBody());
 		print.output() << fmt::nbsp;
-		cprint.printExpr(stmt->getCond(), print);
+		cprint.printExpr(print, stmt->getCond());
 		print.end_ctor();
 	}
 
@@ -156,18 +157,18 @@ public:
 		print.ctor("Sif");
 		if (auto v = stmt->getConditionVariable()) {
 			print.some();
-			cprint.printLocalDecl(v, print);
+			cprint.printLocalDecl(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
 		}
 		print.output() << fmt::nbsp;
-		cprint.printExpr(stmt->getCond(), print);
+		cprint.printExpr(print, stmt->getCond());
 		print.output() << fmt::nbsp;
-		cprint.printStmt(stmt->getThen(), print);
+		cprint.printStmt(print, stmt->getThen());
 		print.output() << fmt::nbsp;
 		if (stmt->getElse()) {
-			cprint.printStmt(stmt->getElse(), print);
+			cprint.printStmt(print, stmt->getElse());
 		} else {
 			print.output() << "Sskip";
 		}
@@ -193,7 +194,7 @@ public:
 
 		print.cons();
 
-		cprint.printStmt(stmt->getSubStmt(), print);
+		cprint.printStmt(print, stmt->getSubStmt());
 	}
 
 	void VisitDefaultStmt(const DefaultStmt *stmt, CoqPrinter &print,
@@ -202,7 +203,7 @@ public:
 
 		if (stmt->getSubStmt()) {
 			print.cons();
-			cprint.printStmt(stmt->getSubStmt(), print);
+			cprint.printStmt(print, stmt->getSubStmt());
 		}
 	}
 
@@ -211,21 +212,21 @@ public:
 		print.ctor("Sswitch");
 		if (auto v = stmt->getConditionVariable()) {
 			print.some();
-			cprint.printLocalDecl(v, print);
+			cprint.printLocalDecl(print, v);
 			print.end_ctor();
 		} else {
 			print.none();
 		}
-		cprint.printExpr(stmt->getCond(), print);
+		cprint.printExpr(print, stmt->getCond());
 
-		cprint.printStmt(stmt->getBody(), print);
+		cprint.printStmt(print, stmt->getBody());
 		print.end_ctor();
 	}
 
 	void VisitExpr(const Expr *expr, CoqPrinter &print, ClangPrinter &cprint,
 				   ASTContext &) {
 		print.ctor("Sexpr");
-		cprint.printExpr(expr, print);
+		cprint.printExpr(print, expr);
 		print.end_ctor();
 	}
 
@@ -233,7 +234,7 @@ public:
 						 ClangPrinter &cprint, ASTContext &) {
 		if (auto rv = stmt->getRetValue()) {
 			print.ctor("Sreturn_val");
-			cprint.printExpr(rv, print);
+			cprint.printExpr(print, rv);
 			print.end_ctor();
 		} else {
 			print.output() << "Sreturn_void";
@@ -245,7 +246,7 @@ public:
 		print.ctor("Sseq");
 		print.begin_list();
 		for (auto i : stmt->body()) {
-			cprint.printStmt(i, print);
+			cprint.printStmt(print, i);
 			print.cons();
 		}
 		print.end_list();
@@ -271,7 +272,7 @@ public:
 			print.begin_tuple();
 			print.str(stmt->getInputConstraint(i));
 			print.next_tuple();
-			cprint.printExpr(stmt->getInputExpr(i), print);
+			cprint.printExpr(print, stmt->getInputExpr(i));
 			print.end_tuple();
 			print.cons();
 		}
@@ -283,7 +284,7 @@ public:
 			print.begin_tuple();
 			print.str(stmt->getOutputConstraint(i));
 			print.next_tuple();
-			cprint.printExpr(stmt->getOutputExpr(i), print);
+			cprint.printExpr(print, stmt->getOutputExpr(i));
 			print.end_tuple();
 			print.cons();
 		}
@@ -312,7 +313,7 @@ public:
 		}
 		print.end_list();
 
-		cprint.printStmt(stmt->getSubStmt(), print);
+		cprint.printStmt(print, stmt->getSubStmt());
 
 		print.end_ctor();
 	}
@@ -321,7 +322,7 @@ public:
 						ClangPrinter &cprint, ASTContext &) {
 		print.ctor("Slabeled");
 		print.str(stmt->getDecl()->getNameAsString()) << fmt::nbsp;
-		cprint.printStmt(stmt->getSubStmt(), print);
+		cprint.printStmt(print, stmt->getSubStmt());
 		print.end_ctor();
 	}
 
@@ -343,11 +344,11 @@ public:
 PrintStmt PrintStmt::printer;
 
 fmt::Formatter &
-ClangPrinter::printStmt(const clang::Stmt *stmt, CoqPrinter &print) {
+ClangPrinter::printStmt(CoqPrinter &print, const clang::Stmt *stmt) {
 	if (trace(Trace::Stmt))
 		trace("printStmt", loc::of(stmt));
 	__attribute__((unused)) auto depth = print.output().get_depth();
 	PrintStmt::printer.Visit(stmt, print, *this, *this->context_);
-	assert(depth == print.output().get_depth());
+	always_assert(depth == print.output().get_depth());
 	return print.output();
 }

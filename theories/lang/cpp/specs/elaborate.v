@@ -8,7 +8,7 @@
     operands (i.e. [val]) and convert them to take materialized values.
  *)
 Require Import bedrock.lang.proofmode.proofmode.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.specs.cpp_specs.

@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.lang.cpp.syntax.names.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.cpp.logic.atomics.
 Require Import bedrock.lang.cpp.logic.builtins.
@@ -177,13 +177,13 @@ Module Export Compact.
         := (wp_glval _ ρ e _)
            ( at level 10
            , e at level 0
-           , format "'[hv  ' ::wpGL  '/' '[hv' ρ '/' e ']' ']'"
+           , format "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' e ']' ']'"
            , only printing).
   Notation "'::wpGLₓ' ρ e"
         := (wp_discard _ ρ e _)
            ( at level 10
            , e at level 0
-           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ '/' e ']' ']'"
+           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' e ']' ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Func] since the name was erased *)
   Notation "'::wpFunc'"
@@ -365,7 +365,7 @@ Module Verbose.
            , ρ at level 0
            , e at level 0
            , Q at level 0
-           , format "'[hv  ' ::wpGL  '/' '[hv' ρ '/' e ']'  '/' Q ']'"
+           , format "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"
            , only printing).
   Notation "'::wpGLₓ' ρ e Q"
         := (wp_discard _ ρ e Q)
@@ -373,7 +373,7 @@ Module Verbose.
            , ρ at level 0
            , e at level 0
            , Q at level 0
-           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ '/' e ']'  '/' Q ']'"
+           , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Func] since the name was erased *)
   Notation "'::wpFunc' Q"

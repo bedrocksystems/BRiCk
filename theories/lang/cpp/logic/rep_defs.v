@@ -31,7 +31,8 @@ Proof. by move=>i i'. Qed.
 Lemma ptr_rel_elim (p1 p2 : ptr) : p1 ⊑ p2 → p1 = p2.
 Proof. done. Qed.
 
-Canonical Structure RepI `{!cpp_logic thread_info Σ} := monPredI ptr_bi_index (@mpredI thread_info Σ).
+Canonical Structure RepI `{!cpp_logic thread_info Σ} :=
+  monPredI ptr_bi_index (@mpredI thread_info Σ).
 Definition Rep `{Σ : cpp_logic} : Type := RepI.
 Definition RepO `{Σ : cpp_logic} : ofe := RepI.
 

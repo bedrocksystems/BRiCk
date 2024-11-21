@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #include "ModuleBuilder.hpp"
+#include "Assert.hpp"
 #include "CommentScanner.hpp"
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
@@ -104,7 +105,7 @@ public:
 
 	void VisitTranslationUnitDecl(const TranslationUnitDecl *decl,
 								  Flags flags) {
-		assert(flags.none());
+		always_assert(flags.none());
 
 		for (auto i : decl->decls()) {
 			this->Visit(i, flags);
@@ -148,9 +149,8 @@ public:
 	}
 
 	void VisitCXXRecordDecl(const CXXRecordDecl *decl, Flags flags) {
-		if (decl->isImplicit())
+		if (decl->isImplicit() and not decl->isLambda())
 			return;
-
 		VisitTagDecl(decl, flags);
 		VisitDeclContext(decl, flags);
 	}
@@ -176,9 +176,24 @@ public:
 		if (!templates_ && decl->isDependentContext())
 			return;
 
+		// TODO: in some instances, clang does not link all definitions together
+		// which can cause both 'defn == decl' and 'first-decl' to succeed on what
+		// is, effectively, the same declaration.
+		// It would be good to figure out why this happens and fix it, but, for the
+		// time being we fix this within Coq by de-duplicating the definition.
+		auto debug = [=](const char *info) {
+#ifdef DEBUG
+			llvm::errs() << info << ": ";
+			decl->getNameForDiagnostic(
+				llvm::errs(), PrintingPolicy(context_->getLangOpts()), true);
+			llvm::errs() << ' ' << (void *)decl->getCanonicalDecl() << "\n";
+#endif
+		};
+
 		using namespace comment;
 		auto defn = decl->getDefinition();
 		if (defn == decl) {
+			debug("defn == decl");
 			if (auto c = context_->getRawCommentForDeclNoCache(decl)) {
 				this->specs_.add_specification(decl, c, *context_);
 			}
@@ -189,14 +204,20 @@ public:
 				// static local variables, classes, functions, etc.
 				for (auto i : decl->decls()) {
 					if (auto d = dyn_cast<VarDecl>(i)) {
-						if (d->isStaticLocal()) {
-							go(d, flags);
+						if (d->isStaticLocal() or d->hasExternalStorage()) {
+							Visit(d, flags);
 						}
+					} else {
+						Visit(i, flags);
 					}
 				}
 			}
-		} else if (defn == nullptr && decl->getPreviousDecl() == nullptr)
+		} else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
+			debug("first-decl");
 			go(decl, flags, false);
+		} else {
+			debug("skipped");
+		}
 	}
 
 	void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
@@ -215,12 +236,10 @@ public:
 
 	void VisitVarDecl(const VarDecl *decl, Flags flags) {
 		if (auto defn = decl->getDefinition()) {
-			if (defn != decl)
-				return;
-		} else if (!decl->isCanonicalDecl())
-			return;
-
-		go(decl, flags);
+			if (defn == decl)
+				go(decl, flags);
+		} else if (decl == decl->getCanonicalDecl())
+			go(decl, flags);
 	}
 
 	void VisitVarTemplateDecl(const VarTemplateDecl *decl, Flags flags) {
@@ -233,7 +252,8 @@ public:
 	}
 
 	void VisitNamespaceDecl(const NamespaceDecl *decl, Flags flags) {
-		assert(flags.none());
+		// namespaces can not be located inside of templates
+		always_assert(flags.none());
 
 		VisitDeclContext(decl, flags);
 	}
@@ -249,7 +269,7 @@ public:
 	}
 
 	void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, Flags flags) {
-		assert(flags.none());
+		always_assert(flags.none());
 
 		VisitDeclContext(decl, flags);
 	}

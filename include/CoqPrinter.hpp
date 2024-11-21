@@ -6,8 +6,14 @@
 #pragma once
 
 #include "Formatter.hpp"
+#include "PrePrint.hpp"
 #include <clang/AST/Expr.h>
 #include <llvm/ADT/StringRef.h>
+
+namespace clang {
+class NamedDecl;
+class Type;
+};
 
 namespace logging {
 [[noreturn]] void die();
@@ -17,11 +23,21 @@ class CoqPrinter {
 private:
 	fmt::Formatter& output_;
 	const bool templates_;
-	const bool ast2_;
+	const bool structured_keys_;
+	Cache& name_cache_;
 
 public:
-	CoqPrinter(fmt::Formatter& output, bool templates, bool ast2)
-		: output_(output), templates_(templates), ast2_(ast2) {}
+	CoqPrinter(fmt::Formatter& output, bool templates, bool structured_keys,
+			   Cache& c)
+		: output_(output), templates_(templates),
+		  structured_keys_(structured_keys), name_cache_{c} {}
+
+	bool reference(const clang::Type* p) {
+		return name_cache_.reference(p, output_);
+	}
+	bool reference(const clang::NamedDecl* p) {
+		return name_cache_.reference(p, output_);
+	}
 
 	fmt::Formatter& output() const {
 		return output_;
@@ -29,8 +45,8 @@ public:
 	bool templates() const {
 		return templates_;
 	}
-	bool ast2() const {
-		return ast2_;
+	bool structured_keys() const {
+		return structured_keys_;
 	}
 
 	[[noreturn]] void die() {
@@ -52,12 +68,14 @@ public:
 		return this->output_ << fmt::tuple_sep;
 	}
 
-	fmt::Formatter& ctor(llvm::StringRef ctor, bool line = true) {
+	template<typename T>
+	fmt::Formatter& ctor(T ctor, bool line = true) {
 		if (line) {
 			this->output_ << fmt::line;
 		}
 		return this->output_ << fmt::lparen << ctor << fmt::nbsp;
 	}
+
 	fmt::Formatter& end_ctor() {
 		return this->output_ << fmt::rparen;
 	}

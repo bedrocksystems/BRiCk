@@ -11,6 +11,7 @@ Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.addr.
 Require Import bedrock.prelude.option.
 Require Import bedrock.prelude.avl.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.values.
 
 Implicit Types (σ : genv).
@@ -36,8 +37,9 @@ Module canonical_tu.
   #[global] Instance translation_unit_canon_eq_dec : EqDecision translation_unit_canon.
   Proof. solve_decision. Qed.
 
-  #[global] Instance symbol_canon_lookup : Lookup obj_name ObjValue translation_unit_canon :=
-    fun k m => m.(symbols) !! k.
+  (* TODO: structured names in translation units. *)
+  #[global] Instance symbol_canon_lookup : Lookup obj_name ObjValue translation_unit_canon. (*
+    fun k m => m.(symbols) !! k. *) Admitted.
 
   Record genv_canon : Set := Build_genv_canon
   { genv_tu : translation_unit_canon
@@ -50,8 +52,8 @@ Module canonical_tu.
   #[global] Instance genv_canon_eq_dec : EqDecision genv_canon.
   Proof. solve_decision. Qed.
 
-  Definition tu_to_canon (tu : translation_unit) : translation_unit_canon :=
-    let (s, g, init, bo) := tu in Build_translation_unit_canon (im_to_gmap s) (im_to_gmap g) bo.
+  Definition tu_to_canon (tu : translation_unit) : translation_unit_canon.
+    (* let (s, g, init, bo) := tu in Build_translation_unit_canon (im_to_gmap s) (im_to_gmap g) bo. *) Admitted. (* TODO: structured names keys *)
   #[local] Definition genv_to_canon σ : genv_canon :=
     let (tu, sz, sgn, wsgn) := σ in Build_genv_canon (tu_to_canon tu) sz sgn wsgn.
 End canonical_tu.
@@ -62,7 +64,11 @@ Definition invalid_alloc_id : alloc_id := MkAllocId 1.
 (** Compute the actual raw offsets in Z. *)
 Section eval_offset_seg.
   Context σ.
-  Definition o_field_off (f : field) : option Z := offset_of σ f.(f_type) f.(f_name).
+  Definition o_field_off (f : field) : option Z :=
+    match f with
+    | Nscoped cls fld => offset_of σ cls fld
+    | _ => None
+    end.
   Definition o_sub_off ty z : option Z := Z.mul z <$> (Z.of_N <$> size_of σ ty).
   Definition o_base_off derived base : option Z :=
     parent_offset σ derived base.
@@ -81,17 +87,17 @@ This model would fail proving that objects are disjoint or that
   global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
 *)
 
-Definition global_ptr_encode_vaddr (o : obj_name) : vaddr := Npos (encode o).
+Definition global_ptr_encode_vaddr (o : obj_name) : vaddr. (*  := Npos (encode o). *) Admitted. (* Countable *)
 Definition global_ptr_encode_aid (o : obj_name) : alloc_id := MkAllocId (global_ptr_encode_vaddr o).
 
-#[global] Instance global_ptr_encode_vaddr_inj : Inj (=) (=) global_ptr_encode_vaddr := _.
+#[global] Instance global_ptr_encode_vaddr_inj : Inj (=) (=) global_ptr_encode_vaddr. (* := _. *) Admitted. (* countable obj_name *)
 #[global] Instance global_ptr_encode_aid_inj : Inj (=) (=) global_ptr_encode_aid := _.
 
 Lemma global_ptr_encode_vaddr_nonnull o va : va = global_ptr_encode_vaddr o -> va <> 0%N.
-Proof. by move->. Qed.
+Proof. (* by move->. Qed. *) Admitted. (* ?? *)
 
 Lemma global_ptr_encode_aid_nonnull o aid : aid = global_ptr_encode_aid o -> aid <> null_alloc_id.
-Proof. by move->. Qed.
+Proof. (* by move->. Qed. *) Admitted. (* ?? *)
 
 (*
 A slightly better model might be something like the following, but we don't

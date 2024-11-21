@@ -34,8 +34,8 @@ Definition SFunction `{Σ : cpp_logic} {cc : calling_conv} {ar : function_arity}
 Definition SConstructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv} {ar : function_arity}
     (class : globname) (targs : list type) (PQ : ptr -> SPEC)
     : function_spec :=
-  let this_type := Qmut (Tnamed class) in
-  SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs) (ar:=ar)
+  let this_type := Tmut (Tnamed class) in
+  SFunction (cc:=cc) (Tmut Tvoid) (Tconst (Tptr this_type) :: targs) (ar:=ar)
             (\arg{this : ptr} "this" this
              \pre this |-> tblockR (Tnamed class) (cQp.mut 1)
              \exact PQ this).
@@ -44,10 +44,10 @@ Definition SConstructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv} {a
 Definition SDestructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
     (class : globname) (PQ : ptr -> SPEC)
     : function_spec :=
-  let this_type := Qmut (Tnamed class) in
+  let this_type := Tmut (Tnamed class) in
   (** ^ NOTE the size of an object might be different in the presence
       of virtual base classes. *)
-  SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+  SFunction (cc:=cc) (Tmut Tvoid) (Tconst (Tptr this_type) :: nil)
            (\arg{this} "this" this
             \exact add_post (_at this (tblockR (Tnamed class) (cQp.mut 1))) (PQ this)).
 
@@ -65,7 +65,7 @@ Definition SDestructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
     (ret : type) (targs : list type) (PQ : ptr -> SPEC) : function_spec :=
   let class_type := Tnamed class in
   let this_type := Tqualified qual class_type in
-  SFunction (cc:=cc) ret (Qconst (Tpointer this_type) :: targs) (ar:=ar)
+  SFunction (cc:=cc) ret (Tconst (Tptr this_type) :: targs) (ar:=ar)
     (SMethodOptCast_wpp base_to_derived PQ).
 Definition SMethodCast `{Σ : cpp_logic} {cc : calling_conv} {ar : function_arity}
     (class : globname) (base_to_derived : offset) (qual : type_qualifiers)

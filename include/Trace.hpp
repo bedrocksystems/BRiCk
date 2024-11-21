@@ -53,4 +53,4 @@ inline constexpr Mask
 fromBits(underlying bits) {
 	return bits & mask(Bit::ALL) ? Mask::ALL : Mask{bits};
 }
-} // namespace trace
+} // namespace Trace

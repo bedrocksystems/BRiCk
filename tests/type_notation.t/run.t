@@ -1,18 +1,18 @@
   $ . ../setup-project.sh
   $ dune build test.vo
-  Notation_Tptr_1 = {t: ptr<bool>}
+  Notation_Tptr_1 = "bool*"%cpp_type
        : type
   Notation_Tptr_2 = {t: ptr<{?: ty}>}
        : type
   
   Notation_Tptr_2 uses section variable ty.
-  Notation_Tref_1 = {t: ref&<bool>}
+  Notation_Tref_1 = "bool&"%cpp_type
        : type
   Notation_Tref_2 = {t: ref&<{?: ty}>}
        : type
   
   Notation_Tref_2 uses section variable ty.
-  Notation_Trv_ref_1 = {t: ref&&<bool>}
+  Notation_Trv_ref_1 = "bool&&"%cpp_type
        : type
   Notation_Trv_ref_2 = {t: ref&&<{?: ty}>}
        : type
@@ -26,22 +26,21 @@
        : type
   
   Notation_Trv_ref_Tref uses section variable ty.
-  Notation_void = {t: void}
+  Notation_void = "void"%cpp_type
        : type
-  Notation_Tarray_1 = {t: nullptr_t[100]}
+  Notation_Tarray_1 = "nullptr_t[100]"%cpp_type
        : type
   Notation_Tarray_2 = {t: {?: ty}[n]}
        : type
   
   Notation_Tarray_2 uses section variables ty n.
-  Notation_Tnamed_1 = {t: "foobarbaz"}
+  Notation_Tnamed_1 = "foobarbaz"%cpp_type
        : type
   Notation_Tnamed_2 = {t: nm}
        : type
   
   Notation_Tnamed_2 uses section variable nm.
-  Notation_Tfunction_novariadic_noargs_1 =
-  {t: extern CC_C ???() -> void}
+  Notation_Tfunction_novariadic_noargs_1 = "void()()"%cpp_type
        : type
   Notation_Tfunction_novariadic_noargs_2 =
   {t: extern CC_C ???() -> {?: rty}}
@@ -49,20 +48,18 @@
   
   Notation_Tfunction_novariadic_noargs_2 uses section variable rty.
   Notation_Tfunction_novariadic_args_nowrap_1 =
-  {t: extern CC_C ???(bool, nullptr_t) -> void}
+  "void()(bool, nullptr_t)"%cpp_type
        : type
   Notation_Tfunction_novariadic_args_nowrap_2 =
-  {t: extern CC_C ???({?: aty1}, void, {?: aty2}) -> {?: rty}}
+  {t: extern CC_C ???({?: aty1}, {?: "void"%cpp_type}, {?: aty2}) -> {?: rty}}
        : type
   
   Notation_Tfunction_novariadic_args_nowrap_2 uses section variables
   rty aty1 aty2.
   Notation_Tfunction_novariadic_args_wrap =
-  {t: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
-                      "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") -> void}
+  "void()(askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk, askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk)"%cpp_type
        : type
-  Notation_Tfunction_variadic_noargs_1 =
-  {t: extern CC_C ???()(...) -> void}
+  Notation_Tfunction_variadic_noargs_1 = "void()(...)"%cpp_type
        : type
   Notation_Tfunction_variadic_noargs_2 =
   {t: extern CC_C ???()(...) -> {?: rty}}
@@ -70,36 +67,42 @@
   
   Notation_Tfunction_variadic_noargs_2 uses section variable rty.
   Notation_Tfunction_variadic_args_nowrap_1 =
-  {t: extern CC_C ???(bool, nullptr_t)(...) -> void}
+  "void()(bool, nullptr_t, ...)"%cpp_type
        : type
   Notation_Tfunction_variadic_args_nowrap_2 =
-  {t: extern CC_C ???({?: aty1}, void, {?: aty2})(...) -> {?: rty}}
+  {t: extern CC_C ???({?: aty1}, {?: "void"%cpp_type}, {?: aty2})(...) -> 
+      {?: rty}}
        : type
   
   Notation_Tfunction_variadic_args_nowrap_2 uses section variables
   rty aty1 aty2.
   Notation_Tfunction_variadic_args_wrap =
-  {t: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
-                      "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk")(...) -> void}
+  "void()(askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk, askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk, ...)"%cpp_type
        : type
-  Notation_Tbool = {t: bool}
+  Notation_Tbool = "bool"%cpp_type
        : type
-  Notation_Tmember_pointer_1 = {t: ptr["foobarbaz"]<int8>}
+  Notation_Tmember_pointer_1 = "char foobarbaz::*"%cpp_type
        : type
-  Notation_mut_1 = {t: mut bool}
+  Notation_mut_1 = {t: mut {?: "bool"}}
        : type
-  Notation_mut_2 = {t: mut mut bool}
+  Notation_mut_2 = {t: mut mut {?: "bool"}}
        : type
-  Notation_const_1 = {t: const bool}
+  Notation_const_1 = "const bool"%cpp_type
        : type
-  Notation_const_2 = {t: const ptr<const void>}
+  Notation_const_2 = "const void* const"%cpp_type
        : type
-  Notation_volatile_1 = {t: volatile bool}
+  Notation_volatile_1 = "volatile bool"%cpp_type
        : type
-  Notation_volatile_2 = {t: volatile ptr<const void>}
+  Notation_volatile_2 = "const void* volatile"%cpp_type
        : type
-  Notation_const_volatile_1 = {t: const volatile bool}
+  Notation_const_volatile_1 = "const volatile bool"%cpp_type
        : type
   Notation_const_volatile_2 =
-  {t: const volatile ptr<const volatile void>}
+  "const volatile void* const volatile"%cpp_type
        : type
+  File "./test.v", line 6, characters 15-34:
+  Warning: Coq.Numbers.BinNums has been replaced by Stdlib.Numbers.BinNums.
+  [deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]
+  File "./test.v", line 7, characters 15-32:
+  Warning: Coq.NArith.BinNat has been replaced by Stdlib.NArith.BinNat.
+  [deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]

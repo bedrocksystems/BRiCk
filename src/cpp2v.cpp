@@ -58,8 +58,14 @@ static cl::opt<bool> Verboser("vv", cl::desc("verboser"), cl::Optional,
 							  cl::cat(Cpp2V));
 static cl::opt<bool> Quiet("q", cl::desc("quiet"), cl::Optional,
 						   cl::cat(Cpp2V));
+
 static cl::opt<bool> Comment("comment", cl::desc("include name comments"),
 							 cl::Optional, cl::cat(Cpp2V));
+
+static cl::opt<bool> NoElaborate(
+	"no-elaborate",
+	cl::desc("do not elaborate templates and un-forced definitions"),
+	cl::Optional, cl::cat(Cpp2V));
 
 static cl::opt<bool> Version("cpp2v-version",
 							 cl::desc("print version and exit"), cl::Optional,
@@ -69,13 +75,20 @@ static cl::opt<std::string> Templates("templates", cl::desc("print templates"),
 									  cl::value_desc("filename"), cl::Optional,
 									  cl::cat(Cpp2V));
 
-static cl::opt<bool> Ast2("ast2", cl::desc("print using AST2 (templates only)"),
-						  cl::Optional, cl::cat(Cpp2V));
+static cl::opt<bool>
+	MangledKeys("mangled-keys",
+				cl::desc("use mangled names as keys in translation units"),
+				cl::Optional, cl::cat(Cpp2V));
 
 static cl::opt<std::string> NameTest("name-test",
 									 cl::desc("print structured names"),
 									 cl::value_desc("filename"), cl::Optional,
 									 cl::cat(Cpp2V));
+
+static cl::opt<bool> CheckTypes("check-types",
+								cl::desc("check types of translation units"),
+								cl::Optional, cl::ValueOptional,
+								cl::cat(Cpp2V));
 
 static cl::bits<Trace::Bit> TraceBits(
 	"trace", cl::desc("print debug trace on fd 2 (can be repeated)"),
@@ -95,22 +108,29 @@ static cl::bits<Trace::Bit> TraceBits(
 			   clEnumValN(Trace::Bit::ALL, "ALL", "trace everything")),
 	cl::cat(Cpp2V));
 
+static cl::opt<bool> NoSharing("no-sharing", cl::desc("disable sharing"),
+							   cl::Optional, cl::ValueOptional, cl::cat(Cpp2V));
+
 class ToCoqAction : public clang::ASTFrontendAction {
 public:
 	virtual std::unique_ptr<clang::ASTConsumer>
 	CreateASTConsumer(clang::CompilerInstance &Compiler,
 					  llvm::StringRef InFile) override {
 #if 0
-        Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("with");
-        Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("internal");
-        for (auto i : Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames) {
-            llvm::errs() << i << "\n";
-        }
+	Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back(
+		"with");
+	Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back(
+		"internal");
+	for (auto i :
+		 Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames) {
+		llvm::errs() << i << "\n";
+	}
 #endif
-		auto result = new ToCoqConsumer(
-			&Compiler, to_opt(VFileOutput), to_opt(NamesFile),
-			to_opt(Templates), to_opt(NameTest), Ast2,
-			Trace::fromBits(TraceBits.getBits()), true, Comment);
+		auto result =
+			new ToCoqConsumer(&Compiler, to_opt(VFileOutput), to_opt(NamesFile),
+							  to_opt(Templates), to_opt(NameTest), !MangledKeys,
+							  Trace::fromBits(TraceBits.getBits()), Comment,
+							  !NoSharing, CheckTypes, !NoElaborate);
 		return std::unique_ptr<clang::ASTConsumer>(result);
 	}
 

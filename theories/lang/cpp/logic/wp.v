@@ -12,7 +12,7 @@ Require Import iris.bi.monpred.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import iris.proofmode.classes.
 
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.heap_pred.
@@ -40,6 +40,7 @@ Module FreeTemps.
   Inductive t : Set :=
   | id (* = fun x => x *)
   | delete (ty : decltype) (p : ptr) (* = delete_val ty p *)
+           (* ^^ this type has qualifiers but is otherwise a runtime type *)
   | delete_va (va : list (type * ptr)) (p : ptr)
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t) (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x) *)
@@ -616,7 +617,15 @@ Section with_cpp.
 
   (** *** evaluation by a scheme *)
 
-  (** [eval eo es] evaluates [es] according to the evaluation scheme [eo] *)
+  (** [eval eo e1 e2] evaluates [e1], [e2] according to the evaluation scheme [eo] *)
+  Definition eval2 (eo : evaluation_order.t) {T U} (e1 : M T) (e2 : M U) : M (T * U) :=
+    match eo with
+    | evaluation_order.nd => nd_seq e1 e2
+    | evaluation_order.l_nd => Mseq e1 e2
+    | evaluation_order.rl => Mmap (fun '(a,b) => (b,a)) $ Mseq e2 e1
+    end.
+
+  (** [evals eo es] evaluates [es] according to the evaluation scheme [eo] *)
   Definition eval (eo : evaluation_order.t) {T} (es : list (M T)) : M (list T) :=
     match eo with
     | evaluation_order.nd => nd_seqs es
@@ -1148,7 +1157,7 @@ Section with_cpp.
 
   (* Opaque wrapper of [False]: this represents a [False] obtained by a [ValCat] mismatch in [wp_glval]. *)
   Definition wp_glval_mismatch {resolve : genv} (r : region) (vc : ValCat) (e : Expr)
-    : (ptr -> FreeTemps -> mpred) -> mpred := funI _ => False.
+    : (ptr -> FreeTemps -> mpred) -> mpred := funI _ => |={top}=> False.
   #[global] Arguments wp_glval_mismatch : simpl never.
 
   (* evaluate an expression as a generalized lvalue *)
@@ -1168,7 +1177,7 @@ Section with_cpp.
              (@wp_glval σ).
   Proof.
     do 12 intro. rewrite /wp_glval; subst.
-    case_match; solve_proper.
+    case_match; try solve_proper.
   Qed.
 
   (**
@@ -1214,7 +1223,7 @@ Section with_cpp.
     Proof. by rewrite /wp_glval=>->. Qed.
 
     Lemma wp_glval_prval e Q :
-      valcat_of e = Prvalue -> wp_glval e Q -|- False.
+      valcat_of e = Prvalue -> wp_glval e Q -|- |={top}=> False.
     Proof. by rewrite /wp_glval=>->. Qed.
 
     Lemma wp_glval_wand e Q Q' :
@@ -1223,12 +1232,38 @@ Section with_cpp.
       iIntros "A B". iRevert "A". by iApply wp_glval_frame.
     Qed.
 
+    Lemma fupd_wp_glval e Q :
+      (|={top}=> wp_glval e Q) |-- wp_glval e Q.
+    Proof.
+      rewrite /wp_glval/wp_glval_mismatch. case_match;
+        auto using fupd_wp_lval, fupd_wp_xval.
+      by iIntros ">>$".
+    Qed.
+
     Lemma wp_glval_fupd e Q :
       wp_glval e (fun v f => |={top}=> Q v f) |-- wp_glval e Q.
     Proof.
       rewrite /wp_glval/wp_glval_mismatch. case_match;
       auto using wp_lval_fupd, wp_xval_fupd.
     Qed.
+
+    (* proof mode *)
+    #[global] Instance elim_modal_fupd_wp_glval p e P Q :
+      ElimModal True p false (|={top}=> P) P (wp_glval e Q) (wp_glval e Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_glval.
+    Qed.
+    #[global] Instance elim_modal_bupd_wp_glval p e P Q :
+      ElimModal True p false (|==> P) P (wp_glval e Q) (wp_glval e Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd top). exact: elim_modal_fupd_wp_glval.
+    Qed.
+    #[global] Instance add_modal_fupd_wp_glval e P Q : AddModal (|={top}=> P) P (wp_glval e Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_glval.
+    Qed.
+
   End wp_glval.
 
   (** Discarded values.
@@ -1255,6 +1290,37 @@ Section with_cpp.
           Forall p, wp_init tu ρ (type_of e) p e (fun frees => Q (FreeTemps.delete ty p >*> frees)%free)
       | Xvalue => wp_xval tu ρ e (fun _ => Q)
       end.
+
+    Lemma fupd_wp_discard e Q :
+      (|={top}=> wp_discard e Q) |-- wp_discard e Q.
+    Proof.
+      rewrite /wp_discard. repeat case_match; iIntros  ">$".
+    Qed.
+
+    Lemma wp_discard_fupd e Q :
+      wp_discard e (fun f => |={top}=> Q f) |-- wp_discard e Q.
+    Proof.
+      rewrite /wp_discard. repeat case_match;
+        auto using wp_lval_fupd, wp_xval_fupd, wp_operand_fupd.
+      f_equiv; intro; auto using wp_init_fupd.
+    Qed.
+
+    (* proof mode *)
+    #[global] Instance elim_modal_fupd_wp_discard p e P Q :
+      ElimModal True p false (|={top}=> P) P (wp_discard e Q) (wp_discard e Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_discard.
+    Qed.
+    #[global] Instance elim_modal_bupd_wp_discard p e P Q :
+      ElimModal True p false (|==> P) P (wp_discard e Q) (wp_discard e Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd top). exact: elim_modal_fupd_wp_discard.
+    Qed.
+    #[global] Instance add_modal_fupd_wp_discard e P Q : AddModal (|={top}=> P) P (wp_discard e Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_discard.
+    Qed.
 
   End wp_discard.
 
@@ -1369,7 +1435,7 @@ Section with_cpp.
    * note: the [list ptr] will be related to the register set.
    *)
   Parameter wp_fptr
-    : forall (tt : type_table) (fun_type : functype)
+    : forall (tt : type_table) (fun_type : type) (* TODO: function type *)
         (addr : ptr) (ls : list ptr) (Q : ptr -> epred), mpred.
 
   (* (bind [n] last for consistency with [NonExpansive]). *)
@@ -1379,7 +1445,7 @@ Section with_cpp.
   Axiom wp_fptr_complete_type : forall te ft a ls Q,
       wp_fptr te ft a ls Q
       |-- wp_fptr te ft a ls Q **
-          [| exists cc ar tret targs, ft = Tfunction (cc:=cc) (ar:=ar) tret targs |].
+          [| exists cc ar tret targs, ft = Tfunction (@FunctionType _ cc ar tret targs) |].
 
   (* A type is callable against a type table if all of its arguments and return
      type are [complete_type]s.
@@ -1387,9 +1453,9 @@ Section with_cpp.
      This effectively means that there is enough information to determine the
      calling convention.
    *)
-  Definition callable_type (tt : type_table) (t : functype) : Prop :=
+  Definition callable_type (tt : type_table) (t : type) : Prop :=
     match t with
-    | Tfunction ret args => complete_type tt ret /\ List.Forall (complete_type tt) args
+    | Tfunction ft => complete_type tt ft.(ft_return) /\ List.Forall (complete_type tt) ft.(ft_params)
     | _ => False
     end.
 
@@ -1457,8 +1523,9 @@ Section with_cpp.
     Qed.
 
     Lemma wp_fptr_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
-    Proof. iIntros "Hwp HK".
-           iApply (wp_fptr_frame with "HK Hwp").
+    Proof.
+      iIntros "Hwp HK".
+      iApply (wp_fptr_frame with "HK Hwp").
     Qed.
   End wp_fptr.
 

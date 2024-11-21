@@ -5,7 +5,6 @@
  */
 
 // Cover names that become `Nanon`
-
 namespace{
     struct inhabit_ns;
 }

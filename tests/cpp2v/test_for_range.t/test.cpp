@@ -42,4 +42,10 @@ void test() {
     for (auto i : r) {
         x--;
     }
+
+    for (const auto z = r; auto i : z) {
+      x++;
+    }
+
+
 }

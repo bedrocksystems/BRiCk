@@ -15,7 +15,7 @@
 Require Import bedrock.prelude.base.
 Require Import bedrock.prelude.numbers.
 Require Export bedrock.lang.cpp.arith.operator.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.values.
 
 #[local] Open Scope Z_scope.
@@ -42,10 +42,9 @@ Definition representation_type (tu : translation_unit) (ty : type) : type :=
 
 Succeed Example underlying_int : forall tu, representation_type tu Tint = Tint :=
   ltac:(compute; auto).
-Succeed Example underlying_int : forall tu, representation_type tu (Qconst Tint) = Tint :=
+Succeed Example underlying_int : forall tu, representation_type tu (Tconst Tint) = Tint :=
   ltac:(compute; auto).
 
-(*
 (** [underlying_unqual_type tu ty] is the unqualified type that underlies [ty].
 
     This is the strip qualifiers function if [ty] is not an `enum`.
@@ -62,9 +61,8 @@ Definition underlying_unqual_type (tu : translation_unit) (ty : type) : type :=
   | _ => ty'
   end.
 
-Succeed Example underlying_int : forall tu, underlying_unqual_type tu (Qconst Tint) = Tint :=
+Succeed Example underlying_int : forall tu, underlying_unqual_type tu (Tconst Tint) = Tint :=
   ltac:(compute; auto).
-*)
 
 Section representable.
   Context {σ : genv}.
@@ -77,8 +75,8 @@ Section representable.
       | _ => None
       end
     in
-    let min ty := (fun '(integral_type.mk sz sgn) => min_val sz sgn) <$> to_equiv ty in
-    let max ty := (fun '(integral_type.mk sz sgn) => max_val sz sgn) <$> to_equiv ty in
+    let min ty := (fun '(integral_type.mk sz sgn) => int_rank.min_val sz sgn) <$> to_equiv ty in
+    let max ty := (fun '(integral_type.mk sz sgn) => int_rank.max_val sz sgn) <$> to_equiv ty in
     match min a , min b , max a , max b with
     | Some an , Some bn , Some ax , Some bx =>
         bool_decide (bn <= an /\ ax <= bx)%Z
@@ -167,15 +165,26 @@ Definition promote_integral {σ : genv} (tu : translation_unit) (ty : type) : op
   | Tvoid
   | Tarray _ _
   | Tincomplete_array _
-  | Tvariable_array _
+  | Tvariable_array _ _
   | Tnamed _
-  | Tfunction _ _
+  | Tfunction _
   | Tmember_pointer _ _
   | Tfloat_ _
   | Tnullptr
   | Tarch _ _ => None
   | Tqualified _ _ => None (* unreachable *)
   | Tunsupported _ => None
+  | Tparam _
+  | Tresult_param _
+  | Tresult_global _
+  | Tresult_parenlist _ _
+  | Tresult_member_call _ _ _
+  | Tresult_member _ _
+  | Tresult_unop _ _
+  | Tresult_binop _ _ _
+  | Tdecltype _ (* ?? *)
+  | Texprtype _ (* ?? *)
+  | Tresult_call _ _ => None
   end.
 
 Goal forall {σ : genv} tu, promote_integral tu Tchar = Some Tint.
@@ -227,16 +236,16 @@ Definition promote_arith (ty1 ty2 : type) : option type :=
   match ty1 , ty2 with
   | Tnum sz1 sgn1 , Tnum sz2 sgn2 =>
       if bool_decide (sgn1 = sgn2) then
-        Some $ Tnum (int_type.t_max sz1 sz2) sgn1
+        Some $ Tnum (int_rank.t_max sz1 sz2) sgn1
       else
         let (ssz, usz) := match sgn1 with
                           | Signed => (sz1, sz2)
                           | Unsigned => (sz2, sz1)
                           end
         in
-        if bool_decide (int_type.t_le ssz usz) then
+        if bool_decide (int_rank.t_le ssz usz) then
           Some $ Tnum usz Unsigned
-        else if bool_decide (int_type.t_le usz ssz) then
+        else if bool_decide (int_rank.t_le usz ssz) then
           Some $ Tnum ssz Signed
         else
           Some $ Tnum ssz Unsigned

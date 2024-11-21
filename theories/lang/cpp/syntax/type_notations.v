@@ -1,24 +1,20 @@
 (*
- * Copyright (c) 2019-2022 BedRock Systems, Inc.
+ * Copyright (c) 2019-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Stdlib.ZArith.ZArith.
-
-Require bedrock.lang.cpp.ast.
-Require Import bedrock.lang.cpp.syntax.names.
-Require Import bedrock.lang.cpp.syntax.types.
+Require Import bedrock.lang.cpp.syntax.prelude.
+Require Import bedrock.lang.cpp.syntax.core.
+Require Import bedrock.lang.cpp.syntax.notations.
 
 #[local] Open Scope Z_scope.
 #[local] Open Scope bs_scope.
 
 Module Export TypeNotationsInterface.
   Declare Custom Entry CPP_type.
-  Declare Scope CPP_type_scope.
-  Delimit Scope CPP_type_scope with cpp_type.
 
-  Bind Scope CPP_type_scope with type.
-  Bind Scope CPP_type_scope with type_qualifiers.
+  Bind Scope cpp_type_scope with type.
+  Bind Scope cpp_type_scope with type_qualifiers.
 
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{?:' ty '}'"
@@ -34,7 +30,7 @@ Module Export TypeNotationsInterface.
          , ty custom CPP_type at level 200
          , format "'[hv' {t:  ty } ']'"
          , only printing)
-    : CPP_type_scope.
+    : cpp_type_scope.
 End TypeNotationsInterface.
 
 (* NOTE (JH): [tests/type_notation_tests.v] contains tests of parsing/printing notations
@@ -54,34 +50,35 @@ Module Export TypeNotations.
 
   (* [Tqualified] types *)
   Notation "'mut' ty"
-      := (Qmut ty)
+      := (Tmut ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity
          , format "'[' mut  ty ']'"
          , only printing).
   Notation "'const' ty"
-      := (Qconst ty)
+      := (Tconst ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity
          , format "'[' const  ty ']'"
          , only printing).
   Notation "'volatile' ty"
-      := (Qmut_volatile ty)
+      := (Tvolatile ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity
          , format "'[' volatile  ty ']'"
          , only printing).
   Notation "'const' 'volatile' ty"
-      := (Qconst_volatile ty)
+      := (Tconst_volatile ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity
          , format "'[' const  volatile  ty ']'"
          , only printing).
 
+  (*
   (* [Tnum] variants *)
   Notation "'int8'" := Ti8 (in custom CPP_type at level 0, only printing).
   Notation "'uint8'" := Tu8 (in custom CPP_type at level 0, only printing).
@@ -93,6 +90,7 @@ Module Export TypeNotations.
   Notation "'uint64'" := Tu64 (in custom CPP_type at level 0, only printing).
   Notation "'int128'" := Ti128 (in custom CPP_type at level 0, only printing).
   Notation "'uint128'" := Tu128 (in custom CPP_type at level 0, only printing).
+   *)
 
   (* [char_type.t] variants *)
   Notation "'char'" := Tchar (in custom CPP_type at level 0, only printing).
@@ -132,14 +130,14 @@ Module Export TypeNotations.
          , format "'[' ty [ n ] ']'", only printing).
   Notation "nm" := (Tnamed nm%bs) (in custom CPP_type at level 0, nm constr, only printing).
   Notation "'extern' cc '???()' '->' rty"
-      := (@Tfunction cc Ar_Definite rty nil)
+      := (@Tfunction _ (@FunctionType _ cc Ar_Definite rty nil))
          ( in custom CPP_type at level 100
          , cc constr at level 0
          , rty custom CPP_type at level 200
          , format "'[' extern  cc  ???()  ->  rty ']'"
          , only printing).
   Notation "'extern' cc '???(' aty1 , .. , aty2 ')' '->' rty"
-      := (@Tfunction cc Ar_Definite rty (cons aty1 .. (cons aty2 nil) ..))
+      := (@Tfunction _ (@FunctionType _ cc Ar_Definite rty (cons aty1 .. (cons aty2 nil) ..)))
          ( in custom CPP_type at level 100
          , cc constr at level 0
          , rty custom CPP_type at level 200
@@ -148,14 +146,14 @@ Module Export TypeNotations.
          , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )  ->  rty ']'"
          , only printing).
   Notation "'extern' cc '???()(...)' '->' rty"
-      := (@Tfunction cc Ar_Variadic rty nil)
+      := (@Tfunction _ (@FunctionType _ cc Ar_Variadic rty nil))
          ( in custom CPP_type at level 100
          , cc constr at level 0
          , rty custom CPP_type at level 200
          , format "'[' extern  cc  ???()(...)  ->  rty ']'"
          , only printing).
   Notation "'extern' cc '???(' aty1 , .. , aty2 ')(...)' '->' rty"
-      := (@Tfunction cc Ar_Variadic rty (cons aty1 .. (cons aty2 nil) ..))
+      := (@Tfunction _ (@FunctionType _ cc Ar_Variadic rty (cons aty1 .. (cons aty2 nil) ..)))
          ( in custom CPP_type at level 100
          , cc constr at level 0
          , rty custom CPP_type at level 200
@@ -214,25 +212,25 @@ Module Export TypeNotationsParsing.
 
   (* [Tqualified] types *)
   Notation "'mut' ty"
-      := (Qmut ty)
+      := (Tmut ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity
          , format "'[' mut  ty ']'").
   Notation "'const' ty"
-      := (Qconst ty)
+      := (Tconst ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity
          , format "'[' const  ty ']'").
   Notation "'volatile' ty"
-      := (Qmut_volatile ty)
+      := (Tmut_volatile ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity
          , format "'[' volatile  ty ']'").
   Notation "'const' 'volatile' ty"
-      := (Qconst_volatile ty)
+      := (Tconst_volatile ty)
          ( in custom CPP_type at level 100
          , ty custom CPP_type at level 200
          , right associativity

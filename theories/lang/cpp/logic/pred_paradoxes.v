@@ -9,8 +9,9 @@ Require Import bedrock.prelude.base.
 
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 
+(* TODO: disable paradoxes
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
   (*
@@ -89,3 +90,4 @@ Section with_cpp.
     Qed.
   End type_ptr_object_representation_full_is_unsound.
 End with_cpp.
+*)

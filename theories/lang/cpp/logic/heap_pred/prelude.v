@@ -10,7 +10,7 @@ Require Export bedrock.lang.bi.fractional.
 
 Require Export bedrock.lang.cpp.bi.cfractional.
 Require Export bedrock.lang.cpp.semantics.
-Require Export bedrock.lang.cpp.ast.
+Require Export bedrock.lang.cpp.syntax.
 Require Export bedrock.lang.cpp.logic.pred.
 Require Export bedrock.lang.cpp.logic.pred.
 Require Export bedrock.lang.cpp.logic.path_pred.

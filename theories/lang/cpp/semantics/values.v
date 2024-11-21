@@ -9,17 +9,18 @@ Require Import Stdlib.Strings.Ascii.
 Require Import stdpp.gmap.
 
 Require Import bedrock.prelude.base.
-Require Import bedrock.prelude.addr.
 Require Import bedrock.prelude.option.
 Require Import bedrock.prelude.numbers.
 
+Require Import bedrock.lang.cpp.reserved_notation. (* TODO *)
 Require Import bedrock.lang.cpp.arith.operator.
 Require Import bedrock.lang.cpp.arith.builtins.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Export bedrock.lang.cpp.semantics.types.
 Require Export bedrock.lang.cpp.semantics.sub_module.
 Require Export bedrock.lang.cpp.semantics.genv.
 Require Export bedrock.lang.cpp.semantics.ptrs.
+Require Export bedrock.lang.cpp.semantics.heap_types.
 
 #[local] Set Printing Coercions.
 #[local] Close Scope nat_scope.
@@ -86,7 +87,7 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   | Vptr (_ : ptr)
   | Vraw (_ : raw_byte)
   | Vundef
-  .
+  | Vmember_ptr (_ : name) (_ : option atomic_name).
   #[global] Notation Vref := Vptr (only parsing).
 
   (* TODO Maybe this should be removed *)
@@ -122,6 +123,7 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
     | Vptr p => Some (bool_decide (p <> nullptr))
     | Vchar n => Some (bool_decide (n <> 0%N))
     | Vundef | Vraw _ => None
+    | Vmember_ptr _ p => Some (bool_decide (p <> None))
     end.
   #[global] Arguments is_true !_.
 
@@ -150,12 +152,12 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
     Vchar $ trimN (char_type.bitsN t) z.
 
   (* the default value for a type.
-  * this is used to initialize primitives if you do, e.g.
-  *   [int x{};]
-  *)
+   * this is used to initialize primitives if you do, e.g.
+   *   [int x{};]
+   *)
   Fixpoint get_default (t : type) : option val :=
     match t with
-    | Tpointer _ => Some (Vptr nullptr)
+    | Tptr _ => Some (Vptr nullptr)
     | Tnum _ _ => Some (Vint 0%Z)
     | Tchar_ _ => Some (Vchar 0%N)
     | Tbool => Some (Vbool false)
@@ -171,7 +173,7 @@ Module Type RAW_BYTES_VAL
   (** [raw_bytes_of_val σ ty v rs] states that the value [v] of type
       [ty] is represented by the raw bytes in [rs]. What this means
       depends on the type [ty]. *)
-  Parameter raw_bytes_of_val : genv -> type -> val -> list raw_byte -> Prop.
+  Parameter raw_bytes_of_val : genv -> Rtype -> val -> list raw_byte -> Prop.
 
   #[local] Notation PROPER R1 R2 := (
     Proper (R1 ==> eq ==> eq ==> eq ==> R2) raw_bytes_of_val
@@ -196,7 +198,7 @@ Module Type RAW_BYTES_VAL
       NOTE: We only need this for [sz = W8]
       *)
       raw_bytes_of_val σ (Tnum sz sgn) (Vint z) rs ->
-      bound sz sgn z.
+      int_rank.bound sz sgn z.
 
   Axiom raw_bytes_of_val_sizeof : forall {σ ty v rs},
       raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
@@ -214,11 +216,11 @@ Module Type RAW_BYTES_VAL
        *Always* qualify this name, e.g. [FieldOrBase.t]
      *)
     Variant t : Set :=
-    | Field (f : ident)
+    | Field (_ : atomic_name)
     | Base (_ : globname).
 
     #[global] Instance t_eq_dec : EqDecision t := ltac:(solve_decision).
-    #[global,program] Instance t_countable : Countable t :=
+    #[global] Declare Instance t_countable : Countable t. (*
       { encode x := encode match x with
                       | Field a => inl a
                       | Base b => inr b
@@ -230,7 +232,7 @@ Module Type RAW_BYTES_VAL
       }.
     Next Obligation.
       by destruct x; rewrite /= decode_encode/=.
-    Qed.
+    Qed. *) (* TODO NAMES *)
 
   End FieldOrBase.
 
@@ -256,12 +258,14 @@ Module Type RAW_BYTES_VAL
     Some (length rs) = N.to_nat <$> (size_of σ (Tnamed cls)).
 
   (** The raw bytes in each field is the size of the field *)
+  (* TODO: type_of_field
   Axiom raw_bytes_of_struct_wf_field : forall σ cls flds rs,
     raw_bytes_of_struct σ cls flds rs ->
     (forall m mty,
-    type_of_field cls m = Some mty ->
-    exists bytes, flds !! FieldOrBase.Field m = Some bytes /\
-    Some (length bytes) = N.to_nat <$> (size_of σ mty)).
+        type_of_field cls m = Some mty ->
+        exists bytes, flds !! FieldOrBase.Field m = Some bytes /\
+                   Some (length bytes) = N.to_nat <$> (size_of σ mty)).
+   *)
 
   (** The raw bytes in each base is the size of the base *)
   Axiom raw_bytes_of_struct_wf_base : forall σ cls flds rs base bytes,
@@ -309,15 +313,15 @@ Module Type RAW_BYTES_MIXIN
   than directly as an inductive.
   *)
 
-  Inductive val_related {σ : genv} : type -> val -> val -> Prop :=
+  Inductive val_related {σ : genv} : Rtype -> val -> val -> Prop :=
   | Veq_refl ty v : val_related ty v v
   | Vqual t ty v1 v2 :
     val_related ty v1 v2 ->
     val_related (Tqualified t ty) v1 v2
-  | Vraw_uint8 raw z (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
-    val_related Tu8 (Vraw raw) (Vint z)
-  | Vuint8_raw z raw (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
-    val_related Tu8 (Vint z) (Vraw raw).
+  | Vraw_uint8 raw z (Hraw : raw_bytes_of_val σ Tbyte (Vint z) [raw]) :
+    val_related Tbyte (Vraw raw) (Vint z)
+  | Vuint8_raw z raw (Hraw : raw_bytes_of_val σ Tbyte (Vint z) [raw]) :
+    val_related Tbyte (Vint z) (Vraw raw).
   #[local] Hint Constructors val_related : core.
 
   Lemma val_related_not_raw {σ} v1 v2 ty :
@@ -410,9 +414,11 @@ Module Type RAW_BYTES_MIXIN
   (** TODO: Arguably misplaced *)
   Lemma raw_bytes_of_val_uint_length {σ} v rs sz sgn :
     raw_bytes_of_val σ (Tnum sz sgn) v rs ->
-    length rs = bytesNat sz.
+    length rs = int_rank.bytesNat sz.
   Proof.
-    by intros [= ?%N_of_nat_inj]%raw_bytes_of_val_sizeof.
+    move => /raw_bytes_of_val_sizeof/=.
+    rewrite /int_rank.bytesN /bitsize.bytesN.
+    inversion 1. lia.
   Qed.
 End RAW_BYTES_MIXIN.
 
@@ -440,7 +446,9 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
 
   TODO: Currently, [has_type_prop] isn't the maximal pure part of [has_type].
     *)
-  Parameter has_type_prop : forall {σ : genv}, val -> type -> Prop.
+  Parameter has_type_prop : forall {σ : genv}, val -> Rtype -> Prop.
+  #[global] Notation "'valid<' ty > v" := (has_type_prop v ty%cpp_type)
+       (at level 30, ty at level 20, v at level 1, format "valid< ty >  v") : type_scope.
 
   #[global]
   Declare Instance has_type_prop_mono : Proper (genv_leq ==> eq ==> eq ==> Basics.impl) (@has_type_prop).
@@ -455,7 +463,7 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     Context {σ : genv}.
 
     Axiom has_type_prop_pointer : forall v ty,
-        has_type_prop v (Tpointer ty) <-> exists p, v = Vptr p.
+        has_type_prop v (Tptr ty) <-> exists p, v = Vptr p.
     Axiom has_type_prop_erase_qualifiers : forall v ty,
         has_type_prop v ty <-> has_type_prop v (erase_qualifiers ty).
     Axiom has_type_prop_nullptr : forall v,
@@ -491,15 +499,15 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     Axiom has_type_prop_enum : forall v nm,
         has_type_prop v (Tenum nm) <->
         exists tu ty ls,
-          tu ⊧ σ /\ tu !! nm = Some (Genum ty ls) /\
+          tu ⊧ σ /\ tu.(types) !! nm = Some (Genum ty ls) /\
           ~~ is_raw v /\ has_type_prop v (drop_qualifiers ty).
 
     (** Note in the case of [Tuchar], the value [v] could be a
         raw value. *)
     Axiom has_int_type' : forall sz sgn v,
         has_type_prop v (Tnum sz sgn) <->
-          (exists z, v = Vint z /\ bound sz sgn z) \/
-          (exists r, v = Vraw r /\ Tnum sz sgn = Tuchar).
+          (exists z, v = Vint z /\ bitsize.bound (int_rank.bitsize sz) sgn z) \/
+          (exists r, v = Vraw r /\ Tnum (lang:=lang.cpp) sz sgn = Tuchar).
 
   End with_genv.
 
@@ -518,7 +526,7 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     Qed.
 
     Lemma has_nullptr_type ty :
-      has_type_prop (Vptr nullptr) (Tpointer ty).
+      has_type_prop (Vptr nullptr) (Tptr ty).
     Proof. by rewrite has_type_prop_pointer; eexists. Qed.
 
     Lemma has_bool_type : forall z,
@@ -532,7 +540,7 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     Qed.
 
     Lemma has_int_type : forall sz (sgn : signed) z,
-        bound sz sgn z <-> has_type_prop (Vint z) (Tnum sz sgn).
+        bitsize.bound (int_rank.bitsize sz) sgn z <-> has_type_prop (Vint z) (Tnum sz sgn).
     Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
 
     Lemma has_type_prop_char' (n : N) ct : (0 <= n < 2 ^ char_type.bitsN ct)%N <-> has_type_prop (Vchar n) (Tchar_ ct).
@@ -568,73 +576,23 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
         by rewrite E has_type_prop_void in Ht.
       }
       apply dec_stable => G.
-      induction ty; move: Ht => //=.
+      induction ty; move: Ht => //=. (*
       rewrite has_type_prop_pointer; naive_solver.
       rewrite has_type_prop_ref; naive_solver.
       rewrite has_type_prop_rv_ref; naive_solver.
       rewrite has_int_type'; naive_solver.
       rewrite -has_type_prop_char; naive_solver.
-      admit.
-      admit.
-      admit.
-      admit.
       { (* Needs well-founded induction on types and [genv]! *)
-        rewrite has_type_prop_enum => -[?] [?] [?]. admit. }
-      admit.
+        rewrite has_type_prop_enum => -[?] [?] [?]. }
       rewrite has_type_prop_bool; naive_solver.
-      admit.
-      admit.
       { simpl in G. tauto. }
       rewrite has_type_prop_nullptr; naive_solver.
-      admit.
-      admit.
-      all: fail.
+      all: fail. *)
     Abort.
-
-    Section has_type_prop.
-      Lemma has_type_prop_bswap8:
-        forall v,
-          has_type_prop (Vint (bswap8 v)) Tu8.
-      Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
-
-      Lemma has_type_prop_bswap16:
-        forall v,
-          has_type_prop (Vint (bswap16 v)) Tu16.
-      Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
-
-      Lemma has_type_prop_bswap32:
-        forall v,
-          has_type_prop (Vint (bswap32 v)) Tu32.
-      Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
-
-      Lemma has_type_prop_bswap64:
-        forall v,
-          has_type_prop (Vint (bswap64 v)) Tu64.
-      Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
-
-      Lemma has_type_prop_bswap128:
-        forall v,
-          has_type_prop (Vint (bswap128 v)) Tu128.
-      Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
-    End has_type_prop.
-
-    Lemma has_type_prop_bswap:
-      forall sz v,
-        has_type_prop (Vint (bswap sz v)) (Tnum sz Unsigned).
-    Proof.
-      intros *; destruct sz;
-        eauto using
-              has_type_prop_bswap8,
-              has_type_prop_bswap16,
-              has_type_prop_bswap32,
-              has_type_prop_bswap64,
-              has_type_prop_bswap128.
-    Qed.
 
   End with_env.
 
   #[global] Hint Resolve has_type_prop_qual : has_type_prop.
-  #[global] Hint Resolve has_type_prop_bswap : has_type_prop.
 
   Arguments Z.add _ _ : simpl never.
   Arguments Z.sub _ _ : simpl never.
@@ -660,8 +618,8 @@ End VALUES_INTF_AXIOM.
 (** Derived *)
 
 Lemma has_type_prop_raw_bytes_of_val {σ} z raw :
-  raw_bytes_of_val σ Tu8 (Vint z) [raw] ->
-  has_type_prop (Vraw raw) Tu8 <-> has_type_prop (Vint z) Tu8.
+  raw_bytes_of_val σ Tuchar (Vint z) [raw] ->
+  has_type_prop (Vraw raw) Tbyte <-> has_type_prop (Vint z) Tbyte.
 Proof.
   rewrite !has_int_type'. split.
   { intros [(? & ? & _)|(? & ? & _)]; first done.

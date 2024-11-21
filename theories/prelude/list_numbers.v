@@ -34,7 +34,7 @@ Definition seqN (from count : N) : list N :=
 Definition replicateN {A} (count : N) (x : A) : list A :=
   replicate (N.to_nat count) x.
 #[global] Arguments replicateN : simpl never.
-#[deprecated(since="2021-05-26",note="use [replicateN]")]
+#[deprecated(since="2021-05-26",note="use [replicateN].")]
 Notation repeatN := (flip replicateN) (only parsing).
 
 Definition dropN {A} n := drop (A := A) (N.to_nat n).

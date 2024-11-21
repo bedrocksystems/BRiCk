@@ -21,11 +21,11 @@ Section with_cpp.
   (** [blockR sz q] represents [q] ownership of a contiguous chunk of
       [sz] bytes without any C++ structure on top of it. *)
   Definition blockR_def {σ} sz (q : cQp.t) : Rep :=
-    _offsetR (o_sub σ Tu8 (Z.of_N sz)) validR **
-    (* ^ Encodes valid_ptr (this .[ Tu8 ! sz]). This is
-    necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ Tu8 ! m] |-> blockR 0]. *)
+    _offsetR (o_sub σ Tbyte (Z.of_N sz)) validR **
+    (* ^ Encodes valid_ptr (this .[ Tbyte ! sz]). This is
+    necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ Tbyte ! m] |-> blockR 0]. *)
     [∗list] i ∈ seq 0 (N.to_nat sz),
-      _offsetR (o_sub σ Tu8 (Z.of_nat i)) (anyR Tu8 q).
+      _offsetR (o_sub σ Tbyte (Z.of_nat i)) (anyR Tbyte q).
   Definition blockR_aux : seal (@blockR_def). Proof. by eexists. Qed.
   Definition blockR := blockR_aux.(unseal).
   Definition blockR_eq : @blockR = _ := blockR_aux.(seal_eq).
@@ -75,7 +75,7 @@ Section with_cpp.
    * it is a convenient short-hand since it happens frequently, but there is nothing
    * special about it.
    *)
-  Definition tblockR (ty : type) (q : cQp.t) : Rep :=
+  Definition tblockR (ty : Rtype) (q : cQp.t) : Rep :=
     match size_of σ ty , align_of ty with
     | Some sz , Some al => blockR (σ:=σ) sz q ** alignedR al
     | _ , _  => False
@@ -105,7 +105,7 @@ Section with_cpp.
     rewrite TCLt_N blockR_eq/blockR_def.
     destruct (N.to_nat n) eqn:Hn; [ lia | ] => {Hn} /=.
     rewrite o_sub_0 ?_offsetR_id; [ | by eauto].
-    assert (TCEq (zero_sized_array Tu8) false) by done.
+    assert (TCEq (zero_sized_array (lang:=lang.cpp) Tbyte) false) by done.
     apply _.
   Qed.
   #[global] Instance blockR_valid_ptr sz q : Observe validR (blockR sz q).

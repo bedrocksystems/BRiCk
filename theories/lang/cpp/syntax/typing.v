@@ -1,174 +1,33 @@
 (*
- * Copyright (c) 2020-2024 BedRock Systems, Inc.
+ * Copyright (c) 2023-2024 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.prelude.base.
-Require Import bedrock.prelude.list_numbers.
-Require Import bedrock.lang.cpp.syntax.names.
-Require Import bedrock.lang.cpp.syntax.expr.
+
+Require Import bedrock.lang.cpp.syntax.prelude.
+Require Import bedrock.lang.cpp.syntax.core.
 Require Import bedrock.lang.cpp.syntax.types.
 
-(**
-[decltype_to_exprtype t] computes the value category and expression
-type of an expression with declaration type [t].
-*)
-Definition decltype_to_exprtype (t : decltype) : ValCat * exprtype :=
-  (**
-  TODO: This repeats some case distinctions that are also relevant to
-  [valcat_of]. We could eliminate the duplication by deriving
-  [type_of], [valcat_of] from [decltype_of_expr] (rather than the
-  other way around).
-  *)
-  match drop_qualifiers t with
-  | Tref u => (Lvalue, u)
-  | Trv_ref u =>
-    match drop_qualifiers u with
-    | @Tfunction _ _ _ _ as f =>
-      (**
-      NOTE: We return the function type without qualifiers in light of
-      "A function or reference type is always cv-unqualified."
-      <https://www.eel.is/c++draft/basic.type.qualifier#1>
-      *)
-      (Lvalue, f)
-    | _ => (Xvalue, u)
-    end
-  | _ => (Prvalue, t)	(** Promote sharing, rather than normalize qualifiers *)
-  end.
+#[local] Open Scope monad_scope.
+#[local] Notation M := option.
 
-
-(* [type_of_member obj_ty mut mem_type] is the [exprtype] of a member access
-   given the type of the object, the mutability of the member, and the [decltype]
-   of the member.
-
-   Examples on decltypes of members ([valcat_of] and [type_of_member]):
-
-   <<
-   struct C {
-     int x;
-     int &y;
-     int &&z;
-   };
-
-   void test() {
-     int x;
-     int &r{x};
-     int &&rr{...};
-
-            // exprtype valcat
-     x;     // int      L
-     r;     // int      L
-     rr;    // int      L
-
-     C c;
-     c.x;   // int      L
-     c.y;   // int      L
-     c.z;   // int      L
-     C{}.x; // int      X
-     C{}.y; // int      L
-     C{}.z; // int      L
-   }
-   >>
- *)
-Definition type_of_member (obj_ty : exprtype) (mut : bool) (mem_type : decltype) : exprtype :=
-  let (ref, ty) := decltype_to_exprtype mem_type in
-  match ref with
-  | Lvalue | Xvalue => ty
-  | Prvalue =>
-    let qual :=
-      let '(ocv, _) := decompose_type obj_ty in
-      (* NOTE: C++ forbids <<mutable const int x>> even by
-             substitution & template instantiation, e.g.
-             <<mutable T mt>> with <<T = const int>>.
-             We arbitrary pick that <<mutable>> removes the effect
-             of the object qualifiers, but does not override the
-             qualifiers of the type (<<T>> above). This is in line
-             with our definition of [wp_const], where <<mutable>> simply
-             stops the <<const>> operation.
-             This does *not* introduce any soundness issue because it is
-             compile-time rejected by the compiler.
-       *)
-      CV (if mut then false else q_const ocv) (q_volatile ocv)
-    in
-    tqualified qual ty
-  end.
-
-(** [type_of e] returns the type of the expression [e]. *)
-Fixpoint type_of (e : Expr) : exprtype :=
-  match e with
-  | Evar _ t
-  | Eglobal _ t => drop_reference t
-  | Eenum_const gn _ => Tenum gn
-  | Echar _ t => t
-  | Estring vs t => Tarray (Qconst t) (1 + lengthN vs)
-  | Eint _ t => t
-  | Ebool _ => Tbool
-  | Eunop _ _ t
-  | Ebinop _ _ _ t => t
-  | Ederef _ t => t
-  | Eaddrof e => Tptr (type_of e)
-  | Eassign _ _ t
-  | Eassign_op _ _ _ t
-  | Epreinc _ t
-  | Epostinc _ t
-  | Epredec _ t
-  | Epostdec _ t => t
-  | Eseqand _ _ => Tbool
-  | Eseqor _ _ => Tbool
-  | Ecomma _ e2 => type_of e2
-  | Ecall _ _ t
-  | Ecast _ _ _ t => t
-  | Emember e _ mut ty => type_of_member (type_of e) mut ty
-  | Emember_call _ _ _ t
-  | Eoperator_call _ _ _ t
-  | Esubscript _ _ t
-  | Esizeof _ t
-  | Ealignof _ t
-  | Eoffsetof _ _ t
-  | Econstructor _ _ t => t
-  | Eimplicit e => type_of e
-  | Eif _ _ _ _ t
-  | Eif2 _ _ _ _ _ _ t
-  | Ethis t => t
-  | Enull => Tnullptr
-  | Einitlist _ _ t
-  | Einitlist_union _ _ t
-  | Eimplicit_init t => t
-  | Enew _ _ _ aty _ _ => Tptr aty
-  | Edelete _ _ _ _ => Tvoid
-  | Eandclean e => type_of e
-  | Ematerialize_temp e _ => type_of e
-  | Eatomic _ _ t => t
-  | Eva_arg _ t => t
-  | Epseudo_destructor _ _ _ => Tvoid
-  | Earrayloop_init _ _ _ _ _ t => t
-  | Earrayloop_index _ t => t
-  | Eopaque_ref _ _ t => t
-  | Eunsupported _ _ t => t
-  end.
-
-Module Import valcat_of_internal.
-  (**
-  Setting aside uninstantiated template arguments, there's a total
-  function from expressions to value categories.
-  *)
-  Definition UNEXPECTED_valcat {A} (tm : A) : ValCat.
-  Proof. exact Prvalue. Qed.
+Module decltype.
 
   (**
-  The value category of an explicit cast to type [t] or a call to a
-  function returning type [t] or a [__builtin_va_arg] of type [t].
+  [to_exprtype] decomposes a declaration type into a value category
+  and expression type. This is delicate because xvalue references to
+  function types induce lvalue expressions.
+
+  [to_valcat] is similar, but keeps only the value category. Matching
+  on [to_valcat t] is simpler than matching on [t] when [t] might be
+  an xvalue reference to a function type.
   *)
-  Definition valcat_from_type (t : decltype) : ValCat :=
-    (*
-    Dropping qualifiers may not be necessary. Cppreference says
-    "Reference types cannot be cv-qualified at the top level".
-    *)
+  Definition to_exprtype {lang} (t : decltype' lang) : ValCat * exprtype' lang :=
     match drop_qualifiers t with
-    | Tref _ => Lvalue
+    | Tref u => (Lvalue, u)
     | Trv_ref u =>
       match drop_qualifiers u with
-      | @Tfunction _ _ _ _ =>
+      | Tfunction _ as f =>
         (**
         Both "a function call or an overloaded operator expression,
         whose return type is rvalue reference to function" and "a cast
@@ -182,169 +41,343 @@ Module Import valcat_of_internal.
         https://www.eel.is/c++draft/expr.static.cast#1
         https://www.eel.is/c++draft/expr.reinterpret.cast#1
         https://www.eel.is/c++draft/expr.cast#1 (C-style casts)
+
+        NOTE: We return the function type without qualifiers in light
+        of "A function or reference type is always cv-unqualified."
+        <https://www.eel.is/c++draft/basic.type.qualifier#1>
         *)
-        Lvalue
-      | _ => Xvalue
+        (Lvalue, f)
+      | _ => (Xvalue, u)
       end
-    | _ => Prvalue
+    | _ => (Prvalue, t)	(** Promote sharing, rather than normalize qualifiers *)
     end.
+  Definition to_valcat {lang} (t : decltype' lang) : ValCat := (to_exprtype t).1.
 
-  (* See <https://eel.is/c++draft/expr.call#13> *)
-  Definition valcat_from_function_type (t : functype) : ValCat :=
-    match t with
-    | @Tfunction _ _ ret _ => valcat_from_type ret
-    | _ => UNEXPECTED_valcat t
-    end.
-End valcat_of_internal.
-
-Fixpoint valcat_of (e : Expr) : ValCat :=
-  match e with
-  | Evar _ _
-  | Eglobal _ _ => Lvalue
-  | Eenum_const _ _ => Prvalue
-  | Echar _ _ => Prvalue
-  | Estring _ _ => Lvalue
-  | Eint _ _ => Prvalue
-  | Ebool _ => Prvalue
-  | Eunop _ _ _ => Prvalue
-  | Ebinop op e1 _ _ =>
-    match op with
-    | Bdotp =>
-      (**
-      The value category of [e1.*e2] is (i) that of [e1] (xvalue or
-      lvalue) when [e2] points to a field and (ii) prvalue when [e2]
-      points to a method.
-
-      We need only address (i) here because when [e2] is a method, the
-      result of [e1.*e2] must be immediately applied, and cpp2v emits
-      [Emember_call] rather than [Ebinop] for indirect method calls.
-
-      https://www.eel.is/c++draft/expr.mptr.oper#6
-      *)
-        valcat_of e1
-    | Bdotip => Lvalue	(* derived from [Bdotp] *)
-    | _ => Prvalue
-    end
-  | Ederef _ _ => Lvalue
-  | Eaddrof _ => Prvalue
-  | Eassign _ _ _ => Lvalue
-  | Eassign_op _ _ _ _ => Lvalue
-  | Epreinc _ _ => Lvalue
-  | Epostinc _ _ => Prvalue
-  | Epredec _ _ => Lvalue
-  | Epostdec _ _ => Prvalue
-  | Eseqand _ _ => Prvalue
-  | Eseqor _ _ => Prvalue
-  | Ecomma _ e2 => valcat_of e2
-  | Ecast _ _ vc _ => vc
-  | Ecall f _ _ =>
-    match type_of f with
-    | Tptr t => valcat_from_function_type t
-    | _ => UNEXPECTED_valcat e
-    end
-  | Emember e _ _ mty =>
-      match drop_qualifiers mty with
-      | Tref _ | Trv_ref _ =>
-        (* if the member type is a reference, then the expression is an lvalue *)
-        Lvalue
-      | _ => valcat_of e
-      end
-  | Emember_call f _ _ _ =>
-    match f with
-    | inl (_, _, t) => valcat_from_function_type t
-    | inr e =>
-        match type_of e with
-        | Tmember_pointer _ t => valcat_from_function_type t
-        | _ => UNEXPECTED_valcat e
-        end
-    end
-  | Eoperator_call _ f _ _ =>
-    match f with
-    | operator_impl.Func _ t => valcat_from_function_type t
-    | operator_impl.MFunc _ _ ft => valcat_from_function_type ft
-    end
-
-  | Esubscript e1 e2 _ =>
-    (**
-    Neither operand ever has type [Tarray _ _] due to implicitly
-    inserted array-to-pointer conversions. To compute the right value
-    category, we skip over such conversions.
-    *)
-    let valcat_of_array (ar : Expr) : ValCat :=
-      match valcat_of ar with
-      | Lvalue => Lvalue
-      | Prvalue | Xvalue => Xvalue
-      end
-    in
-    let valcat_of_base (ei : Expr) : ValCat :=
-      match ei with
-      | Ecast Carray2ptr ar _ _ => valcat_of_array ar
-      | _ => Lvalue
-      end
-    in
-    match drop_qualifiers (type_of e1) with
-    | Tptr _ => valcat_of_base e1
-    | _ => valcat_of_base e2
-    end
-  | Esizeof _ _ => Prvalue
-  | Ealignof _ _ => Prvalue
-  | Eoffsetof _ _ _ => Prvalue
-  | Econstructor _ _ _ => Prvalue (* init *)
-  | Eimplicit e => valcat_of e
-  | Eif _ e1 e2 vc _ => vc
-  | Eif2 _ _ _ _ _ vc _ => vc
-  | Ethis _ => Prvalue
-  | Enull => Prvalue
-  | Einitlist _ _ _ => Prvalue (* operand | init *)
-  | Einitlist_union _ _ _ => Prvalue (* operand | init *)
-  | Eimplicit_init _ =>
-    (**
-    "References cannot be value-initialized".
-
-    https://en.cppreference.com/w/cpp/language/value_initialization
-    *)
-    Prvalue
-  | Enew _ _ _ _ _ _ => Prvalue
-  | Edelete _ _ _ _ => Prvalue
-  | Eandclean e => valcat_of e
-  | Ematerialize_temp _ vc => vc
-  | Eatomic _ _ _ => Prvalue
-  | Eva_arg _ t => valcat_from_type t
-  | Epseudo_destructor _ _ _ => Prvalue
-  | Earrayloop_init _ _ _ _ _ _ => Prvalue (* init *)
-  | Earrayloop_index _ _ => Prvalue
-  | Eopaque_ref _ vc _ => vc
-  | Eunsupported _ vc _ => vc
-  end.
-#[global] Arguments valcat_of !_ / : simpl nomatch, assert.
-
-(**
-[decltype_of_exprtype vc t] computes the declaration type of an
-expression with value category [vc] and expression type [t].
-*)
-Definition decltype_of_exprtype (vc : ValCat) (t : exprtype) : decltype :=
   (**
-  As [t : exprtype], we do not need [tref], [trv_ref].
+  Compute a declaration type from a value category and expression
+  type.
+
+  Up to dropping qualifiers on reference and function types, this is
+  intended to be a partial inverse of [to_exprtype].
   *)
-  match vc with
-  | Lvalue => Tref t
-  | Xvalue => Trv_ref t
-  | Prvalue => t
-  end.
+  Definition of_exprtype {lang} (vc : ValCat) (t : exprtype' lang) : decltype' lang :=
+    (**
+    As [t : Mexprtype], we do not need [tref], [trv_ref].
+    *)
+    match vc with
+    | Lvalue => Tref t
+    | Xvalue => Trv_ref t
+    | Prvalue => t
+    end.
+
+  Module internal.
+  Section with_lang.
+    Context {lang : lang.t}.
+    #[local] Notation Expr := (Expr' lang).
+    #[local] Notation decltype := (decltype' lang).
+    #[local] Notation exprtype := (exprtype' lang).
+    #[local] Notation function_type := (function_type' lang).
+    #[local] Notation functype := (functype' lang).
+
+    (**
+    The declaration type of an explicit cast to type [t] or a call to
+    a function or overloaded operator returning type [t] or a
+    [__builtin_va_arg] of type [t].
+    *)
+    Definition normalize (t : decltype) : decltype :=
+      let p := to_exprtype t in
+      of_exprtype p.1 p.2.
+
+    (** Function return type *)
+    Definition from_function_type (ft : function_type) : decltype :=
+      normalize ft.(ft_return).
+    Definition from_functype (t : functype) : M decltype :=
+      match t with
+      | Tfunction ft => mret $ from_function_type ft
+      | _ => mfail
+      end.
+
+    Definition requireL (t : decltype) : M exprtype :=
+      match drop_qualifiers t with
+      | Tref t => mret t
+      | _ => mfail
+      end.
+
+    Definition requireGL (t : decltype) : M exprtype :=
+      match drop_qualifiers t with
+      | Tref t => mret t
+      | Trv_ref t => mret t
+      | _ => mfail
+      end.
+
+    Section fixpoint.
+      Context (of_expr : Expr -> M decltype).
+
+      Definition of_cast (base : decltype) (c : Cast' lang) : M decltype :=
+        match c with
+        | Cdependent t
+        | Cbitcast t
+        | Clvaluebitcast t => mret t
+        | Cl2r => drop_qualifiers <$> requireGL base
+        | Cnoop t => mret t
+        | Carray2ptr =>
+            let k cv base :=
+              match base with
+              | Tarray ty _
+              | Tincomplete_array ty
+              | Tvariable_array ty _ =>
+                  mret $ Tptr $ tqualified cv ty
+              | _ => mfail
+              end
+            in
+            requireGL base >>= qual_norm k
+        | Cfun2ptr => Tptr <$> requireL base
+        | Cint2ptr t
+        | Cptr2int t => mret t
+        | Cptr2bool => mret Tbool
+        | Cderived2base _ ty
+        | Cbase2derived _ ty => mret ty
+        | Cintegral t => mret t
+        | Cint2bool => mret Tbool
+        | Cfloat2int t
+        | Cnull2ptr t
+        | Cnull2memberptr t
+        | Cbuiltin2fun t
+        | Cctor t => mret t
+        | C2void => mret Tvoid
+        | Cuser => mret base
+        | Cdynamic to => mret to
+        end.
+
+      Definition of_binop (op : BinOp) (l : Expr) (t : exprtype) : M decltype :=
+        match op with
+        | Bdotp =>
+          (**
+          The value category of [e1.*e2] is (i) that of [e1] (xvalue
+          or lvalue) when [e2] points to a field and (ii) prvalue when
+          [e2] points to a method.
+
+          We need only address (i) here because when [e2] is a method,
+          the result of [e1.*e2] must be immediately applied, and
+          cpp2v emits [Emember_call] rather than [Ebinop] for indirect
+          method calls.
+
+          https://www.eel.is/c++draft/expr.mptr.oper#6
+          *)
+          let* lt := to_exprtype <$> of_expr l in
+          match lt.1 with
+          | Lvalue => mret $ tref QM t
+          | Xvalue => mret $ trv_ref QM t
+          | _ => mfail
+          end
+        | Bdotip => mret $ tref QM t	(* derived from [Bdotp] *)
+        | _ => mret t
+        end.
+
+      Definition of_addrof (e : Expr) : M decltype :=
+        let* t := of_expr e in
+        let '(vc, et) := to_exprtype t in
+        let* _ := guard (vc <> Prvalue) in
+        mret $ Tptr et.
+
+      Definition of_call (f : Expr) : M decltype :=
+        let* '(_, t) := to_exprtype <$> of_expr f in
+        match t with
+        | Tptr ft => from_functype ft
+        | _ => mfail
+        end.
+
+      Definition of_member (arrow : bool) (e : Expr) (mut : bool) (t : decltype) : M decltype :=
+        let '(ref, et) := to_exprtype t in
+        match ref with
+        | Lvalue | Xvalue => mret $ Tref et
+        | Prvalue =>
+          let* '(lval, oty) :=
+            let* et := to_exprtype <$> of_expr e in
+            if arrow then
+              match et.1 , et.2 with
+              | Prvalue , Tptr t => mret (true, t)
+              | _ , _ => mfail
+              end
+            else
+              match et.1 with
+              | Lvalue => mret (true, et.2)
+              | Xvalue => mret (false, et.2)
+              | _ => mfail
+              end
+          in
+          let qual :=
+            let '(ocv, _) := decompose_type oty in
+            CV (if mut then false else q_const ocv) (q_volatile ocv)
+          in
+          let ty := tqualified qual et in
+          mret $ if lval : bool then Tref ty else Trv_ref ty
+        end.
+
+      Definition of_member_call (f : MethodRef' lang) : M decltype :=
+        match f with
+        | inl (_, _, ft) =>
+            from_functype ft
+        | inr e =>
+            let* et := of_expr e in
+            match et with
+            | Tmember_pointer cls ft => from_functype ft
+            | _ => mfail
+            end
+        end.
+
+      Definition from_operator_impl (f : operator_impl' lang) : M decltype :=
+        from_functype $ operator_impl.functype f.
+
+      Definition of_subscript (e1 e2 : Expr) (t : exprtype) : M decltype :=
+        let* t1 := of_expr e1 in
+        let* t2 := of_expr e2 in
+        let arithmetic t := guard (Is_true $ is_arithmetic t) in
+        match drop_qualifiers t1 , drop_qualifiers t2 with
+        | Tref aty , other => const (tref QM) <$> arithmetic other <*> array_type aty
+        | Trv_ref aty , other => const (trv_ref QM) <$> arithmetic other <*> array_type aty
+        | Tptr ety , other => const (Tref ety) <$> arithmetic other
+        | other , Tref aty => const (tref QM) <$> arithmetic other <*> array_type aty
+        | other , Trv_ref aty => const (trv_ref QM) <$> arithmetic other <*> array_type aty
+        | other , Tptr ety => const (Tref ety) <$> arithmetic other
+        | _ , _ => mfail
+        end.
+
+      (**
+      TODO: Does [Ematerialize_temp] ever have a value category other
+      than [Xvalue]? In the preceeding definition of [of_binop] we
+      seem to assume "no". If we are indeed making that assumption,
+      and if that assumption is correct, we should simplify the AST.
+      *)
+      Definition of_materialize_temp (e : Expr) (vc : ValCat) : M decltype :=
+        let* t := of_expr e in
+        let t := drop_reference t in
+        mret $ of_exprtype vc t.
+
+      #[local] Notation traverse_list := mapM.
+
+      Definition cast_result : decltype -> decltype :=
+        qual_norm (fun cv t =>
+          match t with
+          | Tnamed _
+          | Tarray _ _
+          | Tincomplete_array _
+          | Tvariable_array _ _
+          | Tenum _ => tqualified cv t
+          | _ => t
+          end).
+
+      Definition of_expr_body (e : Expr) : M decltype :=
+        match e return M decltype with
+
+        | Eparam X => mret $ Tresult_param X
+        | Eunresolved_global on => mret $ Tresult_global on
+        | Eunresolved_unop o e => Tresult_unop o <$> of_expr e
+        | Eunresolved_binop o l r => Tresult_binop o <$> of_expr l <*> of_expr r
+        | Eunresolved_call on es => Tresult_call on <$> traverse_list of_expr es
+        | Eunresolved_member_call on obj es => Tresult_member_call on <$> of_expr obj <*> traverse_list of_expr es
+        | Eunresolved_parenlist (Some t) es => Tresult_parenlist t <$> traverse_list of_expr es
+        | Eunresolved_parenlist None _ => mfail
+        | Eunresolved_member obj fld => Tresult_member <$> of_expr obj <*> mret fld
+
+        | Evar _ t => mret $ tref QM t
+        | Eenum_const n _ => mret $ Tenum n
+        | Eglobal _ t => mret $ tref QM $ normalize_type t
+        | Eglobal_member nm t =>
+            match nm with
+            | Nscoped cls _ => mret $ Tmember_pointer (Tnamed cls) t
+            | _ => mfail
+            end
+
+        | Echar _ t => mret t
+        | Estring chars t =>
+            mret $ Tref $ Tarray (Tconst t) (1 + list_numbers.lengthN chars)
+        | Eint _ t => mret t
+        | Ebool _ => mret Tbool
+        | Eunop _ _ t => mret t
+        | Ebinop op l _ t => of_binop op l t
+        | Ederef _ t => mret $ Tref t
+        | Eaddrof e => of_addrof e
+        | Eassign _ _ t
+        | Eassign_op _ _ _ t
+        | Epreinc _ t => mret $ Tref t
+        | Epostinc _ t => mret t
+        | Epredec _ t => mret $ Tref t
+        | Epostdec _ t => mret t
+        | Eseqand _ _
+        | Eseqor _ _ => mret Tbool
+        | Ecomma _ e2 => of_expr e2
+        | Ecall f _ => of_call f
+        | Eexplicit_cast _ t e =>
+            mret (cast_result t)
+        | Ecast c e => of_expr e >>= fun t => of_cast t c
+        | Emember arrow e _ mut t => of_member arrow e mut t
+        | Emember_ignore arrow eobj e => of_expr e
+        | Emember_call _ f _ _ => of_member_call f
+        | Eoperator_call _ f _ => from_operator_impl f
+        | Esubscript e1 e2 t => of_subscript e1 e2 t
+        | Esizeof _ t
+        | Ealignof _ t
+        | Eoffsetof _ _ t
+        | Econstructor _ _ t => mret t
+        | Elambda n _ => mret $ Tnamed n
+        | Eimplicit e => of_expr e
+        | Eimplicit_init t =>
+          (**
+          "References cannot be value-initialized".
+
+          https://en.cppreference.com/w/cpp/language/value_initialization
+          *)
+          mret t
+        | Eif _ _ _ t
+        | Eif2 _ _ _ _ _ t => mret t
+        | Ethis t => mret t
+        | Enull => mret Tnullptr
+        | Einitlist _ _ t => mret t
+        | Einitlist_union _ _ t => mret t
+        | Enew _ _ _ aty _ _ => mret $ Tptr aty
+        | Edelete _ _ _ _ => mret Tvoid
+        | Eandclean e => of_expr e
+        | Ematerialize_temp e vc => of_materialize_temp e vc
+        | Eatomic _ _ t => mret t
+        | Estmt _ t => mret t
+        | Eva_arg _ t => mret $ normalize t
+        | Epseudo_destructor _ _ _ => mret Tvoid
+        | Earrayloop_init _ _ _ _ _ t
+        | Earrayloop_index _ t => mret t
+        | Eopaque_ref _ t
+        | Eunsupported _ t => mret t
+        end.
+    End fixpoint.
+  End with_lang.
+  End internal.
+
+  Fixpoint of_expr {lang} (e : Expr' lang) : M (decltype' lang) :=
+    internal.of_expr_body of_expr e.
+
+End decltype.
+
+Module exprtype.
+
+  Definition of_expr {lang} (e : Expr' lang) : M (ValCat * exprtype' lang) :=
+    decltype.to_exprtype <$> decltype.of_expr e.
+
+  Definition of_expr_drop {lang} (e : Expr' lang) : M (exprtype' lang) :=
+    drop_reference <$> decltype.of_expr e.
+
+  Definition of_expr_check {lang} (P : ValCat -> Prop) `{!∀ vc, Decision (P vc)}
+      (e : Expr' lang) : M (exprtype' lang) :=
+    of_expr e >>= fun p => guard (P p.1) ;; mret p.2.
+
+End exprtype.
 
 (**
-[decltype_of_expr e] computes the declaration type of expression [e].
+Convenience functions
 *)
-Definition decltype_of_expr (e : Expr) : decltype :=
-  decltype_of_exprtype (valcat_of e) (type_of e).
-
-Lemma decltype_of_expr_lvalue e :
-  valcat_of e = Lvalue -> decltype_of_expr e = Tref (type_of e).
-Proof. by rewrite /decltype_of_expr=>->. Qed.
-Lemma decltype_of_expr_xvalue e :
-  valcat_of e = Xvalue -> decltype_of_expr e = Trv_ref (type_of e).
-Proof. by rewrite /decltype_of_expr=>->. Qed.
-Lemma decltype_of_expr_prvalue e :
-  valcat_of e = Prvalue -> decltype_of_expr e = type_of e.
-Proof. by rewrite /decltype_of_expr=>->. Qed.
-
+Definition decltype_of_expr {lang} (e : Expr' lang) : decltype' lang :=
+  default (Tunsupported "decltype_of_expr: cannot determine declaration type") $
+  decltype.of_expr e.
+Definition exprtype_of_expr {lang} (e : Expr' lang) : ValCat * exprtype' lang :=
+  decltype.to_exprtype $ decltype_of_expr e.
+Definition valcat_of {lang} (e : Expr' lang) : ValCat := (exprtype_of_expr e).1.
+Definition type_of {lang} (e : Expr' lang) : exprtype' lang := (exprtype_of_expr e).2.

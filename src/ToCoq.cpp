@@ -3,11 +3,13 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
+#include "Assert.hpp"
 #include "ClangPrinter.hpp"
 #include "CommentScanner.hpp"
 #include "CoqPrinter.hpp"
 #include "Filter.hpp"
 #include "ModuleBuilder.hpp"
+#include "PrePrint.hpp"
 #include "SpecCollector.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -50,7 +52,7 @@ with_open_file(const std::optional<std::string> path,
 
 void
 printDecl(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
-	if (cprint.printDecl(decl, print))
+	if (cprint.printDecl(print, decl))
 		print.cons();
 }
 
@@ -73,7 +75,7 @@ test(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
 		llvm::raw_string_ostream os{cmt};
 		os << loc::trace(loc::of(decl), cprint.getContext());
 		print.cmt(cmt) << fmt::nbsp;
-		cprint.printStructuredName(*decl, print);
+		cprint.printName(print, *decl);
 		print.output() << " ::" << fmt::line;
 	} else
 		bug(cprint, loc::none, "null declaration");
@@ -82,101 +84,161 @@ test(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
 
 void
 ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
-						   clang::TranslationUnitDecl* decl) {
+						   clang::TranslationUnitDecl* decl, bool sharing) {
+
 #if 0
-    NoInclude noInclude(ctxt->getSourceManager());
-    FromComment fromComment(ctxt);
-    std::list<Filter*> filters;
-    filters.push_back(&noInclude);
-    filters.push_back(&fromComment);
-    Combine<Filter::What::NOTHING, Filter::max> filter(filters);
+	NoInclude noInclude(ctxt->getSourceManager());
+	FromComment fromComment(ctxt);
+	std::list<Filter*> filters;
+	filters.push_back(&noInclude);
+	filters.push_back(&fromComment);
+	Combine<Filter::What::NOTHING, Filter::max> filter(filters);
 #endif
 	SpecCollector specs;
 	Default filter(Filter::What::DEFINITION);
 
 	::Module mod(trace_);
 
-	bool templates =
-		ast2_ || templates_file_.has_value() || name_test_file_.has_value();
+	bool templates = templates_file_.has_value() || name_test_file_.has_value();
 	build_module(decl, mod, filter, specs, compiler_, elaborate_, templates);
 
-	with_open_file(output_file_, [this, &ctxt, &mod](Formatter& fmt) {
-		CoqPrinter print(fmt, false, false);
-		ClangPrinter cprint(compiler_, ctxt, trace_, this->comment_);
+	auto parser = [&](CoqPrinter& print) -> auto& {
+		StringRef coqmod(print.templates() ? "bedrock.lang.cpp.mparser" :
+											 "bedrock.lang.cpp.parser");
+		return print.output()
+			   << "Require Import " << coqmod << "." << fmt::line << fmt::line;
+	};
 
-		fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line
-			<< fmt::line << "#[local] Open Scope bs_scope." << fmt::line;
-		// << "Import ListNotations." << fmt::line;
+	auto bytestring = [&](CoqPrinter& print) -> auto& {
+		return print.output() << "#[local] Open Scope bs_scope." << fmt::line;
+	};
 
-		fmt << fmt::line
-			<< "Definition module : translation_unit := " << fmt::indent
-			<< fmt::line << "Eval reduce_translation_unit in decls"
-			<< fmt::nbsp;
+	with_open_file(
+		output_file_, [&](Formatter& fmt) {
+			Cache cache;
+			CoqPrinter print(fmt, /*templates*/ false, structured_keys_, cache);
+			ClangPrinter cprint(compiler_, ctxt, trace_, comment_);
 
-		print.begin_list();
-		for (auto decl : mod.declarations()) {
-			printDecl(decl, print, cprint);
-		}
-		for (auto decl : mod.definitions()) {
-			printDecl(decl, print, cprint);
-		}
-		for (auto decl : mod.asserts()) {
-			printDecl(decl, print, cprint);
-		}
-		print.end_list();
-		print.output() << fmt::nbsp;
-		if (ctxt->getTargetInfo().isBigEndian()) {
-			print.output() << "Big";
-		} else {
-			assert(ctxt->getTargetInfo().isLittleEndian());
-			print.output() << "Little";
-		}
+			parser(print);
+			bytestring(print) << fmt::line;
 
-		// TODO I still need to generate the initializer
+			if (sharing) {
+				PRINTER<clang::Type> type_fn = [&](auto prefix, auto num,
+												   auto* type) {
+					print.output() << "#[local] Definition " << prefix << num
+								   << " : type := ";
+					cprint.printType(print, type, loc::of(type));
+					print.output() << "." << fmt::line;
+				};
+				PRINTER<clang::NamedDecl> name_fn = [&](auto prefix, auto num,
+														auto* decl) {
+					print.output() << "#[local] Definition " << prefix << num
+								   << " : name := ";
+					auto cprint_with_decl = [&]() {
+						if (auto dc = dyn_cast<DeclContext>(decl)) {
+							return cprint.withDecl(dc);
+						}
+						return cprint;
+					};
+					cprint_with_decl().printName(print, decl, loc::of(decl));
+					print.output() << "." << fmt::line;
+				};
 
-		print.output() << "." << fmt::outdent << fmt::line;
-	});
+				for (auto decl : mod.declarations()) {
+					prePrintDecl(decl, cache, type_fn, name_fn);
+				}
+				for (auto decl : mod.definitions()) {
+					prePrintDecl(decl, cache, type_fn, name_fn);
+				}
+			}
 
-	with_open_file(notations_file_, [this, &decl, &mod](Formatter& spec_fmt) {
-		CoqPrinter print(spec_fmt, false, false);
+			print.output()
+        << fmt::line
+				<< "Definition module : translation_unit := " << fmt::indent << fmt::line
+				<< "translation_unit.check "
+				<< fmt::nbsp;
+
+			print.begin_list();
+			for (auto decl : mod.declarations()) {
+				printDecl(decl, print, cprint);
+			}
+			for (auto decl : mod.definitions()) {
+				printDecl(decl, print, cprint);
+			}
+			for (auto decl : mod.asserts()) {
+				printDecl(decl, print, cprint);
+			}
+			print.end_list();
+			print.output() << fmt::nbsp;
+			if (ctxt->getTargetInfo().isBigEndian()) {
+				print.output() << "Big";
+			} else {
+				always_assert(ctxt->getTargetInfo().isLittleEndian());
+				print.output() << "Little";
+			}
+
+			// TODO I still need to generate the initializer
+
+			print.output() << "." << fmt::outdent << fmt::line;
+
+      /*
+			print.output()
+				<< fmt::line
+				<< "Succeed Example test : module_check.2 = [] := eq_refl."
+				<< fmt::line;
+
+			print.output() << fmt::line
+						   << "Definition module : translation_unit := "
+                "Eval lazy [fst] in "
+							  "fst module_check."
+        //						   << fmt::line << "Arguments module : simpl never."
+						   << fmt::line << fmt::line;
+      */
+
+			if (check_types_) {
+				print.output()
+					<< fmt::line << "Require bedrock.lang.cpp.syntax.typed."
+					<< fmt::line
+					<< "Succeed Example well_typed : "
+					   "typed.decltype.check_tu module = trace.Success tt"
+					   " := ltac:(vm_compute; reflexivity)."
+					<< fmt::line;
+			}
+		});
+
+	with_open_file(notations_file_, [&](Formatter& spec_fmt) {
 		auto& ctxt = decl->getASTContext();
-		ClangPrinter cprint(compiler_, &decl->getASTContext(), trace_,
-							this->comment_);
+		Cache c;
+		CoqPrinter print(spec_fmt, /*templates*/ false, structured_keys_, c);
+		ClangPrinter cprint(compiler_, &ctxt, trace_, comment_);
 		// PrintSpec printer(ctxt);
 
 		NoInclude source(ctxt.getSourceManager());
 
-		// print.output() << "(*" << fmt::line
-		//                << " * Notations extracted from "
-		//                << ctxt.getSourceManager()
-		//                       .getFileEntryForID(
-		//                           ctxt.getSourceManager().getMainFileID())
-		//                       ->getName()
-		//                << fmt::line << " *)" << fmt::line;
-		print.output() << "Require Export bedrock.lang.cpp.parser." << fmt::line
-					   << fmt::line;
+		parser(print);
 
 		// generate all of the record fields
 		write_globals(mod, print, cprint);
 	});
 
-	with_open_file(templates_file_, [this, &ctxt, &mod](Formatter& fmt) {
-		CoqPrinter print(fmt, true, ast2_);
-		ClangPrinter cprint(compiler_, ctxt, trace_, this->comment_);
+	with_open_file(templates_file_, [&](Formatter& fmt) {
+		Cache c;
+		CoqPrinter print(fmt, /*templates*/ true, structured_keys_, c);
+		ClangPrinter cprint(compiler_, ctxt, trace_, comment_);
 
-		auto v = ast2_ ? "2" : "";
-		fmt << "Require Import bedrock.auto.cpp.templates.mparser" << v << "."
-			<< fmt::line << fmt::line << "#[local] Open Scope bs_scope."
-			<< fmt::line;
+		parser(print);
+		bytestring(print) << fmt::line;
 
-		fmt << fmt::line
+		print.output()
 			<< "Definition templates : Mtranslation_unit :=" << fmt::indent
 			<< fmt::line
-			<< "Eval Mreduce_translation_unit in Mtranslation_unit.decls"
+			<< "Eval reduce_translation_unit in Mtranslation_unit.decls"
 			<< fmt::nbsp;
 
 		print.begin_list();
 		for (auto decl : mod.template_declarations()) {
+			// if (sharing)
+			// 	prePrintDecl(decl, c, print, cprint);
 			printDecl(decl, print, cprint);
 		}
 		for (auto decl : mod.template_definitions()) {
@@ -187,23 +249,23 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 		print.output() << "." << fmt::outdent << fmt::line;
 	});
 
-	with_open_file(name_test_file_, [this, &ctxt, &mod](Formatter& fmt) {
-		CoqPrinter print(fmt, true, true);
-		ClangPrinter cprint(compiler_, ctxt, trace_, this->comment_);
+	with_open_file(name_test_file_, [&](Formatter& fmt) {
+		Cache c;
+		CoqPrinter print(fmt, /*templates*/ true, /*structured_keys*/ true, c);
+		ClangPrinter cprint(compiler_, ctxt, trace_, comment_);
 
 		auto testnames = [&](const std::string id,
 							 std::function<void()> k) -> auto& {
-			fmt << fmt::line << "Definition " << id
-				<< " : list Mname :=" << fmt::indent << fmt::line;
+			print.output() << fmt::line << "Definition " << id
+						   << " : list Mname :=" << fmt::indent << fmt::line;
 			print.begin_list();
 			k();
 			print.end_list();
 			return print.output() << "." << fmt::outdent << fmt::line;
 		};
 
-		fmt << "Require Import bedrock.auto.cpp.templates.mparser2."
-			<< fmt::line << fmt::line << "#[local] Open Scope bs_scope."
-			<< fmt::line;
+		parser(print);
+		bytestring(print);
 
 		testnames("module_names", [&]() {
 			for (auto decl : mod.declarations()) {

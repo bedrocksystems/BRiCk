@@ -17,10 +17,13 @@ Require Export bedrock.prelude.addr.
 Require Export bedrock.lang.bi.prelude.
 Require Export bedrock.lang.bi.observe.
 Require Export bedrock.lang.bi.spec.knowledge.
+Require Export bedrock.lang.cpp.reserved_notation.
 Require Export bedrock.lang.cpp.logic.mpred.
 Require Export bedrock.lang.cpp.logic.rep.
 (** ^^ Delicate; export types and canonical structures (CS) for [monPred], [mpred] and [Rep].
 Export order can affect CS inference. *)
+
+Require Import bedrock.prelude.bytestring.
 
 Require Export bedrock.lang.cpp.algebra.cfrac.
 Require Export bedrock.lang.cpp.bi.cfractional.
@@ -35,10 +38,7 @@ Require Import bedrock.lang.bi.cancelable_invariants.
 Export ChargeNotation.
 Require Import bedrock.lang.cpp.bi.cfractional.
 
-Require Import bedrock.lang.cpp.syntax.names.
-Require Import bedrock.lang.cpp.syntax.types.
-Require Import bedrock.lang.cpp.syntax.typing.
-Require Import bedrock.lang.cpp.syntax.translation_unit.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.values.
 Require Import bedrock.lang.cpp.semantics.subtyping.
 
@@ -53,13 +53,13 @@ Implicit Types (n : N) (z : Z).
 Definition pred_ns : namespace := nroot .@@ "bedrock" .@@ "lang" .@@ "cpp_logic".
 
 (* Used by [has_type_prop_has_type_noptr]. No theory. *)
-Definition nonptr_prim_type ty : bool :=
+Definition nonptr_prim_type {lang} (ty : type' lang) : bool :=
   match drop_qualifiers ty with
   | Tfloat_ _ | Tchar_ _ | Tvoid | Tbool | Tenum _ | Tnum _ _ => true
-  | Tnullptr | Tpointer _ | Tref _ | Trv_ref _ | _ => false
+  | Tnullptr | Tptr _ | Tref _ | Trv_ref _ | _ => false
   end.
 
-Lemma nonptr_prim_type_erase_qualifiers : forall ty,
+Lemma nonptr_prim_type_erase_qualifiers : forall {lang} (ty : type' lang),
     nonptr_prim_type ty = nonptr_prim_type (erase_qualifiers ty).
 Proof. induction ty; simpl; eauto. Qed.
 
@@ -81,7 +81,7 @@ Module Type CPP_LOGIC
 
       Our definition of validity includes all cases in which a pointer is not
       an _invalid pointer value_ in the sense of the standard
-      (https://eel.is/c++draft/basic.compound#3.1), except that our concept
+      (<https://eel.is/c++draft/basic.compound#3.1>), except that our concept
       of validity survives deallocation; a pointer is only valid according to
       the standard (or "standard-valid") if it is _both_ valid ([_valid_ptr
       vt p]) and live ([live_ptr p]); we require both where needed (e.g.
@@ -89,7 +89,7 @@ Module Type CPP_LOGIC
 
       When the duration of a region of storage ends [note 1], contained objects [o] go
       from live to dead, and pointers to such objects become _dangling_, or
-      _invalid pointer values_ (https://eel.is/c++draft/basic.compound#3.1);
+      _invalid pointer values_ (<https://eel.is/c++draft/basic.compound#3.1>);
       this is called _pointer zapping_ [note 1].
       In our semantics, that only consumes the non-persistent predicate
       [live_ptr p], not the persistent predicate [_valid_ptr vt p].
@@ -199,7 +199,7 @@ Module Type CPP_LOGIC
       Axiom has_type_nullptr' : ∀ p,
         has_type (Vptr p) Tnullptr -|- [| p = nullptr |].
       Axiom has_type_ptr' : ∀ p ty,
-        has_type (Vptr p) (Tpointer ty) -|-
+        has_type (Vptr p) (Tptr ty) -|-
         valid_ptr p ** [| aligned_ptr_ty ty p |].
 
       (* These two definitions are needed because of [tptsto_has_type] *)
@@ -247,7 +247,7 @@ Module Type CPP_LOGIC
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)
     Parameter provides_storage :
-      forall `{!cpp_logic thread_info Σ} (storage : ptr) (object : ptr) (object_type : type), mpred.
+      forall `{!cpp_logic thread_info Σ} (storage : ptr) (object : ptr) (object_type : Rtype), mpred.
 
   Section with_cpp_logic.
   Context `{cpp_logic}.
@@ -285,13 +285,13 @@ Module Type CPP_LOGIC
     C++ locations that are not stored in memory (as an optimization).
     *)
     Parameter tptsto : forall `{!cpp_logic thread_info Σ} {σ:genv}
-      (t : heap_type) (q : cQp.t) (a : ptr) (v : val), mpred.
+      (t : Rtype) (q : cQp.t) (a : ptr) (v : val), mpred.
 
   Section with_cpp_logic.
   Context `{cpp_logic}.
 
     #[global] Declare Instance tptsto_valid_type
-      : forall {σ:genv} (t : heap_type) (q : cQp.t) (a : ptr) (v : val),
+      : forall {σ:genv} (t : Rtype) (q : cQp.t) (a : ptr) (v : val),
         Observe [| is_heap_type t |] (tptsto t q a v).
 
     Axiom tptsto_nonnull : forall {σ} ty q a,
@@ -559,26 +559,29 @@ Module Type CPP_LOGIC
       from http://eel.is/c++draft/basic.memobj#basic.life-1 to
       http://eel.is/c++draft/basic.memobj#basic.life-4.
      *)
-    Parameter type_ptr : forall `{!cpp_logic thread_info Σ} {resolve : genv} (c: type), ptr -> mpred.
+    Parameter type_ptr : forall `{!cpp_logic thread_info Σ} {resolve : genv} (c: Rtype), ptr -> mpred.
 
   Section with_cpp_logic.
   Context `{cpp_logic}.
 
-    Axiom type_ptr_persistent : forall σ p ty,
+    Axiom type_ptr_persistent : forall {σ} p ty,
       Persistent (type_ptr ty p).
-    Axiom type_ptr_affine : forall σ p ty,
+    Axiom type_ptr_affine : forall {σ} p ty,
       Affine (type_ptr ty p).
-    Axiom type_ptr_timeless : forall σ p ty,
+    Axiom type_ptr_timeless : forall {σ} p ty,
       Timeless (type_ptr ty p).
     #[global] Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
 
-    Axiom type_ptr_aligned_pure : forall σ ty p,
+    Axiom type_ptr_erase : forall {σ} ty p,
+        type_ptr ty p -|- type_ptr (erase_qualifiers ty) p.
+
+    Axiom type_ptr_aligned_pure : forall {σ} ty p,
       type_ptr ty p |-- [| aligned_ptr_ty ty p |].
 
-    Axiom type_ptr_off_nonnull : forall {σ ty p o},
+    Axiom type_ptr_off_nonnull : forall {σ} ty p o,
       type_ptr ty (p ,, o) |-- [| p <> nullptr |].
 
-    Axiom tptsto_type_ptr : forall (σ : genv) ty q p v,
+    Axiom tptsto_type_ptr : forall {σ : genv} ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v).
     #[global] Existing Instance tptsto_type_ptr.
 
@@ -614,7 +617,7 @@ Module Type CPP_LOGIC
           for an object pointed to by [ptr] [p] is /also/ accessible via [p].
        e) (a)+(b)+(d) implies that a (potentially dead) object representation for type [ty]
           exists at [ptr] [p]
-       f) (a)+(c)+(e) implies that [type_ptr Tu8 (p .[ Tu8 ! i ])] holds (regardless of whether
+       f) (a)+(c)+(e) implies that [type_ptr Tbyte (p .[ Tbyte ! i ])] holds (regardless of whether
           not the object/"object representation" is alive)
 
        NOTE: There is no need to deal with past-the-end pointers explicitly since
@@ -639,11 +642,11 @@ Module Type CPP_LOGIC
          at once:
          | ... ->
          |     type_ptr ty p
-         | |-- [∗list] i ∈ seqN 0 (sizeof ty), type_ptr Tu8 (p .[ Tu8 ! i ])
+         | |-- [∗list] i ∈ seqN 0 (sizeof ty), type_ptr Tbyte (p .[ Tbyte ! i ])
        *)
       Section conservative.
         Axiom type_ptr_obj_repr_byte :
-          forall (σ : genv) (ty : type) (p : ptr) (i sz : N),
+          forall (σ : genv) (ty : Rtype) (p : ptr) (i sz : N),
             size_of σ ty = Some sz -> (* 1) [ty] has some byte-size [sz] *)
             (i < sz)%N ->             (* 2) by (1), [sz] is nonzero and [i] is a
                                             byte-offset into the object rooted at [p ,, o]
@@ -657,10 +660,10 @@ Module Type CPP_LOGIC
                                        *)
             (* 4) The existence of the "object representation" of an object of type [ty] -
                |  in conjunction with the premises - justifies "lowering" any
-               |  [type_ptr ty p] fact to a collection of [type_ptr Tu8 (p ,, .[Tu8 ! i])]
+               |  [type_ptr ty p] fact to a collection of [type_ptr Tbyte (p ,, .[Tbyte ! i])]
                |  facts - where [i] is a byte-offset within the [ty] ([0 <= i < sizeof(ty)]).
                v *)
-            type_ptr ty p |-- type_ptr Tu8 (p ,, .[ Tu8 ! i ]).
+            type_ptr ty p |-- type_ptr Tbyte (p ,, .[ Tbyte ! i ]).
       End conservative.
 
       (* NOTE: This might be reasonable to axiomatize directly; cf. the [NOTE] above
@@ -668,9 +671,9 @@ Module Type CPP_LOGIC
        *)
       Section all_at_once.
         Lemma type_ptr_obj_repr :
-          forall (σ : genv) (ty : type) (p : ptr) (sz : N),
+          forall (σ : genv) (ty : Rtype) (p : ptr) (sz : N),
             size_of σ ty = Some sz ->
-            type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tu8 (p .[ Tu8 ! Z.of_N i ]).
+            type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tbyte (p .[ Tbyte ! Z.of_N i ]).
         Proof.
           intros * Hsz; iIntros "#tptr".
           iApply big_sepL_intro; iIntros "!>" (k n) "%Hn'".
@@ -689,15 +692,15 @@ Module Type CPP_LOGIC
       [| offset_cong σ o1 o2 |].
 
     (* [ptr_congP σ p1 p2] is an [mpred] which quotients [ptr_cong σ p1 p2]
-       by requiring that [type_ptr Tu8] holds for both [p1] /and/ [p2]. This property
+       by requiring that [type_ptr Tbyte] holds for both [p1] /and/ [p2]. This property
        is intended to be sound and sufficient for transporting certain physical
        resources between [p1] and [p2] - and we hypothesize that it is also
        necessary.
      *)
     Definition ptr_congP (σ : genv) (p1 p2 : ptr) : mpred :=
-      [| ptr_cong σ p1 p2 |] ** type_ptr Tu8 p1 ** type_ptr Tu8 p2.
+      [| ptr_cong σ p1 p2 |] ** type_ptr Tbyte p1 ** type_ptr Tbyte p2.
 
-    (* All [tptsto Tu8] facts can be transported over [ptr_congP] [ptr]s.
+    (* All [tptsto Tbyte] facts can be transported over [ptr_congP] [ptr]s.
 
        High level meaning:
        In the C++ object model, a single byte of storage can be accessed through different pointers,
@@ -711,16 +714,16 @@ Module Type CPP_LOGIC
        The standard justifies this as follows:
        1) (cf. [tptsto] comment) [tptsto ty q p v] ensures that [p] points to a memory
           location with C++ type [ty] and which has some value [v].
-       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tu8] holds for all of the
+       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tbyte] holds for all of the
           bytes (i.e. the "object reprsentation") constituting well-typed C++ objects.
        3) NOTE (JH): the following isn't quite true yet, but we'll want this when we flesh
           out [rawR]/[RAW_BYTES]:
           a) all values [v] can be converted into (potentially many) [raw_byte]s -
              which capture its "object representation"
           b) all [tptsto ty] facts can be shattered into (potentially many)
-             [tptsto Tu8 _ _ (Vraw _)] facts corresponding to its "object representation"
-       4) [tptsto Tu8 _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
-          a) [tptso Tu8 _ _ (Vraw _)] facts deal with the "object representation" directly
+             [tptsto Tbyte _ _ (Vraw _)] facts corresponding to its "object representation"
+       4) [tptsto Tbyte _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
+          a) [tptso Tbyte _ _ (Vraw _)] facts deal with the "object representation" directly
              and thus permit erasing the structure of pointers in favor of reasoning about
              relative byte offsets from a shared [ptr]-prefix.
           b) the [ptr]s are [ptr_congP] so we know that:
@@ -735,7 +738,7 @@ Module Type CPP_LOGIC
        [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
      *)
     Axiom tptsto_ptr_congP_transport : forall {σ} q p1 p2 v,
-      ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tu8 q p1 v -* tptsto (σ:=σ) Tu8 q p2 v.
+      ptr_congP σ p1 p2 |-- tptsto (σ:=σ) Tbyte q p1 v -* tptsto (σ:=σ) Tbyte q p2 v.
 
     (**
      ** Deducing pointer equalities
@@ -927,11 +930,13 @@ Module Type VALID_PTR_AXIOMS
       class_derives derived [base] ->
       type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p ,, _base derived base).
 
-    Axiom type_ptr_o_field_type_ptr : forall p fld cls (st : Struct),
+    (*
+    Axiom type_ptr_o_field_type_ptr : forall p fld cls st,
       glob_def σ cls = Some (Gstruct st) ->
       fld ∈ s_fields st →
-      type_ptr (Tnamed cls) p ⊢ type_ptr fld.(mem_type) (p .,
-        {| f_name := fld.(mem_name) ; f_type := cls |}).
+         type_ptr (Tnamed cls) p
+      ⊢ type_ptr fld.(mem_type) (p ., Field cls fld.(mem_name)). (* TODO field names *)
+      *)
 
     Axiom type_ptr_o_sub : forall p (m n : N) ty,
       (m < n)%N ->
@@ -1367,8 +1372,8 @@ Section with_cpp.
 
   Lemma offset_ptr_congP (p : ptr) o1 o2 :
     offset_congP σ o1 o2 |--
-    type_ptr Tu8 (p ,, o1) -*
-    type_ptr Tu8 (p ,, o2) -*
+    type_ptr Tbyte (p ,, o1) -*
+    type_ptr Tbyte (p ,, o2) -*
     ptr_congP σ (p ,, o1) (p ,, o2).
   Proof.
     iIntros "% T1 T2". rewrite /ptr_congP. iFrame "T1 T2".
@@ -1405,17 +1410,17 @@ Section with_cpp.
     Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
   Proof. rewrite type_ptr_size. apply _. Qed.
 
-  #[global] Instance valid_ptr_sub_0 (p : ptr) (ty : type) :
+  #[global] Instance valid_ptr_sub_0 (p : ptr) ty :
     HasSize ty ->
     Observe (valid_ptr (p ,, o_sub σ ty 0)) (valid_ptr p).
   Proof. intros. rewrite o_sub_0 // offset_ptr_id. refine _. Qed.
-  #[global] Instance type_ptr_sub_0 (p : ptr) (ty : type) :
+  #[global] Instance type_ptr_sub_0 (p : ptr) ty :
     HasSize ty ->
     Observe (valid_ptr (p ,, o_sub σ ty 0)) (type_ptr ty p).
   Proof.
     intros. by rewrite type_ptr_valid; apply valid_ptr_sub_0.
   Qed.
-  #[global] Instance type_ptr_valid_ptr_next (p : ptr) (ty : type) (m n : Z) :
+  #[global] Instance type_ptr_valid_ptr_next (p : ptr) ty (m n : Z) :
     (m = n + 1)%Z ->
     Observe (valid_ptr (p ,, o_sub σ ty m)) (type_ptr ty (p ,, o_sub σ ty n)).
   Proof.
@@ -1545,3 +1550,6 @@ Section has_type.
     all: by rewrite !has_type_nonptr// has_type_prop_raw_bytes_of_val.
   Qed.
 End has_type.
+
+#[global] Notation "'validP<' ty > v" := (has_type v ty%cpp_type)
+  (at level 30, ty at level 20, v at level 1, format "validP< ty >  v") : bi_scope.

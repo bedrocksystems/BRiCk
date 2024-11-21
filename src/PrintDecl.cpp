@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
+#include "Assert.hpp"
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "DeclVisitorWithArgs.h"
@@ -51,12 +52,12 @@ getCallingConv(const Type *type, ClangPrinter &cprint, loc::loc loc) {
 }
 
 fmt::Formatter &
-ClangPrinter::printCallingConv(const FunctionDecl &decl, CoqPrinter &print) {
+ClangPrinter::printCallingConv(CoqPrinter &print, const FunctionDecl &decl) {
 	if (ClangPrinter::debug && trace(Trace::Decl))
 		trace("printCallingConv", loc::of(decl));
 	auto loc = loc::of(decl);
 	auto cc = getCallingConv(decl.getType().getTypePtr(), *this, loc);
-	return printCallingConv(cc, print, loc);
+	return printCallingConv(print, cc, loc);
 }
 
 // Template specializations
@@ -89,7 +90,7 @@ static bool
 isSpecialized(const Decl &decl) {
 	if (isImplicitSpecialMethod(decl))
 		return false;
-	if (auto d = dyn_cast<EnumConstantDecl>(&decl))
+	if (isa<EnumConstantDecl>(&decl))
 		return false; // avoid too many warnings
 
 	// We conservatively avoid recoverPattern. Instead, we check the
@@ -144,7 +145,7 @@ recoverPattern(const Decl &decl) {
 }
 
 [[nodiscard]] static bool
-printSpecialization(const Decl &decl, CoqPrinter &print, ClangPrinter &cprint) {
+printSpecialization(CoqPrinter &print, const Decl &decl, ClangPrinter &cprint) {
 	if (!print.templates() || !isSpecialized(decl))
 		return false;
 
@@ -153,11 +154,11 @@ printSpecialization(const Decl &decl, CoqPrinter &print, ClangPrinter &cprint) {
 
 	if (auto pat = recoverPattern(decl)) {
 		guard::ctor _(print, "Dinstantiation");
-		cprint.printNameComment(decl, print) << fmt::nbsp;
-		cprint.printMangledName(decl, print) << fmt::nbsp;
-		cprint.printNameComment(*pat, print) << fmt::nbsp;
-		cprint.printMangledName(*pat, print) << fmt::nbsp;
-		cprint.printTemplateArguments(decl, print);
+		cprint.printNameComment(print, decl) << fmt::nbsp;
+		cprint.printNameAsKey(print, decl) << fmt::nbsp;
+		cprint.printNameComment(print, *pat) << fmt::nbsp;
+		cprint.printNameAsKey(print, *pat) << fmt::nbsp;
+		cprint.printTemplateArguments(print, decl);
 		return true;
 	} else {
 		unsupported(cprint, loc::of(decl), "template specialization");
@@ -167,7 +168,7 @@ printSpecialization(const Decl &decl, CoqPrinter &print, ClangPrinter &cprint) {
 
 /// Print an untemplated declaration
 template<typename T>
-using Printer = fmt::Formatter &(*)(const T &, CoqPrinter &, ClangPrinter &,
+using Printer = fmt::Formatter &(*)(CoqPrinter &, const T &, ClangPrinter &,
 									const ASTContext &);
 
 template<typename T>
@@ -175,12 +176,10 @@ struct DeclPrinter {
 
 	const StringRef ctor;
 	const Printer<T> print_body;
-	const bool ast2_only;
 
 	DeclPrinter() = delete;
-	DeclPrinter(StringRef c, Printer<T> p, bool b = false)
-		: ctor{c}, print_body{p}, ast2_only{b} {
-		assert(p != nullptr);
+	DeclPrinter(StringRef c, Printer<T> p) : ctor{c}, print_body{p} {
+		always_assert(p != nullptr);
 	}
 
 	/// Project a decl D from an inhabitant of T
@@ -196,9 +195,6 @@ struct DeclPrinter {
 	///
 	/// - `(ctor name body)` if `decl` is neither a template nor a
 	/// specialization,
-	///
-	/// - `(ctor params name body)` (and, AST2 only, `(Dname name
-	/// structured_name)`) if `decl` is a template, and
 	///
 	/// - `(Dinstantiation ..)` if `decl` is a specialization.
 
@@ -216,24 +212,17 @@ struct DeclPrinter {
 				if (!decl.isTemplated() || isSpecialized(decl))
 					return false;
 
-				if (ast2_only && !print.ast2())
-					return false;
-
-				std::string ctor_template{ctor};
-				if (!print.ast2())
-					ctor_template += "_template";
-
-				guard::ctor _(print, ctor_template);
-				cprint.printNameComment(decl, print) << fmt::nbsp;
-				cprint.printTemplateParameters(decl, print) << fmt::nbsp;
-				cprint.printMangledName(decl, print) << fmt::nbsp;
-				print_body(box, print, cprint, ctxt);
+				guard::ctor _(print, ctor);
+				cprint.printNameComment(print, decl) << fmt::nbsp;
+				cprint.printTemplateParameters(print, decl) << fmt::nbsp;
+				cprint.printNameAsKey(print, decl) << fmt::nbsp;
+				print_body(print, box, cprint, ctxt);
 				return true;
 			} else {
 				guard::ctor _(print, ctor);
-				cprint.printNameComment(decl, print) << fmt::nbsp;
-				cprint.printMangledName(decl, print) << fmt::nbsp;
-				print_body(box, print, cprint, ctxt);
+				cprint.printNameComment(print, decl) << fmt::nbsp;
+				cprint.printNameAsKey(print, decl) << fmt::nbsp;
+				print_body(print, box, cprint, ctxt);
 				return true;
 			}
 		};
@@ -244,25 +233,7 @@ struct DeclPrinter {
 			} else
 				return printDecl(cprint);
 		};
-		auto printDeclWithName = [&]() {
-			auto r = printDeclWith();
-			if (r && print.templates() && print.ast2()) {
-				/*
-                This abstraction violation (presupposing we're printing
-                a list of declarations) seems simpler than, say,
-                changing the return type of ClangPrinter::printDecl to
-                distinguish three cases. It's short term, as is `Dname`.
-                */
-				print.cons();
-
-				guard::ctor _(print, "Dname");
-				cprint.printNameComment(decl, print) << fmt::nbsp;
-				cprint.printMangledName(decl, print) << fmt::nbsp;
-				cprint.printStructuredName(decl, print);
-			}
-			return r;
-		};
-		return printDeclWithName() || printSpecialization(decl, print, cprint);
+		return printDeclWith() || printSpecialization(print, decl, cprint);
 	}
 };
 template<typename D>
@@ -271,83 +242,83 @@ DeclPrinter(StringRef, Printer<D>, bool) -> DeclPrinter<D>;
 // Incomplete types
 namespace {
 static fmt::Formatter &
-printType(const TypeDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
+printType(CoqPrinter &print, const TypeDecl &decl, ClangPrinter &cprint,
 		  const ASTContext &ctxt) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printType", loc::of(decl));
 	return print.output();
 }
 }
-static const DeclPrinter Dtype("Dtype", printType, /*ast2_only*/ true);
+static const DeclPrinter Dtype("Dtype", printType);
 
 // Type aliases
 namespace {
 static fmt::Formatter &
-printTypedef(const TypedefNameDecl &decl, CoqPrinter &print,
+printTypedef(CoqPrinter &print, const TypedefNameDecl &decl,
 			 ClangPrinter &cprint, const ASTContext &ctxt) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printTypedef", loc::of(decl));
-	return cprint.printQualType(decl.getUnderlyingType(), print, loc::of(decl));
+	return cprint.printQualType(print, decl.getUnderlyingType(), loc::of(decl));
 }
 }
-static const DeclPrinter Dtypedef("Dtypedef", printTypedef, /*ast2_only*/ true);
+static const DeclPrinter Dtypedef("Dtypedef", printTypedef);
 
 // Structures and unions
 namespace {
 
 static fmt::Formatter &
-printClassName(const RecordDecl &decl, CoqPrinter &print,
+printClassName(CoqPrinter &print, const RecordDecl &decl,
 			   ClangPrinter &cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printClassName", loc::of(decl));
 
 	if (print.templates()) {
 		/*
-        NOTE (AST2): Locally, we know `decl` is a template, making it
-        reasonable to synthesize _all_ template arguments from
-        parameters. Nevertheless, we leave it to the type printer (and
-        VisitInjectedClassNameType) to handle argument synthesis because
-        such types get printed from other contexts.
-        */
-		return cprint.printType(decl.getTypeForDecl(), print, loc::of(decl));
+		NOTE: Locally, we know `decl` is a template, making it
+		reasonable to synthesize _all_ template arguments from
+		parameters. Nevertheless, we leave it to the type printer (and
+		VisitInjectedClassNameType) to handle argument synthesis
+		because such types get printed from other contexts.
+		*/
+		return cprint.printType(print, decl.getTypeForDecl(), loc::of(decl));
 	} else
-		return cprint.printTypeName(decl, print);
+		return cprint.printName(print, decl);
 }
 
 static fmt::Formatter &
-printClassName(const RecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint,
+printClassName(CoqPrinter &print, const RecordDecl *decl, ClangPrinter &cprint,
 			   loc::loc loc) {
 	if (decl)
-		return printClassName(*decl, print, cprint);
+		return printClassName(print, *decl, cprint);
 	else
 		fatal(cprint, loc, "null class name");
 }
 
 static fmt::Formatter &
-printClassName(const Type &type, CoqPrinter &print, ClangPrinter &cprint,
+printClassName(CoqPrinter &print, const Type &type, ClangPrinter &cprint,
 			   loc::loc loc) {
 	if (auto decl = type.getAsCXXRecordDecl())
-		return printClassName(*decl, print, cprint);
+		return printClassName(print, *decl, cprint);
 	else
 		fatal(cprint, loc, "class name type not a record type");
 }
 
 static fmt::Formatter &
-printClassName(const Type *type, CoqPrinter &print, ClangPrinter &cprint,
+printClassName(CoqPrinter &print, const Type *type, ClangPrinter &cprint,
 			   loc::loc loc) {
 	if (type)
-		return printClassName(*type, print, cprint, loc);
+		return printClassName(print, *type, cprint, loc);
 	else
 		fatal(cprint, loc, "null class name type");
 }
 static fmt::Formatter &
-printClassName(QualType type, CoqPrinter &print, ClangPrinter &cprint,
+printClassName(CoqPrinter &print, QualType type, ClangPrinter &cprint,
 			   loc::loc loc) {
-	return printClassName(type.getTypePtrOrNull(), print, cprint, loc);
+	return printClassName(print, type.getTypePtrOrNull(), cprint, loc);
 }
 
 static fmt::Formatter &
-printLayoutInfo(CharUnits::QuantityType li, CoqPrinter &print) {
+printLayoutInfo(CoqPrinter &print, CharUnits::QuantityType li) {
 	guard::ctor _(print, "Build_LayoutInfo");
 	return print.output() << li;
 }
@@ -361,41 +332,53 @@ getTypeAsRecord(const ValueDecl &decl) {
 }
 
 static fmt::Formatter &
-printAnonymousFieldName(const FieldDecl &field, CoqPrinter &print,
+printAnonymousFieldName(CoqPrinter &print, const FieldDecl &field,
 						ClangPrinter &cprint) {
-	/*
-    TODO: We could support more unnamed fields using something like
-    `mem_name : ident + N`.
-    */
-	auto unsupported = [&](StringRef msg) -> auto & {
-		::unsupported(cprint, loc::of(field), msg);
-		return cprint.printUnsupportedName(msg, print);
-	};
-	if (!print.ast2()) {
-		guard::ctor _(print, "Nanon");
-		if (auto rec = getTypeAsRecord(field))
-			return cprint.printTypeName(rec, print, loc::of(field));
-		else
-			return unsupported("field not of record type");
-	} else
-		return unsupported("unnamed field");
+	if (auto rd = dyn_cast<CXXRecordDecl>(field.getParent())) {
+		if (rd->isLambda()) {
+			guard::ctor _(print, "field_name.CaptureVar");
+			llvm::DenseMap<const ValueDecl *, FieldDecl *> captures;
+			FieldDecl *this_capture;
+			rd->getCaptureFields(captures, this_capture);
+			if (this_capture == &field) {
+				return print.str("this");
+			} else {
+				for (auto &i : captures) {
+					if (i.second == &field) {
+						return print.str(i.first->getName());
+					}
+				}
+			}
+		}
+	}
+	if (auto rec = getTypeAsRecord(field)) {
+		return cprint.printName(print, rec, loc::of(field), false);
+	} else {
+		unsupported(cprint, loc::of(field),
+					"anonymous field not of record type");
+		guard::ctor _(print, "field_name.Id", false);
+		return print.str("<anonymous field not of record type>");
+	}
 }
 }
+
 fmt::Formatter &
-ClangPrinter::printFieldName(const FieldDecl &field, CoqPrinter &print,
+ClangPrinter::printFieldName(CoqPrinter &print, const FieldDecl &field,
 							 loc::loc) {
-	if (auto id = field.getIdentifier())
+	if (auto id = field.getIdentifier()) {
+		guard::ctor _(print, "field_name.Id", false);
 		return print.str(id->getName());
-	else
-		return printAnonymousFieldName(field, print, *this);
+	}
+	return printAnonymousFieldName(print, field, *this);
 }
+
 namespace {
 static fmt::Formatter &
-printFieldInitializer(const FieldDecl &field, CoqPrinter &print,
+printFieldInitializer(CoqPrinter &print, const FieldDecl &field,
 					  ClangPrinter &cprint) {
 	if (auto expr = field.getInClassInitializer()) {
 		guard::some _(print);
-		return cprint.printExpr(expr, print);
+		return cprint.printExpr(print, expr);
 	} else
 		return print.none();
 }
@@ -410,15 +393,18 @@ printFields(const CXXRecordDecl &decl, const ASTRecordLayout *layout,
 		if (field->isBitField())
 			fatal(cprint, loc::of(field), "bit fields are not supported");
 
-		guard::ctor _(print, "mkMember", i != 0);
-		cprint.printFieldName(*field, print, loc::of(field)) << fmt::nbsp;
-		cprint.printQualType(field->getType(), print, loc::of(field))
+		guard::ctor _(print, "@mkMember", i != 0);
+		print.output() << (print.templates() ? "lang.temp" : "lang.cpp")
+					   << fmt::nbsp;
+		cprint.printFieldName(print, *field, loc::of(field)) << fmt::nbsp;
+		cprint.printQualType(print, field->getType(), loc::of(field))
 			<< fmt::nbsp;
 		print.boolean(field->isMutable()) << fmt::nbsp;
-		printFieldInitializer(*field, print, cprint) << fmt::nbsp;
+		printFieldInitializer(print, *field, cprint) << fmt::nbsp;
 		auto li = layout ? layout->getFieldOffset(i++) : 0;
-		printLayoutInfo(li, print);
+		printLayoutInfo(print, li);
 	});
+	return print.output();
 }
 
 static fmt::Formatter &
@@ -438,26 +424,21 @@ printStructBases(const CXXRecordDecl &decl, const ASTRecordLayout *layout,
 			fatal("null base class");
 
 		auto dependent = [&]() -> auto & {
-			guard::tuple _(print);
-			cprint.printType(type, print, loc::of(decl)) << fmt::tuple_sep;
-			return printLayoutInfo(0, print);
+			guard::ctor _(print, "mkBase");
+			cprint.printType(print, type, loc::of(decl)) << fmt::nbsp;
+			return printLayoutInfo(print, 0);
 		};
 		if (print.templates())
 			return dependent();
-		else if (auto record = type->getAsCXXRecordDecl()) {
-			guard::tuple _(print);
-			cprint.printTypeName(record, print, loc::of(type))
-				<< fmt::tuple_sep;
+		else {
+			auto record = type->getAsCXXRecordDecl();
+			always_assert(record && "base class not a RecordType");
+			guard::ctor _(print, "mkBase");
+			cprint.printName(print, record, loc::of(type)) << fmt::nbsp;
 			auto li =
 				layout ? layout->getBaseClassOffset(record).getQuantity() : 0;
-			return printLayoutInfo(li, print);
-		} else if (!ClangPrinter::warn_well_known && type->isDependentType()) {
-			/*
-            The guard on `record` used to be an assert, and ignored.
-            */
-			return dependent();
-		} else
-			fatal("base class not of RecordType");
+			return printLayoutInfo(print, li);
+		}
 	});
 }
 
@@ -471,7 +452,7 @@ is_pure_virtual(const clang::FunctionDecl &d) {
 }
 
 static fmt::Formatter &
-printStructVirtuals(const CXXRecordDecl &decl, CoqPrinter &print,
+printStructVirtuals(CoqPrinter &print, const CXXRecordDecl &decl,
 					ClangPrinter &cprint) {
 	return print.list_filter(decl.methods(), [&](auto m) {
 		if (!m)
@@ -480,13 +461,13 @@ printStructVirtuals(const CXXRecordDecl &decl, CoqPrinter &print,
 			return false;
 		guard::ctor _(print, is_pure_virtual(*m) ? "pure_virt" : "impl_virt",
 					  false);
-		cprint.printObjName(m, print, loc::of(decl));
+		cprint.printName(print, m, loc::of(decl));
 		return true;
 	});
 }
 
 static fmt::Formatter &
-printStructOverrides(const CXXRecordDecl &decl, CoqPrinter &print,
+printStructOverrides(CoqPrinter &print, const CXXRecordDecl &decl,
 					 ClangPrinter &cprint) {
 	guard::list _(print);
 	for (auto m : decl.methods()) {
@@ -495,8 +476,8 @@ printStructOverrides(const CXXRecordDecl &decl, CoqPrinter &print,
 		if (m->isVirtual() and not is_pure_virtual(*m)) {
 			for (auto o : m->overridden_methods()) {
 				print.output() << "(";
-				cprint.printObjName(o, print, loc::of(m)) << fmt::tuple_sep;
-				cprint.printObjName(*m, print) << ")" << fmt::cons;
+				cprint.printName(print, o, loc::of(m)) << fmt::tuple_sep;
+				cprint.printName(print, *m) << ")" << fmt::cons;
 			}
 		}
 	}
@@ -504,25 +485,25 @@ printStructOverrides(const CXXRecordDecl &decl, CoqPrinter &print,
 }
 
 static fmt::Formatter &
-printDeleteName(const CXXRecordDecl &decl, CoqPrinter &print,
+printDeleteName(CoqPrinter &print, const CXXRecordDecl &decl,
 				ClangPrinter &cprint) {
 	auto dtor = decl.getDestructor();
 	auto del = dtor ? dtor->getOperatorDelete() : nullptr;
 	if (del) {
 		guard::some _(print);
-		return cprint.printObjName(*del, print);
+		return cprint.printName(print, *del);
 	} else
 		return print.none();
 }
 
 static fmt::Formatter &
-printTriviallyDestructible(const CXXRecordDecl &decl, CoqPrinter &print,
+printTriviallyDestructible(CoqPrinter &print, const CXXRecordDecl &decl,
 						   ClangPrinter &cprint) {
 	return print.output() << fmt::BOOL(decl.hasTrivialDestructor());
 }
 
 static fmt::Formatter &
-printLayoutType(const CXXRecordDecl &decl, CoqPrinter &print,
+printLayoutType(CoqPrinter &print, const CXXRecordDecl &decl,
 				ClangPrinter &cprint) {
 	if (decl.isPOD()) {
 		print.output() << "POD";
@@ -543,12 +524,17 @@ printSizeAlign(const CXXRecordDecl &decl, const ASTRecordLayout *layout,
 }
 
 static fmt::Formatter &
-printStruct(const CXXRecordDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
+printStruct(CoqPrinter &print, const CXXRecordDecl &decl, ClangPrinter &cprint,
 			const ASTContext &ctxt) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printStruct", loc::of(decl));
-	assert(decl.getTagKind() == TagTypeKind::TTK_Class ||
-		   decl.getTagKind() == TagTypeKind::TTK_Struct);
+#if 18 <= CLANG_VERSION_MAJOR
+	always_assert(decl.getTagKind() == TagTypeKind::Class ||
+				  decl.getTagKind() == TagTypeKind::Struct);
+#else
+	always_assert(decl.getTagKind() == TagTypeKind::TTK_Class ||
+				  decl.getTagKind() == TagTypeKind::TTK_Struct);
+#endif
 
 	if (!decl.isCompleteDefinition())
 		return print.none();
@@ -561,21 +547,25 @@ printStruct(const CXXRecordDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
 
 	printStructBases(decl, layout, print, cprint) << fmt::line;
 	printFields(decl, layout, print, cprint) << fmt::nbsp;
-	printStructVirtuals(decl, print, cprint) << fmt::nbsp;
-	printStructOverrides(decl, print, cprint) << fmt::nbsp;
-	cprint.printDtorName(decl, print) << fmt::nbsp;
-	printTriviallyDestructible(decl, print, cprint) << fmt::nbsp;
-	printDeleteName(decl, print, cprint) << fmt::line;
-	printLayoutType(decl, print, cprint) << fmt::nbsp;
+	printStructVirtuals(print, decl, cprint) << fmt::nbsp;
+	printStructOverrides(print, decl, cprint) << fmt::nbsp;
+	cprint.printDtorName(print, decl) << fmt::nbsp;
+	printTriviallyDestructible(print, decl, cprint) << fmt::nbsp;
+	printDeleteName(print, decl, cprint) << fmt::line;
+	printLayoutType(print, decl, cprint) << fmt::nbsp;
 	return printSizeAlign(decl, layout, print, cprint);
 }
 
 static fmt::Formatter &
-printUnion(const CXXRecordDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
+printUnion(CoqPrinter &print, const CXXRecordDecl &decl, ClangPrinter &cprint,
 		   const ASTContext &ctxt) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printUnion", loc::of(decl));
-	assert(decl.getTagKind() == TagTypeKind::TTK_Union);
+#if 18 <= CLANG_VERSION_MAJOR
+	always_assert(decl.getTagKind() == TagTypeKind::Union);
+#else
+	always_assert(decl.getTagKind() == TagTypeKind::TTK_Union);
+#endif
 
 	if (!decl.isCompleteDefinition())
 		return print.none();
@@ -587,9 +577,9 @@ printUnion(const CXXRecordDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
 	guard::ctor _(print, "Build_Union");
 
 	printFields(decl, layout, print, cprint) << fmt::nbsp;
-	cprint.printDtorName(decl, print) << fmt::nbsp;
-	printTriviallyDestructible(decl, print, cprint) << fmt::nbsp;
-	printDeleteName(decl, print, cprint) << fmt::line;
+	cprint.printDtorName(print, decl) << fmt::nbsp;
+	printTriviallyDestructible(print, decl, cprint) << fmt::nbsp;
+	printDeleteName(print, decl, cprint) << fmt::line;
 	return printSizeAlign(decl, layout, print, cprint);
 }
 } // structures and unions
@@ -653,33 +643,33 @@ getBuiltin(const FunctionDecl &decl) {
 }
 
 static fmt::Formatter &
-printFunctionParams(const FunctionDecl &decl, CoqPrinter &print,
+printFunctionParams(CoqPrinter &print, const FunctionDecl &decl,
 					ClangPrinter &cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printFunctionParams", loc::of(decl));
 	auto loc = loc::of(decl);
 	return print.list(decl.parameters(), [&](auto *param) {
 		guard::tuple _(print);
-		cprint.printParamName(param, print) << fmt::tuple_sep;
-		cprint.printQualType(param->getType(), print, loc);
+		cprint.printParamName(print, param) << fmt::tuple_sep;
+		cprint.printQualType(print, param->getType(), loc);
 	});
 }
 
 static fmt::Formatter &
-printFunction(const FunctionDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
+printFunction(CoqPrinter &print, const FunctionDecl &decl, ClangPrinter &cprint,
 			  const ASTContext &) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printFunction", loc::of(decl));
 	guard::ctor _(print, "Build_Func");
-	cprint.printQualType(decl.getReturnType(), print, loc::of(decl))
+	cprint.printQualType(print, decl.getReturnType(), loc::of(decl))
 		<< fmt::line;
-	printFunctionParams(decl, print, cprint) << fmt::nbsp;
-	cprint.printCallingConv(decl, print) << fmt::nbsp;
-	cprint.printVariadic(decl.isVariadic(), print) << fmt::line;
+	printFunctionParams(print, decl, cprint) << fmt::nbsp;
+	cprint.printCallingConv(print, decl) << fmt::nbsp;
+	cprint.printVariadic(print, decl.isVariadic()) << fmt::line;
 	if (auto body = decl.getBody()) {
 		guard::some some(print, false);
 		guard::ctor _(print, "Impl", false);
-		return cprint.printStmt(body, print);
+		return cprint.printStmt(print, body);
 	} else if (auto builtin = getBuiltin(decl)) {
 		guard::some some(print, false);
 		guard::ctor _(print, "Builtin", false);
@@ -690,7 +680,7 @@ printFunction(const FunctionDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
 }
 
 static fmt::Formatter &
-printMethod(const CXXMethodDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
+printMethod(CoqPrinter &print, const CXXMethodDecl &decl, ClangPrinter &cprint,
 			const ASTContext &) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printMethod", loc::of(decl));
@@ -698,18 +688,18 @@ printMethod(const CXXMethodDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
 	print.output() << fmt::BOOL(decl.isStatic()) << fmt::nbsp;
 
 	guard::ctor _(print, "Build_Method");
-	cprint.printQualType(decl.getReturnType(), print, loc::of(decl))
+	cprint.printQualType(print, decl.getReturnType(), loc::of(decl))
 		<< fmt::nbsp;
-	printClassName(decl.getParent(), print, cprint, loc::of(decl)) << fmt::nbsp;
-	cprint.printQualifier(decl.isConst(), decl.isVolatile(), print)
+	printClassName(print, decl.getParent(), cprint, loc::of(decl)) << fmt::nbsp;
+	cprint.printQualifier(print, decl.isConst(), decl.isVolatile())
 		<< fmt::nbsp;
-	printFunctionParams(decl, print, cprint) << fmt::nbsp;
-	cprint.printCallingConv(decl, print) << fmt::nbsp;
-	cprint.printVariadic(decl.isVariadic(), print) << fmt::line;
+	printFunctionParams(print, decl, cprint) << fmt::nbsp;
+	cprint.printCallingConv(print, decl) << fmt::nbsp;
+	cprint.printVariadic(print, decl.isVariadic()) << fmt::nbsp;
 	if (auto body = decl.getBody()) {
 		guard::some some(print);
 		guard::ctor _(print, "UserDefined");
-		return cprint.printStmt(body, print);
+		return cprint.printStmt(print, body);
 	} else if (decl.isDefaulted()) {
 		return print.output() << "(Some Defaulted)";
 	} else {
@@ -731,8 +721,8 @@ printIndirectFieldChain(const CXXConstructorDecl &ctor,
 			return ref{*id};
 		else if (auto fd = dyn_cast<FieldDecl>(nd)) {
 			guard::tuple _(print);
-			cprint.printFieldName(*fd, print, loc::of(decl)) << fmt::tuple_sep;
-			printClassName(fd->getType(), print, cprint, loc::of(decl));
+			cprint.printFieldName(print, *fd, loc::of(decl)) << fmt::tuple_sep;
+			printClassName(print, fd->getType(), cprint, loc::of(decl));
 		} else
 			fatal("non-field in indirect field chain");
 		print.cons();
@@ -745,26 +735,32 @@ printInitPath(const CXXConstructorDecl &decl, const CXXCtorInitializer &init,
 			  CoqPrinter &print, ClangPrinter &cprint) {
 	auto fatal = [&](StringRef msg)
 					 NORETURN { ::fatal(cprint, loc::of(decl), msg); };
+	auto lang = [&]() {
+		print.output() << fmt::nbsp
+					   << (print.templates() ? "lang.temp" : "lang.cpp")
+					   << fmt::nbsp;
+	};
 	if (init.isMemberInitializer()) {
 		auto fd = init.getMember();
-		if (fd) {
-			// this can print an invalid field name
-			guard::ctor _(print, "InitField", false);
-			return cprint.printFieldName(*fd, print, loc::of(decl));
-		} else
-			fatal("field initializer with null field");
+		always_assert(fd && "member initializer without member");
+		guard::ctor _(print, "@InitField", false);
+		lang();
+		return cprint.printFieldName(print, *fd, loc::of(decl));
 	} else if (init.isBaseInitializer()) {
-		guard::ctor _(print, "InitBase", false);
-		return printClassName(init.getBaseClass(), print, cprint,
+		guard::ctor _(print, "@InitBase", false);
+		lang();
+		return printClassName(print, init.getBaseClass(), cprint,
 							  loc::of(decl));
 	} else if (init.isIndirectMemberInitializer()) {
 		auto fd = init.getIndirectMember();
 		if (!fd)
 			fatal("indirect field initializer without field");
-		guard::ctor _(print, "InitIndirect", false);
+		guard::ctor _1(print, "@InitIndirect", false);
+		lang();
 		auto id = printIndirectFieldChain(decl, *fd, print, cprint);
 		print.output() << fmt::nbsp;
-		return cprint.printFieldName(*fd->getAnonField(), print, loc::of(decl));
+		guard::ctor _2(print, "field_name.Id", false);
+		return print.str(id->getName());
 	} else if (init.isDelegatingInitializer())
 		return print.output() << "InitThis";
 	else
@@ -774,14 +770,14 @@ printInitPath(const CXXConstructorDecl &decl, const CXXCtorInitializer &init,
 static fmt::Formatter &
 printInitType(const CXXConstructorDecl &decl, const CXXCtorInitializer &init,
 			  CoqPrinter &print, ClangPrinter &cprint) {
-	// TODO: Print Tunsupported and keep going under ast2.
+	// TODO: Print Tunsupported and keep going
 	auto fatal = [&](StringRef msg)
 					 NORETURN { ::fatal(cprint, loc::of(decl), msg); };
 	auto use_type = [&](const Type &type) -> auto & {
-		return cprint.printType(type, print);
+		return cprint.printType(print, type, loc::of(decl));
 	};
 	auto use_qualtype = [&](const QualType qt) -> auto & {
-		return cprint.printQualType(qt, print, loc::of(decl));
+		return cprint.printQualType(print, qt, loc::of(decl));
 	};
 	if (auto fd = init.getMember())
 		return use_qualtype(fd->getType());
@@ -791,10 +787,12 @@ printInitType(const CXXConstructorDecl &decl, const CXXCtorInitializer &init,
 		return use_type(*type);
 	else if (init.isDelegatingInitializer()) {
 		// getThisType() returns a pointer type.
-		if (const auto *OPT = decl.getThisType().getTypePtr()->getAs<clang::PointerType>())
+		if (const auto *OPT =
+				decl.getThisType().getTypePtr()->getAs<clang::PointerType>())
 			return use_qualtype(OPT->getPointeeType());
-	  else
-			fatal("[getThisType] on delegating initializer unexpectedly returned a non-pointer type!");
+		else
+			fatal("[getThisType] on delegating initializer unexpectedly "
+				  "returned a non-pointer type!");
 	} else
 		fatal("initializer not memeber, base class, or indirect");
 }
@@ -807,12 +805,11 @@ printInitializer(const CXXConstructorDecl &ctor, const CXXCtorInitializer &init,
 		fatal(cprint, loc::of(ctor), "initializer without expression");
 	guard::ctor _(print, "Build_Initializer");
 	printInitPath(ctor, init, print, cprint) << fmt::line;
-	printInitType(ctor, init, print, cprint) << fmt::nbsp;
-	return cprint.printExpr(e, print);
+	return cprint.printExpr(print, e);
 }
 
 static fmt::Formatter &
-printInitializerList(const CXXConstructorDecl &decl, CoqPrinter &print,
+printInitializerList(CoqPrinter &print, const CXXConstructorDecl &decl,
 					 ClangPrinter &cprint) {
 	// The order here is corrrect with respect to initalization order.
 	return print.list(decl.inits(), [&](auto init) {
@@ -824,39 +821,39 @@ printInitializerList(const CXXConstructorDecl &decl, CoqPrinter &print,
 }
 
 static fmt::Formatter &
-printConstructor(const CXXConstructorDecl &decl, CoqPrinter &print,
+printConstructor(CoqPrinter &print, const CXXConstructorDecl &decl,
 				 ClangPrinter &cprint, const ASTContext &) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printConstructor", loc::of(decl));
 	guard::ctor _(print, "Build_Ctor");
-	printClassName(decl.getParent(), print, cprint, loc::of(decl)) << fmt::nbsp;
-	printFunctionParams(decl, print, cprint) << fmt::nbsp;
-	cprint.printCallingConv(decl, print) << fmt::nbsp;
-	cprint.printVariadic(decl.isVariadic(), print) << fmt::nbsp;
+	printClassName(print, decl.getParent(), cprint, loc::of(decl)) << fmt::nbsp;
+	printFunctionParams(print, decl, cprint) << fmt::nbsp;
+	cprint.printCallingConv(print, decl) << fmt::nbsp;
+	cprint.printVariadic(print, decl.isVariadic()) << fmt::nbsp;
 	if (auto body = decl.getBody()) {
 		guard::some s(print);
 		guard::ctor ud(print, "UserDefined");
 		guard::tuple _(print);
-		printInitializerList(decl, print, cprint) << fmt::tuple_sep;
-		return cprint.printStmt(body, print);
+		printInitializerList(print, decl, cprint) << fmt::tuple_sep;
+		return cprint.printStmt(print, body);
 	} else {
 		return print.none();
 	}
 }
 
 static fmt::Formatter &
-printDestructor(const CXXDestructorDecl &decl, CoqPrinter &print,
+printDestructor(CoqPrinter &print, const CXXDestructorDecl &decl,
 				ClangPrinter &cprint, const ASTContext &) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printDestructor", loc::of(decl));
 
 	guard::ctor _(print, "Build_Dtor");
-	printClassName(decl.getParent(), print, cprint, loc::of(decl)) << fmt::nbsp;
-	cprint.printCallingConv(decl, print) << fmt::nbsp;
+	printClassName(print, decl.getParent(), cprint, loc::of(decl)) << fmt::nbsp;
+	cprint.printCallingConv(print, decl) << fmt::nbsp;
 	if (auto body = decl.getBody()) {
 		guard::some some(print);
 		guard::ctor _(print, "UserDefined");
-		return cprint.printStmt(body, print);
+		return cprint.printStmt(print, body);
 	} else if (decl.isDefaulted()) {
 		return print.output() << "(Some Defaulted)";
 	} else {
@@ -873,38 +870,47 @@ static const DeclPrinter Ddestructor("Ddestructor", printDestructor);
 // Variables
 namespace {
 static fmt::Formatter &
-printVar(const VarDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
+printVar(CoqPrinter &print, const VarDecl &decl, ClangPrinter &cprint,
 		 const ASTContext &) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printVar", loc::of(decl));
 
 	// TODO handling of [constexpr] needs to be improved.
-	cprint.printQualType(decl.getType(), print, loc::of(decl)) << fmt::nbsp;
-	if (auto e = decl.getInit()) {
-		guard::some _(print);
-		return cprint.printExpr(e, print);
+	cprint.printQualType(print, decl.getType(), loc::of(decl)) << fmt::nbsp;
+	if (decl.hasExternalStorage()) {
+		always_assert(!decl.getInit() &&
+					  "external variable with an initializer");
+		return print.output() << "global_init.Extern";
+	} else if (dyn_cast<FunctionDecl>(decl.getDeclContext())) {
+		return print.output() << "global_init.Delayed";
+	} else if (auto e = decl.getInit()) {
+		guard::ctor _(print, "global_init.Init");
+		return cprint.printExpr(print, e);
+	} else if (decl.getTemplateSpecializationKind() ==
+			   TemplateSpecializationKind::TSK_ImplicitInstantiation) {
+		return print.output() << "global_init.ImplicitInit";
 	} else
-		return print.none();
+		return print.output() << "global_init.NoInit";
 }
 }
-static const DeclPrinter Dvariable("Dvariable", printVar, /*ast2_only*/ true);
+static const DeclPrinter Dvariable("Dvariable", printVar);
 
 // Enumerations
 namespace {
 
 static fmt::Formatter &
-printEnum(const EnumDecl &decl, CoqPrinter &print, ClangPrinter &cprint,
+printEnum(CoqPrinter &print, const EnumDecl &decl, ClangPrinter &cprint,
 		  const ASTContext &) {
 	auto loc = loc::of(decl);
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printEnum", loc);
 
-	cprint.printQualType(decl.getIntegerType(), print, loc::of(decl))
+	cprint.printQualType(print, decl.getIntegerType(), loc::of(decl))
 		<< fmt::nbsp;
 	// TODO: Tidy up enumeration constants. We might emit their values
 	// here as well, rather than as separate declarations.
 	auto printConst = [&](EnumConstantDecl *c) {
-		cprint.printUnqualifiedName(c, print, loc);
+		cprint.printUnqualifiedName(print, c, loc);
 	};
 	return print.list(decl.enumerators(), printConst);
 }
@@ -989,16 +995,16 @@ crackEnumConst(const EnumConstantDecl &decl, CoqPrinter &print,
 	auto bt = ut.getTypePtr()->getAs<BuiltinType>();
 	if (!bt) {
 		/*
-        TODO: With work here and in Coq, we might support constants in
-        enumerations with dependent underlying types.
-        */
+		TODO: With work here and in Coq, we might support constants in
+		enumerations with dependent underlying types.
+		*/
 		return fail("underlying integral type not a builtin");
 	}
 	if (isTemplate(*ed)) {
 		/*
-        TODO: With work here, we could print concrete enumeration
-        constants in dependent scopes.
-        */
+		TODO: With work here, we could print concrete enumeration
+		constants in dependent scopes.
+		*/
 		return fail("dependent scope");
 	}
 
@@ -1014,27 +1020,26 @@ crackEnumConst(const EnumConstantDecl &decl, CoqPrinter &print,
 }
 
 static fmt::Formatter &
-printEnumConst(const EnumConst &c, CoqPrinter &print, ClangPrinter &cprint,
+printEnumConst(CoqPrinter &print, const EnumConst &c, ClangPrinter &cprint,
 			   const ASTContext &) {
 	auto &[decl, ed, ut, uv] = c;
 	if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 		cprint.trace("printEnumConst", loc::of(decl));
 
-	cprint.printTypeName(ed, print) << fmt::nbsp;
-	cprint.printQualType(ut, print, loc::of(decl)) << fmt::nbsp;
+	cprint.printName(print, ed) << fmt::nbsp;
+	cprint.printQualType(print, ut, loc::of(decl)) << fmt::nbsp;
 	uv.print(print) << fmt::nbsp;
 	if (auto e = decl.getInitExpr()) {
 		guard::some _(print);
-		cprint.printExpr(e, print);
+		cprint.printExpr(print, e);
 	} else
 		print.none();
 	return print.output();
 }
 } // Enumerations
 
-static const DeclPrinter Denum("Denum", printEnum, /*ast2_only*/ true);
-static const DeclPrinter Denum_constant("Denum_constant", printEnumConst,
-										/*ast2_only*/ true);
+static const DeclPrinter Denum("Denum", printEnum);
+static const DeclPrinter Denum_constant("Denum_constant", printEnumConst);
 
 // Static asserts
 namespace {
@@ -1126,8 +1131,8 @@ public:
 	bool VisitTypedefNameDecl(const TypedefNameDecl *decl, CoqPrinter &print,
 							  ClangPrinter &cprint, const ASTContext &ctxt) {
 		/*
-        TODO: Adjust `type_table_le` and the template logic.
-        */
+		TODO: Adjust `type_table_le` and the template logic.
+		*/
 		return false;
 
 		if (ClangPrinter::debug && cprint.trace(Trace::Decl))
@@ -1226,17 +1231,17 @@ public:
 		if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 			cprint.trace("VisitStaticAssertDecl", loc::of(decl));
 		/*
-        TODO: There _might_ be a case for supporting templated static
-        asserts (e.g., when they have complicated proofs based mostly on
-        templated code)).
-        */
+		TODO: There _might_ be a case for supporting templated static
+		asserts (e.g., when they have complicated proofs based mostly on
+		templated code)).
+		*/
 		if (auto e = decl->getAssertExpr()) {
 			guard::ctor _(print, "Dstatic_assert");
 			/*
-            TODO: We insist on a StringLiteral message (the historical
-            type). Consider dropping that requirement and using
-            Stmt::printPretty.
-            */
+			TODO: We insist on a StringLiteral message (the historical
+			type). Consider dropping that requirement and using
+			Stmt::printPretty.
+			*/
 			if (auto msg = staticAssertMessage(*decl)) {
 				guard::some _(print);
 				print.str(msg->getString());
@@ -1244,7 +1249,7 @@ public:
 				print.none();
 			}
 			print.output() << fmt::nbsp;
-			cprint.printExpr(e, print);
+			cprint.printExpr(print, e);
 			return true;
 		} else {
 			unsupported(cprint, loc::of(decl),
@@ -1257,7 +1262,7 @@ public:
 PrintDecl PrintDecl::printer;
 
 bool
-ClangPrinter::printDecl(const clang::Decl *decl, CoqPrinter &print) {
+ClangPrinter::printDecl(CoqPrinter &print, const clang::Decl *decl) {
 	if (trace(Trace::Decl))
 		trace("printDecl", loc::of(decl));
 	return PrintDecl::printer.Visit(decl, print, *this, *context_);

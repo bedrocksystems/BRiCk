@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.proofmode.proofmode.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
@@ -84,12 +84,6 @@ Section with_resolve.
   Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
   Variables (ρ : region).
   Implicit Types (p : ptr).
-
-  Definition arg_types (ty : functype) : option (list decltype * function_arity) :=
-    match ty with
-    | @Tfunction _ ar _ args => Some (args, ar)
-    | _ => None
-    end.
 
   (* [wp_arg ty e K] evaluates [e] to initialize a parameter of type [ty].
 

@@ -10,7 +10,7 @@ Require Import bedrock.lang.bi.fractional.
 
 Require Import bedrock.lang.cpp.bi.cfractional.
 Require Import bedrock.lang.cpp.semantics.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.logic.path_pred.
 
@@ -79,7 +79,7 @@ Section with_cpp.
   Proof. by rewrite tptstoR_Vvoid_tptstoR_fuzzy tptsto_fuzzyR_Vvoid_primR. Qed.
 
   Lemma has_type_ptr p ty :
-    has_type (Vptr p) (Tpointer ty) -|- p |-> (validR ** aligned_ofR ty).
+    has_type (Vptr p) (Tptr ty) -|- p |-> (validR ** aligned_ofR ty).
   Proof.
     by rewrite has_type_ptr' _at_sep _at_validR aligned_ofR_aligned_ptr_ty.
   Qed.

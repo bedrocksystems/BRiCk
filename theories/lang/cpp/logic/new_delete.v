@@ -6,7 +6,7 @@
 Require Import iris.bi.lib.fractional.
 Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.bi.errors.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.bi.spec.frac_splittable.
 Require Import bedrock.lang.bi.spec.nary_classes.
@@ -130,7 +130,7 @@ Module Type Expr__newdelete.
       #[local] Notation wp_args := (wp_args tu ρ).
 
       (* <<std::align_val_t>> *)
-      #[local] Notation Talign_val_t := (Tenum "_ZN3std11align_val_tE") (only parsing).
+      #[local] Notation Talign_val_t := (Tenum $ Nscoped (Nglobal $ Nid "std") (Nid "align_val_t")) (only parsing).
       #[local] Notation Tbyte := Tuchar (only parsing).
 
       Section new.
@@ -199,14 +199,14 @@ Module Type Expr__newdelete.
              values are representable in their respective types *)
           [Eint sz Tsize_t] ++
             if pass_align
-            then [Ecast Cintegral (Eint al Tsize_t) Prvalue Talign_val_t]
+            then [Ecast (Cintegral Talign_val_t) (Eint al Tsize_t)]
             else [].
 
         Axiom wp_operand_new :
           forall (oinit : option Expr)
             new_fn (pass_align : bool) new_args (_ : new_args <> nil) aty Q targs
             (nfty := normalize_type new_fn.2)
-            (_ : arg_types nfty = Some targs)
+            (_ : (args_for <$> as_function nfty) = Some targs)
             (alloc_sz alloc_al : N)
             (_ : size_of aty = Some alloc_sz) (_ : align_of aty = Some alloc_al),
             (let implicit_args := new_implicits pass_align alloc_sz alloc_al in
@@ -255,7 +255,7 @@ Module Type Expr__newdelete.
             new_fn storage_expr aty Q
             (nfty := normalize_type new_fn.2)
             (_ : type_of storage_expr = Tptr Tvoid)
-            (_ : arg_types nfty = Some ([Tsize_t; Tptr Tvoid], Ar_Definite)),
+            (_ : args_for <$> as_function nfty = Some ([Tsize_t; Tptr Tvoid], Ar_Definite)),
             (Exists alloc_sz alloc_al,
                [| size_of aty = Some alloc_sz |] **
                [| align_of aty = Some alloc_al |] ** (** <-- TODO FM-975 *)
@@ -305,7 +305,7 @@ Module Type Expr__newdelete.
             new_fn (pass_align : bool) new_args aty Q targs
             (_ : new_args <> nil) (* prevents default [new] which must be able to throw *)
             (nfty := normalize_type new_fn.2)
-            (_ : arg_types nfty = Some targs),
+            (_ : args_for <$> as_function nfty = Some targs),
             (* <https://eel.is/c++draft/expr.new#7>
                | (7) Every constant-expression in a noptr-new-declarator shall be a
                |     converted constant expression ([expr.const]) of type std​::​size_t
@@ -396,7 +396,7 @@ Module Type Expr__newdelete.
       match drop_qualifiers ty with
       | Tqualified _ ty => False (* unreachable *)
       | Tnamed cls      =>
-        match tu !! cls with
+        match tu.(types) !! cls with
         | Some (Gstruct s) =>
           if has_virtual_dtor s then
             (* NOTE [has_virtual_dtor] could be derived from the vtable... *)
@@ -413,7 +413,7 @@ Module Type Expr__newdelete.
         end
       | Tarray _ _
       | Tincomplete_array _
-      | Tvariable_array _ =>
+      | Tvariable_array _ _ =>
         Q obj_ptr' (erase_qualifiers ty)
       | Tref r_ty
       | Trv_ref r_ty    =>
@@ -443,7 +443,7 @@ Module Type Expr__newdelete.
     match ty with
     | Tarray _ _ => is_array = true
     | Tincomplete_array _
-    | Tvariable_array _ => False
+    | Tvariable_array _ _ => False
     | _ => is_array = false
     end.
 
@@ -455,7 +455,7 @@ Module Type Expr__newdelete.
       *)
     mlock
     Definition delete_val `{Σ : cpp_logic} {σ : genv} tu (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
-      let del_type := Tfunction Tvoid (Tptr Tvoid :: nil) in
+      let del_type := Tfunction $ FunctionType Tvoid (Tptr Tvoid :: nil) in
       let del '(fn, ty) :=
           (letI* p', free := alloc_pointer p in
           |> letI* p := wp_fptr tu.(types) ty (_global fn) (p' :: nil) in
@@ -464,7 +464,7 @@ Module Type Expr__newdelete.
       in
       match erase_qualifiers ty with
       | Tnamed nm =>
-        match tu !! nm with
+        match tu.(types) !! nm with
         | Some (Gstruct s) =>
           del $ from_option (fun x => (x, del_type)) default s.(s_delete)
         | Some (Gunion u) =>
@@ -555,7 +555,7 @@ Module Type Expr__newdelete.
       Axiom wp_operand_delete :
         forall delete_fn e destroyed_type Q
           (dfty := normalize_type delete_fn.2)
-          (_ : arg_types dfty = Some ([Tptr Tvoid], Ar_Definite)),
+          (_ : args_for <$> as_function dfty = Some ([Tptr Tvoid], Ar_Definite)),
         (* call the destructor on the object, and then call delete_fn *)
         (letI* v , free := wp_operand e in
           Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -577,7 +577,7 @@ Module Type Expr__newdelete.
       Lemma wp_operand_delete_default :
         forall delete_fn e destroyed_type Q
           (dfty := normalize_type delete_fn.2)
-          (_ : arg_types dfty = Some ([Tptr Tvoid], Ar_Definite)),
+          (_ : args_for <$> as_function dfty = Some ([Tptr Tvoid], Ar_Definite)),
         (* call the destructor on the object, and then call delete_fn *)
         (letI* v, free := wp_operand e in
             Exists obj_ptr, [| v = Vptr obj_ptr |] ** [| obj_ptr <> nullptr |] **
@@ -599,7 +599,7 @@ Module Type Expr__newdelete.
       Axiom wp_operand_array_delete :
         forall delete_fn e destroyed_type Q
           (dfty := normalize_type delete_fn.2)
-          (_ : arg_types dfty = Some ([Tptr Tvoid], Ar_Definite)),
+          (_ : args_for <$> as_function dfty = Some ([Tptr Tvoid], Ar_Definite)),
         (* call the destructor on the object, and then call delete_fn *)
         (letI* v, free := wp_operand e in
           Exists obj_ptr, [| v = Vptr obj_ptr |] **

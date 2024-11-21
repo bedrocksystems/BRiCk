@@ -44,10 +44,10 @@ Qed.
      where [sz] is the number of bits in the return type"
  *)
 Notation to_unsigned_bits := (trim) (only parsing).
-Notation to_unsigned a    := (to_unsigned_bits (bitsN a)) (only parsing).
+Notation to_unsigned a    := (to_unsigned_bits (bitsize.bitsN a)) (only parsing).
 
-Definition bitFlipZU (len : bitsize) (z : Z) : Z :=
-  to_unsigned len (Z.lnot z).
+Definition bitFlipZU len (z : Z) : Z :=
+  to_unsigned_bits len (Z.lnot z).
 
 Lemma to_unsigned_bits_id : forall z (bits : N),
     0 <= z < 2 ^ (Z.of_N bits) ->
@@ -58,7 +58,7 @@ Proof.
 Qed.
 
 Lemma to_unsigned_id : forall z (sz : bitsize),
-    0 <= z < 2^bitsZ sz ->
+    0 <= z < 2^bitsize.bitsZ sz ->
     to_unsigned sz z = z.
 Proof. destruct sz; apply to_unsigned_bits_id. Qed.
 
@@ -67,7 +67,7 @@ Lemma to_unsigned_bits_eq : forall z (bits: N),
 Proof. reflexivity. Qed.
 
 Lemma to_unsigned_eq : forall z (sz : bitsize),
-    to_unsigned sz z = trim (bitsN sz) z.
+    to_unsigned sz z = trim (bitsize.bitsN sz) z.
 Proof. reflexivity. Qed.
 
 (** [to_signed sz z] is used when C++ converts unsigned values to signed values.
@@ -87,12 +87,12 @@ Definition to_signed_bits (bits: N) (z: Z): Z :=
        if bool_decide (norm >= 2 ^ ((Z.of_N bits) - 1))
        then norm - 2 ^ (Z.of_N bits) else norm.
 Definition to_signed (sz: bitsize) (z: Z): Z :=
-  Unfold to_signed_bits (to_signed_bits (bitsN sz) z).
+  Unfold to_signed_bits (to_signed_bits (bitsize.bitsN sz) z).
 
-Local Transparent bitsZ bitsN.
-Arguments bitsZ !_/.
+#[local] Transparent bitsize.bitsZ bitsize.bitsN.
+Arguments bitsize.bitsZ !_/.
 Arguments Z.of_N !_/.
-Arguments bitsN !_/.
+Arguments bitsize.bitsN !_/.
 
 
 (* lemmas for [to_signed] and [to_unsigned] *)
@@ -153,7 +153,7 @@ Proof.
 Qed.
 
 Lemma to_signed_id : forall (z : Z) (n : bitsize),
-  0 <= z < 2^(bitsZ n - 1) -> to_signed n z = z.
+  0 <= z < 2^(bitsize.bitsZ n - 1) -> to_signed n z = z.
 Proof. destruct n; apply to_signed_bits_id. Qed.
 
 Lemma to_signed_bits_neg: forall (z: Z) (bits: N),
@@ -170,9 +170,9 @@ Proof.
 Qed.
 
 Lemma to_signed_neg : forall x (n : bitsize),
-    2^(bitsZ n - 1) - 1 < x < 2^bitsZ n ->
-    to_signed n x = trim (bitsN n) (x - 2^(bitsZ n - 1)) + - 2^(bitsZ n - 1).
-Proof. move=> x n H; by pose proof (to_signed_bits_neg x (bitsN n) H). Qed.
+    2^(bitsize.bitsZ n - 1) - 1 < x < 2^bitsize.bitsZ n ->
+    to_signed n x = trim (bitsize.bitsN n) (x - 2^(bitsize.bitsZ n - 1)) + - 2^(bitsize.bitsZ n - 1).
+Proof. move=> x n H; by pose proof (to_signed_bits_neg x (bitsize.bitsN n) H). Qed.
 
 Lemma Z_opp1_mul_lt_ge:
   forall (n m: Z),
@@ -279,15 +279,15 @@ Qed.
 
 Lemma to_signed_unsigned_roundtrip:
   forall (bits: bitsize) (v: Z),
-    (-2^(Z.of_N (bitsN bits) - 1) <= v)%Z ->
-    (v <= 2^(Z.of_N (bitsN bits) - 1) - 1)%Z ->
+    (-2^(Z.of_N (bitsize.bitsN bits) - 1) <= v)%Z ->
+    (v <= 2^(Z.of_N (bitsize.bitsN bits) - 1) - 1)%Z ->
     to_signed bits (to_unsigned bits v) = v.
 Proof.
-  intros; apply (to_signed_unsigned_bits_roundtrip (bitsN bits));
+  intros; apply (to_signed_unsigned_bits_roundtrip (bitsize.bitsN bits));
     destruct bits; simpl in *; lia.
 Qed.
 
-Local Lemma pow2Nm1gt1 {n : N} :
+#[local] Lemma pow2Nm1gt1 {n : N} :
   (0 < n)%N -> 1 <= 2^(Z.of_N n - 1).
 Proof.
   intros Hgt0.
@@ -314,9 +314,9 @@ Proof.
 Qed.
 
 Lemma trim_to_signed_agree: forall x sz n,
-    bitsN sz = n ->
+    bitsize.bitsN sz = n ->
     trim n (to_signed sz x) = trim n x.
 Proof.
   move=> x sz n Hsz; subst.
-  by rewrite -(trim_to_signed_bits_agree x (bitsN sz)).
+  by rewrite -(trim_to_signed_bits_agree x (bitsize.bitsN sz)).
 Qed.

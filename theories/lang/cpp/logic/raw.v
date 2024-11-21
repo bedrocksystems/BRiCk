@@ -10,7 +10,7 @@ Require Import iris.bi.lib.fractional.
 Require Import bedrock.lang.cpp.bi.cfractional.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.arith.builtins.
-Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.arr.
 Require Import bedrock.lang.cpp.logic.builtins.
@@ -23,14 +23,14 @@ Require Import bedrock.lang.cpp.logic.z_to_bytes.
 C++ abstract machine.
 *)
 mlock Definition rawR `{Σ : cpp_logic, σ : genv} (q : cQp.t) (r : raw_byte) : Rep :=
-  tptsto_fuzzyR Tu8 q (Vraw r).
+  tptsto_fuzzyR Tbyte q (Vraw r).
 #[global] Arguments rawR {_ _ _ _} _ _ : assert.	(* mlock bug *)
 
 (**
 [rawsR q rs]: An array of raw bytes
 *)
 Definition rawsR `{Σ : cpp_logic, σ : genv} (q : cQp.t) (rs : list raw_byte) : Rep :=
-  arrayR Tu8 (rawR q) rs.
+  arrayR Tbyte (rawR q) rs.
 
 (*
 TODO: The axioms here should be at the level of [tptsto], stated in
@@ -46,7 +46,7 @@ Axiom primR_to_rawsR : ∀ `{Σ : cpp_logic, σ : genv} ty q v,
 (* ^^ TODO: rewrite this in terms of [tptsto] *)
 
 Definition decodes {σ : genv} (endianness : endian) (sgn : signed) (l : list N) (z : Z) : Prop :=
-  List.Forall (fun v => has_type_prop (Vn v) Tu8) l /\
+  List.Forall (fun v => has_type_prop (Vn v) Tbyte) l /\
   _Z_from_bytes endianness sgn l = z.
 
 Definition decodes_uint {σ : genv} (l : list N) (z : Z) : Prop :=
@@ -58,13 +58,13 @@ use it to derive this reasoning principle.
 *)
 Axiom decode_uint_anyR : ∀ `{Σ : cpp_logic, σ : genv} q sz,
   anyR (Tnum sz Unsigned) q -|-
-  anyR (Tarray Tuchar (bytesN sz)) q ** type_ptrR (Tnum sz Unsigned).
+  anyR (Tarray Tuchar (int_rank.bytesN sz)) q ** type_ptrR (Tnum sz Unsigned).
 (* ^^ should be proven *)
 
 (* JH: TODO: Determine what new axioms we should add here. *)
 Axiom raw_byte_of_int_eq : ∀ {σ : genv} sz x rs,
   raw_bytes_of_val σ (Tnum sz Unsigned) (Vint x) rs <->
-  ∃ l, decodes_uint l x /\ raw_int_byte <$> l = rs /\ length l = bytesNat sz.
+  ∃ l, decodes_uint l x /\ raw_int_byte <$> l = rs /\ length l = N.to_nat (int_rank.bytesN sz).
 
 Section with_Σ.
   Context `{Σ : cpp_logic} {σ : genv}.
@@ -92,15 +92,15 @@ Section with_Σ.
   Proof. rewrite rawR.unlock. solve_cfrac_valid. Qed.
 
   #[global] Instance rawR_wellyped q r :
-    Observe (pureR (has_type (Vraw r) Tu8)) (rawR q r).
+    Observe (pureR (has_type (Vraw r) Tbyte)) (rawR q r).
   Proof.
     rewrite -has_type_or_undef_nonundef// rawR.unlock. apply _.
   Qed.
   #[global] Instance _at_rawR_wellyped (p : ptr) q r :
-    Observe (has_type (Vraw r) Tu8) (p |-> rawR q r).
+    Observe (has_type (Vraw r) Tbyte) (p |-> rawR q r).
   Proof. apply _at_observe_pureR, _. Qed.
 
-  #[global] Instance rawR_type_ptrR q r : Observe (type_ptrR Tu8) (rawR q r).
+  #[global] Instance rawR_type_ptrR q r : Observe (type_ptrR Tbyte) (rawR q r).
   Proof. rewrite rawR.unlock. apply _. Qed.
 
   #[global] Instance rawR_nonnull q r : Observe nonnullR (rawR q r).
@@ -115,8 +115,8 @@ Section with_Σ.
 
   Lemma rawR_tptsto_acc (p : ptr) q r :
     p |-> rawR q r |--
-      Exists v', [| val_related Tu8 (Vraw r) v' |] ** tptsto Tu8 q p v' **
-      (Forall p' q' v', [| val_related Tu8 (Vraw r) v' |] -* tptsto Tu8 q' p' v' -* p' |-> rawR q' r).
+      Exists v', [| val_related Tbyte (Vraw r) v' |] ** tptsto Tbyte q p v' **
+      (Forall p' q' v', [| val_related Tbyte (Vraw r) v' |] -* tptsto Tbyte q' p' v' -* p' |-> rawR q' r).
   Proof.
     rewrite rawR.unlock. by rewrite tptsto_fuzzyR_tptsto_acc.
   Qed.
@@ -132,7 +132,7 @@ Section with_Σ.
 
   Lemma rawR_offset_congP_transport (p : ptr) o1 o2 q r :
     offset_congP σ o1 o2 |--
-    type_ptr Tu8 (p ,, o2) -*
+    type_ptr Tbyte (p ,, o2) -*
     p ,, o1 |-> rawR q r -*
     p ,, o2 |-> rawR q r.
   Proof.
@@ -188,25 +188,25 @@ Section with_Σ.
 
   Lemma raw_int_byte_primR' q r n :
     raw_int_byte n = r ->
-    rawR q r -|- primR Tu8 q (Vn n).
+    rawR q r -|- primR Tbyte q (Vn n).
   Proof.
     intros <-. rewrite primR_to_rawsR. split'.
     - iIntros "R". iExists [raw_int_byte n].
       rewrite /rawsR arrayR_singleton.
-      iDestruct (observe (type_ptrR Tu8) with "R") as "#T". iFrame "R T".
+      iDestruct (observe (type_ptrR Tbyte) with "R") as "#T". iFrame "R T".
       (**
-      TODO: Missing axiom [raw_bytes_of_val σ Tu8 (Vn n) [raw_int_byte n]]
+      TODO: Missing axiom [raw_bytes_of_val σ Tbyte (Vn n) [raw_int_byte n]]
       *)
       admit.
     - iIntros "(% & %Hraw & #T & R)".
       (**
       TODO: Missing axioms allowing us to invert [raw_bytes_of_val σ
-      Tu8 (Vn n) rs] to learn [rs] the singleton [raw_int_byte n ::
+      Tbyte (Vn n) rs] to learn [rs] the singleton [raw_int_byte n ::
       nil].
       *)
       admit.
   Admitted.
-  Lemma raw_int_byte_primR q n : rawR q (raw_int_byte n) -|- primR Tu8 q (Vn n).
+  Lemma raw_int_byte_primR q n : rawR q (raw_int_byte n) -|- primR Tbyte q (Vn n).
   Proof. exact: raw_int_byte_primR'. Qed.
 
   (** TODO: determine whether this is correct with respect to pointers *)
@@ -219,9 +219,9 @@ Section with_Σ.
       *)
       [| decodes_uint l x |] **
       [| raw_int_byte <$> l = rs |] **
-      [| length l = bytesNat sz |] **
+      [| length l = N.to_nat (int_rank.bytesN sz) |] **
       type_ptrR (Tnum sz Unsigned) **
-      arrayR Tu8 (fun c => primR Tu8 q (Vint c)) (Z.of_N <$> l).
+      arrayR Tbyte (fun c => primR Tbyte q (Vint c)) (Z.of_N <$> l).
   Proof.
     rewrite primR_to_rawsR. f_equiv=>rs. rewrite raw_byte_of_int_eq. split'.
     - iIntros "(%Hraw & T & Rs)". destruct Hraw as (l & Hdec & Hrs & Hlen).
@@ -243,7 +243,7 @@ Module Endian.
 
     Lemma decodes_uint_to_end :
       forall endianness sz l v,
-        length l = bytesNat sz ->
+        length l = N.to_nat (bitsize.bytesN sz) ->
         decodes endianness Unsigned l v ->
         decodes_uint l (to_end endianness sz v).
     Proof.
@@ -255,13 +255,15 @@ Module Endian.
         rewrite z_to_bytes._Z_from_bytes_eq/z_to_bytes._Z_from_bytes_def;
         rewrite z_to_bytes._Z_from_bytes_eq/z_to_bytes._Z_from_bytes_def in Hdecode;
         [ | replace l with (rev (rev l)) by (apply rev_involutive)];
-        erewrite z_to_bytes._Z_from_bytes_unsigned_le_bswap; eauto;
-        now rewrite length_rev.
+        erewrite z_to_bytes._Z_from_bytes_unsigned_le_bswap; eauto.
+      by destruct sz.
+      rewrite /bitsize.bytesNat length_rev.
+      destruct sz; simpl in *; lia.
     Qed.
 
     Lemma decodes_Z_to_bytes_Unsigned:
-      forall (sz : bitsize) (n : nat)  (endianness : endian) (z : Z),
-        (bytesNat sz = n)%nat ->
+      forall sz (n : nat)  (endianness : endian) (z : Z),
+        (int_rank.bytesNat sz = n)%N ->
         has_type_prop z (Tnum sz Unsigned) ->
         decodes endianness Unsigned (_Z_to_bytes n endianness Unsigned z) z.
     Proof.
@@ -272,43 +274,44 @@ Module Endian.
         erewrite _Z_from_to_bytes_roundtrip; try reflexivity.
         move: Hty.
         rewrite -has_int_type.
-        rewrite/bound/min_val/max_val.
-        destruct sz; rewrite/bytesNat; split; lia.
+        rewrite/bitsize.bound/bitsize.min_val/bitsize.max_val.
+        destruct sz; rewrite/int_rank.bytesN; simpl in *; split; try lia.
       }
       exact: _Z_to_bytes_has_type_prop.
     Qed.
 
-    Lemma raw_bytes_of_val_to_end_raw_int_byte (endianness : endian) (sz : bitsize) (z : Z) :
+    Lemma raw_bytes_of_val_to_end_raw_int_byte (endianness : endian) sz (z : Z) :
       has_type_prop z (Tnum sz Unsigned) ->
-      raw_bytes_of_val σ (Tnum sz Unsigned) (to_end endianness sz z)
-        (map raw_int_byte (_Z_to_bytes (bytesNat sz) endianness Unsigned z)).
+      raw_bytes_of_val σ (Tnum sz Unsigned) (to_end endianness (int_rank.bitsize sz) z)
+        (map raw_int_byte (_Z_to_bytes (int_rank.bytesNat sz) endianness Unsigned z)).
     Proof.
       rewrite raw_byte_of_int_eq.
-      exists (_Z_to_bytes (bytesNat sz) endianness Unsigned z).
+      exists (_Z_to_bytes (N.to_nat $ int_rank.bytesN sz) endianness Unsigned z).
       intuition.
       2: by rewrite _Z_to_bytes_length //.
       apply: decodes_uint_to_end.
-      { rewrite _Z_to_bytes_length; reflexivity. }
+      { rewrite _Z_to_bytes_length. by destruct sz. }
       apply: (decodes_Z_to_bytes_Unsigned sz); try reflexivity.
-      assumption.
+      by destruct sz.
     Qed.
 
-    Lemma raw_bytes_of_val_to_big_end_raw_int_byte (sz : bitsize) (z : Z) :
+    Lemma raw_bytes_of_val_to_big_end_raw_int_byte sz (z : Z) :
       has_type_prop z (Tnum sz Unsigned) ->
-      raw_bytes_of_val σ (Tnum sz Unsigned) (to_big_end sz z)
-        (map raw_int_byte (_Z_to_bytes (bytesNat sz) Big Unsigned z)).
+      raw_bytes_of_val σ (Tnum sz Unsigned) (to_big_end (int_rank.bitsize sz) z)
+        (map raw_int_byte (_Z_to_bytes (int_rank.bytesNat sz) Big Unsigned z)).
     Proof.
       intros H; apply (raw_bytes_of_val_to_end_raw_int_byte Big) in H.
       by rewrite /to_end/= in H.
     Qed.
 
-    Lemma raw_bytes_of_val_to_little_end_raw_int_byte (sz : bitsize) (z : Z) :
+    Lemma raw_bytes_of_val_to_little_end_raw_int_byte sz (z : Z) :
       has_type_prop z (Tnum sz Unsigned) ->
-      raw_bytes_of_val σ (Tnum sz Unsigned) (to_little_end sz z)
-        (map raw_int_byte (_Z_to_bytes (bytesNat sz) Little Unsigned z)).
+      raw_bytes_of_val σ (Tnum sz Unsigned) (to_little_end (int_rank.bitsize sz) z)
+        (map raw_int_byte (_Z_to_bytes (int_rank.bytesNat sz) Little Unsigned z)).
     Proof.
       intros H; apply (raw_bytes_of_val_to_end_raw_int_byte Little) in H.
-      by rewrite /to_end/= in H.
+      rewrite /to_end/= in H.
+      by destruct sz.
     Qed.
   End with_Σ.
 End Endian.

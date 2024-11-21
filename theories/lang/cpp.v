@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export
-        bedrock.lang.cpp.ast
+        bedrock.lang.cpp.syntax
         bedrock.lang.cpp.semantics
         bedrock.lang.cpp.parser
         bedrock.lang.cpp.logic.

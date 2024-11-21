@@ -10,8 +10,8 @@ check_cpp2v_versions() {
     shift
     for ver in "$@"
     do
-        echo "cpp2v -v -names ${base}_${ver}_cpp_names.v -o ${base}_${ver}_cpp.v ${input} -- -std=c++${ver}"
-        cpp2v -v -names ${base}_${ver}_cpp_names.v -o ${base}_${ver}_cpp.v ${input} -- -std=c++${ver}
+        echo "cpp2v -v -check-types -names ${base}_${ver}_cpp_names.v -o ${base}_${ver}_cpp.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'"
+        cpp2v -v -check-types -names ${base}_${ver}_cpp_names.v -o ${base}_${ver}_cpp.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'
 
         echo "coqc ${COQC_ARGS} ${base}_${ver}_cpp_names.v"
         coqc ${COQC_ARGS} "${base}_${ver}_cpp_names.v"
@@ -22,17 +22,27 @@ check_cpp2v_versions() {
 }
 
 check_cpp2v() {
+    check_cpp2v_versions $1 17
+}
+
+check_cpp2v_templates_versions() {
     input="$1"
     base="${input%.*}"
-    ver="17"
 
-    # Normalize the output since llvm17 and later quote text with line numbers and a pipe symbol.
-    echo "cpp2v -v -names ${base}_cpp_names.v -o ${base}_cpp.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'"
-    cpp2v -v -names ${base}_cpp_names.v -o ${base}_cpp.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'
+    shift
+    for ver in "$@"
+    do
+        echo "cpp2v -v -check-types -o ${base}_${ver}_cpp.v --templates ${base}_${ver}_cpp_templates.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'"
+        cpp2v -v -check-types -o ${base}_${ver}_cpp.v --templates ${base}_${ver}_cpp_templates.v ${input} -- -std=c++${ver} 2>&1 | sed 's/^ *[0-9]* | //'
 
-    echo "coqc ${COQC_ARGS} ${base}_cpp_names.v"
-    coqc ${COQC_ARGS} "${base}_cpp_names.v"
+        echo "coqc ${COQC_ARGS} ${base}_${ver}_cpp_templates.v"
+        coqc ${COQC_ARGS} "${base}_${ver}_cpp_templates.v"
 
-    echo "coqc ${COQC_ARGS} ${base}_cpp.v"
-    coqc ${COQC_ARGS} "${base}_cpp.v"
+        echo "coqc ${COQC_ARGS} ${base}_${ver}_cpp.v"
+        coqc ${COQC_ARGS} "${base}_${ver}_cpp.v"
+    done
+}
+
+check_cpp2v_templates() {
+    check_cpp2v_templates_versions $1 17
 }

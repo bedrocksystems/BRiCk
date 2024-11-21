@@ -21,7 +21,7 @@ Implicit Types (σ : genv) (p : ptr) (o : offset).
       but unions seem more difficult, possibly we can achieve that through the use of disjunction?
 *)
 mlock
-Definition uninitR `{Σ : cpp_logic} {σ : genv} (ty : type) (q : cQp.t) : Rep :=
+Definition uninitR `{Σ : cpp_logic} {σ : genv} (ty : Rtype) (q : cQp.t) : Rep :=
   tptstoR ty q Vundef.
 #[global] Arguments uninitR {thread_info _ Σ σ} ty q : rename.
 

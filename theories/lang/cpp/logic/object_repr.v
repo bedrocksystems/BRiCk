@@ -85,7 +85,7 @@ Section rawsR_transport.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   Lemma _at_rawsR_ptr_congP_transport (p1 p2 : ptr) (q : cQp.t) (rs : list raw_byte) :
-        ptr_congP σ p1 p2 ** ([∗list] i ∈ seqN 0 (lengthN rs), type_ptr Tu8 (p2 .[ Tu8 ! Z.of_N i ]))
+        ptr_congP σ p1 p2 ** ([∗list] i ∈ seqN 0 (lengthN rs), type_ptr Tbyte (p2 .[ Tbyte ! Z.of_N i ]))
     |-- p1 |-> rawsR q rs -* p2 |-> rawsR q rs.
   Proof.
     generalize dependent p2; generalize dependent p1; induction rs;
@@ -99,13 +99,13 @@ Section rawsR_transport.
         * rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
           iDestruct "raws" as "[#valid %]"; iFrame "%".
           iApply type_ptr_valid_plus_one; iFrame "#".
-        * specialize (IHrs (p1 .[ Tu8 ! 1 ]) (p2 .[ Tu8 ! 1 ])).
+        * specialize (IHrs (p1 .[ Tbyte ! 1 ]) (p2 .[ Tbyte ! 1 ])).
 
-          iDestruct (observe (type_ptr Tu8 (p1 .[ Tu8 ! 1 ])) with "raws") as "#tptr1'". 1: {
+          iDestruct (observe (type_ptr Tbyte (p1 .[ Tbyte ! 1 ])) with "raws") as "#tptr1'". 1: {
             rewrite /rawsR arrayR_cons; apply: _.
           }
 
-          iDestruct (observe (type_ptr Tu8 (p2 .[ Tu8 ! 1 ])) with "tptrs") as "#tptr2'". 1: {
+          iDestruct (observe (type_ptr Tbyte (p2 .[ Tbyte ! 1 ])) with "tptrs") as "#tptr2'". 1: {
             rewrite !lengthN_cons !N.add_1_r !seqN_S_start/=; apply: _.
           }
 
@@ -117,7 +117,7 @@ Section rawsR_transport.
           iApply (IHrs with "[tptrs]"); iFrame "#∗".
           unfold ptr_congP, ptr_cong; iPureIntro.
           destruct H as [p [o1 [o2 [Ho1 [Ho2 Hoffset_cong]]]]]; subst.
-          exists p, (o1 .[ Tu8 ! 1 ]), (o2 .[ Tu8 ! 1 ]).
+          exists p, (o1 .[ Tbyte ! 1 ]), (o2 .[ Tbyte ! 1 ]).
           rewrite ?offset_ptr_dot; intuition.
           unfold offset_cong in *.
           apply option.same_property_iff in Hoffset_cong as [? [Ho1 Ho2]].
@@ -127,24 +127,24 @@ Section rawsR_transport.
   Qed.
 End rawsR_transport.
 
-(* Definitions to ease consuming and reasoning about the collection of [type_ptr Tu8]
+(* Definitions to ease consuming and reasoning about the collection of [type_ptr Tbyte]
    facts induced by [type_ptr_obj_repr].
  *)
 Section raw_type_ptrs.
   Context `{Σ : cpp_logic} {σ : genv}.
 
-  (* [obj_type_ptr ty p] collects all of the constituent [type_ptr Tu8] facts
+  (* [obj_type_ptr ty p] collects all of the constituent [type_ptr Tbyte] facts
      for the "object representation" of an object of type [ty] rooted at [p].
    *)
   Definition raw_type_ptrs_def (ty : type) (p : ptr) : mpred :=
     Exists (sz : N),
       [| size_of σ ty = Some sz |] **
-      [∗list] i ∈ seqN 0 sz, type_ptr Tu8 (p .[ Tu8 ! Z.of_N i ]).
+      [∗list] i ∈ seqN 0 sz, type_ptr Tbyte (p .[ Tbyte ! Z.of_N i ]).
   Definition raw_type_ptrs_aux : seal (@raw_type_ptrs_def). Proof. by eexists. Qed.
   Definition raw_type_ptrs := raw_type_ptrs_aux.(unseal).
   Definition raw_type_ptrs_eq : @raw_type_ptrs = _ := raw_type_ptrs_aux.(seal_eq).
 
-  (* [obj_type_ptr ty p] collects all of the constituent [type_ptr Tu8] facts
+  (* [obj_type_ptr ty p] collects all of the constituent [type_ptr Tbyte] facts
      for the "object representation" of an object of type [ty] rooted at [p].
    *)
   Definition raw_type_ptrsR_def (ty : type) : Rep := as_Rep (raw_type_ptrs ty).
@@ -193,11 +193,11 @@ Section raw_type_ptrs.
 
     Section observations.
       #[global]
-      Instance raw_type_ptrs_type_ptr_Tu8_obs (ty : type) (i : N) :
+      Instance raw_type_ptrs_type_ptr_Tbyte_obs (ty : type) (i : N) :
         forall (p : ptr) (sz : N),
           size_of σ ty = Some sz ->
           (i < sz)%N ->
-          Observe (type_ptr Tu8 (p .[ Tu8 ! i ])) (raw_type_ptrs ty p).
+          Observe (type_ptr Tbyte (p .[ Tbyte ! i ])) (raw_type_ptrs ty p).
       Proof.
         iIntros (p sz Hsz Hi) "#raw_tptrs !>".
         rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
@@ -213,15 +213,15 @@ Section raw_type_ptrs.
       Qed.
 
       Lemma raw_type_ptrs_Tarray_elem (i : N) :
-        forall (p : ptr) (ty : types.type) (cnt sz : N)
+        forall (p : ptr) ty (cnt sz : N)
           (Hcnt : (cnt <> 0)%N) (Hsz : types.size_of σ ty = Some sz) (Hi : N.lt i cnt),
-          raw_type_ptrs (Tarray ty cnt) p |-- raw_type_ptrs ty (p .[Tu8 ! sz * i]).
+          raw_type_ptrs (Tarray ty cnt) p |-- raw_type_ptrs ty (p .[Tbyte ! sz * i]).
       Proof.
         intros **; iIntros "#raw_tptrs_array".
         rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
         iDestruct "raw_tptrs_array" as (sz_array) "[%Hsz_array tptrs]".
         iExists sz; iSplit; first by iPureIntro.
-        rewrite -N2Z.inj_mul -(big_sepL_type_ptr_shift (sz * i) sz p Tu8).
+        rewrite -N2Z.inj_mul -(big_sepL_type_ptr_shift (sz * i) sz p Tbyte).
         iApply (big_sepL_submseteq with "tptrs").
         apply sublist_submseteq.
         apply seqN_sublist; first by done.
@@ -233,9 +233,9 @@ Section raw_type_ptrs.
 
       #[global]
       Instance raw_type_ptrs_Tarray_elem_observe (i : N) :
-        forall (p : ptr) (ty : types.type) (cnt sz : N)
+        forall (p : ptr) ty (cnt sz : N)
           (Hcnt : (cnt <> 0)%N) (Hsz : types.size_of σ ty = Some sz) (Hi : N.lt i cnt),
-          Observe (raw_type_ptrs ty (p .[Tu8 ! sz * i])) (raw_type_ptrs (Tarray ty cnt) p).
+          Observe (raw_type_ptrs ty (p .[Tbyte ! sz * i])) (raw_type_ptrs (Tarray ty cnt) p).
       Proof. intros **; rewrite (raw_type_ptrs_Tarray_elem i); eauto; by apply: _. Qed.
 
       #[global]
@@ -254,7 +254,7 @@ Section raw_type_ptrs.
         rewrite _at_big_sepL.
 
         unshelve iDestruct (big_sepL_mono with "anyRs") as "H";
-          [ by exact (fun _ v =>  <pers> type_ptr Tu8 (p .[Tu8 ! v]))%I
+          [ by exact (fun _ v =>  <pers> type_ptr Tbyte (p .[Tbyte ! v]))%I
           | by intros k v Hlookup; cbn;
             rewrite _at_offsetR anyR_type_ptr_observe // _at_pers _at_type_ptrR
           | ]; cbn.
@@ -268,25 +268,24 @@ Section raw_type_ptrs.
         iDestruct "tptrs" as "[#tptr tptrs]"; iSplitL "tptr".
         - by replace (Z.of_nat 0) with 0%Z by lia.
         - rewrite big_sepL_type_ptr_shift big_sepL_type_ptr_shift'.
-          specialize (IHsz (p .[Tu8 ! 1%N])).
+          specialize (IHsz (p .[Tbyte ! 1%N])).
           by iApply IHsz.
       Qed.
     End observations.
   End Instances.
 
   Section equivalences.
-    Lemma _at_raw_type_ptrsR_equiv :
-      forall (p : ptr) (ty : type),
+    Lemma _at_raw_type_ptrsR_equiv : forall (p : ptr) ty,
         p |-> raw_type_ptrsR ty -|- raw_type_ptrs ty p.
     Proof. by intros p ty; rewrite raw_type_ptrsR_eq/raw_type_ptrsR_def _at_as_Rep. Qed.
 
-    Lemma raw_type_ptrs_arrayR_Tu8_emp `(xs : list X) :
+    Lemma raw_type_ptrs_arrayR_Tbyte_emp `(xs : list X) :
       forall (ty : type) (p : ptr) (sz : N),
         size_of σ ty = Some sz ->
         lengthN xs = sz ->
         xs <> nil ->
             raw_type_ptrs ty p
-        -|- p |-> arrayR Tu8 (const emp) xs.
+        -|- p |-> arrayR Tbyte (const emp) xs.
     Proof.
       intros * Hsz Hlen Hnonnil.
       rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
@@ -294,7 +293,7 @@ Section raw_type_ptrs.
       split'.
       - iIntros "P"; iDestruct "P" as (sz') "[%Hsz' #tptrs]".
         rewrite !_at_sep !_at_offsetR !_at_only_provable.
-        assert (is_Some (size_of σ Tu8)) by eauto; iFrame "%".
+        assert (is_Some (size_of σ Tbyte)) by eauto; iFrame "%".
         rewrite length_fmap -to_nat_lengthN Hlen N_nat_Z.
         rewrite Hsz' in Hsz; inversion Hsz; subst.
         iSplit.
@@ -312,20 +311,20 @@ Section raw_type_ptrs.
           rewrite -o_sub_sub _at_validR.
           by iApply type_ptr_valid_plus_one.
         + rewrite _at_big_sepL.
-          iApply (big_sepL_mono (fun n _ => type_ptr Tu8 (p .[ Tu8 ! n ]))).
+          iApply (big_sepL_mono (fun n _ => type_ptr Tbyte (p .[ Tbyte ! n ]))).
           2: {
             iStopProof; generalize dependent p; clear -Hnonnil;
               destruct xs as [| x xs]; first by contradiction.
             generalize dependent x; induction xs as [| x' xs IHxs];
               iIntros (x Hnonnil p) "#tptrs"; first done.
-            specialize (IHxs x' ltac:(auto) (p .[ Tu8 ! 1 ])).
+            specialize (IHxs x' ltac:(auto) (p .[ Tbyte ! 1 ])).
             rewrite fmap_cons big_sepL_cons.
             replace (lengthN (x :: x' :: xs))
               with (N.succ (lengthN (x' :: xs)))
               by (rewrite !lengthN_cons; lia).
             rewrite seqN_S_start big_sepL_cons.
             iDestruct "tptrs" as "[$ tptrs]".
-            iApply (big_sepL_mono (fun n _ => type_ptr Tu8 (p .[ Tu8 ! 1 ] .[Tu8 ! n ])));
+            iApply (big_sepL_mono (fun n _ => type_ptr Tbyte (p .[ Tbyte ! 1 ] .[Tbyte ! n ])));
               first by (intros **; rewrite o_sub_sub;
                           by replace (Z.of_nat (S k)) with (1 + k)%Z by lia).
             iApply IHxs; iModIntro.
@@ -340,20 +339,20 @@ Section raw_type_ptrs.
       - rewrite !_at_sep !_at_offsetR _at_only_provable _at_validR _at_big_sepL.
         iIntros "(_ & _ & tptrs)".
         iExists sz; iFrame "%"; rewrite -Hlen; clear -Hnonnil.
-        iDestruct (big_sepL_mono _ (fun n y => type_ptr Tu8 (p .[ Tu8 ! n ])) with "tptrs") as "tptrs".
+        iDestruct (big_sepL_mono _ (fun n y => type_ptr Tbyte (p .[ Tbyte ! n ])) with "tptrs") as "tptrs".
         2: {
           iStopProof; generalize dependent p;
              destruct xs as [| x xs]; first by contradiction.
           generalize dependent x; induction xs as [| x' xs IHxs];
             iIntros (x Hnonnil p) "tptrs"; first by done.
-          specialize (IHxs x' ltac:(auto) (p .[ Tu8 ! 1 ])).
+          specialize (IHxs x' ltac:(auto) (p .[ Tbyte ! 1 ])).
           rewrite fmap_cons big_sepL_cons.
           replace (lengthN (x :: x' :: xs))
             with (N.succ (lengthN (x' :: xs)))
             by (rewrite !lengthN_cons; lia).
           rewrite seqN_S_start big_sepL_cons.
           iDestruct "tptrs" as "[$ tptrs]".
-          iDestruct (big_sepL_mono _ (fun n _ => type_ptr Tu8 (p .[ Tu8 ! 1 ] .[Tu8 ! n ]))
+          iDestruct (big_sepL_mono _ (fun n _ => type_ptr Tbyte (p .[ Tbyte ! 1 ] .[Tbyte ! n ]))
                       with "tptrs") as "tptrs";
             first by (intros **; rewrite o_sub_sub;
                         by replace (Z.of_nat (S k)) with (1 + k)%Z by lia).
@@ -373,9 +372,9 @@ Section raw_type_ptrs.
       forall (ty : type) (cnt : N) (p : ptr) (i sz : N),
         size_of σ ty = Some sz ->
             ([∗list] j ∈ seqN (i * sz) (cnt * sz)%N,
-               type_ptr Tu8 (p .[ Tu8 ! Z.of_N (i * sz) ] .[ Tu8 ! Z.of_N j ]))
+               type_ptr Tbyte (p .[ Tbyte ! Z.of_N (i * sz) ] .[ Tbyte ! Z.of_N j ]))
         -|- ([∗list] j ∈ seqN i cnt,
-               raw_type_ptrs ty (p .[ Tu8 ! Z.of_N ((i + j) * sz) ])).
+               raw_type_ptrs ty (p .[ Tbyte ! Z.of_N ((i + j) * sz) ])).
     Proof.
       intros ty cnt; induction cnt as [| cnt' IHcnt'] using N.peano_ind=> p i sz Hsz;
         first by rewrite N.mul_0_l !seqN_0.
@@ -384,7 +383,7 @@ Section raw_type_ptrs.
       replace (i * sz + sz)%N with ((i + 1) * sz)%N by lia;
         rewrite big_sepL_app.
       rewrite seqN_S_start big_sepL_cons -N.add_1_r.
-      specialize (IHcnt' (p .[ Tu8 ! -sz ]) (i + 1)%N sz Hsz).
+      specialize (IHcnt' (p .[ Tbyte ! -sz ]) (i + 1)%N sz Hsz).
       rewrite !o_sub_sub in IHcnt'.
       split'; iIntros "[P Q]"; iSplitL "P".
       - rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
@@ -430,7 +429,7 @@ Section raw_type_ptrs.
       forall (p : ptr) (ty : type) (cnt sz : N),
         size_of σ ty = Some sz ->
             raw_type_ptrs (Tarray ty cnt) p
-        -|- [∗list] i ∈ seqN 0 cnt, raw_type_ptrs ty (p .[ Tu8 ! Z.of_N (i * sz) ]).
+        -|- [∗list] i ∈ seqN 0 cnt, raw_type_ptrs ty (p .[ Tbyte ! Z.of_N (i * sz) ]).
     Proof.
       intros p ty cnt sz Hsz.
       pose proof (raw_type_ptrs_array_aux ty cnt p 0 sz Hsz) as Haux.
@@ -509,8 +508,8 @@ Section with_rawable.
 
   #[local] Lemma _at_rawable_R_obj_repr_aux (i : N) :
     forall (p : ptr) q (rs : list raw_byte),
-          p .[ Tu8 ! i ] |-> rawsR q (dropN i rs)
-      |-- p .[ Tu8 ! i ] |-> arrayR Tu8 (fun tt => anyR Tu8 q)
+          p .[ Tbyte ! i ] |-> rawsR q (dropN i rs)
+      |-- p .[ Tbyte ! i ] |-> arrayR Tbyte (fun tt => anyR Tbyte q)
                                         (replicateN (lengthN rs - i) ()).
   Proof.
     intros **; clear Hsz Hdecode_sz Hencode_sz Hnonzero HR_decode HR_encode.
@@ -520,7 +519,7 @@ Section with_rawable.
       done.
     - destruct i as [| i' _] using N.peano_ind=>//.
       + rewrite -> o_sub_0 in *; auto.
-        specialize (IHrs (p .[ Tu8 ! 1 ]) 0%N).
+        specialize (IHrs (p .[ Tbyte ! 1 ]) 0%N).
         rewrite -> offset_ptr_id in *.
         rewrite -> N.sub_0_r in *.
         rewrite lengthN_cons replicateN_succ /rawsR !arrayR_cons
@@ -538,7 +537,7 @@ Section with_rawable.
         replace (lengthN rs + 1 - N.succ i')%N
           with (lengthN rs - i')%N
           by lia.
-        specialize (IHrs (p .[ Tu8 ! 1 ]) i').
+        specialize (IHrs (p .[ Tbyte ! 1 ]) i').
         rewrite o_sub_sub in IHrs.
         replace (1 + Z.of_N i')%Z with (Z.of_N (N.succ i')) in IHrs by lia.
         by iApply IHrs.
@@ -547,7 +546,7 @@ Section with_rawable.
   Lemma _at_rawable_R_arrayR_anyR :
     forall (p : ptr) q (x : X),
           p |-> R q x
-      |-- p |-> arrayR Tu8 (fun tt => anyR Tu8 q) (replicateN sz ()).
+      |-- p |-> arrayR Tbyte (fun tt => anyR Tbyte q) (replicateN sz ()).
   Proof using encode ty Hsz Hencode_sz Hnonzero HR_encode.
     intros **.
     rewrite HR_encode.
@@ -561,7 +560,7 @@ Section with_rawable.
   Lemma _at_rawable_R_anyR :
     forall (p : ptr) q (x : X),
           p |-> R q x
-      |-- p |-> anyR (Tarray Tu8 sz) q.
+      |-- p |-> anyR (Tarray Tbyte sz) q.
   Proof using encode ty Hsz Hencode_sz Hnonzero HR_encode.
     intros **; rewrite anyR_array repeatN_replicateN.
     by apply _at_rawable_R_arrayR_anyR.
@@ -609,7 +608,7 @@ Section blockR_transport.
       by iApply type_ptr_valid.
     - rewrite blockR_eq/blockR_def !_at_sep !_at_offsetR.
       iDestruct "block" as "[block_valid block]"; iSplit.
-      + iDestruct (raw_type_ptrs_type_ptr_Tu8_obs
+      + iDestruct (raw_type_ptrs_type_ptr_Tbyte_obs
                      ty (N.pred sz) p' sz Hty ltac:(lia)
                     with "raw_tptrs'")
           as "#tptr_end'".
@@ -652,14 +651,14 @@ Section blockR_transport.
         * iRevert "any"; iApply _at_anyR_ptr_congP_transport.
           by iFrame "cong tptr'".
         * rewrite !(big_sepL_type_ptr_shift 1 sz'); eauto.
-          specialize (IHsz' Hsz' (p .[ Tu8 ! 1%N ]) (p' .[ Tu8 ! 1%N ])).
+          specialize (IHsz' Hsz' (p .[ Tbyte ! 1%N ]) (p' .[ Tbyte ! 1%N ])).
           iDestruct (IHsz' with "[]") as "IH".
           -- iFrame "tptrs tptrs'"; unfold ptr_congP.
              iDestruct "cong" as "(%Hcong & _ & _)".
              iSplitR.
              ++ iPureIntro; unfold ptr_cong in *.
                 destruct Hcong as [p'' [o1 [o2 [-> [-> Hcong]]]]].
-                exists p'', (o1 .[ Tu8 ! 1%N ]), (o2 .[ Tu8 ! 1%N ]).
+                exists p'', (o1 .[ Tbyte ! 1%N ]), (o2 .[ Tbyte ! 1%N ]).
                 rewrite !offset_ptr_dot; intuition.
                 unfold offset_cong in *.
                 rewrite -> option.same_property_iff in *.
@@ -671,7 +670,7 @@ Section blockR_transport.
                 ** by iDestruct "tptrs" as "[$ _]".
                 ** by iDestruct "tptrs'" as "[$ _]".
           -- setoid_rewrite _at_offsetR.
-             rewrite !(big_sepL_shift_nat (λ p, p |-> anyR Tu8 q) 1 (N.to_nat sz')).
+             rewrite !(big_sepL_shift_nat (λ p, p |-> anyR Tbyte q) 1 (N.to_nat sz')).
              by iRevert "REST".
   Qed.
 

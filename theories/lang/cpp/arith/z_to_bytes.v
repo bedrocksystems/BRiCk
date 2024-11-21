@@ -541,7 +541,7 @@ Section FromToBytes.
     Lemma _Z_from_bytes_unsigned_le_bswap:
       forall bsz sz (bytes: list N) v,
         Datatypes.length bytes = sz ->
-        bytesNat bsz = sz ->
+        bitsize.bytesNat bsz = sz ->
         _Z_from_bytes_unsigned_le bytes = v ->
         _Z_from_bytes_unsigned_le (rev bytes) = bswap bsz v.
     Proof.

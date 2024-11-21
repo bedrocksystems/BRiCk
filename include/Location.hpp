@@ -76,6 +76,7 @@ private:
 		Type,
 		Tsi,
 		Tal,
+		Location,
 	} kind;
 
 	union {
@@ -86,6 +87,7 @@ private:
 		const box<QualType> qualtype;  // type is non-null
 		const clang::Type* type;
 		const TemplateArgumentLoc* tal;
+		const SourceLocation::UIntTy location;
 	} u;
 
 	Loc(const box<TypeLoc>& t) : kind{Kind::TypeLoc}, u{.typeloc = t} {}
@@ -98,6 +100,8 @@ public:
 	Loc(const Stmt& s) : kind{Kind::Stmt}, u{.stmt = &s} {}
 	Loc(const clang::Type& t) : kind{Kind::Type}, u{.type = &t} {}
 	Loc(const TemplateArgumentLoc& a) : kind{Kind::Tal}, u{.tal = &a} {}
+	Loc(const SourceLocation l)
+		: kind{Kind::Location}, u{.location = l.getRawEncoding()} {}
 
 	static std::optional<Loc> mk(const TypeLoc&);
 	static std::optional<Loc> mk(const TypeSourceInfo&);
@@ -174,13 +178,23 @@ of(T* ptr) {
 	return ptr ? of(*ptr) : none;
 }
 
+/// `loc` if that's defined and has a location; otherwise `fallback`
+loc refine(loc fallback, loc loc);
+
 /// `loc::of(t)` if that's defined and has a location; otherwise,
 /// `fallback`
 template<typename T>
 loc
-refine(loc fallback, T t) {
-	auto loc = of(t);
-	return loc && loc->getLoc().isValid() ? loc : fallback;
+refine(loc fallback, T* t) {
+	return refine(fallback, of(t));
+}
+
+/// `loc::of(t)` if that's defined and has a location; otherwise,
+/// `fallback`
+template<typename T>
+loc
+refine(loc fallback, T& t) {
+	return refine(fallback, of(t));
 }
 
 // Formatting
