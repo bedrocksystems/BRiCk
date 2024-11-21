@@ -16,6 +16,7 @@ namespace list {
 
   :index (1 1 1)
   pred map3 i:list A, i:list B, i:list C, i:(A -> B -> C -> D -> prop), o:list D.	% May panic
+  kind map3.aux prop.
 
   pred uniq i:list A, o:list A.	% The input should be ground
 
