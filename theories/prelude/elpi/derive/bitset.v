@@ -18,7 +18,7 @@ Require Import bedrock.prelude.elpi.derive.finite_type.
    (0 for the first constructor, 1 for the second, etc.).
    Add an instance of `ToBit` to override the default behavior.
  ***************************************************)
-Class ToBit (T : Type) (to_bit : T -> N) : Type := {}.
+Class ToBit (T : Type) (to_bit : T -> N) : Prop := {}.
 #[global] Hint Mode ToBit + - : typeclass_instances.
 
 Elpi Db derive.bitset.db lp:{{

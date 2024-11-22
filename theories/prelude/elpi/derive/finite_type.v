@@ -20,7 +20,7 @@ Elpi Accumulate derive Db bedrock.basis.db.
    The encoding into `N` is derived automatically from the order of constructors of `VariantType`.
    Use an instance of `ToN` to override the default behavior.
  ***************************************************)
-Class ToN (T : Type) (to_N : T -> N) : Type := {}.
+Class ToN (T : Type) (to_N : T -> N) : Prop := {}.
 #[global] Hint Mode ToN + - : typeclass_instances.
 
 Elpi Db derive.finite_type.db lp:{{
