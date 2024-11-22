@@ -154,7 +154,7 @@ Section with_lang.
   Fixpoint printN (inst : bs) (nm : name) : option bs :=
     match nm with
     | Nglobal an => printAN printT None inst an
-    | Ndependent an => printT an
+    | Ndependent an => (fun b => "typename " ++ b) <$> printT an
     | Nscoped base n =>
         (fun b n => b ++ "::" ++ n) <$> printN "" base <*> printAN printT (topName base) inst n
     | Ninst base i =>
