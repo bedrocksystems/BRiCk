@@ -198,7 +198,7 @@ struct DeclPrinter {
 		return decl;
 	}
 
-	/// Set context using ClangPrinter::withDecl and emit
+	/// Set context using ClangPrinter::withDeclContext and emit
 	///
 	/// - `(ctor name body)` if `decl` is neither a template nor a
 	/// specialization,
@@ -235,10 +235,10 @@ struct DeclPrinter {
 		};
 		auto printDeclWith = [&]() {
 			if (auto declctx = dyn_cast<DeclContext>(&decl)) {
-				auto cp = cprint.withDecl(declctx);
+				auto cp = cprint.withDeclContext(declctx);
 				if (auto msg = invalid(box, ctxt)) {
 					guard::ctor _(print, "Dunsupported");
-					cprint.printName(print, decl) << fmt::nbsp;
+					cp.printName(print, decl) << fmt::nbsp;
 					print.str(msg);
 					return true;
 				} else {

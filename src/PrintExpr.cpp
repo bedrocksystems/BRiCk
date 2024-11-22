@@ -136,7 +136,7 @@ ClangPrinter::printValueDeclExpr(CoqPrinter& print, const ValueDecl* decl,
 	} else {
 		print.ctor("Eglobal", false);
 		if (auto dc = dyn_cast<DeclContext>(decl))
-			withDecl(dc).printName(print, *decl);
+			withDeclContext(dc).printName(print, *decl);
 		else
 			printName(print, *decl);
 	}

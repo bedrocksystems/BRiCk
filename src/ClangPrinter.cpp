@@ -365,3 +365,10 @@ ClangPrinter::printCallingConv(CoqPrinter &print, clang::CallingConv cc,
 	}
 	return print.output();
 }
+
+ClangPrinter
+ClangPrinter::withDecl(const clang::Decl *decl) const {
+	if (auto dc = llvm::dyn_cast<clang::DeclContext>(decl))
+		return withDeclContext(dc);
+	return withDeclContext(decl->getDeclContext());
+}

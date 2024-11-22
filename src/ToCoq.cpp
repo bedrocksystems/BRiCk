@@ -52,7 +52,7 @@ with_open_file(const std::optional<std::string> path,
 
 void
 printDecl(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
-	if (cprint.printDecl(print, decl))
+	if (cprint.withDecl(decl).printDecl(print, decl))
 		print.cons();
 }
 
