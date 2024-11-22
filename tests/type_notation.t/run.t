@@ -100,9 +100,3 @@
   Notation_const_volatile_2 =
   "const volatile void* const volatile"%cpp_type
        : type
-  File "./test.v", line 6, characters 15-34:
-  Warning: Coq.Numbers.BinNums has been replaced by Stdlib.Numbers.BinNums.
-  [deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]
-  File "./test.v", line 7, characters 15-32:
-  Warning: Coq.NArith.BinNat has been replaced by Stdlib.NArith.BinNat.
-  [deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]

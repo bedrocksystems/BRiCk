@@ -3,8 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.Numbers.BinNums.
-Require Import Coq.NArith.BinNat.
+Require Import Stdlib.Numbers.BinNums.
+Require Import Stdlib.NArith.BinNat.
 Require Import bedrock.prelude.bytestring_core.
 Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.notations.
