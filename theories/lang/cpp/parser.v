@@ -154,6 +154,9 @@ Definition Ddestructor (n : obj_name) (f : Dtor) : K :=
 Definition Dtype (n : globname) : K :=
   _types n $ Gtype.
 
+Definition Dunsupported (n : globname) (msg : bs) : K :=
+  _types n $ Gunsupported msg.
+
 Definition Dstruct (n : globname) (f : option Struct) : K :=
   _types n $ if f is Some f then Gstruct f else Gtype.
 

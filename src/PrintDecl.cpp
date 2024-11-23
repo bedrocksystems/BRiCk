@@ -173,12 +173,19 @@ using Printer = fmt::Formatter &(*)(CoqPrinter &, const T &, ClangPrinter &,
 
 template<typename T>
 struct DeclPrinter {
+	/* Return [nullptr] if valid, an error message otherwise. */
+	using Valid = const char *(*)(const T &, const ASTContext &);
+	static const char *alwaysValid(const T &, const ASTContext &) {
+		return nullptr;
+	}
 
 	const StringRef ctor;
+	const Valid invalid;
 	const Printer<T> print_body;
 
 	DeclPrinter() = delete;
-	DeclPrinter(StringRef c, Printer<T> p) : ctor{c}, print_body{p} {
+	DeclPrinter(StringRef c, Printer<T> p, Valid v = alwaysValid)
+		: ctor{c}, invalid(v), print_body{p} {
 		always_assert(p != nullptr);
 	}
 
@@ -229,7 +236,14 @@ struct DeclPrinter {
 		auto printDeclWith = [&]() {
 			if (auto declctx = dyn_cast<DeclContext>(&decl)) {
 				auto cp = cprint.withDecl(declctx);
-				return printDecl(cp);
+				if (auto msg = invalid(box, ctxt)) {
+					guard::ctor _(print, "Dunsupported");
+					cprint.printName(print, decl) << fmt::nbsp;
+					print.str(msg);
+					return true;
+				} else {
+					return printDecl(cp);
+				}
 			} else
 				return printDecl(cprint);
 		};
@@ -249,7 +263,8 @@ printType(CoqPrinter &print, const TypeDecl &decl, ClangPrinter &cprint,
 	return print.output();
 }
 }
-static const DeclPrinter Dtype("Dtype", printType);
+static const DeclPrinter Dtype("Dtype", printType,
+							   DeclPrinter<TypeDecl>::alwaysValid);
 
 // Type aliases
 namespace {
@@ -261,7 +276,8 @@ printTypedef(CoqPrinter &print, const TypedefNameDecl &decl,
 	return cprint.printQualType(print, decl.getUnderlyingType(), loc::of(decl));
 }
 }
-static const DeclPrinter Dtypedef("Dtypedef", printTypedef);
+static const DeclPrinter Dtypedef("Dtypedef", printTypedef,
+								  DeclPrinter<TypedefNameDecl>::alwaysValid);
 
 // Structures and unions
 namespace {
@@ -582,10 +598,23 @@ printUnion(CoqPrinter &print, const CXXRecordDecl &decl, ClangPrinter &cprint,
 	printDeleteName(print, decl, cprint) << fmt::line;
 	return printSizeAlign(decl, layout, print, cprint);
 }
+
+static const char *
+supportedRecord(const CXXRecordDecl &decl, const ASTContext &ctxt) {
+	for (auto base : decl.bases()) {
+		if (base.isVirtual())
+			return "virtual base classes are not supported";
+	}
+	for (auto f : decl.fields()) {
+		if (f->isBitField())
+			return "bitfields are not supported";
+	}
+	return nullptr;
+}
 } // structures and unions
 
-static const DeclPrinter Dstruct("Dstruct", printStruct);
-static const DeclPrinter Dunion("Dunion", printUnion);
+static const DeclPrinter Dstruct("Dstruct", printStruct, supportedRecord);
+static const DeclPrinter Dunion("Dunion", printUnion, supportedRecord);
 
 // Functions
 namespace {
@@ -893,7 +922,8 @@ printVar(CoqPrinter &print, const VarDecl &decl, ClangPrinter &cprint,
 		return print.output() << "global_init.NoInit";
 }
 }
-static const DeclPrinter Dvariable("Dvariable", printVar);
+static const DeclPrinter Dvariable("Dvariable", printVar,
+								   DeclPrinter<VarDecl>::alwaysValid);
 
 // Enumerations
 namespace {
@@ -956,6 +986,8 @@ struct EnumConst {
 				auto c = toBRiCkCharacter(bitsize, val.getExtValue());
 				return print.output() << "(inl " << c << "%N)";
 			}
+			default:
+				always_assert(false);
 			}
 		}
 	};
@@ -1038,8 +1070,10 @@ printEnumConst(CoqPrinter &print, const EnumConst &c, ClangPrinter &cprint,
 }
 } // Enumerations
 
-static const DeclPrinter Denum("Denum", printEnum);
-static const DeclPrinter Denum_constant("Denum_constant", printEnumConst);
+static const DeclPrinter Denum("Denum", printEnum,
+							   DeclPrinter<EnumDecl>::alwaysValid);
+static const DeclPrinter Denum_constant("Denum_constant", printEnumConst,
+										DeclPrinter<EnumConst>::alwaysValid);
 
 // Static asserts
 namespace {

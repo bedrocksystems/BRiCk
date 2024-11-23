@@ -485,6 +485,7 @@ Module MTraverse.
       | Genum t ids => Genum <$> traverseT t <*> mret ids
       | Gconstant t oe => Gconstant <$> traverseT t <*> traverse (T:=eta option) traverseE oe
       | Gtypedef t => Gtypedef <$> traverseT t
+      | Gunsupported m => mret $ Gunsupported m
       end.
 
   End traverse.
