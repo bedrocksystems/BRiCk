@@ -5,6 +5,7 @@
  *)
 Require Import stdpp.fin_maps.
 Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.bytestring_core.
 Require Import bedrock.prelude.avl.
 Require Import bedrock.lang.cpp.syntax.core.
 Require Import bedrock.lang.cpp.syntax.types.
@@ -23,13 +24,15 @@ Variant GlobDecl' {lang} : Set :=
   | Gstruct   (_ : Struct' lang) (* struct body *)
   | Genum     (_ : type' lang) (_ : list ident) (* *)
   | Gconstant (_ : type' lang) (init : option (Expr' lang)) (* used for enumerator constants*)
-  | Gtypedef  (_ : type' lang).
+  | Gtypedef  (_ : type' lang)
+  | Gunsupported (_ : bs).
 #[global] Arguments GlobDecl' : clear implicits.
 #[global] Arguments Gunion _ & _ : assert.
 #[global] Arguments Gstruct _ & _ : assert.
 #[global] Arguments Genum _ & _ _ : assert.
 #[global] Arguments Gconstant _ & _ _ : assert.
 #[global] Arguments Gtypedef _ & _ : assert.
+#[global] Arguments Gunsupported _ & _ : assert.
 #[global] Instance: forall {lang}, EqDecision (GlobDecl' lang).
 Proof. solve_decision. Defined.
 Notation GlobDecl := (GlobDecl' lang.cpp).

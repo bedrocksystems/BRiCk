@@ -126,7 +126,8 @@ Section defs.
               | Gtype
               | Genum _ _
               | Gconstant _ _
-              | Gtypedef _ => UNSUPPORTED Q
+              | Gtypedef _
+              | Gunsupported _ => UNSUPPORTED Q
               end
           | None => UNSUPPORTED Q
           end

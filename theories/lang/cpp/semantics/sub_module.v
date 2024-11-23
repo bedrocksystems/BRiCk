@@ -80,7 +80,8 @@ Definition GlobDecl_le {lang} (a b : GlobDecl' lang) : bool :=
   | Gtype , Gtype
   | Gtype , Genum _ _
   | Gtype , Gunion _
-  | Gtype , Gstruct _ => true
+  | Gtype , Gstruct _
+  | Gtype , Gunsupported _ => true
   | Gunion _ , Gtype
   | Gstruct _ , Gtype => false
   | Gunion u , Gunion u' =>
@@ -98,6 +99,7 @@ Definition GlobDecl_le {lang} (a b : GlobDecl' lang) : bool :=
     bool_decide (t = t')
   | Gtypedef t , Gtypedef t' =>
     bool_decide (t = t')
+  | Gunsupported m , Gunsupported m' => bool_decide (m = m')
   | _ , _ => false
   end.
 Definition GlobDecl_ler {lang} := λ g1 g2, Is_true $ GlobDecl_le (lang:=lang) g1 g2.

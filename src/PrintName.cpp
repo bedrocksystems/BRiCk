@@ -1324,8 +1324,7 @@ ClangPrinter::printNameAsKey(CoqPrinter& print, const Decl& decl) {
 
 fmt::Formatter&
 ClangPrinter::printNameAsKey(CoqPrinter& print, const Decl* p, loc::loc loc) {
-	auto& decl = deref(print, *this, "printNameAsKey", p, loc);
-	return printNameAsKey(print, decl);
+	return printNameAsKey(print, deref(print, *this, "printNameAsKey", p, loc));
 }
 
 fmt::Formatter&
@@ -1348,8 +1347,7 @@ ClangPrinter::printName(CoqPrinter& print, const Decl& decl, bool full) {
 fmt::Formatter&
 ClangPrinter::printName(CoqPrinter& print, const Decl* p, loc::loc loc,
 						bool full) {
-	auto& decl = deref(print, *this, "printName", p, loc);
-	return printName(print, decl, full);
+	return printName(print, deref(print, *this, "printName", p, loc), full);
 }
 
 fmt::Formatter&
@@ -1410,8 +1408,8 @@ ClangPrinter::printUnqualifiedName(CoqPrinter& print, const NamedDecl& decl) {
 fmt::Formatter&
 ClangPrinter::printUnqualifiedName(CoqPrinter& print, const NamedDecl* p,
 								   loc::loc loc) {
-	auto& decl = deref(print, *this, "printUnqualifiedName", p, loc);
-	return printUnqualifiedName(print, decl);
+	return printUnqualifiedName(
+		print, deref(print, *this, "printUnqualifiedName", p, loc));
 }
 
 fmt::Formatter&

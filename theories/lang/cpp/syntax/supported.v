@@ -181,7 +181,10 @@ Section with_monad.
     end.
 
   Definition glob_decl (gd : GlobDecl' lang) : M :=
-    OK.
+    match gd with
+    | Gunsupported _ => FAIL
+    | _ => OK
+    end.
   End with_lang.
 
   Definition translation_unit (tu : translation_unit) : M :=
