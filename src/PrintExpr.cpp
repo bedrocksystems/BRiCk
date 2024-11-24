@@ -308,8 +308,10 @@ public:
 
 	IGNORE(StmtExpr) // a GNU extension used in BHV
 
-	// TODO: Discuss
-	IGNORE(CXXRewrittenBinaryOperator)
+	void
+	VisitCXXRewrittenBinaryOperator(const CXXRewrittenBinaryOperator* expr) {
+		cprint.printExpr(print, expr->getSemanticForm(), names);
+	}
 
 	// These are template TODOs
 	IGNORE(CXXUnresolvedConstructExpr)
