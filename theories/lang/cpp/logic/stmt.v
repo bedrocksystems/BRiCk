@@ -411,7 +411,8 @@ Module Type Stmt.
 
        C++ (and C) allow optimizing away certain infinite loops,
        e.g. <<while (1);>> can be optimized to <<;>>.
-       These loop rules are not sound for use with compilations that use this optimization.
+       These loop rules are not sound for use with compilations that use this
+       optimization.
      *)
 
     (* loop with invariant `I` *)
@@ -632,7 +633,8 @@ Module Type Stmt.
       match s with
       | Sseq ls => forallb no_case ls
       | Sdecl _ => true
-      | Sif _ _ a b => no_case a && no_case b
+      | Sif _ _ a b
+      | Sif_consteval a b => no_case a && no_case b
       | Swhile _ _ s => no_case s
       | Sfor _ _ _ s => no_case s
       | Sdo s _ => no_case s
