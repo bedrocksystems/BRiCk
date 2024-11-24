@@ -293,7 +293,7 @@ public:
 		std::string coqmsg;
 		llvm::raw_string_ostream os{coqmsg};
 		os << loc::describe(loc, cprint.getContext());
-		print.str(coqmsg);
+		print.str(coqmsg) << fmt::nbsp;
 		done(expr, Done::DT);
 	}
 
