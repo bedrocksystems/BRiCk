@@ -8,6 +8,3 @@ Require Import bedrock.elpi.extra.extra.
 
 Elpi Tactic test.
 #[interp] Elpi Accumulate File extra.Tactic.
-(** Avoid an anomaly --- see tc_tactic_synterp.DISABLED *)
-From bedrock.elpi.extra.Tactic Extra Dependency "synterp.elpi" as extra_synterp.
-#[synterp] Elpi Accumulate File extra_synterp.
