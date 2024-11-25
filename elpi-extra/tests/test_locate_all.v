@@ -14,9 +14,11 @@ Elpi Command LocateAll.
 #[interp] Elpi Accumulate lp:{{
   main-interp [str S, int WantS, int WantI] LS :-
     coq.locate-all S LI, std.length LS HaveS, std.length LI HaveI,
-    (WantS = HaveS, WantI = HaveI, !, Say = coq.say; Say = coq.error),
-    Say "synterp found" HaveS "items:" LS "
-interp found" HaveI "items:" LI.
+    (WantS = HaveS, WantI = HaveI, !,
+      (coq.say "synterp found" HaveS "items:" LS "
+interp found" HaveI "items:" LI);
+      (coq.say "synterp found" HaveS "items:" LS "
+interp found" HaveI "items:" LI)).
   main-interp _ _ :- coq.error "usage: SynterpLocate ID WantS WantI".
 }}.
 Elpi Export LocateAll.
