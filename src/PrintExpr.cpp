@@ -818,6 +818,8 @@ public:
 			print.ctor(llvm::Twine("E") + nc->getCastName());
 		} else if (isa<CXXFunctionalCastExpr>(expr)) {
 			print.ctor("Efunctional_cast");
+		} else if (isa<BuiltinBitCastExpr>(expr)) {
+			print.ctor("Ebuiltin_bit_cast");
 		} else {
 			return unsupported_expr(expr, std::nullopt, false);
 		}
