@@ -134,9 +134,10 @@ public:
     argument names and for diagnostics (e.g., an approximate
     source location for type-related warnings).
     */
-	ClangPrinter withDecl(const clang::DeclContext* d) const {
+	ClangPrinter withDeclContext(const clang::DeclContext* d) const {
 		return {*this, d};
 	}
+	ClangPrinter withDecl(const clang::Decl* decl) const;
 
 private:
 	const clang::Decl* getDecl() const;

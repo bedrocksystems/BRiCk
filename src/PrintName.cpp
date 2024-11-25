@@ -1333,7 +1333,7 @@ ClangPrinter::printName(CoqPrinter& print, const Decl& decl, bool full) {
 		trace("printName", loc::of(decl));
 	if (full) {
 		if (auto dc = dyn_cast<DeclContext>(&decl)) {
-			auto temp = withDecl(dc);
+			auto temp = withDeclContext(dc);
 			return structured::printName(print, decl, temp);
 		} else
 			return structured::printName(print, decl, *this);

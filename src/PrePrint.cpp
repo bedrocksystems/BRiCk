@@ -16,12 +16,16 @@ struct PrePrint :
 	ConstStmtVisitor<PrePrint, void>,
 	ConstDeclVisitorArgs<PrePrint, void> {
 	bool Visit(QualType qt) {
+		if (qt.isNull())
+			return false;
 		Visit(qt.getTypePtr());
 		return false;
 	}
 
 	// BEGIN TypeVisitor
 	bool Visit(const Type* type) {
+		if (not type)
+			return false;
 		if (not cache_.lookup(type))
 			if (TypeVisitor<PrePrint, bool>::Visit(type)) {
 				auto name = cache_.fresh(type);
@@ -84,7 +88,7 @@ struct PrePrint :
 
 	// BEGIN ExprVisitor
 	void Visit(const Stmt* stmt) {
-		if (stmt == nullptr)
+		if (not stmt)
 			return;
 		// I'm not going to cache statements
 		if (auto e = dyn_cast<Expr>(stmt))
@@ -169,6 +173,8 @@ struct PrePrint :
 
 	// BEGIN DeclVisitor
 	void Visit(const clang::Decl* decl) {
+		if (not decl)
+			return;
 		ConstDeclVisitorArgs<PrePrint, void>::Visit(decl);
 	}
 
@@ -202,6 +208,8 @@ struct PrePrint :
 
 	// BEGIN NameVisitor
 	void VisitName(const NamedDecl* decl) {
+		if (not decl)
+			return;
 		if (decl == nullptr)
 			return;
 		if (not cache_.lookup(decl)) {

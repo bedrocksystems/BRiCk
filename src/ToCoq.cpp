@@ -52,7 +52,7 @@ with_open_file(const std::optional<std::string> path,
 
 void
 printDecl(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
-	if (cprint.printDecl(print, decl))
+	if (cprint.withDecl(decl).printDecl(print, decl))
 		print.cons();
 }
 
@@ -123,40 +123,37 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 			bytestring(print) << fmt::line;
 
 			if (sharing) {
-				PRINTER<clang::Type> type_fn = [&](auto prefix, auto num,
-												   auto* type) {
-					print.output() << "#[local] Definition " << prefix << num
-								   << " : type := ";
-					cprint.printType(print, type, loc::of(type));
-					print.output() << "." << fmt::line;
-				};
-				PRINTER<clang::NamedDecl> name_fn = [&](auto prefix, auto num,
-														auto* decl) {
-					print.output() << "#[local] Definition " << prefix << num
-								   << " : name := ";
-					auto cprint_with_decl = [&]() {
-						if (auto dc = dyn_cast<DeclContext>(decl)) {
-							return cprint.withDecl(dc);
-						}
-						return cprint;
+				auto preprint = [&](const Decl* decl) {
+					auto cp = cprint.withDecl(decl);
+					PRINTER<clang::Type> type_fn = [&](auto prefix, auto num,
+													   auto* type) {
+						print.output() << "#[local] Definition " << prefix
+									   << num << " : type := ";
+						cp.printType(print, type, loc::of(type));
+						print.output() << "." << fmt::line;
 					};
-					cprint_with_decl().printName(print, decl, loc::of(decl));
-					print.output() << "." << fmt::line;
+					PRINTER<clang::NamedDecl> name_fn =
+						[&](auto prefix, auto num, auto* decl) {
+							print.output() << "#[local] Definition " << prefix
+										   << num << " : name := ";
+							cp.printName(print, decl, loc::of(decl));
+							print.output() << "." << fmt::line;
+						};
+					prePrintDecl(decl, cache, type_fn, name_fn);
 				};
 
 				for (auto decl : mod.declarations()) {
-					prePrintDecl(decl, cache, type_fn, name_fn);
+					preprint(decl);
 				}
 				for (auto decl : mod.definitions()) {
-					prePrintDecl(decl, cache, type_fn, name_fn);
+					preprint(decl);
 				}
 			}
 
-			print.output()
-        << fmt::line
-				<< "Definition module : translation_unit := " << fmt::indent << fmt::line
-				<< "translation_unit.check "
-				<< fmt::nbsp;
+			print.output() << fmt::line
+						   << "Definition module : translation_unit := "
+						   << fmt::indent << fmt::line
+						   << "translation_unit.check " << fmt::nbsp;
 
 			print.begin_list();
 			for (auto decl : mod.declarations()) {
@@ -180,20 +177,6 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 			// TODO I still need to generate the initializer
 
 			print.output() << "." << fmt::outdent << fmt::line;
-
-      /*
-			print.output()
-				<< fmt::line
-				<< "Succeed Example test : module_check.2 = [] := eq_refl."
-				<< fmt::line;
-
-			print.output() << fmt::line
-						   << "Definition module : translation_unit := "
-                "Eval lazy [fst] in "
-							  "fst module_check."
-        //						   << fmt::line << "Arguments module : simpl never."
-						   << fmt::line << fmt::line;
-      */
 
 			if (check_types_) {
 				print.output()

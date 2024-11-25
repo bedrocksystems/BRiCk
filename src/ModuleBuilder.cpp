@@ -235,6 +235,9 @@ public:
 	}
 
 	void VisitVarDecl(const VarDecl *decl, Flags flags) {
+		if (decl->isTemplated() and not templates_)
+			return;
+
 		if (auto defn = decl->getDefinition()) {
 			if (defn == decl)
 				go(decl, flags);

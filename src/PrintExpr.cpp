@@ -136,7 +136,7 @@ ClangPrinter::printValueDeclExpr(CoqPrinter& print, const ValueDecl* decl,
 	} else {
 		print.ctor("Eglobal", false);
 		if (auto dc = dyn_cast<DeclContext>(decl))
-			withDecl(dc).printName(print, *decl);
+			withDeclContext(dc).printName(print, *decl);
 		else
 			printName(print, *decl);
 	}
@@ -293,7 +293,7 @@ public:
 		std::string coqmsg;
 		llvm::raw_string_ostream os{coqmsg};
 		os << loc::describe(loc, cprint.getContext());
-		print.str(coqmsg);
+		print.str(coqmsg) << fmt::nbsp;
 		done(expr, Done::DT);
 	}
 
@@ -308,8 +308,10 @@ public:
 
 	IGNORE(StmtExpr) // a GNU extension used in BHV
 
-	// TODO: Discuss
-	IGNORE(CXXRewrittenBinaryOperator)
+	void
+	VisitCXXRewrittenBinaryOperator(const CXXRewrittenBinaryOperator* expr) {
+		cprint.printExpr(print, expr->getSemanticForm(), names);
+	}
 
 	// These are template TODOs
 	IGNORE(CXXUnresolvedConstructExpr)

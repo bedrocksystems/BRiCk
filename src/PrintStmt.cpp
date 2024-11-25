@@ -154,25 +154,35 @@ public:
 
 	void VisitIfStmt(const IfStmt *stmt, CoqPrinter &print,
 					 ClangPrinter &cprint, ASTContext &) {
-		print.ctor("Sif");
-		if (auto v = stmt->getConditionVariable()) {
-			print.some();
-			cprint.printLocalDecl(print, v);
-			print.end_ctor();
+		if (stmt->isConsteval()) {
+			guard::ctor _{print, "Sif_consteval"};
+			cprint.printStmt(print, stmt->getThen());
+			print.output() << fmt::nbsp;
+			if (stmt->getElse()) {
+				cprint.printStmt(print, stmt->getElse());
+			} else {
+				print.output() << "Sskip";
+			}
 		} else {
-			print.none();
+			guard::ctor _{print, "Sif"};
+			if (auto v = stmt->getConditionVariable()) {
+				print.some();
+				cprint.printLocalDecl(print, v);
+				print.end_ctor();
+			} else {
+				print.none();
+			}
+			print.output() << fmt::nbsp;
+			cprint.printExpr(print, stmt->getCond());
+			print.output() << fmt::nbsp;
+			cprint.printStmt(print, stmt->getThen());
+			print.output() << fmt::nbsp;
+			if (stmt->getElse()) {
+				cprint.printStmt(print, stmt->getElse());
+			} else {
+				print.output() << "Sskip";
+			}
 		}
-		print.output() << fmt::nbsp;
-		cprint.printExpr(print, stmt->getCond());
-		print.output() << fmt::nbsp;
-		cprint.printStmt(print, stmt->getThen());
-		print.output() << fmt::nbsp;
-		if (stmt->getElse()) {
-			cprint.printStmt(print, stmt->getElse());
-		} else {
-			print.output() << "Sskip";
-		}
-		print.end_ctor();
 	}
 
 	void VisitCaseStmt(const CaseStmt *stmt, CoqPrinter &print,
