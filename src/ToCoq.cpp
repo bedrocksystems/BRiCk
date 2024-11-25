@@ -178,20 +178,6 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 
 			print.output() << "." << fmt::outdent << fmt::line;
 
-			/*
-			print.output()
-				<< fmt::line
-				<< "Succeed Example test : module_check.2 = [] := eq_refl."
-				<< fmt::line;
-
-			print.output() << fmt::line
-						   << "Definition module : translation_unit := "
-                "Eval lazy [fst] in "
-							  "fst module_check."
-        //						   << fmt::line << "Arguments module : simpl never."
-						   << fmt::line << fmt::line;
-      */
-
 			if (check_types_) {
 				print.output()
 					<< fmt::line << "Require bedrock.lang.cpp.syntax.typed."
