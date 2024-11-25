@@ -83,6 +83,13 @@ test(const clang::Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
 }
 
 void
+ToCoqConsumer::HandleTranslationUnit(clang::ASTContext& Context) {
+	if (Context.getDiagnostics().getClient()->getNumErrors() == 0) {
+		toCoqModule(&Context, Context.getTranslationUnitDecl(), sharing_);
+	}
+}
+
+void
 ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 						   clang::TranslationUnitDecl* decl, bool sharing) {
 

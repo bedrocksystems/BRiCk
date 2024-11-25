@@ -10,4 +10,7 @@
   1 error generated.
   Error while processing $TESTCASE_ROOT/test.cpp.
   coqc -w -notation-overridden -w -notation-incompatible-prefix test_17_cpp_names.v
+  Error: Can't find file ./test_17_cpp_names.v
   coqc -w -notation-overridden -w -notation-incompatible-prefix test_17_cpp.v
+  Error: Can't find file ./test_17_cpp.v
+  [1]
