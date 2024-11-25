@@ -306,7 +306,12 @@ public:
 		unsupported_expr(expr, std::nullopt, /*well_known*/ true);             \
 	}
 
-	IGNORE(StmtExpr) // a GNU extension used in BHV
+	void VisitStmtExpr(const StmtExpr* expr) {
+		guard::ctor _{print, "Estmt"};
+
+		cprint.printStmt(print, expr->getSubStmt()) << fmt::nbsp;
+		cprint.printQualType(print, expr->getType(), loc::of(expr));
+	}
 
 	void
 	VisitCXXRewrittenBinaryOperator(const CXXRewrittenBinaryOperator* expr) {
