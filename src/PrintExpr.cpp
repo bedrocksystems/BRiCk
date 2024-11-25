@@ -768,6 +768,8 @@ public:
 
 			// floating point casts
 			CASE_WITH_TYPE(FloatingToIntegral, Cfloat2int)
+			CASE_WITH_TYPE(IntegralToFloating, Cint2float)
+			CASE_WITH_TYPE(FloatingCast, Cfloat)
 
 			CASE_WITH_TYPE(Dependent, Cdependent)
 #undef CASE_NO_TYPE
