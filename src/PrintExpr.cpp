@@ -841,13 +841,17 @@ public:
 			always_assert(is_builtin(ref->getDecl()));
 			print.ctor("Ebuiltin", false);
 			// assume that this is a builtin
-			cprint.printName(print, ref->getDecl(), loc::of(ref));
-			print.output() << fmt::nbsp;
+			cprint.printName(print, ref->getDecl(), loc::of(ref)) << fmt::nbsp;
 			auto type = expr->getType();
-			always_assert(type->isPointerType() &&
-						  "builtin to pointer is not a pointer");
-			cprint.printQualType(print, type.getTypePtr()->getPointeeType(),
-								 loc::of(expr));
+			if (type->isPointerType()) {
+				// NOTE: in most instances, the type of this expression
+				// is a pointer to a function type, but in some cases,
+				// clang does not emit the top-level pointer.
+				cprint.printQualType(print, type.getTypePtr()->getPointeeType(),
+									 loc::of(expr));
+			} else {
+				cprint.printQualType(print, type, loc::of(expr));
+			}
 			print.end_ctor();
 			return;
 		}
