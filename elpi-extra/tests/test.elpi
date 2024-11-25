@@ -1,0 +1,32 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+pred check i:any, i:any.
+check Want Have :-
+  ( ground_term Have, !
+  ; coq.error "Not ground:" Have ),
+  ( Want = Have, !
+  ; coq.error "Expected" Want "got" Have ).
+
+pred det i:prop.
+det P :- std.do! [
+  findall_solutions P L,
+  ( L = [], !, fail
+  ; L = [Q], !, P = Q	% Mitigate coq-elpi#631
+  ; coq.error "Expected <= 1 solutions, got" {std.length L} ":" P ),
+].
+
+pred badof-fail i:term, o:int.
+
+pred badof-nondet i:term, o:int.
+badof-nondet _ 1.
+badof-nondet _ 2.
+
+pred badas-fail i:int, o:term.
+
+pred badas-nondet i:int, o:term.
+badas-nondet _ T :- int.as_N 1 T.
+badas-nondet _ T :- int.as_N 2 T.

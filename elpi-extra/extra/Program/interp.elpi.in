@@ -1,0 +1,24 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * This software is distributed under the terms of the BedRock Open-Source
+ * License. See the LICENSE-BedRock file in the repository root for details.
+ */
+
+/** * Interp phase exensions for any Elpi program */
+/**
+This file assumes the <<Elpi Program>> template (i.e., any template).
+
+It works in the interp phase.
+*/
+
+accumulate "bedrock.elpi.extra/Program/both".	% both.elpi.in
+
+accumulate "bedrock.elpi.extra/Program/interp/coq".	% interp/coq.elpi
+accumulate "bedrock.elpi.extra/Program/interp/diag".	% interp/diag.elpi
+accumulate "bedrock.elpi.extra/Program/interp/ident".	% interp/ident.elpi
+accumulate "bedrock.elpi.extra/Program/interp/int".	% interp/int.elpi
+accumulate "bedrock.elpi.extra/Program/interp/pair".	% interp/pair.elpi
+accumulate "bedrock.elpi.extra/Program/interp/list".	% interp/list.elpi
+accumulate "bedrock.elpi.extra/Program/interp/option".	% interp/option.elpi
+accumulate "bedrock.elpi.extra/Program/interp/bool".	% interp/bool.elpi

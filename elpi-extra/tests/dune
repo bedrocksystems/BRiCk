@@ -1,0 +1,12 @@
+(include_subdirs qualified)
+
+(coq.theory
+ (name bedrock_tests.elpi.extra)
+ (theories bedrock.elpi.extra))
+
+(rule
+ (target dummy.v)
+ (deps (glob_files_rec *.elpi))
+ (action
+  (with-stdout-to %{target}
+   (run coq-dummy-gen %{deps}))))

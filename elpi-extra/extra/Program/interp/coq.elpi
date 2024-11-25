@@ -1,0 +1,346 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Minor extensions to namespace <<coq>> */
+
+accumulate "bedrock.elpi.extra/Program/both/coq".	% ../both/coq.elpi
+
+namespace coq {
+
+  /** ** Hint locality */
+
+  namespace locality {
+    pred pp i:coq.locality, o:coq.pp.
+  }
+
+  /** ** Messages */
+
+  pred say.pp i:coq.pp.
+  pred warning.pp i:string, i:string, i:coq.pp.
+  pred error.pp i:coq.pp.
+
+  /** ** Iterators */
+
+  pred fold i:term, i:term -> A -> A -> prop, i:A, o:A.
+
+  pred evar-free i:term, o:diag.	% Complain about unresolved EVars
+
+  /** ** Reduction w/o scope problems */
+
+  pred eval_whd i:coq.redflags, i:term, o:term.
+  pred eval_lazy i:coq.redflags, i:term, o:term.
+  pred eval_cbv i:coq.redflags, i:term, o:term.
+  pred eval_vm i:term, o:term.
+  pred eval_native i:term, o:term.
+  pred eval_whd_all i:term, o:term.
+  pred eval_lazy_all i:term, o:term.
+  pred eval_cbv_all i:term, o:term.
+
+  /** ** Terms with phantom types */
+
+  namespace tm {
+    shorten coq.{tm}.
+
+    pred of_global i:(term -> tm A -> prop), i:gref, o:tm A.
+    pred of_string i:(term -> tm A -> prop), i:string, o:tm A.
+
+    pred to_term i:tm A, o:term.
+
+    pred whd i:tm A, o:term.
+    pred to_string i:tm A, o:string.
+    pred pp i:tm A, o:coq.pp.
+  }
+
+  /** ** Coq options */
+
+  pred option.with! i:list string, i:coq.option, i:prop.	% Locally set option
+
+  /** ** Elaboration */
+
+  pred elaborate-skeleton-evar-free i:term, o:term, o:term, o:diag.
+  pred elaborate-ty-skeleton-evar-free i:term, o:sort, o:term, o:diag.
+
+  /** ** Environment */
+
+  pred is_mlocked i:constant, o:term, o:term, o:constant.	% Ty, RHS, Unlock (may fail)
+  pred mlocked->id i:constant, o:string.	% Assumes <<is_mlocked>>
+  pred mlocked->path i:constant, o:string.	% Assumes <<is_mlocked>>
+
+  pred gref->module-path i:gref, o:string. % Full kernel name of containing module
+
+  /*
+  <<coq.module-locate Path Name GR>> locates <<Path.Name>> or panics.
+  (<<coq.locate S>> is prone to import mismatch errors unless <<S>> is
+  a full path.)
+  */
+  pred module-locate i:string, i:string, o:gref.
+
+  /*
+  Elpi quotations for Coq terms do not handle primitive projections
+  very well.
+
+  Attempting to match on, e.g., <<{{ bi_sep lp:P lp:Q }}>> can fail
+  because Elpi HOAS often uses the primitive projection <<primitive
+  (proj iris.bi.interface.bi_sep _)>> rather than its compatibility
+  constant <<bi_sep>>.
+
+  In such cases, one can use <<coq.extract-primitive-projection
+  {{:bi_sep}} BiSep>>, and match on on <<{{ lp:BiSep lp:P lp:Q }}>>.
+  The predicate expects a reference to a compatibility constant and
+  reads off the underlying primitive projection.
+  */
+  pred extract-primitive-projection i:gref, o:term, o:diag.
+
+  /** ** Tactics */
+
+  /*
+  <<coq.ltac.resolve GR Base Name>> sets <<Name := path.Base>> where
+  <<path>> is the full logical path of the module containing reference
+  <<GR>>.
+
+  This helps avoid capture by locally defined tactics <<Name>>.
+  */
+
+  pred ltac.resolve i:gref, i:string, o:string.
+
+  /*
+  Implementation
+  */
+
+  namespace locality {
+    pp Locality (coq.pp.glue PPs) :- PPs = [
+      coq.pp.str "#[", coq.pp.str {coq.locality.id Locality}, coq.pp.str "]",
+    ].
+  }
+
+  say.pp PP :- coq.say {coq.pp->string PP}.
+  warning.pp Category Name PP :- coq.warning Category Name {coq.pp->string PP}.
+  error.pp PP :- coq.error {coq.pp->string PP}.
+
+  fold (sort _ as TM) F A A' :- !, F TM A A'.
+  fold (global _ as TM) F A A' :- !, F TM A A'.
+  fold (pglobal _ _ as TM) F A A' :- !, F TM A A'.
+  fold (fun _ T FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T F A1} A'.
+  fold (prod _ T FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T F A1} A'.
+  fold (let _ T1 T2 FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T2 F {fold T1 F A1} } A'.
+  fold (app L as TM) F A A' :- !, F TM A A1, fold.list L F A1 A'.
+  fold (match T1 T2 L as TM) F A A' :- !, F TM A A1,
+    fold.list L F {fold T2 F {fold T1 F A1} } A'.
+  fold (fix _ _ T FUN as TM) F A A' :- !, F TM A A1,
+    pi X\ fold (FUN X) F {fold T F A1} A'.
+  fold (primitive _ as TM) F A A' :- !, F TM A A'.
+  fold (uvar _ L as TM) F A A' :- !, F TM A A1, fold.list L F A1 A'.
+  fold X _ A A :- name X, !. %pi-bound variables c0, c1, etc.
+  fold TM _ A A :- !, coq.error "coq.fold: unexpected term" {coq.term->string TM}.
+
+  pred fold.list i:list term, i:term -> A -> A -> prop, i:A, o:A.
+  fold.list L F A A' :- std.fold L A (X\ fold X F) A'.
+
+  eval_whd F T U :- @redflags! F => coq.reduction.lazy.whd T U.
+  eval_lazy F T U :- @redflags! F => coq.reduction.lazy.norm T U.
+  eval_cbv F T U :- @redflags! F => coq.reduction.cbv.norm T U.
+  eval_vm T U :- coq.reduction.vm.norm T _ U.
+  eval_native T U :- coq.reduction.native.norm T _ U.
+  eval_whd_all T U :- @redflags! coq.redflags.all => coq.reduction.lazy.whd T U.
+  eval_lazy_all T U :- @redflags! coq.redflags.all => coq.reduction.lazy.norm T U.
+  eval_cbv_all T U :- @redflags! coq.redflags.all => coq.reduction.cbv.norm T U.
+
+  namespace tm {
+    shorten coq.tm.{v}.
+
+    of_global OfTerm GR TM :- coq.env.global GR T, OfTerm T TM.
+    of_string OfTerm S TM :- of_global OfTerm {coq.locate S} TM.
+
+    to_term (v T) T.
+
+    whd (v T) Tred :- eval_whd_all T Tred.
+    to_string (v T) S :- coq.term->string T S.
+    pp (v T) PP :- coq.term->pp T PP.
+  }
+
+  option.with! Flag Want P :- std.do! [
+    coq.option.get Flag Have,
+    Run = if P (K = true) (K = fail),
+    ( Want = Have, !, Run
+    ; Set = (coq.option.set Flag), Set Want, Run, Set Have ),
+    K,
+  ].
+
+  is_mlocked C Ty RHS Unlock :-
+    (coq.env.opaque? C, !; fail), GR = const C,
+    (coq.gref->id GR "body", !; fail), std.string.concat "." {coq.gref->path GR} Path,
+    (coq.locate?! {calc (Path ^ ".unlock")} loc-gref (const TmpC), !; fail),
+    % We permit "fake" mlocked terms with transparent unlock lemmas.
+    (coq.env.const TmpC _ {{ @eq lp:Ty lp:{{global GR}} lp:RHS }}, !; fail),
+    Unlock = TmpC.
+  mlocked->id C Id :-
+    coq.gref->path (const C) L,
+    std.last L Id.
+  mlocked->path C Path :-
+    coq.gref->path (const C) L,
+    std.string.concat "." {std.drop-last 1 L} Path.
+
+  gref->module-path GR ModPath :- std.do! [
+    Path = {coq.gref->path GR},
+    ModPath = {std.string.concat "." Path},
+  ].
+
+  extract-primitive-projection GR T diag.ok :-
+    GR = const C,
+    coq.env.const-body C (some Body),
+    Body = (fun _ _ R\ app [(primitive (proj _ _) as T), R]), !.
+  extract-primitive-projection GR _ (diag.error (extract-primitive-projection.msg GR)).
+
+  pred extract-primitive-projection.msg i:gref, o:string.
+  extract-primitive-projection.msg GR Msg :-
+    Msg is "Expected compatibility constant: " ^ {coq.gref->string GR}.
+
+  module-locate Path Name GR :- !,
+    coq.locate {calc (Path ^ "." ^ Name)} GR.
+
+  ltac.resolve GR Base Name :- std.do! [
+    coq.gref->path GR Path,
+    std.string.concat "." {std.append Path [Base]} Name,
+  ].
+
+  evar-free T D :- std.do! [
+    coq.ltac.collect-goals T Goals Shelved,
+    if (Goals = [], Shelved = []) (D = diag.ok) (
+      D = diag.error (evar-free.msg T Goals Shelved)
+    ),
+  ].
+
+  namespace evar-free {
+    % A Coq name
+    pred pp-name i:name, o:coq.pp.
+    pp-name Name PP :- std.do! [
+      PP = coq.pp.str {coq.name->id Name},
+    ].
+
+    % Any Elpi term
+    pred pp-any i:any, o:coq.pp.
+    pp-any Any PP :- std.do! [
+      PP = coq.pp.str {term_to_string Any},
+    ].
+
+    % Any Elpi term (with marker "Oops!" meaning fix these pretty-printers)
+    pred pp-oops i:any, o:coq.pp.
+    pp-oops Any PP :- std.do! [
+      PP = coq.pp.glue [
+        coq.pp.str "Oops!", coq.pp.spc,
+        {pp-any Any},
+      ],
+    ].
+
+    % A context entry
+    pred pp-goal-ctx-entry i:prop, o:coq.pp.
+    pp-goal-ctx-entry (decl _ Name Ty) PP :- !, std.do! [
+      pp-goal-ctx-entry.box [
+        {pp-name Name}, coq.pp.str " :", coq.pp.spc,
+        {coq.term->pp Ty},
+      ] PP,
+    ].
+    pp-goal-ctx-entry (def _ Name Ty Body) PP :- !, std.do! [
+      pp-goal-ctx-entry.box [
+        {pp-name Name}, coq.pp.str " :", coq.pp.spc,
+        {coq.term->pp Ty}, coq.pp.str " :=", coq.pp.spc,
+        {coq.term->pp Body}
+      ] PP,
+    ].
+    pp-goal-ctx-entry Entry PP :- std.do! [
+      pp-goal-ctx-entry.box [
+        {pp-oops Entry},
+      ] PP,
+    ].
+    pred pp-goal-ctx-entry.box i:list coq.pp, o:coq.pp.
+    pp-goal-ctx-entry.box PPs PP :- PP = coq.pp.box (coq.pp.hov 2) PPs.
+
+    % A goal context
+    pred pp-goal-ctx i:goal-ctx, o:coq.pp.
+    pp-goal-ctx Ctx PP :- std.do! [
+      /*
+      Undocumented (but consistent with Coq contexts): The context is
+      backwards.
+      */
+      std.rev Ctx Decls,
+      Sep = coq.pp.glue [coq.pp.str ",", coq.pp.spc],
+      std.intersperse Sep {std.map Decls pp-goal-ctx-entry} PPs,
+      PP = coq.pp.box (coq.pp.hov 0) PPs,
+    ].
+
+    % An EVar
+    pred pp-evar i:term, i:term, o:coq.pp.
+    pp-evar EVar Ty PP :- std.do! [
+      PP = coq.pp.glue [
+        {coq.term->pp EVar}, coq.pp.str ": uninstantiated with type", coq.pp.spc,
+        {coq.term->pp Ty},
+      ],
+    ].
+
+    % A goal
+    pred pp-goal i:goal, o:coq.pp.
+    pp-goal (goal [] _Raw Ty Evar _Args) PP :- !, std.do! [
+      pp-goal.box [
+        {pp-evar Evar Ty},
+      ] PP,
+    ].
+    pp-goal (goal Ctx _Raw Ty EVar _Args) PP :- !, Ctx => std.do! [
+      pp-goal.box [
+        {pp-evar EVar Ty}, coq.pp.spc,
+        coq.pp.str "in context", coq.pp.brk 1 2,
+        {pp-goal-ctx Ctx},
+      ] PP,
+    ].
+    pp-goal Goal PP :- pp-goal.fallback Goal PP.
+
+    pred pp-goal.box i:list coq.pp, o:coq.pp.
+    pp-goal.box PPs PP :-
+      PP = coq.pp.box (coq.pp.hov 2) [
+        coq.pp.str "- ",
+        coq.pp.glue PPs,
+      ].
+
+    pred pp-goal.fallback i:any, o:coq.pp.
+    pp-goal.fallback ElpiTerm PP :- std.do! [
+      pp-goal.box [
+        {pp-oops ElpiTerm},
+      ] PP,
+    ].
+
+    % A sealed goal
+    pred pp-sealed-goal i:sealed-goal, o:coq.pp.
+    pp-sealed-goal (nabla G) PP :- !, (pi x\ pp-sealed-goal (G x) PP).
+    pp-sealed-goal (seal G) PP :- !, pp-goal G PP.
+    pp-sealed-goal Sealed PP :- pp-goal.fallback Sealed PP.
+
+    pred msg i:term, i:list sealed-goal, i:list sealed-goal, o:string.
+    msg T Goals Shelved Msg :- std.do! [
+      Brk = coq.pp.brk 0 0,
+      PPT = coq.pp.box (coq.pp.v 2) [
+        coq.pp.str "The following term contains unresolved evars:", Brk,
+        {coq.term->pp T},
+      ],
+      std.map {std.append Goals Shelved} pp-sealed-goal PPG,
+      std.intersperse Brk [PPT | [coq.pp.str "Specifically," | PPG]] PPs,
+      coq.pp->string (coq.pp.box (coq.pp.v 0) PPs) Msg,
+    ].
+  }
+
+  elaborate-skeleton-evar-free T ETy E D :- diag.do! D [
+    diag.lift! (coq.elaborate-skeleton T ETy E),
+    coq.evar-free ETy,
+    coq.evar-free E,
+  ].
+
+  elaborate-ty-skeleton-evar-free T U E D :- diag.do! D [
+    diag.lift! (coq.elaborate-ty-skeleton T U E),
+    coq.evar-free E,
+  ].
+
+}

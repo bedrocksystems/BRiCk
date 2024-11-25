@@ -1,0 +1,168 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Integers */
+
+namespace int {
+
+  pred of_pos i:term, o:int.	% May panic
+  pred as_pos i:int, o:term.
+
+  pred of_N i:term, o:int.	% May panic
+  pred as_N i:int, o:term.
+
+  pred of_Z i:term, o:int.	% May panic
+  pred as_Z i:int, o:term.
+
+  pred of_byte i:term, o:int.	% May panic
+  pred as_byte i:int, o:term.
+
+  %% Term wrappers
+
+  typeabbrev pos (coq.tm int.pos.phantom).
+  namespace pos {
+    kind phantom type.
+    pred of_term i:term, o:int.pos.	% May panic
+    pred to_term i:int.pos, o:term.
+    pred of_int i:int, o:int.pos.	% May panic
+    pred to_int i:int.pos, o:int.
+  }
+
+  typeabbrev N (coq.tm int.N.phantom).
+  namespace N {
+    kind phantom type.
+    pred of_term i:term, o:int.N.	% May panic
+    pred to_term i:int.N, o:term.
+    pred of_int i:int, o:int.N.	% May panic
+    pred to_int i:int.N, o:int.
+  }
+
+  typeabbrev Z (coq.tm int.Z.phantom).
+  namespace Z {
+    kind phantom type.
+    pred of_term i:term, o:int.Z.	% May panic
+    pred to_term i:int.Z, o:term.
+    pred of_int i:int, o:int.Z.	% May panic
+    pred to_int i:int.Z, o:int.
+  }
+
+  typeabbrev byte (coq.tm int.byte.phantom).
+  namespace byte {
+    kind phantom type.
+    pred of_term i:term, o:int.byte.	% May panic
+    pred to_term i:int.byte, o:term.
+    pred of_int i:int, o:int.byte.	% May panic
+    pred to_int i:int.byte, o:int.
+  }
+
+  /*
+  Implementation
+  */
+
+  /* TODO: hoist types */
+  pred of_prim_uint i:term o:int.
+  of_prim_uint T N :- (
+    T = primitive (uint63 CUI), !,
+    coq.uint63->int CUI N
+  ; coq.error "int.of_prim_uint: Expected primitive integer:" {coq.term->string T}
+  ).
+
+  pred to_prim_uint i:int o:term.
+  to_prim_uint N T :- std.do! [
+    coq.int->uint63 N CUI,
+    T = primitive (uint63 (CUI)),
+  ].
+
+  pred of_reif_num i:term o:int.
+  of_reif_num T N :- (
+    T = {{ lib:@core.prod.intro _ _ lp:Sgn lp:Num }}, !,
+    coq.eval_whd_all Num Nred, !,
+    ( of_prim_uint Nred I, !,
+      coq.eval_whd_all Sgn Sred,
+      ( Sred = {{ lib:core.bool.true  }}, !, N = I
+      ; Sred = {{ lib:core.bool.false }}, !, N is (-1 * I)
+      ; coq.error "int.of_reif_num: Expected <<bool>> constructor:" {coq.term->string Sred} )
+    )
+  ; coq.error "int.of_reif_num: Expected <<pair>> constructor:" {coq.term->string T}
+  ).
+
+  of_pos T N :- std.do! [
+    coq.eval_whd_all {{ lib:reif.numbers.of_pos lp:T }} Tred,
+    of_prim_uint Tred N
+  ].
+
+  as_pos N T :-
+    ( N >= 1, !, as_pos.unsafe N T
+    ; coq.error "int.as_pos:" N ).
+
+  pred as_pos.unsafe i:int, o:term.
+  as_pos.unsafe N T :- std.do! [
+    coq.int->uint63 N CUI,
+    coq.eval_vm {{ lib:reif.numbers.to_pos lp:{{primitive (uint63 CUI)}} }} T,
+  ].
+
+  of_N T N :- std.do! [
+    coq.eval_whd_all {{ lib:reif.numbers.of_N lp:T }} Tred,
+    of_prim_uint Tred N
+  ].
+
+  as_N 0 {{ lib:num.N.N0 }} :- !.
+  as_N N {{ lib:num.N.Npos lp:P }} :- as_pos N P.
+
+  of_Z T N :- std.do! [
+    coq.eval_whd_all {{ lib:reif.numbers.of_Z lp:T }} Tred,
+    of_reif_num Tred N
+  ].
+
+  as_Z 0 {{ lib:num.Z.Z0 }} :- !.
+  as_Z N T :-
+    ( N > 0, !, as_pos N P, T = {{ lib:num.Z.Zpos lp:P }}
+    ; as_pos {calc (0 - N)} P, T = {{ lib:num.Z.Zneg lp:P }} ).
+
+  of_byte T N :- std.do! [
+    coq.eval_whd_all {{ lib:reif.numbers.of_byte lp:T }} Tred,
+    of_prim_uint Tred N
+  ].
+
+  as_byte N T :- std.do! [
+    int.as_N N NT,
+    coq.eval_vm {{ lib:core.byte.of_N lp:NT }} OT,
+    ( OT = {{ lib:core.option.Some lp:T }}, !
+    ; coq.error "int.as_byte:" N )
+  ].
+
+  namespace pos {
+    of_term T (coq.tm.v T) :-
+      std.assert-ok! (coq.typecheck T {{ lib:num.pos.type }}) "int.pos.of_term".
+    to_term (coq.tm.v T) T.
+    of_int N (coq.tm.v T) :- int.as_pos N T.
+    to_int (coq.tm.v T) N :- int.of_pos T N.
+  }
+
+  namespace N {
+    of_term T (coq.tm.v T) :-
+      std.assert-ok! (coq.typecheck T {{ lib:num.N.type }}) "int.N.of_term".
+    to_term (coq.tm.v T) T.
+    of_int N (coq.tm.v T) :- int.as_N N T.
+    to_int (coq.tm.v T) N :- int.of_N T N.
+  }
+
+  namespace Z {
+    of_term T (coq.tm.v T) :-
+      std.assert-ok! (coq.typecheck T {{ lib:num.Z.type }}) "int.Z.of_term".
+    to_term (coq.tm.v T) T.
+    of_int N (coq.tm.v T) :- int.as_Z N T.
+    to_int (coq.tm.v T) N :- int.of_Z T N.
+  }
+
+  namespace byte {
+    of_term T (coq.tm.v T) :-
+      std.assert-ok! (coq.typecheck T {{ lib:core.byte.type }}) "int.byte.of_term".
+    to_term (coq.tm.v T) T.
+    of_int N (coq.tm.v T) :- int.as_byte N T.
+    to_int (coq.tm.v T) N :- int.of_byte T N.
+  }
+}

@@ -1,0 +1,21 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** ** Some concrete error messages */
+
+namespace diag {
+  pred bad_term.msg i:term, o:string.	% "Unexpected term: T"
+  pred bad_term i:term, o:diag.
+}
+
+/*
+Implementation
+*/
+
+namespace diag {
+  bad_term.msg T S :- S is "Unexpected term: " ^ {coq.term->string T}.
+  bad_term T (diag.error (bad_term.msg T)).
+}

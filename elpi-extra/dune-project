@@ -1,0 +1,10 @@
+(lang dune 3.14)
+(using coq 0.8)
+(name elpi-extra)
+
+(generate_opam_files)
+
+(package
+ (name elpi-extra)
+ (synopsis "Extension of the Elpi standard library")
+ (depends coq-stdlib coq-elpi ltac2-extra))
