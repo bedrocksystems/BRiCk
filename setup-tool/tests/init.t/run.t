@@ -1,5 +1,5 @@
   $ . ../setup.sh
-  $ find | sort
+  $ find . | sort
   .
   ./Makefile
   ./dummy.opam
@@ -31,7 +31,7 @@
   [project]
   ignored = []
   $ br gen
-  $ find | sort
+  $ find . | sort
   .
   ./Makefile
   ./br-project.toml

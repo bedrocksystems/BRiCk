@@ -1,5 +1,5 @@
   $ . ../setup.sh
-  $ find | sort
+  $ find . | sort
   .
   ./Makefile
   ./br-project.toml
@@ -45,7 +45,7 @@
    - coq_dirpath: my.project.src.server
    - clang_includes: ../../include, include
   Creating directory [src/server/proof/server_cpp].
-  $ find | sort
+  $ find . | sort
   .
   ./Makefile
   ./br-project.toml
