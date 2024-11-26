@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>bedrock_tests.elpi.extra.test_int</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library bedrock_tests.elpi.extra.test_int</h1>
+
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock_tests.elpi.extra</span> <span class="id" title="var">Extra</span> <span class="id" title="var">Dependency</span> "test.elpi" <span class="id" title="keyword">as</span> <span class="id" title="var">test</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Byte.html#"><span class="id" title="library">Stdlib.Init.Byte</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.PArith.BinPos.html#"><span class="id" title="library">Stdlib.PArith.BinPos</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.NArith.BinNat.html#"><span class="id" title="library">Stdlib.NArith.BinNat</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.ZArith.BinInt.html#"><span class="id" title="library">Stdlib.ZArith.BinInt</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">bedrock.elpi.extra.extra</span>.<br/>
+
+<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Program</span> <span class="id" title="var">test</span> <span class="id" title="var">lp</span>:{{ }}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">Db</span> <span class="id" title="var">extra.Program</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">test</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Parameter</span> <a id="opaque" class="idref" href="#opaque"><span class="id" title="axiom">opaque</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="numeral" class="idref" href="#numeral"><span class="id" title="definition">numeral</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a> := 42.<br/>
+<span class="id" title="keyword">Definition</span> <a id="computable" class="idref" href="#computable"><span class="id" title="definition">computable</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a> := <a class="idref" href="bedrock_tests.elpi.extra.test_int.html#numeral"><span class="id" title="definition">numeral</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.NArith.BinNat.html#64708cc1fcff61c206ed571fe7828ea8"><span class="id" title="notation">+</span></a> <a class="idref" href="bedrock_tests.elpi.extra.test_int.html#numeral"><span class="id" title="definition">numeral</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="noncomputable" class="idref" href="#noncomputable"><span class="id" title="definition">noncomputable</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a> := <a class="idref" href="bedrock_tests.elpi.extra.test_int.html#numeral"><span class="id" title="definition">numeral</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.NArith.BinNat.html#64708cc1fcff61c206ed571fe7828ea8"><span class="id" title="notation">+</span></a> <a class="idref" href="bedrock_tests.elpi.extra.test_int.html#opaque"><span class="id" title="axiom">opaque</span></a>.<br/>
+
+<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.of_pos</span> {{ 42%<span class="id" title="var">positive</span> }} <span class="id" title="var">N</span>), <span class="id" title="var">check</span> 42 <span class="id" title="var">N</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.of_N</span> {{ 42%<span class="id" title="var">N</span> }} <span class="id" title="var">N</span>), <span class="id" title="var">check</span> 42 <span class="id" title="var">N</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.of_Z</span> {{ 42%<span class="id" title="var">Z</span> }} <span class="id" title="var">N</span>), <span class="id" title="var">check</span> 42 <span class="id" title="var">N</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.of_Z</span> {{ (-42)%<span class="id" title="var">Z</span> }} <span class="id" title="var">N</span>), <span class="id" title="var">check</span> -42 <span class="id" title="var">N</span> }}.<br/>
+
+<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.of_N</span> {{ <span class="id" title="var">numeral</span> }} <span class="id" title="var">N</span>), <span class="id" title="var">check</span> 42 <span class="id" title="var">N</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.of_N</span> {{ <span class="id" title="var">computable</span> }} <span class="id" title="var">N</span>), <span class="id" title="var">check</span> 84 <span class="id" title="var">N</span> }}. <span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.of_N</span> {{ <span class="id" title="var">opaque_N</span> }} <span class="id" title="var">N</span> }}.<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.of_N</span> {{ <span class="id" title="var">noncomputable</span> }} <span class="id" title="var">N</span> }}.<br/>
+
+<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.as_pos</span> -1 <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.as_pos</span> 0 <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_pos</span> 42 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ 42%<span class="id" title="var">positive</span> }} <span class="id" title="var">T</span> }}.<br/>
+
+<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.as_N</span> -1 <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_N</span> 0 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ 0%<span class="id" title="var">N</span> }} <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_N</span> 42 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ 42%<span class="id" title="var">N</span> }} <span class="id" title="var">T</span> }}.<br/>
+
+<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_Z</span> -3 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ (-3)%<span class="id" title="var">Z</span> }} <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_Z</span> 0 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ 0%<span class="id" title="var">Z</span> }} <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_Z</span> 42 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ 42%<span class="id" title="var">Z</span> }} <span class="id" title="var">T</span> }}.<br/>
+
+<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.as_byte</span> -1 <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_byte</span> 0 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ <span class="id" title="var">Byte.x00</span> }} <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">int.as_byte</span> 255 <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ <span class="id" title="var">Byte.xff</span> }} <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.as_byte</span> 256 <span class="id" title="var">T</span> }}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Term wrappers 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.pos.of_term</span> {{ <span class="id" title="var">true</span> }} <span class="id" title="var">_</span> }}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.pos.of_term</span> {{ 42%<span class="id" title="var">positive</span> }} <span class="id" title="var">N</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.pos.to_int</span> <span class="id" title="var">N</span> <span class="id" title="var">V</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> 42 <span class="id" title="var">V</span><br/>
+}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.pos.of_int</span> 42 <span class="id" title="var">N</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.pos.to_term</span> <span class="id" title="var">N</span> <span class="id" title="var">T</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> {{ 42%<span class="id" title="var">positive</span> }} <span class="id" title="var">T</span><br/>
+}}.<br/>
+
+<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.N.of_term</span> {{ <span class="id" title="var">true</span> }} <span class="id" title="var">_</span> }}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.N.of_term</span> {{ 42%<span class="id" title="var">N</span> }} <span class="id" title="var">N</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.N.to_int</span> <span class="id" title="var">N</span> <span class="id" title="var">V</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> 42 <span class="id" title="var">V</span><br/>
+}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.N.of_int</span> 42 <span class="id" title="var">N</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.N.to_term</span> <span class="id" title="var">N</span> <span class="id" title="var">T</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> {{ 42%<span class="id" title="var">N</span> }} <span class="id" title="var">T</span><br/>
+}}.<br/>
+
+<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.Z.of_term</span> {{ <span class="id" title="var">true</span> }} <span class="id" title="var">_</span> }}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.Z.of_term</span> {{ 42%<span class="id" title="var">Z</span> }} <span class="id" title="var">Z</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.Z.to_int</span> <span class="id" title="var">Z</span> <span class="id" title="var">V</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> 42 <span class="id" title="var">V</span><br/>
+}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.Z.of_int</span> 42 <span class="id" title="var">Z</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.Z.to_term</span> <span class="id" title="var">Z</span> <span class="id" title="var">T</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> {{ 42%<span class="id" title="var">Z</span> }} <span class="id" title="var">T</span><br/>
+}}.<br/>
+
+<br/>
+<span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">int.byte.of_term</span> {{ <span class="id" title="var">true</span> }} <span class="id" title="var">_</span> }}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.byte.of_term</span> {{ " "%<span class="id" title="var">byte</span> }} <span class="id" title="var">B</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.byte.to_int</span> <span class="id" title="var">B</span> <span class="id" title="var">V</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> 32 <span class="id" title="var">V</span><br/>
+}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.byte.of_int</span> 32 <span class="id" title="var">B</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">det</span> (<span class="id" title="var">int.byte.to_term</span> <span class="id" title="var">B</span> <span class="id" title="var">T</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">check</span> {{ " "%<span class="id" title="var">byte</span> }} <span class="id" title="var">T</span><br/>
+}}.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index.html">Index</a><hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
