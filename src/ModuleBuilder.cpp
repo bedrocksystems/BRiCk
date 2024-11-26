@@ -151,8 +151,10 @@ public:
 	void VisitCXXRecordDecl(const CXXRecordDecl *decl, Flags flags) {
 		if (decl->isImplicit() and not decl->isLambda())
 			return;
-		VisitTagDecl(decl, flags);
-		VisitDeclContext(decl, flags);
+		if (not decl->isDependentContext() or templates_) {
+			VisitTagDecl(decl, flags);
+			VisitDeclContext(decl, flags);
+		}
 	}
 
 	void VisitClassTemplateDecl(const ClassTemplateDecl *decl, Flags flags) {

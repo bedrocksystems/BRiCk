@@ -119,6 +119,7 @@ Module decltype.
         | Cbitcast t
         | Clvaluebitcast t => mret t
         | Cl2r => drop_qualifiers <$> requireGL base
+        | Cl2r_bitcast t => mret t
         | Cnoop t => mret t
         | Carray2ptr =>
             let k cv base :=
@@ -140,6 +141,8 @@ Module decltype.
         | Cintegral t => mret t
         | Cint2bool => mret Tbool
         | Cfloat2int t
+        | Cint2float t
+        | Cfloat t
         | Cnull2ptr t
         | Cnull2memberptr t
         | Cbuiltin2fun t

@@ -150,10 +150,11 @@ Section with_monad.
   with cast (c : Cast' lang) : M :=
     match c with
     | Cdependent t | Cbitcast t | Clvaluebitcast t | Cnoop t | Cint2ptr t | Cptr2int t
-    | Cintegral t | Cfloat2int t
+    | Cintegral t
     | Cnull2ptr t | Cnull2memberptr t
     | Cbuiltin2fun t | Cctor t | Cdynamic t => type t
     | Cderived2base ts t | Cbase2derived ts t => lst type ts <+> type t
+    | Cfloat _ | Cint2float _ | Cfloat2int _ | Cl2r_bitcast _ => FAIL
     | _ => OK
     end.
 

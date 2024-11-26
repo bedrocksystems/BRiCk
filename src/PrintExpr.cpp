@@ -306,7 +306,16 @@ public:
 		unsupported_expr(expr, std::nullopt, /*well_known*/ true);             \
 	}
 
-	IGNORE(StmtExpr) // a GNU extension used in BHV
+	// Unsupported
+	IGNORE(CXXThrowExpr)
+	IGNORE(CXXTypeidExpr)
+
+	void VisitStmtExpr(const StmtExpr* expr) {
+		guard::ctor _{print, "Estmt"};
+
+		cprint.printStmt(print, expr->getSubStmt()) << fmt::nbsp;
+		cprint.printQualType(print, expr->getType(), loc::of(expr));
+	}
 
 	void
 	VisitCXXRewrittenBinaryOperator(const CXXRewrittenBinaryOperator* expr) {
@@ -374,11 +383,11 @@ public:
 #undef CASE
 		default:
 			logging::unsupported()
-				<< "defaulting binary operator"
-				<< " (at " << cprint.sourceRange(expr->getSourceRange())
+				<< "Unsupported binary operator '" << expr->getOpcodeStr()
+				<< "' (at " << cprint.sourceRange(expr->getSourceRange())
 				<< ")\n";
-			print.ctor("Bunsupported")
-				<< "\"" << expr->getOpcodeStr() << "\"" << fmt::rparen;
+			print.output() << "(Bunsupported \"" << expr->getOpcodeStr()
+						   << "\")";
 			break;
 		}
 	}
@@ -467,9 +476,9 @@ public:
 #undef CASE
 		default:
 			logging::unsupported()
-				<< "Error: unsupported unary operator"
-				<< " (at " << cprint.sourceRange(expr->getSourceRange())
-				<< ")\n";
+				<< "Unsupported unary operator '"
+				<< UnaryOperator::getOpcodeStr(expr->getOpcode()) << "' (at "
+				<< cprint.sourceRange(expr->getSourceRange()) << ")\n";
 			print.output() << "(Uunsupported \""
 						   << UnaryOperator::getOpcodeStr(expr->getOpcode())
 						   << "\")";
@@ -479,6 +488,11 @@ public:
 
 	void VisitUnaryOperator(const UnaryOperator* expr) {
 		switch (expr->getOpcode()) {
+		case UnaryOperatorKind::UO_Extension: {
+			guard::ctor _{print, "Eextension"};
+			cprint.printExpr(print, expr->getSubExpr(), names);
+			return;
+		}
 		case UnaryOperatorKind::UO_AddrOf: {
 			auto e = expr->getSubExpr();
 			if (auto dre = dyn_cast<DeclRefExpr>(e)) {
@@ -741,6 +755,7 @@ public:
 			CASE_WITH_TYPE(BitCast, Cbitcast)
 			CASE_WITH_TYPE(LValueBitCast, Clvaluebitcast)
 			CASE_NO_TYPE(LValueToRValue, Cl2r)
+			CASE_NO_TYPE(LValueToRValueBitCast, Cl2r_bitcast)
 			CASE_WITH_TYPE(NoOp, Cnoop)
 			CASE_NO_TYPE(ArrayToPointerDecay, Carray2ptr)
 			CASE_NO_TYPE(FunctionToPointerDecay, Cfun2ptr)
@@ -763,6 +778,8 @@ public:
 
 			// floating point casts
 			CASE_WITH_TYPE(FloatingToIntegral, Cfloat2int)
+			CASE_WITH_TYPE(IntegralToFloating, Cint2float)
+			CASE_WITH_TYPE(FloatingCast, Cfloat)
 
 			CASE_WITH_TYPE(Dependent, Cdependent)
 #undef CASE_NO_TYPE
@@ -811,6 +828,8 @@ public:
 			print.ctor(llvm::Twine("E") + nc->getCastName());
 		} else if (isa<CXXFunctionalCastExpr>(expr)) {
 			print.ctor("Efunctional_cast");
+		} else if (isa<BuiltinBitCastExpr>(expr)) {
+			print.ctor("Ebuiltin_bit_cast");
 		} else {
 			return unsupported_expr(expr, std::nullopt, false);
 		}
@@ -834,13 +853,17 @@ public:
 			always_assert(is_builtin(ref->getDecl()));
 			print.ctor("Ebuiltin", false);
 			// assume that this is a builtin
-			cprint.printName(print, ref->getDecl(), loc::of(ref));
-			print.output() << fmt::nbsp;
+			cprint.printName(print, ref->getDecl(), loc::of(ref)) << fmt::nbsp;
 			auto type = expr->getType();
-			always_assert(type->isPointerType() &&
-						  "builtin to pointer is not a pointer");
-			cprint.printQualType(print, type.getTypePtr()->getPointeeType(),
-								 loc::of(expr));
+			if (type->isPointerType()) {
+				// NOTE: in most instances, the type of this expression
+				// is a pointer to a function type, but in some cases,
+				// clang does not emit the top-level pointer.
+				cprint.printQualType(print, type.getTypePtr()->getPointeeType(),
+									 loc::of(expr));
+			} else {
+				cprint.printQualType(print, type, loc::of(expr));
+			}
 			print.end_ctor();
 			return;
 		}
@@ -1267,22 +1290,35 @@ public:
 			}
 		};
 
-		if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
+		switch (expr->getKind()) {
+		case UnaryExprOrTypeTrait::UETT_AlignOf: {
 			print.ctor("Ealignof", false);
 			do_arg();
 			done(expr);
-		} else if (expr->getKind() == UnaryExprOrTypeTrait::UETT_SizeOf) {
+			break;
+		}
+		case UnaryExprOrTypeTrait::UETT_PreferredAlignOf: {
+			print.ctor("Ealignof_preferred", false);
+			do_arg();
+			done(expr);
+			break;
+		}
+		case UnaryExprOrTypeTrait::UETT_SizeOf: {
 			print.ctor("Esizeof", false);
 			do_arg();
 			done(expr);
-		} else {
+			break;
+		}
+		default: {
 			using namespace logging;
-			fatal() << "Error: unsupported expression "
+			fatal() << "unsupported expression "
 					   "`UnaryExprOrTypeTraitExpr` at "
 					<< expr->getSourceRange().printToString(
 						   ctxt.getSourceManager())
 					<< "\n";
+			expr->dump();
 			die();
+		}
 		}
 	}
 
@@ -1322,8 +1358,8 @@ public:
 	void VisitCXXNewExpr(const CXXNewExpr* expr) {
 		auto new_fn = expr->getOperatorNew();
 		if (not new_fn) {
-			logging::fatal() << "missing operator [new]\n";
-			logging::die();
+			unsupported_expr(expr, "dependent call to new");
+			return;
 		}
 
 		print.ctor("Enew");

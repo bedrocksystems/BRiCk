@@ -325,6 +325,8 @@ Module MTraverse.
       | Cbitcast t => Cbitcast <$> traverseT t
       | Clvaluebitcast t => Clvaluebitcast <$> traverseT t
       | Cl2r => mret Cl2r
+      | Cl2r_bitcast t => Cl2r_bitcast <$> traverseT t
+
       | Cnoop t => Cnoop <$> traverseT t
       | Carray2ptr => mret Carray2ptr
       | Cfun2ptr => mret Cfun2ptr
@@ -336,6 +338,8 @@ Module MTraverse.
       | Cintegral t => Cintegral <$> traverseT t
       | Cint2bool => mret Cint2bool
       | Cfloat2int t => Cfloat2int <$> traverseT t
+      | Cint2float t => Cint2float <$> traverseT t
+      | Cfloat t => Cfloat <$> traverseT t
       | Cnull2ptr t => Cnull2ptr <$> traverseT t
       | Cnull2memberptr t => Cnull2memberptr <$> traverseT t
       | Cbuiltin2fun t => Cbuiltin2fun <$> traverseT t

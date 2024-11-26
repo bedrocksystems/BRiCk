@@ -257,16 +257,7 @@ public:
 			break;
 
 		default:
-			if (type->isAnyCharacterType()) {
-				type->dump();
-				always_assert(false && "unexpected character type");
-			} else if (type->isFloatingPoint()) {
-				type->dump();
-				always_assert(false && "unexpected floating point type");
-			} else if (type->isIntegerType()) {
-				type->dump();
-				always_assert(false);
-			} else if (type->isSizelessBuiltinType()) {
+			if (type->isSizelessBuiltinType()) {
 				// TODO: This seems a bit random. Do we need
 				// another type constructor?
 				print.output() << fmt::lparen << "Tarch None \""
@@ -275,7 +266,9 @@ public:
 							   << "\"" << fmt::rparen;
 				break;
 			} else {
-				unsupported_type(print, cprint, type);
+				unsupported(print, cprint, loc::of(type),
+							type->getNameAsCString(
+								cprint.getContext().getPrintingPolicy()));
 			}
 		}
 	}

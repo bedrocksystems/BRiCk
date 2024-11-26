@@ -636,6 +636,7 @@ with Cast' {lang : lang.t} : Set :=
 | Cbitcast (_ : type')
 | Clvaluebitcast	(_ : type') (** TODO (FM-3431): Drop this constructor? *)
 | Cl2r
+| Cl2r_bitcast (_ : type')
 | Cnoop (_ : type')
 | Carray2ptr
 | Cfun2ptr
@@ -645,6 +646,8 @@ with Cast' {lang : lang.t} : Set :=
 | Cintegral (_ : type')
 | Cint2bool
 | Cfloat2int (_ : type')
+| Cint2float (_ : type')
+| Cfloat (_ : type') (* conversion between floating point types *)
 | Cnull2ptr (_ : type')
 | Cnull2memberptr (_ : type')
 | Cbuiltin2fun (_ : type') (* OPTIMIZABLE? *)
@@ -739,6 +742,7 @@ Module Cast.
     | Cbitcast t
     | Clvaluebitcast t => T t
     | Cl2r => false
+    | Cl2r_bitcast t => T t
     | Cnoop t => T t
     | Carray2ptr
     | Cfun2ptr => false
@@ -750,6 +754,8 @@ Module Cast.
     | Cintegral t => T t
     | Cint2bool => false
     | Cfloat2int t
+    | Cint2float t
+    | Cfloat t
     | Cnull2ptr t
     | Cnull2memberptr t
     | Cbuiltin2fun t
