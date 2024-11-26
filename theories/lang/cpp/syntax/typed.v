@@ -897,6 +897,9 @@ Module decltype.
                 let* _ := check_stmt thn in
                 check_stmt els
             in mret (∅, None)
+        | Sif_consteval thn els =>
+            let* _ := check_stmt thn in
+            check_stmt els
         | Sswitch vd tst b =>
             let* ds := from_option check_decl (mret monoid.monoid_unit) vd in
             let _ :=

@@ -2259,6 +2259,7 @@ Module Stmt.
       | Sseq _ => 1
       | Sdecl _ => 2
       | Sif _ _ _ _ => 3
+      | Sif_consteval _ _ => 19
       | Swhile _ _ _ => 4
       | Sfor _ _ _ _ => 5
       | Sdo _ _ => 6
@@ -2280,6 +2281,7 @@ Module Stmt.
       | 1 => list Stmt
       | 2 => list VarDecl
       | 3 => option VarDecl * Expr * Stmt * Stmt
+      | 19 => Stmt * Stmt
       | 4 => option VarDecl * Expr * Stmt
       | 5 => option Stmt * option Expr * option Expr * Stmt
       | 6 => Stmt * Expr
@@ -2301,6 +2303,7 @@ Module Stmt.
       | Sseq a => a
       | Sdecl a => a
       | Sif a b c d => (a,b,c,d)
+      | Sif_consteval a b => (a,b)
       | Swhile a b c => (a,b,c)
       | Sfor a b c d => (a,b,c,d)
       | Sdo a b => (a,b)
@@ -2337,6 +2340,7 @@ Module Stmt.
       | 15 => _compare
       | 16 => _compare
       | 17 => _compare
+      | 19 => _compare
       | _ => _compare
       end.
 
@@ -2346,6 +2350,7 @@ Module Stmt.
       | Sseq a => compare_ctor (Sseq a)
       | Sdecl a => compare_ctor (Sdecl a)
       | Sif a b c d => compare_ctor (Sif a b c d)
+      | Sif_consteval a b => compare_ctor (Sif_consteval a b)
       | Swhile a b c => compare_ctor (Swhile a b c)
       | Sfor a b c d => compare_ctor (Sfor a b c d)
       | Sdo a b => compare_ctor (Sdo a b)

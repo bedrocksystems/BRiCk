@@ -119,6 +119,7 @@ Section with_monad.
     | Sseq ss => lst stmt ss
     | Sdecl ds => lst var_decl ds
     | Sif ovd e s1 s2 => opt var_decl ovd <+> expr e <+> stmt s1 <+> stmt s2
+    | Sif_consteval _ _ => false
     | Swhile ovd e s => opt var_decl ovd <+> expr e <+> stmt s
     | Sdo s e => stmt s <+> expr e
     | Sfor os oe1 oe2 s =>

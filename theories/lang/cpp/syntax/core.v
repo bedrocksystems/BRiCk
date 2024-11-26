@@ -595,6 +595,8 @@ with Stmt' {lang : lang.t} : Set :=
 | Sdecl   (_ : list VarDecl')
 
 | Sif     (_ : option VarDecl') (_ : Expr') (_ _ : Stmt')
+| Sif_consteval (_ _ : Stmt')
+
 | Swhile  (_ : option VarDecl') (_ : Expr') (_ : Stmt')
 | Sfor    (_ : option Stmt') (_ : option Expr') (_ : option Expr') (_ : Stmt')
 | Sdo     (_ : Stmt') (_ : Expr')
@@ -1111,6 +1113,8 @@ with is_dependentS {lang} (s : Stmt' lang) : bool :=
   | Sdecl ds => List.existsb is_dependentVD ds
   | Sif ovd e thn els =>
       option.existsb is_dependentVD ovd || is_dependentE e || is_dependentS thn || is_dependentS els
+  | Sif_consteval thn els =>
+      is_dependentS thn || is_dependentS els
   | Swhile ovd e b =>
       option.existsb is_dependentVD ovd || is_dependentE e || is_dependentS b
   | Sfor os oe1 oe2 s =>

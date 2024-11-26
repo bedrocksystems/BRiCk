@@ -19,7 +19,4 @@ Section stmt.
     (init : option Stmt) (cond : option Expr) (inc : option Expr)
     (decl body : Stmt) : Stmt :=
     Sseq (option_list init ++ [range; ibegin; iend; Sfor None cond inc (Sseq [decl; body])]).
-
-  Definition Sif_consteval (_ _ : Expr) : Stmt :=
-    Sunsupported "if consteval".
 End stmt.
