@@ -488,6 +488,11 @@ public:
 
 	void VisitUnaryOperator(const UnaryOperator* expr) {
 		switch (expr->getOpcode()) {
+		case UnaryOperatorKind::UO_Extension: {
+			guard::ctor _{print, "Eextension"};
+			cprint.printExpr(print, expr->getSubExpr(), names);
+			return;
+		}
 		case UnaryOperatorKind::UO_AddrOf: {
 			auto e = expr->getSubExpr();
 			if (auto dre = dyn_cast<DeclRefExpr>(e)) {
