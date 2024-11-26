@@ -94,20 +94,20 @@ Arguments own {_ _ _} _ _.
   Proper ((≡) ==> (⊣⊢)) (@own PROP A _ γ) := ne_proper _.
 
 (* own_valid *)
-Class HasOwnValid `{!BiEmbed siPropI PROP} `{!HasOwn PROP A} : Type := {
+Class HasOwnValid `{!BiEmbed siPropI PROP} `{!HasOwn PROP A} : Prop := {
   own_valid : ∀ γ (a : A), own γ a ⊢ ✓ a
 }.
 Arguments HasOwnValid _ {_} _{_}.
 
 (* own_update and own_alloc *)
-Class HasOwnUpd `{!BiBUpd PROP} `{!HasOwn PROP A} : Type := {
+Class HasOwnUpd `{!BiBUpd PROP} `{!HasOwn PROP A} : Prop := {
   own_updateP P γ (a : A) : a ~~>: P → own γ a ⊢ |==> ∃ a', <affine> ⌜P a'⌝ ∗ own γ a';
   own_alloc_strong_dep (f : gname → A) (P : gname → Prop) :
     pred_infinite P → (∀ γ, P γ → ✓ (f γ)) → ⊢ |==> ∃ γ, <affine> ⌜P γ⌝ ∗ own γ (f γ)
 }.
 Arguments HasOwnUpd _ {_} _ {_}.
 
-Class HasOwnUnit `{!BiBUpd PROP} {A : ucmra} `{!HasOwn PROP A} : Type := {
+Class HasOwnUnit `{!BiBUpd PROP} {A : ucmra} `{!HasOwn PROP A} : Prop := {
   own_unit γ : ⊢ |==> own γ (ε:A)
 }.
 Arguments HasOwnUnit _ {_} _ {_}.

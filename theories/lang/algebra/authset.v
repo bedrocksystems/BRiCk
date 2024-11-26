@@ -36,7 +36,7 @@ Canonical Structure propsetO (A : Type) : ofe := discreteO (propset A).
 Notation _auth_setT A :=
   (prodR (optionR (exclR (propsetO A))) (optionR (exclR (propsetO A))))
   (only parsing).
-Variant AuthSet : Type :=.
+Variant AuthSet : Prop :=.
 #[local] Definition auth_set' (A : Type) :=
   wrapper AuthSet (_auth_setT A).
 Notation auth_set A := (Reduce (auth_set' A)) (only parsing).

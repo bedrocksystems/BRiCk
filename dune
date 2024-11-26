@@ -25,6 +25,7 @@
       -w -redundant-canonical-projection
       -w -ambiguous-paths
       ; Turn warning on hints into error:
+      -w +automatic-prop-lowering
       -w +deprecated-hint-without-locality
       -w +deprecated-instance-without-locality
       -w +unknown-option

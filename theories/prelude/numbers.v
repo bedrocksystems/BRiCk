@@ -4,8 +4,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.QArith.QArith.
-Require Import Coq.QArith.Qcanon.
+Require Import Stdlib.QArith.QArith.
+Require Import Stdlib.QArith.Qcanon.
 Require Export stdpp.numbers.
 Require Export bedrock.prelude.base.
 Require Import bedrock.prelude.reserved_notation.

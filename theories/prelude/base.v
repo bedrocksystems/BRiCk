@@ -6,7 +6,7 @@
 
 (** "Prelude" for available-everywhere dependencies. *)
 
-Require Import Coq.Structures.OrderedType.
+Require Import Stdlib.Structures.OrderedType.
 Require Export stdpp.prelude.
 Require Export stdpp.countable.
 Require Export bedrock.prelude.stdpp_ssreflect.
