@@ -379,11 +379,11 @@ public:
 #undef CASE
 		default:
 			logging::unsupported()
-				<< "defaulting binary operator"
-				<< " (at " << cprint.sourceRange(expr->getSourceRange())
+				<< "Unsupported binary operator '" << expr->getOpcodeStr()
+				<< "' (at " << cprint.sourceRange(expr->getSourceRange())
 				<< ")\n";
-			print.ctor("Bunsupported")
-				<< "\"" << expr->getOpcodeStr() << "\"" << fmt::rparen;
+			print.output() << "(Bunsupported \"" << expr->getOpcodeStr()
+						   << "\")";
 			break;
 		}
 	}
@@ -472,7 +472,7 @@ public:
 #undef CASE
 		default:
 			logging::unsupported()
-				<< "Error: unsupported unary operator '"
+				<< "Unsupported unary operator '"
 				<< UnaryOperator::getOpcodeStr(expr->getOpcode()) << "' (at "
 				<< cprint.sourceRange(expr->getSourceRange()) << ")\n";
 			print.output() << "(Uunsupported \""
