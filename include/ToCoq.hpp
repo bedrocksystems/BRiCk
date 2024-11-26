@@ -40,9 +40,7 @@ public:
 
 public:
 	// Implementation of `clang::ASTConsumer`
-	virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
-		toCoqModule(&Context, Context.getTranslationUnitDecl(), sharing_);
-	}
+	virtual void HandleTranslationUnit(clang::ASTContext &Context) override;
 
 	virtual void HandleTagDeclDefinition(TagDecl *decl) override;
 	virtual bool HandleTopLevelDecl(DeclGroupRef decl) override;
