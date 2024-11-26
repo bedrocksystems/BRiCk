@@ -1290,22 +1290,35 @@ public:
 			}
 		};
 
-		if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
+		switch (expr->getKind()) {
+		case UnaryExprOrTypeTrait::UETT_AlignOf: {
 			print.ctor("Ealignof", false);
 			do_arg();
 			done(expr);
-		} else if (expr->getKind() == UnaryExprOrTypeTrait::UETT_SizeOf) {
+			break;
+		}
+		case UnaryExprOrTypeTrait::UETT_PreferredAlignOf: {
+			print.ctor("Ealignof_preferred", false);
+			do_arg();
+			done(expr);
+			break;
+		}
+		case UnaryExprOrTypeTrait::UETT_SizeOf: {
 			print.ctor("Esizeof", false);
 			do_arg();
 			done(expr);
-		} else {
+			break;
+		}
+		default: {
 			using namespace logging;
-			fatal() << "Error: unsupported expression "
+			fatal() << "unsupported expression "
 					   "`UnaryExprOrTypeTraitExpr` at "
 					<< expr->getSourceRange().printToString(
 						   ctxt.getSourceManager())
 					<< "\n";
+			expr->dump();
 			die();
+		}
 		}
 	}
 

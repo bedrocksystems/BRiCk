@@ -71,6 +71,9 @@ Module ParserExpr (Import Lang : PARSER_LANG).
    *)
   Definition Eextension (e : Expr) : Expr := e.
 
+  Definition Ealignof_preferred (e : Expr) (t : type) :=
+    Eunsupported "alignof_preferred" t.
+
   Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : dispatch_type) (ft : type) (obj : Expr) (es : list Expr) : Expr :=
     Eoperator_call oo (operator_impl.MFunc nm ct ft) (obj :: es).
 
