@@ -1,0 +1,20 @@
+(include_subdirs qualified)
+
+(coq.theory
+ (name bedrock.elpi.extra)
+ (package elpi-extra)
+ (theories elpi elpi.apps.NES bedrock.ltac2.extra))
+
+(rule
+ (target dummy.v)
+ (deps
+  (package coq-elpi) ; Hack for workspace build.
+  (:elpi_files (glob_files_rec *.elpi)))
+ (action
+  (with-stdout-to %{target}
+   (run coq-dummy-gen %{elpi_files}))))
+
+(install
+ (files (glob_files_rec (*.elpi with_prefix coq/user-contrib/bedrock/elpi/extra/)))
+ (section lib_root)
+ (package elpi-extra))

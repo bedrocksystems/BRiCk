@@ -1,0 +1,33 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Options */
+
+accumulate "bedrock.elpi.extra/Program/both/option".	% ../both/option.elpi
+
+namespace option {
+
+  pred of_term i:term, i:(term -> A -> prop), o:option A.	% May panic
+  pred as_term i:option A, i:term, i:(A -> term -> prop), o:term.	% May panic
+
+  /*
+  Implementation
+  */
+
+  of_term T F O :- std.do! [
+    coq.eval_whd_all T Tred,
+    ( Tred = {{ lib:core.option.None }} , !, O = none
+    ; Tred = {{ lib:core.option.Some lp:V }}, !, std.assert! (F V R) "option.of_term", O = some R
+    ; coq.error "option.of_term: Expected <<option>> constructor:" {coq.term->string Tred} )
+  ].
+
+  as_term none Ty _ {{ lib:@core.option.None lp:Ty }} :- !.
+  as_term (some V) Ty F T :- std.do! [
+    std.assert! (F V VT) "option.as_term",
+    T = {{ lib:@core.option.Some lp:Ty lp:VT }},
+  ].
+
+}

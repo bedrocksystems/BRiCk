@@ -1,0 +1,17 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * This software is distributed under the terms of the BedRock Open-Source
+ * License. See the LICENSE-BedRock file in the repository root for details.
+ */
+
+/** * Interp phase exensions for any Elpi program */
+/**
+This file assumes the <<Elpi Program>> or <<Elpi Tactic>> template.
+
+It works in the interp phase.
+*/
+
+accumulate "bedrock.elpi.extra/Program/interp".	% ../Program/interp.elpi.in
+
+accumulate "bedrock.elpi.extra/TacticCommand/interp/coq".	% interp/coq.elpi

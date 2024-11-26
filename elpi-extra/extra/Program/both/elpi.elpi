@@ -1,0 +1,41 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Elpi utilities */
+
+namespace elpi {
+
+  pred with_open_in! i:string, i:(in_stream -> prop).
+  pred with_open_out! i:string, i:(out_stream -> prop).
+  pred with_open_append! i:string, i:(out_stream -> prop).
+
+}
+
+/*
+Implementation
+*/
+
+namespace elpi {
+
+  with_open_out! N P :- std.do! [
+    open_out N S,
+    if (P S) (K = true) (K = fail),
+    close_out S,
+    K,
+  ].
+  with_open_append! N P :- std.do! [
+    open_append N S,
+    if (P S) (K = true) (K = fail),
+    close_out S,
+    K,
+  ].
+  with_open_in! N P :- std.do! [
+    open_in N S,
+    if (P S) (K = true) (K = fail),
+    close_in S,
+    K,
+  ].
+}

@@ -1,0 +1,34 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Lists */
+
+accumulate "bedrock.elpi.extra/Program/both/list".	% ../both/list.elpi
+
+namespace list {
+
+  pred of_term i:term, i:(term -> A -> prop), o:list A.	% May panic
+  pred as_term i:list A, i:term, i:(A -> term -> prop), o:term.	% May panic
+
+  /*
+  Implementation
+  */
+
+  of_term T F L :- std.do! [
+    coq.eval_whd_all T Tred,
+    ( Tred = {{ lib:core.list.nil }}, !, L = []
+    ; Tred = {{ lib:core.list.cons lp:X lp:XS }}, !, std.assert! (F X HD) "list.of_term", of_term XS F TL, L = [HD|TL]
+    ; coq.error "list.of_term: Expected <<list>> constructor:" {coq.term->string Tred} )
+  ].
+
+  as_term [] Ty _ {{ lib:@core.list.nil lp:Ty }} :- !.
+  as_term [V|L] Ty F T :- std.do! [
+    std.assert! (F V VT) "list.as_term",
+    as_term L Ty F LT,
+    T = {{ lib:@core.list.cons lp:Ty lp:VT lp:LT }},
+  ].
+
+}

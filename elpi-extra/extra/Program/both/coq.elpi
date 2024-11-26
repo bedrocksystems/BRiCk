@@ -1,0 +1,122 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Minor extensions to namespace <<coq>> */
+
+/** ** Elpi databases */
+
+pred coq.accumulate-clauses i:coq.locality, i:string, i:list clause.
+pred coq.accumulate i:coq.locality, i:string, i:list prop.
+
+namespace coq {
+
+  /** ** Terms with phantom types */
+
+  kind tm type -> type.
+
+  namespace tm {
+    shorten coq.{tm}.
+
+    type v term -> tm A.
+
+    pred of_term_unsafe i:term, o:tm A.
+    pred to_term i:tm A, o:term.
+  }
+
+  /** ** Type for hint locality */
+
+  kind locality type.
+
+  namespace locality {
+    type e, l, g locality.
+
+    pred with! i:locality, i:prop.	% Run under locality
+    pred id o:locality, o:string.	% "export", "local", "global"
+  }
+
+  /** ** Environment */
+
+  /*
+  WARNINGS:
+
+  - Synterp can only locate module types and modules.
+
+  - Interp can return <<loc-gref Global>> rather than
+  <<loc-abbreviation A>> for abbreviations of the form <<Notation A :=
+  Global>>.
+
+  WARNING: A query like <<locate? ID loc-modpath MP>> succeeds at most
+  once even when there are multiple modules named <<ID>> available via
+  import.
+  */
+
+  pred locate?! i:id, i:A -> located, o:A.	% Locate or fail (rather than panic)
+  pred locate? i:id, i:A -> located, o:A.	% Can succeed more than once
+
+  /** ** Synterp actions */
+
+  pred with-synterp-group! i:id, i:list prop.
+}
+
+/*
+Implementation
+*/
+
+namespace coq {
+
+  namespace tm {
+    shorten coq.tm.{v}.
+
+    of_term_unsafe T (v T).
+    to_term (v T) T.
+  }
+
+  namespace locality {
+    shorten coq.locality.{e, l, g}.
+
+    pred to_context i:coq.locality o:list prop.
+    to_context e [].
+    to_context l [@local!].
+    to_context g [@global!].
+
+    pred to_scope i:coq.locality, o:list prop, o:scope.
+    to_scope e [] execution-site.	% Everywhere current model imported
+    to_scope l [@local!] execution-site.	% Until end of current section or module
+    to_scope g [@global!] execution-site.	% SuperGlobal
+
+    with! L P :- to_context L Ctx, !, Ctx => P.
+
+    id e "export".
+    id l "local".
+    id g "global".
+  }
+
+  locate?! Name Pat Val :-
+    std.mem! {coq.locate-all Name} (Pat Tmp),
+    ( ground_term Tmp, !, Val = Tmp
+    ; fail ).
+
+  locate? Name Pat Val :-
+    std.mem {coq.locate-all Name} (Pat Tmp),
+    ( ground_term Tmp, Val = Tmp
+    ; fail ).
+
+  with-synterp-group! Id Ps :- std.do! [
+    coq.begin-synterp-group Id G,
+    if (std.do! Ps) (K = true) (K = fail),
+    coq.end-synterp-group G,
+    K,
+  ].
+}
+
+coq.accumulate-clauses L DB CL :-
+  coq.locality.to_scope L H S,
+  H => coq.elpi.accumulate-clauses S DB CL.
+
+coq.accumulate L DB Rules :-
+  coq.accumulate-clauses L DB {std.map Rules coq.prop->clause}.
+pred coq.prop->clause i:prop, o:clause.
+coq.prop->clause P (clause _ _ P).

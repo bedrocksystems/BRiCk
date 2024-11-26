@@ -1,0 +1,37 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Pairs */
+
+namespace pair {
+
+  pred of_prod i:term, i:(term -> A -> prop), i:(term -> B -> prop), o:pair A B.	% May panic
+  pred as_prod i:pair A B, i:term, i:term, i:(A -> term -> prop), i:(B -> term -> prop), o:term.	% May panic
+  pred as_prod_typecheck i:pair A B, i:(A -> term -> prop), i:(B -> term -> prop), o:term.	% May panic
+
+  /*
+  Implementation
+  */
+
+  of_prod T F G O :-
+    coq.eval_whd_all T Tred,
+    ( Tred = {{ lib:core.prod.intro lp:TA lp:TB }}, !,
+      std.assert! (F TA A) "pair.of_prod.1",
+      std.assert! (G TB B) "pair.of_prod.2",
+      O = pr A B
+    ; coq.error "pair.of_prod:" {coq.term->string Tred} ).
+  as_prod (pr A B) TyA TyB F G O :-
+    std.assert! (F A TA) "pair.as_prod.1",
+    std.assert! (G B TB) "pair.as_prod.2",
+    O = {{ lib:@core.prod.intro lp:TyA lp:TyB lp:TA lp:TB }}.
+  as_prod_typecheck (pr A B) F G O :-
+    std.assert! (F A TA) "pair.as_prod.1",
+    std.assert-ok! (coq.typecheck TA TyA) "pair.as_prod.1",
+    std.assert! (G B TB) "pair.as_prod.2",
+    std.assert-ok! (coq.typecheck TB TyB) "pair.as_prod.1",
+    O = {{ lib:@core.prod.intro lp:TyA lp:TyB lp:TA lp:TB }}.
+
+}

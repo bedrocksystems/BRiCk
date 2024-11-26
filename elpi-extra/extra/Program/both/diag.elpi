@@ -1,0 +1,103 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** ** Diagnostics with lazy strings */
+
+typeabbrev lstring string -> prop.
+namespace lstring {
+  pred default! i:string, i:lstring, o:string.	% Verbose with <<Elpi Debug "DEBUG_DIAG".>>
+}
+
+kind diag type.
+namespace diag {
+  type ok diag.
+  type error lstring -> diag.
+
+  pred interp i:diag.	% Panic on error
+  pred assert! i:(diag -> prop), i:lstring.	% Panic with "Prefix: " on error
+  pred do! o:diag, i:list (diag -> prop).
+  pred lift-ok! i:prop, i:lstring, o:diag.
+
+  % Working with fixed strings
+
+  pred errors i:string, o:diag.
+  pred asserts! i:(diag -> prop), i:string.
+  pred lift-oks! i:prop, i:string, o:diag.
+
+  % Working with <<diagnostic>>
+
+  pred of_diagnostic i:diagnostic, o:diag.
+  pred to_diagnostic i:diag, o:diagnostic.
+
+  pred lift! i:(diagnostic -> prop), o:diag.
+  pred lower! i:(diag -> prop), o:diagnostic.
+}
+
+/*
+Implementation
+*/
+
+namespace lstring {
+  default! _ F S :- F S, !.
+
+  :if "DEBUG_DIAG"
+  default! Default F S :- !,
+    std.string.concat "" [
+      Default, " (<<", {term_to_string F}, ">> failed)"
+    ] S.
+
+  default! S _ S.
+}
+
+namespace diag {
+
+  macro @noloc :- "No location".
+  macro @nomsg :- "No message".
+  macro @nodiag :- "No diagnostic".
+
+  pred locate i:diag, i:lstring, o:diag.
+  locate diag.ok _ diag.ok :- !.
+  locate (diag.error E) W (diag.error (locate.msg W E)) :- !.
+  locate _ W (diag.error (locate.msg W ((=) @nodiag))).
+
+  pred locate.msg i:lstring, i:lstring, o:string.
+  locate.msg W E Msg :-
+    std.string.concat "" [
+      {lstring.default! @noloc W}, ": ",
+      {lstring.default! @nomsg E},
+    ] Msg.
+
+  interp diag.ok :- !.
+  interp (diag.error E) :- coq.error {lstring.default! @nomsg E}.
+  interp _ :- coq.error @nodiag.
+
+  assert! P W :- P D, !, interp {locate D W}.
+  assert! _ W :- coq.error {lstring.default! @noloc W} ":" @nodiag.
+
+  do! diag.ok [].
+  do! D [P|Ps] :- P Diag, !, if (Diag = diag.ok) (do! D Ps) (D = Diag).
+
+  lift-ok! P _ diag.ok :- P, !.
+  lift-ok! _ E (diag.error E).
+
+  errors S (diag.error ((=) S)).
+  asserts! Ps S :- diag.assert! Ps ((=) S).
+  lift-oks! P S D :- lift-ok! P ((=) S) D.
+
+  of_diagnostic ok diag.ok.
+  of_diagnostic (error S) (diag.error ((=) S)).
+  of_diagnostic _ (diag.error ((=) @nodiag)).
+
+  to_diagnostic diag.ok ok :- !.
+  to_diagnostic (diag.error E) (error S) :- !, lstring.default! @nomsg E S.
+  to_diagnostic _ (error @nodiag).
+
+  lift! P D :- P Diag, !, of_diagnostic Diag D.
+  lift! _ (diag.error ((=) @nodiag)).
+
+  lower! P D :- P Diag, !, to_diagnostic Diag D.
+  lower! _ (error @nodiag).
+}

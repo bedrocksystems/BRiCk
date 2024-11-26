@@ -1,0 +1,17 @@
+(lang dune 3.14)
+(using coq 0.8)
+(name elpi-extra)
+
+(generate_opam_files)
+(license "LGPL-2.1+BedRock")
+
+(maintainers
+  "Jan-Oliver Kaiser <janno@bluerock.io>"
+  "Rodolphe Lepigre <rodolphe@bluerock.io>")
+
+(authors
+  "David Swasey <david@bluerock.io>")
+(package
+ (name elpi-extra)
+ (synopsis "Extension of the Elpi standard library")
+ (depends coq-stdlib coq-elpi ltac2-extra))

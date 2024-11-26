@@ -1,0 +1,66 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Lists */
+
+namespace list {
+
+  pred foldl i:list A, i:B, i:(A -> B -> B -> prop), o:B.
+  pred foldr i:list A, i:B, i:(A -> B -> B -> prop), o:B.
+
+  pred app! i:list A, i:A -> prop.
+  pred app2! i:list A, i:list B, i:A -> B -> prop.
+
+  :index (1 1 1)
+  pred map3 i:list A, i:list B, i:list C, i:(A -> B -> C -> D -> prop), o:list D.	% May panic
+
+  pred uniq i:list A, o:list A.	% The input should be ground
+
+  pred partition i:list A, i:(A -> prop), o:list A, o:list A.
+
+  /*
+  Implementation
+  */
+
+  foldl L Acc F R :- std.fold L Acc F R.
+
+  foldr [] Acc _ Acc.
+  foldr [X|XS] Acc F R :- F X {foldr XS Acc F} R.
+
+  app! L F :- std.map L (x\ _\ F x, !) _.
+
+  app2! L1 L2 F :- std.map2 L1 L2 (x\ y\ _\ F x y, !) _.
+
+  map3 [_|_] [] _ _ _ :- map3.aux.
+  map3 [_|_] _ [] _ _ :- map3.aux.
+  map3 [] [_|_] _ _ _ :- map3.aux.
+  map3 _ [_|_] [] _ _ :- map3.aux.
+  map3 [] _ [_|_] _ _ :- map3.aux.
+  map3 _ [] [_|_] _ _ :- map3.aux.
+  map3 [] [] [] _ [].
+  map3 [A|AS] [B|BS] [C|CS] F [D|DS] :- F A B C D, map3 AS BS CS F DS.
+  map3.aux :- coq.error "list.map3 lengths don't agree".
+
+  /*
+  The list-based variant using <<std.mem!>> might be faster on small
+  lists but it unifies elements with one another.
+
+  <<cmp_term>> does not unify. OTOH, it panics when comparing terms
+  <<X Args>>, <<X Args'>> where the functor <<X>> is a unification
+  variable and the arguments <<Args>>, <<Args'>> don't compare equal.
+  */
+  uniq L L' :- uniq.set L {std.set.make cmp_term} L'.
+
+  pred uniq.set i:list A, i:std.set A, o:list A.
+  uniq.set [] _ [].
+  uniq.set [X|L] S L' :- std.set.mem X S, !, uniq.set L S L'.
+  uniq.set [X|L] S [X|L'] :- uniq.set L {std.set.add X S} L'.
+
+  partition [] _ [] [].
+  partition [X|L] P T F :-
+    if (P X) (T = X :: T', F = F') (T = T', F = X :: F'),
+    partition L P T' F'.
+}

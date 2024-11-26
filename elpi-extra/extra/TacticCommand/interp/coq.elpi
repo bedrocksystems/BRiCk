@@ -1,0 +1,83 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2024
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ */
+
+/** * Minor extensions to namespace <<coq>> */
+
+namespace coq {
+
+  /** ** Tactics */
+
+  /**
+  <<ltac.solve Ty Tac Args Tm>> runs <<Tac>> with <<Args>> to
+  construct <<Tm : Ty>>. Succeeds at most once.
+  */
+  pred ltac.solve i:term, i:string, i:list argument, o:term, o:diag.
+
+  /*
+  WARNING: This is preliminary.
+  */
+  pred ltac.typeclasses_eauto i:term, o:term, o:diag.	% Class, Term
+
+  pred ltac.cbn i:term, o:term, o:diag.
+
+  /*
+  Implementation
+  */
+
+  ltac.solve Ty Tac Args Tm D :- diag.do! D [
+    diag.lift-oks! (Tm = {{ _ }}) "coq.ltac.solve: Cannot set output",
+    diag.lift! (coq.typecheck Tm Ty),
+    diag.lift-oks! (coq.ltac.collect-goals Tm [SealedGoal] [])
+      "coq.ltac.solve: Unexpected goal count",
+    diag.lift-ok! (coq.ltac.open (coq.ltac.call Tac Args) SealedGoal [])
+      (ltac.solve.loc Ty Tac Args),
+  ].
+  namespace ltac.solve {
+    pred loc i:term, i:string, i:list argument, o:string.
+    loc Ty Tac Args Msg :-
+      PP = coq.pp.box (coq.pp.hv 0) [
+        coq.pp.str "Tactic", coq.pp.spc,
+        coq.pp.box (coq.pp.hv 2) [
+          coq.pp.str Tac, coq.pp.spc,
+          {pp.args Args},
+        ],
+        coq.pp.spc, coq.pp.str "failed on goal", coq.pp.spc,
+        {coq.term->pp Ty}
+      ],
+      coq.pp->string PP Msg.
+
+    /**
+    TODO: Handle other arguments with embedded terms then hoist these
+    to <<coq.argument->pp i:argument, o:coq.pp>> and <<list.pp
+    i:coq.pp, i:list A, i:(A -> coq.pp), o:coq.pp>>.
+
+    TODO: Since we rarely use lazy strings in their full generality,
+    and since when we do we may want to pretty-print, consider
+    building <<diag.error>> on <<coq.pp -> prop>> rather than on
+    <<string -> prop>>.
+    */
+    pred pp.args i:list argument, o:coq.pp.
+    pp.args Args (coq.pp.box (coq.pp.hv 2) PP) :-
+      Comma = coq.pp.glue [coq.pp.str ",", coq.pp.spc],
+      std.intersperse Comma {std.map Args pp.arg} PP.
+    pred pp.arg i:argument, o:coq.pp.
+    pp.arg (trm T) PP :- !, coq.term->pp T PP.
+    pp.arg (int N) (coq.pp.str S) :- !, term_to_string N S.
+    pp.arg Arg (coq.pp.glue PP) :-
+      PP = [
+        coq.pp.str "<<", coq.pp.str {term_to_string Arg}, coq.pp.str ">>",
+      ].
+  }
+
+  ltac.typeclasses_eauto TC Tm D :-
+    coq.ltac.resolve {{:gref tactics.anchor}} "solve_typeclasses_eauto" Tac,
+    ltac.solve TC Tac [] Tm D.
+
+  ltac.cbn T Tred D :-
+    coq.ltac.resolve {{:gref tactics.anchor}} "solve_cbn" Tac,
+    ltac.solve {{_}} Tac [trm T] Tred D.
+
+}
