@@ -472,9 +472,9 @@ public:
 #undef CASE
 		default:
 			logging::unsupported()
-				<< "Error: unsupported unary operator"
-				<< " (at " << cprint.sourceRange(expr->getSourceRange())
-				<< ")\n";
+				<< "Error: unsupported unary operator '"
+				<< UnaryOperator::getOpcodeStr(expr->getOpcode()) << "' (at "
+				<< cprint.sourceRange(expr->getSourceRange()) << ")\n";
 			print.output() << "(Uunsupported \""
 						   << UnaryOperator::getOpcodeStr(expr->getOpcode())
 						   << "\")";
