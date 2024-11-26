@@ -608,6 +608,8 @@ supportedRecord(const CXXRecordDecl &decl, const ASTContext &ctxt) {
 	for (auto f : decl.fields()) {
 		if (f->isBitField())
 			return "bitfields are not supported";
+		if (f->isInvalidDecl())
+			return "invalid field";
 	}
 	return nullptr;
 }
