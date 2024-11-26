@@ -306,6 +306,10 @@ public:
 		unsupported_expr(expr, std::nullopt, /*well_known*/ true);             \
 	}
 
+	// Unsupported
+	IGNORE(CXXThrowExpr)
+	IGNORE(CXXTypeidExpr)
+
 	void VisitStmtExpr(const StmtExpr* expr) {
 		guard::ctor _{print, "Estmt"};
 
