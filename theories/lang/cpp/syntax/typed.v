@@ -415,6 +415,10 @@ Module decltype.
             let* et := requireGL base in
             (* let* _ := requirePR dt >>= require_eq (drop_qualifiers et) in *)
             mret $ drop_qualifiers et
+        | Cl2r_bitcast t =>
+            let* et := requireGL base in
+            (* let* _ := requirePR dt >>= require_eq (drop_qualifiers et) in *)
+            mret $ drop_qualifiers t
         | Cnoop t => mret t
         | Carray2ptr =>
             let k cv base :=
@@ -456,6 +460,8 @@ Module decltype.
         | Cintegral t => mret t
         | Cint2bool => mret Tbool
         | Cfloat2int t
+        | Cint2float t
+        | Cfloat t
         | Cnull2ptr t
         | Cnull2memberptr t
         | Cbuiltin2fun t

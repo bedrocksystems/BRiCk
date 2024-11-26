@@ -900,6 +900,7 @@ Module Cast.
       | Cbitcast _ => 2
       | Clvaluebitcast _ => 3
       | Cl2r => 4
+      | Cl2r_bitcast _ => 23
       | Cnoop _ => 5
       | Carray2ptr => 6
       | Cfun2ptr => 7
@@ -909,6 +910,8 @@ Module Cast.
       | Cintegral _ => 11
       | Cint2bool => 12
       | Cfloat2int _ => 13
+      | Cint2float _ => 25
+      | Cfloat _ => 24
       | Cnull2ptr _ => 14
       | Cnull2memberptr _ => 15
       | Cbuiltin2fun _ => 16
@@ -933,6 +936,7 @@ Module Cast.
       | 19 => unit
       | 20 => type
       | 21 | 22 => list type * type
+      | 23 | 24 | 25 => type
       | _ => unit
       end.
     Definition data (c : Cast) : car (tag c) :=
@@ -941,6 +945,7 @@ Module Cast.
       | Cbitcast t
       | Clvaluebitcast t => t
       | Cl2r => tt
+      | Cl2r_bitcast t => t
       | Cnoop t => t
       | Carray2ptr
       | Cfun2ptr => tt
@@ -951,6 +956,8 @@ Module Cast.
       | Cintegral t => t
       | Cint2bool => ()
       | Cfloat2int t
+      | Cint2float t
+      | Cfloat t
       | Cnull2ptr t
       | Cnull2memberptr t
       | Cbuiltin2fun t
@@ -973,6 +980,8 @@ Module Cast.
       | 19 => compare_unit
       | 20 => compareT
       | 21 => _compare | 22 => _compare
+      | 23 => _compare | 24 => _compare
+      | 25 => _compare
       | _ => compare_unit
       end.
 
@@ -986,7 +995,8 @@ Module Cast.
       | Cdependent t => COMP (Cdependent t : Cast)
       | Cbitcast t => COMP (Cbitcast t : Cast)
       | Clvaluebitcast t => COMP (Clvaluebitcast t : Cast)
-      | Cl2r => compare_tag (Reduce (TAG Cl2r))
+      | Cl2r => COMP (Cl2r : Cast)
+      | Cl2r_bitcast t => COMP (Cl2r_bitcast t : Cast)
       | Cnoop t => COMP (Cnoop t : Cast)
       | Carray2ptr => compare_tag (Reduce (TAG Carray2ptr))
       | Cfun2ptr => compare_tag (Reduce (TAG Cfun2ptr))
@@ -998,6 +1008,8 @@ Module Cast.
       | Cintegral t => COMP (Cintegral t : Cast)
       | Cint2bool => compare_tag (Reduce (TAG Cint2bool))
       | Cfloat2int t => COMP (Cfloat2int t : Cast)
+      | Cint2float t => COMP (Cint2float t : Cast)
+      | Cfloat t => COMP (Cfloat t : Cast)
       | Cnull2ptr t => COMP (Cnull2ptr t : Cast)
       | Cnull2memberptr t => COMP (Cnull2memberptr t : Cast)
       | Cbuiltin2fun t => COMP (Cbuiltin2fun t : Cast)
