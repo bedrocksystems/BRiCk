@@ -62,6 +62,7 @@ Module ParserExpr (Import Lang : PARSER_LANG).
   Definition Estatic_cast := fuse_dependent_cast cast_style.static.
   Definition Econst_cast := fuse_dependent_cast cast_style.const.
   Definition Ereinterpret_cast := fuse_dependent_cast cast_style.reinterpret.
+  Definition Ebuiltin_bit_cast := fuse_dependent_cast cast_style.functional.
 
   Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : dispatch_type) (ft : type) (obj : Expr) (es : list Expr) : Expr :=
     Eoperator_call oo (operator_impl.MFunc nm ct ft) (obj :: es).
