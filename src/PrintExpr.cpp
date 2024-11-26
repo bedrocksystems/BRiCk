@@ -1358,8 +1358,8 @@ public:
 	void VisitCXXNewExpr(const CXXNewExpr* expr) {
 		auto new_fn = expr->getOperatorNew();
 		if (not new_fn) {
-			logging::fatal() << "missing operator [new]\n";
-			logging::die();
+			unsupported_expr(expr, "dependent call to new");
+			return;
 		}
 
 		print.ctor("Enew");
