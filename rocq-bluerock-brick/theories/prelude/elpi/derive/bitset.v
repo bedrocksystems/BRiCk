@@ -21,14 +21,15 @@ Require Import bedrock.prelude.elpi.derive.finite_type.
 Class ToBit (T : Type) (to_bit : T -> N) : Prop := {}.
 #[global] Hint Mode ToBit + - : typeclass_instances.
 
-Elpi Db derive.bitset.db lp:{{
+Elpi Db derive.bitset.db lp:{{ }}.
+Elpi Accumulate derive.bitset.db File derive.finite_type.elpi.
+Elpi Accumulate derive.bitset.db lp:{{
   pred finite-type-done o:gref.
   pred bitset-done o:gref.
 
   namespace derive.bitset {
     pred mk-simple-bitset i:string, i:gref, i:gref.
     mk-simple-bitset Prefix TyGR OrigGR :- std.do! [
-      derive.if-verbose (coq.say "[derive.bitset][mk-simple-bitset]" TyGR),
       derive.finite_type.mk-finite-prelim Prefix TyGR OrigGR,
       coq.env.include-module-type {coq.locate-module-type "simple_finite_bitmask_type_mixin"} coq.inline.default,
       coq.env.end-module MP,
@@ -44,7 +45,6 @@ Elpi Db derive.bitset.db lp:{{
 
     pred mk-bitset i:string, i:gref, i:gref, i:term.
     mk-bitset Prefix TyGR OrigGR ToBit :- std.do! [
-      derive.if-verbose (coq.say "[derive.bitset][mk-bitset]" TyGR),
       derive.finite_type.mk-finite-prelim Prefix TyGR OrigGR,
 
       % locating "t" seems like a very bad idea. We could find literally anything if something goes wrong.
