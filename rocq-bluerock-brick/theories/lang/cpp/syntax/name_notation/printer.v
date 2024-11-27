@@ -260,7 +260,7 @@ Section with_lang.
     match e with
     | Eglobal nm _ =>
       (* We can not support this in an invertible manner because of the type. *)
-        None
+      mfail
     | Eint z ty => (fun suffix => showN.showZ z ++ suffix) <$>
         match ty with
         | Tint => mret ""
