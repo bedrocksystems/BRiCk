@@ -297,6 +297,20 @@ public:
 		done(expr, Done::DT);
 	}
 
+	void Visit(const Expr* expr) {
+		if (expr->containsErrors()) {
+			auto loc = loc::of(expr);
+			print.ctor("Eerror", false);
+			std::string coqmsg;
+			llvm::raw_string_ostream os{coqmsg};
+			os << loc::describe(loc, cprint.getContext());
+			print.str(coqmsg) << fmt::nbsp;
+			print.end_ctor();
+		} else {
+			ConstStmtVisitor<PrintExpr, void>::Visit(expr);
+		}
+	}
+
 	void VisitExpr(const Expr* expr) {
 		unsupported_expr(expr);
 	}
