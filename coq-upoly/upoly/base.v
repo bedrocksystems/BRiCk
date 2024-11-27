@@ -233,8 +233,8 @@ Module Import UPoly.
     Infix "<*>" := ap : stdpp_scope.
     Infix "<*>@{ F }" := (ap (F:=F)) (only parsing) : stdpp_scope.
 
-    Notation "a <* b" := ((fun a _ => a) <$> a <*> b) : stdpp_scope.
-    Notation "a *> b" := ((fun _ a => a) <$> a <*> b) : stdpp_scope.
+    Notation "a <* b" := ((fun l _ => l) <$> a <*> b) : stdpp_scope.
+    Notation "a *> b" := ((fun _ r => r) <$> a <*> b) : stdpp_scope.
 
     Notation "p <|> q" := (alternative p (fun _ : unit => q)) : stdpp_scope.
     Notation "p <|>@{ F } q" := (alternative (F:=F) p (fun _ : unit => q)) (only parsing) : stdpp_scope.
