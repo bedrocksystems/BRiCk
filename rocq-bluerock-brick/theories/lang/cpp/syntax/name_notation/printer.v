@@ -221,7 +221,7 @@ Section with_lang.
         end
     | Tmember_pointer cls t => (fun t c => t ++ " " ++ c ++ "::*") <$> printT t <*> printT cls
     | Tqualified QM _ => mfail
-    | Tqualified q (Tqualified _ _) => mfail
+    | Tqualified _q (Tqualified _ _) => mfail
        (* ^^ we reject sequences of [Tqualified] because it is not invertible *)
     | Tqualified cv t =>
         let q_ls := ((if q_const cv then ["const"] else []) ++
