@@ -413,10 +413,10 @@ Module parser.
       let int_literal :=
         let* num := parse_z in
         let* suffix := optional (anyOf [(const Tlonglong <$> keyword "ll");
-                                          (const Tlong <$> keyword "l");
-                                          (const Tulonglong <$> keyword "ull");
-                                          (const Tulong <$> keyword "ul");
-                                          (const Tuint <$> keyword "u")]) in
+                                        (const Tlong <$> keyword "l");
+                                        (const Tulonglong <$> keyword "ull");
+                                        (const Tulong <$> keyword "ul");
+                                        (const Tuint <$> keyword "u")]) in
         let ty :=
           match suffix with
           | None => Tint

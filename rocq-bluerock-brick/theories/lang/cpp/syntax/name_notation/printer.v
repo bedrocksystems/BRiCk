@@ -265,8 +265,8 @@ Section with_lang.
         match ty with
         | Tint => mret ""
         | Tuint => mret "u"
-(*        | Tlong => mret "l"
-        | Tulong => mret "ul" *)
+        | Tlong => mret "l"
+        | Tulong => mret "ul"
         | Tlonglong => mret "ll"
         | Tulonglong => mret "ull"
         | _ => mfail
@@ -301,15 +301,14 @@ Module Type TESTS.
   Succeed Example _0 : TEST "Msg::Msg(int&& &&)" (Nscoped Msg (Nfunction function_qualifiers.N Nctor [Trv_ref (Trv_ref Tint)])) := eq_refl.
 
 
-(*
-  Example _0 :
+  Succeed Example _0 :
     let targs := Avalue <$> [Eint 1 Tulong;
                              Eint (-2) Tlong;
                              Eint 3 Tulonglong;
                              Eint (-4) Tlonglong;
                              Eint 5 Tuint;
                              Eint 6 Tint] in
-    TEST "Msg<1ul, -2l, 3ull, -4ll, 5u, 6>::Msg()" (Nscoped (Ninst Msg targs) (Nfunction function_qualifiers.N Nctor [])). compute.
+    TEST "Msg<1ul, -2l, 3ull, -4ll, 5u, 6>::Msg()" (Nscoped (Ninst Msg targs) (Nfunction function_qualifiers.N Nctor [])) := eq_refl.
   Succeed Example _0 :
     let targs := Atype <$> [Tulong;
                             Tlong;
@@ -317,7 +316,6 @@ Module Type TESTS.
                             Tlonglong;
                             Tuint; Tint] in
     TEST "Msg<unsigned long, long, unsigned long long, long long, unsigned int, int>::Msg()" (Nscoped (Ninst Msg targs) (Nfunction function_qualifiers.N Nctor [])) := eq_refl.
-  *)
   Succeed Example _0 : TEST "Msg::Msg(int)" (Nscoped Msg (Nfunction function_qualifiers.N Nctor [Tint])) := eq_refl.
   Succeed Example _0 : TEST "Msg::Msg(long)" (Nscoped Msg (Nfunction function_qualifiers.N Nctor [Tlong])) := eq_refl.
   Succeed Example _0 : TEST "Msg::operator=(const Msg&)" (Nscoped Msg (Nfunction function_qualifiers.N (Nop OOEqual) [Tref (Tconst (Tnamed $ Nglobal (Nid "Msg")))])) := eq_refl.
