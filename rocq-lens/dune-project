@@ -1,0 +1,34 @@
+(lang dune 3.14)
+(using coq 0.8)
+(name rocq-lens)
+
+(generate_opam_files)
+
+(maintainers
+ "Gregory Malecha <gregory@bluerock.io>"
+ "Paolo Giarrusso <paolo@bluerock.io>")
+(authors
+ "Gregory Malecha <gregory@bluerock.io>"
+ "Paolo Giarrusso <paolo@bluerock.io>")
+
+(source (github bedrocksystems/BRiCk))
+
+(package
+ (name rocq-lens)
+ (synopsis "Generation of lenses for record datatypes")
+ (depends
+  (coq (>= 8.13.0))))
+
+;(package
+; (name rocq-lens-tc)
+; (synopsis "Generation of lenses for record datatypes")
+; (depends
+;  rocq-lens
+;  coq-metacoq-template))
+
+(package
+ (name rocq-lens-elpi)
+ (synopsis "Generation of lenses for record datatypes, Elpi backend")
+ (depends
+  rocq-lens
+  coq-elpi))

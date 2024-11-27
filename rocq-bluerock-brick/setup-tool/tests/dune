@@ -1,0 +1,13 @@
+(cram
+ (applies_to :whole_subtree)
+ (deps
+  (package coq-core)
+  (package coq-stdlib)
+  (package coq-stdpp)
+  (package coq-iris)
+  (package coq-elpi)
+  (package rocq-bluerock-brick)
+  (package rocq-bluerock-cpp2v)
+  (package rocq-upoly)
+  (package coq-equations)
+  setup.sh))

@@ -8,7 +8,6 @@
 # You can override this with a different program which you can use to preview
 # html files within your filesystem.
 DOCOPEN ?= xdg-open
-CMAKE=cmake
 
 all:
 	dune build @default @runtest
@@ -17,22 +16,7 @@ all:
 _CoqProject: _CoqProject.template
 	@cp $< $@
 
-# On Darwin, customize the cmake build system to use homebrew's llvm.
-SYS := $(shell uname)
-
-BUILDARG=
-BUILD_TYPE ?= Release
-
-CPP2V_LOGS := cpp2v-cmake.log cpp2v-make.log
-
 SHELL := /bin/bash
-
-build/Makefile: $(MAKEFILE_LIST) CMakeLists.txt
-	@$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) &> cpp2v-cmake.log || { cat cpp2v-cmake.log; exit 1; }
-
-cpp2v: build/Makefile
-	+@$(MAKE) -C build cpp2v &> build/cpp2v-make.log || { cat build/cpp2v-make.log; exit 1; }
-.PHONY: cpp2v
 
 BUILD_ROOT=../../_build/default/fmdeps/cpp2v-core
 COQDOC_DIR=doc/sphinx/_static/coqdoc

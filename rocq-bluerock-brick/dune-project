@@ -1,0 +1,29 @@
+(lang dune 3.14)
+(using coq 0.8)
+(name rocq-bluerock-brick)
+
+(generate_opam_files)
+
+(maintainers
+ "Gregory Malecha <gregory@bluerock.io>")
+(authors
+ "Gregory Malecha <gregory@bluerock.io>"
+ "Paolo Giarrusso <paolo@bluerock.io>"
+ "Abhishek Anand"
+ "Gordon Stewart"
+ "David Swasey")
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name rocq-bluerock-brick)
+ (synopsis "Frontend and program logic for C++.")
+ (depends
+  coq
+  rocq-upoly
+  coq-stdpp
+  coq-iris
+  rocq-lens
+  rocq-lens-elpi
+  (rocq-bluerock-cpp2v :with-test)
+  elpi
+  coq-elpi))
