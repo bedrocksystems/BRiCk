@@ -1,0 +1,4 @@
+(executable
+ (public_name br)
+ (package rocq-bluerock-brick)
+ (libraries cmdliner toml))

@@ -1,17 +1,7 @@
 *~
 *#
-.coqdeps.d
-Makefile.coq
-Makefile.coq.conf
-Makefile.coqfast
-*.glob
-*.vo
-*.vok
-*.vos
-*.aux
 .lia.cache
 .nia.cache
-build
 deps.pdf
 deps.dot
 .envrc

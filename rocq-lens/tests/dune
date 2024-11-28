@@ -1,0 +1,10 @@
+(cram
+ (applies_to :whole_subtree)
+ (deps
+  (package coq-core)
+  (package coq-stdlib)
+  (package coq-stdpp)
+  (package rocq-lens)
+  ;(package rocq-lens-tc)
+  (package rocq-lens-elpi)
+  setup-project.sh))

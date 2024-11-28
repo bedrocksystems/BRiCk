@@ -1,0 +1,21 @@
+(include_subdirs qualified)
+(coq.theory
+ (name bedrock.prelude)
+ (package rocq-bluerock-brick)
+ (theories
+  iris stdpp
+  bedrock.upoly
+  elpi elpi.apps.locker elpi.apps.NES
+  Lens Lens.Elpi Ltac2))
+
+; Copy dependencies --- typically Elpi files needed for `From ⋯ Extra
+; Dependency` --- into dune's build directory. Arrange for the dummy
+; target to change with its dependencies (because a constant target
+; might some day run afoul of dune's cache).
+(rule
+ (target dummy.v)
+ (deps
+  elpi/coq.elpi)
+ (action
+  (with-stdout-to %{target}
+   (pipe-stdout (run sha512sum %{deps}) (run dummy-gen)))))

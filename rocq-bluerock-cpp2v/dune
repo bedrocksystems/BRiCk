@@ -1,0 +1,83 @@
+; Copyright (C) BlueRock Security Inc. 2022-2024
+; All rights reserved.
+;
+; This software is distributed under the terms of the BedRock Open-Source
+; License. See the LICENSE-BedRock file in the repository root for details.
+
+; TODO (PDS): This does not seem to play well with dune's cache. I've
+; observed something like "build (v1), change two files, build (v2),
+; revert one file, build (v3)" resulting in binary (v1) rather than
+; (v3). Should we give up and add `universe`, or honor an environment
+; variable to that effect for use by folks who are modifying cpp2v?
+; Can we make the dependencies more meaningful? Is there a dune bug
+; lurking here that we can isolate and fix? (This seems likely given
+; the `source_tree` deps.)
+
+(data_only_dirs include llvm-include src)
+
+(env
+ (release
+  (env-vars
+   (BUILD_TYPE Release)
+   (BUILD_ARGS "")))
+ (_
+  (env-vars
+   (BUILD_TYPE Debug)
+   (BUILD_ARGS ""))))
+
+(subdir build-dune
+ ; Compute path of the LLVM library. The output looks like one of:
+ ; ```
+ ; /opt/homebrew/Cellar/llvm/14.0.6/lib/libLLVM-14.dylib
+ ; /opt/homebrew/Cellar/llvm@13/13.0.1/lib/libLLVM-13.dylib
+ ; /usr/lib/llvm-13/lib/libLLVM-13.so
+ ; ```
+ ; and changes when upgrading LLVM.
+ (rule
+  (target llvm-lib-path.txt)
+  (deps
+   (universe))
+  (package rocq-bluerock-cpp2v)
+  (action
+   (with-outputs-to %{target}
+    (pipe-outputs
+     (run llvm-config --libfiles)
+     (run sed "s/ /\\n/g")))))
+
+ (rule
+  (targets cpp2v dune.log)
+  (deps
+   ; This code depends on the LLVM library, to try rebuilding `cpp2v` if LLVM
+   ; is upgraded.
+   ; TODO: Check this is sound — could `cmake` detect LLVM/Clang in other ways?
+   ;
+   ; TODO: llvm-config provides other data which seem relevant to how
+   ; a generated cpp2v binary will behave: cxxflags, ldflags (≈ how
+   ; llvm+cmake likely conspire to build cpp2v).
+   ;
+   %{read-lines:llvm-lib-path.txt}
+   ;
+   ; We care about `$(MAKEFILE_LIST)` because we use `make` to invoke `cmake`
+   ; and any makefile can, in principle, change what `make` does.
+   ;
+   ../Makefile
+   ../CMakeLists.txt
+   (source_tree ../include)
+   (source_tree ../llvm-include)
+   (source_tree ../src)
+   (env_var PATH)
+   (env_var LLVM_DIR)
+   (env_var CLANG_DIR)
+   (env_var BUILD_TYPE)
+   (env_var BUILD_ARGS))
+  (package rocq-bluerock-cpp2v)
+  (action
+   (chdir ..
+    (bash "make -j8 BUILD_DIR=build-dune &> build-dune/dune.log || { cat build-dune/dune.log; exit 1; }"))))
+
+ (install
+  (section bin)
+  (files cpp2v)
+  (package rocq-bluerock-cpp2v)))
+
+(alias (name cpp2v) (deps rocq-bluerock-cpp2v.install))

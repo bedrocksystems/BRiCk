@@ -11,13 +11,13 @@
 -arg -w -arg +unknown-option
 -arg -w -arg +future-coercion-class-field
 
--Q coq-lens/Lens Lens
--Q _build/default/coq-lens/Lens Lens
--Q coq-upoly/upoly bedrock.upoly
--Q _build/default/coq-upoly/upoly bedrock.upoly
--Q theories/prelude bedrock.prelude
--Q _build/default/theories/prelude bedrock.prelude
--Q theories/lang bedrock.lang
--Q _build/default/theories/lang bedrock.lang
--Q theories/noimport bedrock.noimport
--Q _build/default/theories/noimport bedrock.noimport
+-Q rocq-lens/Lens Lens
+-Q _build/default/rocq-lens/Lens Lens
+-Q rocq-upoly/upoly bedrock.upoly
+-Q _build/default/rocq-upoly/upoly bedrock.upoly
+-Q rocq-bluerock-brick/theories/prelude bedrock.prelude
+-Q _build/default/rocq-bluerock-brick/theories/prelude bedrock.prelude
+-Q rocq-bluerock-brick/theories/lang bedrock.lang
+-Q _build/default/rocq-bluerock-brick/theories/lang bedrock.lang
+-Q rocq-bluerock-brick/theories/noimport bedrock.noimport
+-Q _build/default/rocq-bluerock-brick/theories/noimport bedrock.noimport

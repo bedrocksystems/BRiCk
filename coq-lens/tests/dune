@@ -1,9 +1,0 @@
-(cram
- (applies_to :whole_subtree)
- (deps
-  (package coq-core)
-  (package coq-stdlib)
-  (package coq-lens)
-  ;(package coq-lens-tc)
-  (package coq-lens-elpi)
-  setup-project.sh))
