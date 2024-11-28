@@ -17,7 +17,7 @@ Compiler Correctness
 |project|'s strategy for connecting C++ programs to machine programs is to connect the weakest pre-condition of C++ functions to a weakest pre-condition for machine code.
 The relevant definitions can be found in |link:bedrock.lang.cpp.compile|.
 
-.. literalinclude:: ../../theories/lang/cpp/compile.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/compile.v
    :start-after: (* BEGIN COMPILE SNIPPET *)
    :end-before: (* END COMPILE SNIPPET *)
 

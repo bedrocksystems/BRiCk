@@ -28,7 +28,7 @@ In the course of evaluating C++ programs, the language can construct objects tha
 C++ semantics guarantees that the lifetime of temporaries is well-bracketed, meaning that objects will be destroyed in the reverse order that they were constructed.
 In |project| we capture the stack of objects to be destroyed using the type |link:bedrock.lang.cpp.logic.wp#FreeTemps.t|.
 
-.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN FreeTemps.t *)
    :end-before: (* END FreeTemps.t *)
    :dedent:
@@ -42,7 +42,7 @@ Virtual dispatch is *not* used when invoking the destructor.
 
 The meaning of these constructs is made precise by interpreting the syntax using |link:bedrock.lang.cpp.logic.destroy#interp|.
 
-.. literalinclude:: ../../theories/lang/cpp/logic/destroy.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/destroy.v
    :start-after: (* BEGIN interp *)
    :end-before: (* END interp *)
    :dedent:
@@ -53,7 +53,7 @@ l-values & x-values
 l-values and x-values follow the same general structure.
 Their weakest precondition rules are captured by |link:bedrock.lang.cpp.logic.wp#WPE.wp_lval| and |link:bedrock.lang.cpp.logic.wp#WPE.wp_xval| respectively (we show `wp_lval` as our example).
 
-.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_lval *)
    :end-before: (* END wp_lval *)
    :dedent:
@@ -77,7 +77,7 @@ Operands
 |link:bedrock.lang.cpp.logic.wp#WPE.wp_operand| is used to evaluate a operand of a primitive operator.
 These operands are *always* primitives, since operators that accept aggregates are de-sugared to functions or methods.
 
-.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_operand *)
    :end-before: (* END wp_operand *)
    :dedent:
@@ -92,7 +92,7 @@ Initializing Aggregates
 |link:bedrock.lang.cpp.logic.wp#WPE.wp_init| handles initialization of aggregates.
 The parameter is the following:
 
-.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_init *)
    :end-before: (* END wp_init *)
    :dedent:
@@ -103,7 +103,7 @@ To destroy the actual object constructed by `wp_init ty into Q`, use `FreeTemps.
 
 On top of `wp_init`, we can *define* `wp_prval` by universally quantifying the pointer that is being initialized and passing it to the continuation.
 
-.. literalinclude:: ../../theories/lang/cpp/logic/wp.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_prval *)
    :end-before: (* END wp_prval *)
    :dedent:
@@ -118,7 +118,7 @@ Initialization is slightly more complex than `wp_init` because you can initializ
 To capture this, |project| *defines* `wp_initialize` which provides the semantics to materialize a value into the C++ abstract machine state (which |project| reflects through separation logic assertions such as `primR`).
 `wp_initialize` is defined by induction on the type of the value being initialized with special handling of `const` qualifiers.
 
-.. literalinclude:: ../../theories/lang/cpp/logic/initializers.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/initializers.v
    :start-after: (* BEGIN wp_initialize *)
    :end-before: (* END wp_initialize *)
    :dedent:
@@ -137,7 +137,7 @@ It is also the style taken by `Cerberus <https://www.cl.cam.ac.uk/~pes20/cerberu
 C++ leaves the lifetime of *trivially destructible* function arguments unspecified, as it is *generally* not visible to client programs.
 |project| follows the Itanium ABI as is documented in |link:bedrock.lang.cpp.logic.call|.
 
-.. literalinclude:: ../../theories/lang/cpp/logic/call.v
+.. literalinclude:: ../../rocq-bluerock-brick/theories/lang/cpp/logic/call.v
    :start-after: BEGIN destruction-of-function-arguments
    :end-before: END destruction-of-function-arguments
    :dedent:
