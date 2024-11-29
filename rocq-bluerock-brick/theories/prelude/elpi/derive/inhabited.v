@@ -16,7 +16,7 @@ Elpi Db derive.stdpp.inhabited.db lp:{{
   pred inhabited-done o:gref.
 }}.
 Elpi Accumulate derive.stdpp.inhabited.db File bedrock.typeclass.elpi.
-Elpi Accumulate derive.stdpp.inhabited.db lp:{{
+#[superglobal] Elpi Accumulate derive.stdpp.inhabited.db lp:{{
   :name "inhabited-done.typeclass"
   inhabited-done GR :-
     typeclass "derive.stdpp.inhabited.db"

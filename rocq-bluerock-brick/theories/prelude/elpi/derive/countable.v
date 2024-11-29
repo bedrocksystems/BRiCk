@@ -23,7 +23,7 @@ Elpi Db derive.stdpp.countable.db lp:{{
   pred countable-done o:gref.
 }}.
 Elpi Accumulate derive.stdpp.countable.db File bedrock.typeclass.elpi.
-Elpi Accumulate derive.stdpp.countable.db lp:{{
+#[superglobal] Elpi Accumulate derive.stdpp.countable.db lp:{{
 
   :name "countable-done.typeclass"
   countable-done GR :-

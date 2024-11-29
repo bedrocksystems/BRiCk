@@ -21,8 +21,7 @@ Elpi Db derive.stdpp.finite.db lp:{{
   pred finite-done o:gref.
 }}.
 Elpi Accumulate derive.stdpp.finite.db File bedrock.typeclass.elpi.
-Elpi Accumulate derive.stdpp.finite.db lp:{{
-
+#[superglobal] Elpi Accumulate derive.stdpp.finite.db lp:{{
   :name "finite-done.typeclass"
   finite-done GR :-
     typeclass "derive.stdpp.finite.db"

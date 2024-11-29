@@ -53,7 +53,6 @@ Elpi File derive.finite_type.elpi lp:{{
 
     pred mk-simple-finite i:string, i:gref, i:gref.
     mk-simple-finite TypeName TyGR OrigGR :- std.do! [
-      derive.if-verbose (coq.say "[derive.finite_type][mk-simple-finite]" TypeName),
       mk-finite-prelim TypeName TyGR OrigGR,
       coq.env.include-module-type {coq.locate-module-type "finite_type_mixin"} coq.inline.default,
       coq.env.end-module MP_,
@@ -61,7 +60,6 @@ Elpi File derive.finite_type.elpi lp:{{
 
     pred mk-finite i:string, i:gref, i:gref, i:term.
     mk-finite TypeName TyGR OrigGR ToN :- std.do! [
-      derive.if-verbose (coq.say "[derive.finite_type][mk-finite]" TypeName),
       mk-finite-prelim TypeName TyGR OrigGR,
 
       coq.locate "t" GRTy,
@@ -75,7 +73,8 @@ Elpi File derive.finite_type.elpi lp:{{
 }}.
 
 Elpi Accumulate derive File derive.finite_type.elpi.
-Elpi Accumulate derive lp:{{
+Elpi Accumulate derive.finite_type.db File bedrock.typeclass.elpi.
+#[superglobal] Elpi Accumulate derive.finite_type.db lp:{{
   namespace derive.finite_type {
     pred to-N i:term, o:term.
     :name "to-N.typeclass"

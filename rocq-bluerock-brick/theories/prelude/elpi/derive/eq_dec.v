@@ -22,8 +22,8 @@ Elpi Db derive.stdpp.eq_dec.db lp:{{
   pred eqdec o:gref, o:gref.
   pred eqdec-done o:gref.
 }}.
-Elpi Accumulate derive.stdpp.eq_dec.db File bedrock.typeclass.elpi.
-Elpi Accumulate derive.stdpp.eq_dec.db lp:{{
+#[superglobal] Elpi Accumulate derive.stdpp.eq_dec.db File bedrock.typeclass.elpi.
+#[superglobal] Elpi Accumulate derive.stdpp.eq_dec.db lp:{{
   :name "eqdec-done.typeclass"
   eqdec-done GR :-
     typeclass "derive.stdpp.eq_dec.db" (before "eqdec-done.typeclass") (eqdec-done GR) {{ @EqDecision lp:{{global GR}} }} Bo_.
