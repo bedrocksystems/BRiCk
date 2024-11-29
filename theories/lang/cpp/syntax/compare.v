@@ -2399,25 +2399,29 @@ Section compare.
   #[local] Notation BindingDecl := (BindingDecl' lang).
   #[local] Notation Stmt := (Stmt' lang).
 
-  Fixpoint compareN (n : name) : name -> comparison :=
+
+  (* NOTE: Do not remove the {struct} annotations here. They may seem trivial
+     but they are vital for performance (<1s instead of 40s). *)
+
+  Fixpoint compareN (n : name) {struct n} : name -> comparison :=
     name.compare_body compareN compareT compareE n
 
-  with compareT (t : type) : type -> comparison :=
+  with compareT (t : type) {struct t} : type -> comparison :=
     type.compare_body compareN compareT compareE t
 
-  with compareE (e : Expr) : Expr -> comparison :=
+  with compareE (e : Expr) {struct e} : Expr -> comparison :=
     Expr.compare_body compareN compareT compareC compareE compareS e
 
-  with compareVD (vd : VarDecl) : VarDecl -> comparison :=
+  with compareVD (vd : VarDecl) {struct vd} : VarDecl -> comparison :=
     VarDecl.compare_body compareN compareT compareE compareBD vd
 
-  with compareBD (bd : BindingDecl) : BindingDecl -> comparison :=
+  with compareBD (bd : BindingDecl) {struct bd} : BindingDecl -> comparison :=
     BindingDecl.compare_body compareT compareE bd
 
-  with compareS (s : Stmt) : Stmt -> comparison :=
+  with compareS (s : Stmt) {struct s} : Stmt -> comparison :=
     Stmt.compare_body compareE compareVD compareS s
 
-  with compareC (s : Cast) : Cast -> comparison :=
+  with compareC (s : Cast) {struct s} : Cast -> comparison :=
     Cast.compare_body compareT s
   .
 
