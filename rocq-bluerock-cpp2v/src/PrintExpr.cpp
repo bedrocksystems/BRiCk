@@ -964,7 +964,7 @@ public:
 		print.ctor("Eunsupported") << fmt::nbsp << "\"float: ";
 		lit->getValue().print(print.output().nobreak());
 		print.output() << "\"";
-		done(lit, Done::VT);
+		done(lit, Done::T);
 	}
 
 	void VisitMemberExpr(const MemberExpr* expr) {

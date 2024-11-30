@@ -918,6 +918,7 @@ Definition is_arithmetic (ty : type) : bool :=
   match drop_qualifiers ty with
   | Tnum _ _
   | Tchar_ _
+  | Tfloat_ _
   | Tenum _
   | Tbool => true
   | _ => false
