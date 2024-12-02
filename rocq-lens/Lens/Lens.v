@@ -47,8 +47,6 @@ Module LensNotations.
 
   Notation "X -l> Y" := (Lens X X Y Y)
     (at level 99, Y at level 200, right associativity) : type_scope.
-  #[deprecated(since="20240514",note="use &: instead")]
-  Notation "a & b" := (b a) (at level 50, only parsing, left associativity) : lens_scope.
   Notation "a &: b" := (b a) (at level 50, only parsing, left associativity) : lens_scope.
   Notation "a %= f" := (Lens.over a f) (at level 49, left associativity) : lens_scope.
   Notation "a .= b" := (Lens.set a b) (at level 49, left associativity) : lens_scope.
