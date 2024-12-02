@@ -89,6 +89,11 @@ Module ParserExpr (Import Lang : PARSER_LANG).
   Definition Ebuiltin (nm : obj_name) (ty : type) : Expr :=
     Ecast (Cbuiltin2fun $ Tptr ty) (Eglobal nm ty).
 
+  (* [Esource_loc name e] represents a call to the source location builtin <<name>>.
+     The result of this function call is the value returned by the expression <<e>>.
+   *)
+  Definition Esource_loc (name : bs) (e : Expr) : Expr := e.
+
   Variant member_type : Set :=
     | Field (_ : atomic_name_ type) (_ : bool) (_ : type)
     | Enum (_ : name)

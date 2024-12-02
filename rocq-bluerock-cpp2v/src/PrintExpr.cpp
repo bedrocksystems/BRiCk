@@ -911,6 +911,22 @@ public:
 		}
 	}
 
+	void VisitSourceLocExpr(const SourceLocExpr* expr) {
+		guard::ctor _{print, "Esource_loc"};
+		print.str(expr->getBuiltinStr()) << fmt::nbsp;
+		auto val = expr->EvaluateInContext(cprint.getContext(), nullptr);
+		if (expr->isIntType()) {
+			print.ctor("Eint");
+			print.output() << fmt::Z(val.getInt(), false) << fmt::nbsp;
+			done(expr);
+		} else {
+			// this is actually an LValue
+			auto base = val.getLValueBase();
+			always_assert(base.is<const Expr*>());
+			cprint.printExpr(print, base.get<const Expr*>(), names);
+		}
+	}
+
 	void VisitStringLiteral(const StringLiteral* lit) {
 		print.ctor("Estring", false);
 		// We get the string literal in bytes, but we need to encode it
