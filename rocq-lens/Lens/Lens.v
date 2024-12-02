@@ -17,13 +17,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USAQ
  *)
 
-Set Primitive Projections.
+#[local] Set Primitive Projections.
 
 Record Lens (a b c d : Type) : Type :=
 { view : a -> c
 ; over : (c -> d) -> a -> b
 }.
-
 Arguments over {_ _ _ _} _ _ _.
 Arguments view {_ _ _ _} _ _.
 
