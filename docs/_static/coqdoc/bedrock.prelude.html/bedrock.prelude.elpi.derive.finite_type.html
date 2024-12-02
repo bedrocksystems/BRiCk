@@ -53,7 +53,7 @@
 
 <br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.elpi.basis.html#"><span class="id" title="library">bedrock.prelude.elpi.basis</span></a>.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">bedrock.basis.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.basis.elpi</span>.<br/>
 
 <br/>
 <span class="comment">(***************************************************<br/>
@@ -70,8 +70,10 @@
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.finite_type.db</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">finite</span>-<span class="id" title="keyword">type</span>-<span class="id" title="var">done</span> <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">bitset</span>-<span class="id" title="var">done</span> <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>.<br/>
+}}.<br/>
 
 <br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">File</span> <span class="id" title="var">derive.finite_type.elpi</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">namespace</span> <span class="id" title="var">derive.finite_type</span> {<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">mk</span>-<span class="id" title="var">finite</span>-<span class="id" title="var">prelim</span> <span class="id" title="var">i</span>:<span class="id" title="var">string</span>, <span class="id" title="var">i</span>:<span class="id" title="var">gref</span>, <span class="id" title="var">i</span>:<span class="id" title="var">gref</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mk</span>-<span class="id" title="var">finite</span>-<span class="id" title="var">prelim</span> <span class="id" title="var">TypeName</span> <span class="id" title="var">TyGR</span> <span class="id" title="var">OrigGR</span> :- <span class="id" title="var">std.do</span>! [<br/>
@@ -97,7 +99,6 @@
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">mk</span>-<span class="id" title="tactic">simple</span>-<span class="id" title="var">finite</span> <span class="id" title="var">i</span>:<span class="id" title="var">string</span>, <span class="id" title="var">i</span>:<span class="id" title="var">gref</span>, <span class="id" title="var">i</span>:<span class="id" title="var">gref</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mk</span>-<span class="id" title="tactic">simple</span>-<span class="id" title="var">finite</span> <span class="id" title="var">TypeName</span> <span class="id" title="var">TyGR</span> <span class="id" title="var">OrigGR</span> :- <span class="id" title="var">std.do</span>! [<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">derive.if</span>-<span class="id" title="var">verbose</span> (<span class="id" title="var">coq.say</span> "[derive.finite_type][mk-simple-finite]" <span class="id" title="var">TypeName</span>),<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mk</span>-<span class="id" title="var">finite</span>-<span class="id" title="var">prelim</span> <span class="id" title="var">TypeName</span> <span class="id" title="var">TyGR</span> <span class="id" title="var">OrigGR</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.env.include</span>-<span class="id" title="var">module</span>-<span class="id" title="keyword">type</span> {<span class="id" title="var">coq.locate</span>-<span class="id" title="var">module</span>-<span class="id" title="keyword">type</span> "finite_type_mixin"} <span class="id" title="var">coq.inline.default</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.env.end</span>-<span class="id" title="var">module</span> <span class="id" title="var">MP_</span>,<br/>
@@ -106,12 +107,11 @@
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">mk</span>-<span class="id" title="var">finite</span> <span class="id" title="var">i</span>:<span class="id" title="var">string</span>, <span class="id" title="var">i</span>:<span class="id" title="var">gref</span>, <span class="id" title="var">i</span>:<span class="id" title="var">gref</span>, <span class="id" title="var">i</span>:<span class="id" title="var">term</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mk</span>-<span class="id" title="var">finite</span> <span class="id" title="var">TypeName</span> <span class="id" title="var">TyGR</span> <span class="id" title="var">OrigGR</span> <span class="id" title="var">ToN</span> :- <span class="id" title="var">std.do</span>! [<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">derive.if</span>-<span class="id" title="var">verbose</span> (<span class="id" title="var">coq.say</span> "[derive.finite_type][mk-finite]" <span class="id" title="var">TypeName</span>),<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mk</span>-<span class="id" title="var">finite</span>-<span class="id" title="var">prelim</span> <span class="id" title="var">TypeName</span> <span class="id" title="var">TyGR</span> <span class="id" title="var">OrigGR</span>,<br/>
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.locate</span> "t" <span class="id" title="var">GRTy</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Ty</span> <span class="id" title="keyword">is</span> <span class="id" title="var">global</span> <span class="id" title="var">GRTy</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.env.add</span>-<span class="id" title="var">const</span> "to_N" <span class="id" title="var">ToN</span> {{ <span class="id" title="var">lp</span>:<span class="id" title="var">Ty</span> -&gt; <span class="id" title="var">N</span> }} @<span class="id" title="var">transparent</span>! <span class="id" title="var">CtoN_</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.env.add</span>-<span class="id" title="var">const</span> "to_N" <span class="id" title="var">ToN</span> {{ <span class="id" title="var">lp</span><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">:</span></a><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">Ty</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">N</span></a> }} @<span class="id" title="var">transparent</span>! <span class="id" title="var">CtoN_</span>,<br/>
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.env.include</span>-<span class="id" title="var">module</span>-<span class="id" title="keyword">type</span> {<span class="id" title="var">coq.locate</span>-<span class="id" title="var">module</span>-<span class="id" title="keyword">type</span> "finite_encoded_type_mixin"} <span class="id" title="var">coq.inline.default</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.env.end</span>-<span class="id" title="var">module</span> <span class="id" title="var">MP_</span>,<br/>
@@ -120,7 +120,9 @@
 }}.<br/>
 
 <br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">derive.finite_type.elpi</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive.finite_type.db</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.typeclass.elpi</span>.<br/>
+#[<span class="id" title="var">superglobal</span>] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive.finite_type.db</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">namespace</span> <span class="id" title="var">derive.finite_type</span> {<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">to</span>-<span class="id" title="var">N</span> <span class="id" title="var">i</span>:<span class="id" title="var">term</span>, <span class="id" title="var">o</span>:<span class="id" title="var">term</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;:<span class="id" title="var">name</span> "to-N.typeclass"<br/>
@@ -205,7 +207,6 @@ Use an instance of the typeclass `ToN` and #[only(finite_type_to_N)] instead to 
 
 <br/>
 }}.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span> <span class="id" title="var">derive</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.

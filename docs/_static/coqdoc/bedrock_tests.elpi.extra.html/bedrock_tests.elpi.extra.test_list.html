@@ -28,9 +28,8 @@
 
 <br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Program</span> <span class="id" title="var">test</span> <span class="id" title="var">lp</span>:{{ }}.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">Db</span> <span class="id" title="var">extra.Program</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">extra.Program</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">test</span>.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span>.<br/>
 
 <br/>
 <span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Lists.List.html#ListNotations"><span class="id" title="module">ListNotations</span></a>.<br/>
@@ -50,7 +49,7 @@
 <br/>
 <span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">list.as_term</span> [-1] {{ <span class="id" title="var">N</span> }} <span class="id" title="var">int.as_N</span> <span class="id" title="var">T</span> }}.<br/>
 <span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">list.as_term</span> [] {{ <span class="id" title="var">N</span> }} <span class="id" title="var">int.as_N</span> <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ @<span class="id" title="var">nil</span> <span class="id" title="var">N</span> }} <span class="id" title="var">T</span> }}.<br/>
-<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">list.as_term</span> [1, 2, 3] {{ <span class="id" title="var">N</span> }} <span class="id" title="var">int.as_N</span> <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ [1; 2; 3] }} <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">list.as_term</span> [1, 2, 3] {{ <span class="id" title="var">N</span> }} <span class="id" title="var">int.as_N</span> <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ [<a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Lists.List.html#e76c6291366b599375c28eba0aae94bb"><span class="id" title="notation">1</span></a>; <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Lists.List.html#e76c6291366b599375c28eba0aae94bb"><span class="id" title="notation">2</span></a>; <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Lists.List.html#e76c6291366b599375c28eba0aae94bb"><span class="id" title="notation">3</span></a>] }} <span class="id" title="var">T</span> }}.<br/>
 
 <br/>
 <span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">list.of_term</span> {{ <span class="id" title="var">my_list</span> }} <span class="id" title="var">badof</span>-<span class="id" title="tactic">fail</span> <span class="id" title="var">L</span> }}.<br/>
@@ -58,7 +57,7 @@
 
 <br/>
 <span class="id" title="var">Fail</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">list.as_term</span> [1] {{ <span class="id" title="var">N</span> }} <span class="id" title="var">badas</span>-<span class="id" title="tactic">fail</span> <span class="id" title="var">T</span> }}.<br/>
-<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">list.as_term</span> [42] {{ <span class="id" title="var">N</span> }} <span class="id" title="var">badas</span>-<span class="id" title="var">nondet</span> <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ [1] }} <span class="id" title="var">T</span> }}.<br/>
+<span class="id" title="var">Succeed</span> <span class="id" title="var">Elpi</span> <span class="id" title="var">Query</span> <span class="id" title="var">lp</span>:{{ <span class="id" title="var">det</span> (<span class="id" title="var">list.as_term</span> [42] {{ <span class="id" title="var">N</span> }} <span class="id" title="var">badas</span>-<span class="id" title="var">nondet</span> <span class="id" title="var">T</span>), <span class="id" title="var">check</span> {{ [<a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Lists.List.html#ddd65c2f7ee73ecec433744948d846bb"><span class="id" title="notation">1</span></a>] }} <span class="id" title="var">T</span> }}.<br/>
 </div>
 </div>
 

@@ -52,7 +52,21 @@
 <span class="id" title="keyword">Ltac</span> <span class="id" title="var">try_typeclasses_eauto</span> := <span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>.<br/>
 
 <br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">bedrock.basis.db</span> <span class="id" title="var">lp</span>:{{<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.typeclass.elpi</span> <span class="id" title="var">lp</span>:{{<br/>
+<br/>
+&nbsp;&nbsp;%% <span class="id" title="var">typeclass</span> <span class="id" title="var">Db</span> <span class="id" title="var">Grafting</span> <span class="id" title="var">Done</span> <span class="id" title="var">Typeclass</span> <span class="id" title="var">Bo</span><br/>
+&nbsp;&nbsp;%% <span class="id" title="keyword">Solve</span> <span class="id" title="keyword">for</span> <span class="id" title="var">Bo</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">Bo</span> : <span class="id" title="var">Typeclass</span>), <span class="id" title="var">accumulating</span> <span class="id" title="var">Done</span> <span class="id" title="var">into</span> <span class="id" title="var">Db</span> <span class="id" title="tactic">at</span> <span class="id" title="var">Grafting</span> <span class="id" title="keyword">if</span> <span class="id" title="var">successful</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">typeclass</span> <span class="id" title="var">i</span>:<span class="id" title="var">string</span>, <span class="id" title="var">i</span>:<span class="id" title="var">grafting</span>, <span class="id" title="var">i</span>:<span class="id" title="var">prop</span>, <span class="id" title="var">i</span>:<span class="id" title="var">term</span>, <span class="id" title="var">o</span>:<span class="id" title="var">term</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">typeclass</span> <span class="id" title="var">Db</span> <span class="id" title="var">Grafting</span> <span class="id" title="var">Done</span> <span class="id" title="var">Typeclass</span> <span class="id" title="var">Bo</span> :- <span class="id" title="var">std.do</span>! [<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">std.assert</span>-<span class="id" title="var">ok</span>! (<span class="id" title="var">coq.typecheck</span> {{ <span class="id" title="var">lp</span>:<span class="id" title="var">Bo</span> : <span class="id" title="var">lp</span>:<span class="id" title="var">Typeclass</span> }} <span class="id" title="var">_</span>) "[typeclass] typechecking an instance failed",<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.ltac.collect</span>-<span class="id" title="keyword">goals</span> <span class="id" title="var">Bo</span> [<span class="id" title="var">SealedGoal</span>] [],<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.ltac.open</span> (<span class="id" title="var">coq.ltac.call</span> "try_typeclasses_eauto" []) <span class="id" title="var">SealedGoal</span> [],<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.elpi.accumulate</span> <span class="id" title="var">library</span> <span class="id" title="var">Db</span> (<span class="id" title="var">clause</span> <span class="id" title="var">_</span> <span class="id" title="var">Grafting</span> <span class="id" title="var">Done</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;].<br/>
+}}.<br/>
+
+<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.basis.elpi</span> <span class="id" title="var">lp</span>:{{<br/>
 <br/>
 &nbsp;&nbsp;%%% <span class="id" title="var">Option</span> <span class="id" title="var">utilities</span><br/>
 <br/>
@@ -330,19 +344,8 @@
 &nbsp;:<span class="id" title="keyword">if</span> "DEBUG"<br/>
 &nbsp;&nbsp;<span class="id" title="tactic">debug</span> <span class="id" title="var">Prefix</span> <span class="id" title="var">Msg</span> <span class="id" title="var">L</span> :-<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Prefix'</span> <span class="id" title="keyword">is</span> "DEBUG " ^ <span class="id" title="var">Prefix</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">msg</span> <span class="id" title="var">Prefix'</span> <span class="id" title="var">Msg</span> <span class="id" title="var">L</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.say</span> <span class="id" title="var">Prefix'</span> <span class="id" title="var">Msg</span> <span class="id" title="var">L</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="tactic">debug</span> <span class="id" title="var">_Prefix</span> <span class="id" title="var">_Msg</span> <span class="id" title="var">_L</span> :- !.<br/>
-
-<br/>
-&nbsp;&nbsp;%% <span class="id" title="var">typeclass</span> <span class="id" title="var">Db</span> <span class="id" title="var">Grafting</span> <span class="id" title="var">Done</span> <span class="id" title="var">Typeclass</span> <span class="id" title="var">Bo</span><br/>
-&nbsp;&nbsp;%% <span class="id" title="keyword">Solve</span> <span class="id" title="keyword">for</span> <span class="id" title="var">Bo</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">Bo</span> : <span class="id" title="var">Typeclass</span>), <span class="id" title="var">accumulating</span> <span class="id" title="var">Done</span> <span class="id" title="var">into</span> <span class="id" title="var">Db</span> <span class="id" title="tactic">at</span> <span class="id" title="var">Grafting</span> <span class="id" title="keyword">if</span> <span class="id" title="var">successful</span>.<br/>
-&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">typeclass</span> <span class="id" title="var">i</span>:<span class="id" title="var">string</span>, <span class="id" title="var">i</span>:<span class="id" title="var">grafting</span>, <span class="id" title="var">i</span>:<span class="id" title="var">prop</span>, <span class="id" title="var">i</span>:<span class="id" title="var">term</span>, <span class="id" title="var">o</span>:<span class="id" title="var">term</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">typeclass</span> <span class="id" title="var">Db</span> <span class="id" title="var">Grafting</span> <span class="id" title="var">Done</span> <span class="id" title="var">Typeclass</span> <span class="id" title="var">Bo</span> :- <span class="id" title="var">std.do</span>! [<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">std.assert</span>-<span class="id" title="var">ok</span>! (<span class="id" title="var">coq.typecheck</span> {{ <span class="id" title="var">lp</span>:<span class="id" title="var">Bo</span> : <span class="id" title="var">lp</span>:<span class="id" title="var">Typeclass</span> }} <span class="id" title="var">_</span>) "[typeclass] typechecking an instance failed",<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.ltac.collect</span>-<span class="id" title="keyword">goals</span> <span class="id" title="var">Bo</span> [<span class="id" title="var">SealedGoal</span>] [],<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.ltac.open</span> (<span class="id" title="var">coq.ltac.call</span> "try_typeclasses_eauto" []) <span class="id" title="var">SealedGoal</span> [],<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.elpi.accumulate</span> <span class="id" title="var">library</span> <span class="id" title="var">Db</span> (<span class="id" title="var">clause</span> <span class="id" title="var">_</span> <span class="id" title="var">Grafting</span> <span class="id" title="var">Done</span>),<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;].<br/>
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="var">namespace</span> <span class="id" title="var">bedrock</span> {<br/>
@@ -398,7 +401,7 @@
 
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">list</span>-&gt;<span class="id" title="var">elpi</span>-<span class="id" title="var">list.aux</span> <span class="id" title="var">i</span>:<span class="id" title="var">term</span>, <span class="id" title="var">o</span>:<span class="id" title="var">list</span> <span class="id" title="var">term</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span>-&gt;<span class="id" title="var">elpi</span>-<span class="id" title="var">list.aux</span> {{<span class="id" title="var">nil</span>}} [].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span>-&gt;<span class="id" title="var">elpi</span>-<span class="id" title="var">list.aux</span> {{<span class="id" title="var">nil</span><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Datatypes.html#nil"><span class="id" title="constructor">}</span></a>} [].<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span>-&gt;<span class="id" title="var">elpi</span>-<span class="id" title="var">list.aux</span> {{<span class="id" title="var">cons</span> <span class="id" title="var">lp</span>:<span class="id" title="var">A</span> <span class="id" title="var">lp</span>:<span class="id" title="var">CoqAs</span>}} (<span class="id" title="var">A</span> :: <span class="id" title="var">ElpiAs</span>) :-<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span>-&gt;<span class="id" title="var">elpi</span>-<span class="id" title="var">list.aux</span> <span class="id" title="var">CoqAs</span> <span class="id" title="var">ElpiAs</span>.<br/>
 

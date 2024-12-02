@@ -52,9 +52,8 @@ Require Import bedrock.elpi.extra.NES.
 
 Elpi Command MyCommand.
 #[phase="both"] Elpi Accumulate Db NES.db.
-#[phase="both"] Elpi Accumulate Db bedrock.elpi.extra.NES.db.
+#[phase="both"] Elpi Accumulate File bedrock.elpi.extra.NES.code.
 Elpi Accumulate lp:{{ ⋯ }}.
-Elpi Typecheck.
 Elpi Export MyCommand.
 </pre>
 
@@ -67,13 +66,13 @@ Elpi Export MyCommand.
 
 <br/>
 #[<span class="id" title="var">synterp</span>]<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">bedrock.elpi.extra.NES.db</span> <span class="id" title="var">lp</span>:{{<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.elpi.extra.NES.code</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">accumulate</span> "coq://elpi.apps.NES.elpi/nes_synterp".<br/>
 }}.<br/>
 
 <br/>
 #[<span class="id" title="var">interp</span>]<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">bedrock.elpi.extra.NES.db</span> <span class="id" title="var">lp</span>:{{<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.elpi.extra.NES.code</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">accumulate</span> "coq://elpi.apps.NES.elpi/nes_interp".<br/>
 }}.<br/>
 </div>

@@ -57,7 +57,7 @@
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.elpi.basis.html#"><span class="id" title="library">bedrock.prelude.elpi.basis</span></a>.<br/>
 
 <br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">bedrock.basis.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.basis.elpi</span>.<br/>
 
 <br/>
 <span class="comment">(***************************************************<br/>
@@ -66,13 +66,18 @@
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.stdpp.countable.db</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">countable</span> <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>, <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">countable</span>-<span class="id" title="var">done</span> <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>.<br/>
+}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive.stdpp.countable.db</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.typeclass.elpi</span>.<br/>
+#[<span class="id" title="var">superglobal</span>] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive.stdpp.countable.db</span> <span class="id" title="var">lp</span>:{{<br/>
+<br/>
 &nbsp;&nbsp;:<span class="id" title="var">name</span> "countable-done.typeclass"<br/>
 &nbsp;&nbsp;<span class="id" title="var">countable</span>-<span class="id" title="var">done</span> <span class="id" title="var">GR</span> :-<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">typeclass</span> "derive.stdpp.countable.db"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">before</span> "countable-done.typeclass") (<span class="id" title="var">countable</span>-<span class="id" title="var">done</span> <span class="id" title="var">GR</span>) {{ @<span class="id" title="var">Countable</span> <span class="id" title="var">lp</span>:{{<span class="id" title="var">global</span> <span class="id" title="var">GR</span>}} <span class="id" title="var">_</span> }} <span class="id" title="var">Bo_</span>.<br/>
 }}.<br/>
+
+<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.stdpp.countable.db</span>.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span> <span class="id" title="var">derive</span>.<br/>
 
 <br/>
 </div>
@@ -117,7 +122,7 @@ TODO: <span class="inlinecode"><span class="id" title="tactic">abstract</span></
 <div class="code">
 
 <br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.countable.db</span> <span class="id" title="var">lp</span>:{{<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">File</span> <span class="id" title="var">derive.countable.elpi</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">namespace</span> <span class="id" title="var">derive.countable</span> {<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;/*<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="var">mk</span>-<span class="id" title="var">countable</span> <span class="id" title="var">CtorList</span> <span class="id" title="var">Name</span> <span class="id" title="var">T</span>] <span class="id" title="var">assumes</span> <span class="id" title="var">that</span> <span class="id" title="keyword">type</span> [<span class="id" title="var">T</span>] <span class="id" title="var">has</span><br/>
@@ -151,9 +156,9 @@ TODO: <span class="inlinecode"><span class="id" title="tactic">abstract</span></
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bedrock.elpi</span>-<span class="id" title="var">list</span>-&gt;<span class="id" title="var">list</span> <span class="id" title="var">Ctors</span> <span class="id" title="var">CtorList</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">std.assert</span>-<span class="id" title="var">ok</span>! (<span class="id" title="var">coq.elaborate</span>-<span class="id" title="var">skeleton</span> <span class="id" title="var">CtorList</span> <span class="id" title="var">_</span> <span class="id" title="var">ECtorList</span>) "[mk-countable] failed to elaborate ctors",<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">VariantTy</span> = <span class="id" title="var">global</span> <span class="id" title="var">VariantGR</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Encode</span> = {{ <span class="id" title="keyword">fun</span> (<span class="id" title="var">x</span> : <span class="id" title="var">lp</span>:<span class="id" title="var">VariantTy</span>) =&gt; <span class="id" title="var">lp</span>:{{ { <span class="id" title="var">to</span>-<span class="id" title="var">positive</span> <span class="id" title="var">ECtorList</span> {{ <span class="id" title="var">x</span> }} <span class="id" title="var">VariantTy</span> {{ <span class="id" title="var">positive</span> }} } }} }},<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Encode</span> = {{ <span class="id" title="keyword">fun</span> (<span class="id" title="var">x</span> : <span class="id" title="var">lp</span>:<span class="id" title="var">VariantTy</span>) =&gt; <span class="id" title="var">lp</span>:{{ { <span class="id" title="var">to</span>-<span class="id" title="var">positive</span> <span class="id" title="var">ECtorList</span> {{ <span class="id" title="var">x</span> }} <span class="id" title="var">VariantTy</span> {{ <span class="id" title="var">positive</span> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Numbers.BinNums.html#positive"><span class="id" title="inductive">}</span></a>} } }} }},<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Decode</span> = {{ @<span class="id" title="var">decode_from_encode</span> <span class="id" title="var">lp</span>:<span class="id" title="var">VariantTy</span> <span class="id" title="var">_</span> <span class="id" title="var">lp</span>:<span class="id" title="var">Encode</span> <span class="id" title="var">lp</span>:<span class="id" title="var">CtorList</span> }},<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Lem</span> = {{ <span class="id" title="keyword">forall</span> <span class="id" title="var">x</span> : <span class="id" title="var">lp</span>:<span class="id" title="var">VariantTy</span>, <span class="id" title="var">lp</span>:<span class="id" title="var">Decode</span> (<span class="id" title="var">lp</span>:<span class="id" title="var">Encode</span> <span class="id" title="var">x</span>) = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> }},<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Lem</span> = {{ <span class="id" title="keyword">forall</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">x</span></a> : <span class="id" title="var">lp</span>:<span class="id" title="var">VariantTy</span>, <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">lp</span></a>:<span class="id" title="var">Decode</span> (<span class="id" title="var">lp</span>:<span class="id" title="var">Encode</span> <span class="id" title="var">x</span><a class="idref" href="bedrock.prelude.elpi.derive.countable.html#x:16"><span class="id" title="variable">)</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">Some</span></a> <span class="id" title="var">x</span> }},<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">std.assert</span>-<span class="id" title="var">ok</span>! (<span class="id" title="var">coq.elaborate</span>-<span class="id" title="var">skeleton</span> <span class="id" title="var">Lem</span> <span class="id" title="var">_</span> <span class="id" title="var">ELem</span>) "[mk-countable] failed to elaborate lem",<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">std.assert</span>-<span class="id" title="var">ok</span>! (<span class="id" title="var">coq.typecheck</span> {{ <span class="id" title="var">lp</span>:<span class="id" title="var">Bo</span> : <span class="id" title="var">lp</span>:<span class="id" title="var">ELem</span> }} <span class="id" title="var">_</span>) "[mk-countable] failed to typecheck lem",<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.ltac.collect</span>-<span class="id" title="keyword">goals</span> <span class="id" title="var">Bo</span> [<span class="id" title="var">SealedGoal</span>] [],<br/>
@@ -181,7 +186,7 @@ TODO: <span class="inlinecode"><span class="id" title="tactic">abstract</span></
 }}.<br/>
 
 <br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.countable.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">derive.countable.elpi</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">namespace</span> <span class="id" title="var">derive.countable</span> {<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">main</span> <span class="id" title="var">i</span>:<span class="id" title="var">gref</span>, <span class="id" title="var">i</span>:<span class="id" title="var">string</span>, <span class="id" title="var">o</span>:<span class="id" title="var">list</span> <span class="id" title="var">prop</span>.<br/>
@@ -228,7 +233,6 @@ Example #3:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">countable</span>-<span class="id" title="var">done</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;).<br/>
 }}.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span> <span class="id" title="var">derive</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.

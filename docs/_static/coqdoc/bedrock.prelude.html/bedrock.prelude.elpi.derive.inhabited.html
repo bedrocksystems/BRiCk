@@ -51,19 +51,21 @@
 
 <br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.prelude.elpi.basis.html#"><span class="id" title="library">bedrock.prelude.elpi.basis</span></a>.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">bedrock.basis.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.basis.elpi</span>.<br/>
 
 <br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.stdpp.inhabited.db</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">inhabited</span> <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>, <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="var">pred</span> <span class="id" title="var">inhabited</span>-<span class="id" title="var">done</span> <span class="id" title="var">o</span>:<span class="id" title="var">gref</span>.<br/>
+}}.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive.stdpp.inhabited.db</span> <span class="id" title="var">File</span> <span class="id" title="var">bedrock.typeclass.elpi</span>.<br/>
+#[<span class="id" title="var">superglobal</span>] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive.stdpp.inhabited.db</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;:<span class="id" title="var">name</span> "inhabited-done.typeclass"<br/>
 &nbsp;&nbsp;<span class="id" title="var">inhabited</span>-<span class="id" title="var">done</span> <span class="id" title="var">GR</span> :-<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">typeclass</span> "derive.stdpp.inhabited.db"<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">before</span> "inhabited-done.typeclass") (<span class="id" title="var">inhabited</span>-<span class="id" title="var">done</span> <span class="id" title="var">GR</span>) {{ @<span class="id" title="var">Inhabited</span> <span class="id" title="var">lp</span>:{{<span class="id" title="var">global</span> <span class="id" title="var">GR</span>}} }} <span class="id" title="var">Bo_</span>.<br/>
 }}.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.stdpp.inhabited.db</span>.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span> <span class="id" title="var">derive</span>.<br/>
 
 <br/>
 <span class="comment">(***************************************************<br/>
@@ -125,7 +127,6 @@ Example #3:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">inhabited</span>-<span class="id" title="var">done</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>))<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;).<br/>
 }}.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span> <span class="id" title="var">derive</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.

@@ -70,10 +70,11 @@
 
 <br/>
 <span class="comment">(*&nbsp;standalone&nbsp;command&nbsp;*)</span><br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Command</span> <span class="id" title="var">derive.lens</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Command</span> <a id="r:3" class="idref" href="#r:3"><span class="id" title="binder">derive.lens</span></a>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">Db</span> <span class="id" title="var">Header</span> <span class="id" title="var">derive.lens.db</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">derive_hook</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">lens</span>.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.lens.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="constructor">Accumulate</span> <span class="id" title="constructor">Db</span> <span class="id" title="constructor">derive.lens.db</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">main</span> [<span class="id" title="var">str</span> <span class="id" title="var">I</span>, <span class="id" title="var">str</span> <span class="id" title="var">O</span>] :- !, <span class="id" title="var">coq.locate</span> <span class="id" title="var">I</span> (<span class="id" title="var">indt</span> <span class="id" title="var">GR</span>), <span class="id" title="var">derive.lens.main</span> <span class="id" title="var">GR</span> <span class="id" title="var">O</span> <span class="id" title="var">_</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="var">main</span> [<span class="id" title="var">str</span> <span class="id" title="var">I</span>] :- !, <span class="id" title="var">coq.locate</span> <span class="id" title="var">I</span> (<span class="id" title="var">indt</span> <span class="id" title="var">GR</span>), <span class="id" title="var">derive.lens.main</span> <span class="id" title="var">GR</span> "_" <span class="id" title="var">_</span>.<br/>
@@ -82,7 +83,6 @@
 <br/>
 &nbsp;&nbsp;<span class="id" title="var">usage</span> :- <span class="id" title="var">coq.error</span> "Usage: derive.lens &lt;record name&gt; [&lt;output prefix&gt;]".<br/>
 }}.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span>.<br/>
 
 <br/>
 <span class="comment">(*&nbsp;hook&nbsp;into&nbsp;derive&nbsp;*)</span><br/>

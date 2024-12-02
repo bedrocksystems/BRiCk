@@ -32,12 +32,13 @@
 #[<span class="id" title="var">interp</span>] <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">main</span>-<span class="id" title="var">interp</span> [<span class="id" title="var">str</span> <span class="id" title="var">S</span>, <span class="id" title="var">int</span> <span class="id" title="var">WantS</span>, <span class="id" title="var">int</span> <span class="id" title="var">WantI</span>] <span class="id" title="var">LS</span> :-<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">coq.locate</span>-<span class="id" title="var">all</span> <span class="id" title="var">S</span> <span class="id" title="var">LI</span>, <span class="id" title="var">std.length</span> <span class="id" title="var">LS</span> <span class="id" title="var">HaveS</span>, <span class="id" title="var">std.length</span> <span class="id" title="var">LI</span> <span class="id" title="var">HaveI</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">WantS</span> = <span class="id" title="var">HaveS</span>, <span class="id" title="var">WantI</span> = <span class="id" title="var">HaveI</span>, !, <span class="id" title="var">Say</span> = <span class="id" title="var">coq.say</span>; <span class="id" title="var">Say</span> = <span class="id" title="var">coq.error</span>),<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Say</span> "synterp found" <span class="id" title="var">HaveS</span> "items:" <span class="id" title="var">LS</span> "
-interp found" <span class="id" title="var">HaveI</span> "items:" <span class="id" title="var">LI</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">WantS</span> = <span class="id" title="var">HaveS</span>, <span class="id" title="var">WantI</span> = <span class="id" title="var">HaveI</span>, !,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">coq.say</span> "synterp found" <span class="id" title="var">HaveS</span> "items:" <span class="id" title="var">LS</span> "
+interp found" <span class="id" title="var">HaveI</span> "items:" <span class="id" title="var">LI</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">coq.say</span> "synterp found" <span class="id" title="var">HaveS</span> "items:" <span class="id" title="var">LS</span> "
+interp found" <span class="id" title="var">HaveI</span> "items:" <span class="id" title="var">LI</span>)).<br/>
 &nbsp;&nbsp;<span class="id" title="var">main</span>-<span class="id" title="var">interp</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> :- <span class="id" title="var">coq.error</span> "usage: SynterpLocate ID WantS WantI".<br/>
 }}.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Typecheck</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">LocateAll</span>.<br/>
 
 <br/>
