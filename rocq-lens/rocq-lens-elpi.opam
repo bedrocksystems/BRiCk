@@ -9,6 +9,7 @@ authors: [
   "Gregory Malecha <gregory@bluerock.io>"
   "Paolo Giarrusso <paolo@bluerock.io>"
 ]
+license: "LGPL-2.1-or-later"
 homepage: "https://github.com/bedrocksystems/BRiCk"
 bug-reports: "https://github.com/bedrocksystems/BRiCk/issues"
 depends: [
