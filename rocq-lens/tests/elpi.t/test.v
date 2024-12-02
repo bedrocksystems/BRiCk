@@ -25,7 +25,16 @@ Module no_prim_projs.
 (* State__value *)
 End no_prim_projs.
 
-Print no_prim_projs.
+Print Module no_prim_projs.
+
+Module polymorphic.
+  Record Val {T : Type} : Type :=
+    { value : T }.
+  #[verbose,only(lens)] derive Val.
+
+End polymorphic.
+
+Print Module polymorphic.
 
 Module prim_projs.
   #[projections(primitive=yes)]
@@ -37,7 +46,7 @@ Module prim_projs.
 (* State__value *)
 End prim_projs.
 
-Print prim_projs.
+Print Module prim_projs.
 
 #[module] derive Inductive tickle A := stop | more : A -> tickle-> tickle.
 #[module] derive Record State : Set := MkState

@@ -36,6 +36,14 @@
        Definition value : State → N.
        Definition _value : Lens.Lens State State N N.
      End
+  Derivation lens on indt «Val»
+  Module
+  polymorphic
+  := Struct
+       Record Val (T : Type) : Type := Build_Val { value : T }.
+       Definition value : ∀ T : Type, Val → T.
+       Definition _value : ∀ T : Type, Lens.Lens Val Val T T.
+     End
   Derivation lens on indt «State»
   Module
   prim_projs
