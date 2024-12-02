@@ -1,4 +1,0 @@
-(coq.theory
- (name Lens.TC)
- (theories Lens Ltac2 MetaCoq)
- (package rocq-lens-tc))

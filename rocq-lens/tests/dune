@@ -5,6 +5,5 @@
   (package coq-stdlib)
   (package coq-stdpp)
   (package rocq-lens)
-  ;(package rocq-lens-tc)
   (package rocq-lens-elpi)
   setup-project.sh))
