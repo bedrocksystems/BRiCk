@@ -10,7 +10,7 @@ Require Export bedrock.prelude.elpi.derive.common.
 
 Require Import bedrock.prelude.elpi.basis.
 
-Elpi Accumulate derive Db bedrock.basis.db.
+Elpi Accumulate derive File bedrock.basis.elpi.
 
 (***************************************************
  EqDecision
@@ -21,12 +21,14 @@ Elpi Accumulate derive Db bedrock.basis.db.
 Elpi Db derive.stdpp.eq_dec.db lp:{{
   pred eqdec o:gref, o:gref.
   pred eqdec-done o:gref.
+}}.
+#[superglobal] Elpi Accumulate derive.stdpp.eq_dec.db File bedrock.typeclass.elpi.
+#[superglobal] Elpi Accumulate derive.stdpp.eq_dec.db lp:{{
   :name "eqdec-done.typeclass"
   eqdec-done GR :-
     typeclass "derive.stdpp.eq_dec.db" (before "eqdec-done.typeclass") (eqdec-done GR) {{ @EqDecision lp:{{global GR}} }} Bo_.
 }}.
 Elpi Accumulate derive Db derive.stdpp.eq_dec.db.
-Elpi Typecheck derive.
 
 #[synterp] Elpi Accumulate derive lp:{{
   derivation _ _ (derive "eq_dec" (cl\ cl = []) true).
@@ -87,4 +89,3 @@ Example #3:
        (eqdec-done (indt T))                % idempotency test
     ).
 }}.
-Elpi Typecheck derive.

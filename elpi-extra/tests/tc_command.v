@@ -7,5 +7,4 @@
 Require Import bedrock.elpi.extra.extra.
 
 Elpi Command test.
-#[phase="both"] Elpi Accumulate Db extra.Command.
-Elpi Typecheck.
+#[phase="both"] Elpi Accumulate File extra.Command.

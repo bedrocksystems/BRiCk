@@ -8,5 +8,4 @@ Require Import bedrock.elpi.extra.NES.
 
 Elpi Command test.
 #[phase="both"] Elpi Accumulate Db NES.db.
-#[phase="both"] Elpi Accumulate Db bedrock.elpi.extra.NES.db.
-Elpi Typecheck.
+#[phase="both"] Elpi Accumulate File bedrock.elpi.extra.NES.code.

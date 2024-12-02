@@ -8,7 +8,7 @@ Require Export bedrock.prelude.elpi.derive.common.
 
 Require Import bedrock.prelude.prelude.
 Require Import bedrock.prelude.elpi.basis.
-Require Import bedrock.prelude.elpi.derive.finite_type.
+Require Export bedrock.prelude.elpi.derive.finite_type.
 
 (***************************************************
  Bitsets
@@ -24,11 +24,12 @@ Class ToBit (T : Type) (to_bit : T -> N) : Prop := {}.
 Elpi Db derive.bitset.db lp:{{
   pred finite-type-done o:gref.
   pred bitset-done o:gref.
-
+}}.
+Elpi Accumulate derive File derive.finite_type.elpi.
+Elpi Accumulate derive lp:{{
   namespace derive.bitset {
     pred mk-simple-bitset i:string, i:gref, i:gref.
     mk-simple-bitset Prefix TyGR OrigGR :- std.do! [
-      derive.if-verbose (coq.say "[derive.bitset][mk-simple-bitset]" TyGR),
       derive.finite_type.mk-finite-prelim Prefix TyGR OrigGR,
       coq.env.include-module-type {coq.locate-module-type "simple_finite_bitmask_type_mixin"} coq.inline.default,
       coq.env.end-module MP,
@@ -44,7 +45,6 @@ Elpi Db derive.bitset.db lp:{{
 
     pred mk-bitset i:string, i:gref, i:gref, i:term.
     mk-bitset Prefix TyGR OrigGR ToBit :- std.do! [
-      derive.if-verbose (coq.say "[derive.bitset][mk-bitset]" TyGR),
       derive.finite_type.mk-finite-prelim Prefix TyGR OrigGR,
 
       % locating "t" seems like a very bad idea. We could find literally anything if something goes wrong.
@@ -62,13 +62,6 @@ Elpi Db derive.bitset.db lp:{{
 }}.
 
 Elpi Accumulate derive Db derive.finite_type.db.
-Elpi Accumulate derive lp:{{
-  namespace derive.bitset {
-    pred to-bits i:term, o:term.
-    :name "to-bits.typeclass"
-    to-bits T F :- typeclass "derive.bitset.db"  (before "to-bits.typeclass") (to-bits T F) {{ @ToBit lp:T lp:F }} Bo_.
-  }
-}}.
 
 #[phase="both"]
 Elpi Accumulate derive lp:{{
@@ -104,7 +97,17 @@ Elpi Accumulate derive lp:{{
   derivation T Prefix (derive "bitset_to_bit" (derive.bitset.main T Prefix tt) (derive.bitset.done T)).
 }}.
 
+Elpi Accumulate derive.bitset.db File bedrock.typeclass.elpi.
+#[superglobal] Elpi Accumulate derive.bitset.db lp:{{
+  namespace derive.bitset {
+    pred to-bits i:term, o:term.
+    :name "to-bits.typeclass"
+    to-bits T F :- typeclass "derive.bitset.db"  (before "to-bits.typeclass") (to-bits T F) {{ @ToBit lp:T lp:F }} Bo_.
+  }
+}}.
+
 Elpi Accumulate derive Db derive.bitset.db.
+
 Elpi Accumulate derive lp:{{
   namespace derive.finset {
     pred main i:gref, i:string, i:bool, o:list prop.
@@ -151,4 +154,3 @@ Add an instance of `ToBit` and use #[only(bitset_to_bit)] instead to override th
     ).
 
 }}.
-Elpi Typecheck derive.

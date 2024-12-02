@@ -10,9 +10,8 @@ Require Import Coq.ZArith.BinInt.
 Require Import bedrock.elpi.extra.extra.
 
 Elpi Program test lp:{{ }}.
-Elpi Accumulate Db extra.Program.
+Elpi Accumulate File extra.Program.
 Elpi Accumulate File test.
-Elpi Typecheck.
 
 Definition my_pair : N * Z := (1%N, (-1)%Z).
 

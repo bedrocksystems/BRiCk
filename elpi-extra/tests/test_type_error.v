@@ -9,22 +9,30 @@ Require bedrock.elpi.extra.extra.
 (** Confirm that we made warnings from <<Elpi Typecheck>> fatal. *)
 
 Elpi Program test lp:{{ }}.
-Elpi Accumulate lp:{{
+Fail Elpi Accumulate lp:{{
   undeclared_constant cats.
 }}.
-Fail Elpi Typecheck.
 
 
-Elpi Program test2 lp:{{ }}.
-
-Elpi Accumulate lp:{{
+Fail Elpi Accumulate lp:{{
   type cats dogs.
   type undeclared_constant dogs -> prop.
 
   undeclared_constant cats.
 }}.
-Succeed Elpi Typecheck.
-Elpi Accumulate lp:{{
-  kind dogs type.	% Sadly not forced
+
+Fail Elpi Accumulate lp:{{
+  type cats dogs.
+  type undeclared_constant dogs -> prop.
+
+  undeclared_constant cats.
 }}.
-Succeed Elpi Typecheck.
+
+Succeed Elpi Accumulate lp:{{
+  kind dogs type.
+  type cats dogs.
+  type undeclared_constant dogs -> prop.
+
+  undeclared_constant cats.
+}}.
+

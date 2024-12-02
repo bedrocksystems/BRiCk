@@ -11,7 +11,7 @@ Require Export bedrock.prelude.elpi.derive.common.
 Require Import bedrock.prelude.prelude.
 Require Import bedrock.prelude.elpi.basis.
 
-Elpi Accumulate derive Db bedrock.basis.db.
+Elpi Accumulate derive File bedrock.basis.elpi.
 
 (***************************************************
  Finite
@@ -19,15 +19,18 @@ Elpi Accumulate derive Db bedrock.basis.db.
 Elpi Db derive.stdpp.finite.db lp:{{
   pred finite o:gref, o:gref.
   pred finite-done o:gref.
+}}.
+Elpi Accumulate derive.stdpp.finite.db File bedrock.typeclass.elpi.
+#[superglobal] Elpi Accumulate derive.stdpp.finite.db lp:{{
   :name "finite-done.typeclass"
   finite-done GR :-
     typeclass "derive.stdpp.finite.db"
       (before "finite-done.typeclass") (finite-done GR) {{ @Finite lp:{{global GR}} _ }} Bo_.
+
 }}.
 Elpi Accumulate derive Db derive.stdpp.finite.db.
-Elpi Typecheck derive.
 
-Elpi Db derive.finite.db lp:{{
+Elpi File derive.finite.elpi lp:{{
   namespace derive.finite {
      /* We want to process
       * [Variant ResType : Set := A | B | C (_ : option bool) | D (_ : bool) (_ : bool).]
@@ -131,7 +134,7 @@ Elpi Db derive.finite.db lp:{{
   derivation _ _ (derive "finite" (cl\ cl = []) true).
 }}.
 
-Elpi Accumulate derive Db derive.finite.db.
+Elpi Accumulate derive File derive.finite.elpi.
 Elpi Accumulate derive lp:{{
   namespace derive.finite {
     pred main i:gref, i:string, o:list prop.
@@ -176,4 +179,3 @@ Example #3:
       (finite-done (indt T))
     ).
 }}.
-Elpi Typecheck derive.

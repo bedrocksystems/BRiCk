@@ -29,5 +29,6 @@ namespace coq {
   fold (uvar _ L as TM) F A A' :- !, F TM A A1, fold.aux L F A1 A'.
   fold X _ A A :- name X, !. %pi-bound variables c0, c1, etc.
   fold TM _ A A :- !, coq.error "coq.fold: unexpected term" {coq.term->string TM}.
+  type fold.aux list term -> (term -> A -> A -> prop) -> A -> A -> prop.
   fold.aux L F A A' :- std.fold L A (X\ fold X F) A'.
 } %namespace coq

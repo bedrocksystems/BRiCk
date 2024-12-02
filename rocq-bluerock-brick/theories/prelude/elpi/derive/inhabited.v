@@ -9,18 +9,20 @@ Require Import elpi.elpi.
 Require Export bedrock.prelude.elpi.derive.common.
 
 Require Export bedrock.prelude.elpi.basis.
-Elpi Accumulate derive Db bedrock.basis.db.
+Elpi Accumulate derive File bedrock.basis.elpi.
 
 Elpi Db derive.stdpp.inhabited.db lp:{{
   pred inhabited o:gref, o:gref.
   pred inhabited-done o:gref.
+}}.
+Elpi Accumulate derive.stdpp.inhabited.db File bedrock.typeclass.elpi.
+#[superglobal] Elpi Accumulate derive.stdpp.inhabited.db lp:{{
   :name "inhabited-done.typeclass"
   inhabited-done GR :-
     typeclass "derive.stdpp.inhabited.db"
       (before "inhabited-done.typeclass") (inhabited-done GR) {{ @Inhabited lp:{{global GR}} }} Bo_.
 }}.
 Elpi Accumulate derive Db derive.stdpp.inhabited.db.
-Elpi Typecheck derive.
 
 (***************************************************
  Inhabited
@@ -77,4 +79,3 @@ Example #3:
        (inhabited-done (indt T))
     ).
 }}.
-Elpi Typecheck derive.

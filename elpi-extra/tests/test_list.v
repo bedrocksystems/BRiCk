@@ -10,9 +10,8 @@ Require Import Stdlib.NArith.BinNat.
 Require Import bedrock.elpi.extra.extra.
 
 Elpi Program test lp:{{ }}.
-Elpi Accumulate Db extra.Program.
+Elpi Accumulate File extra.Program.
 Elpi Accumulate File test.
-Elpi Typecheck.
 
 Import ListNotations.
 

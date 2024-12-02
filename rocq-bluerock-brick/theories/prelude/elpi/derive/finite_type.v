@@ -11,7 +11,7 @@ Require Export bedrock.prelude.elpi.derive.eq_dec.
 Require Export bedrock.prelude.elpi.derive.finite.
 
 Require Import bedrock.prelude.elpi.basis.
-Elpi Accumulate derive Db bedrock.basis.db.
+Elpi Accumulate derive File bedrock.basis.elpi.
 
 (***************************************************
  Finite Types
@@ -26,7 +26,9 @@ Class ToN (T : Type) (to_N : T -> N) : Prop := {}.
 Elpi Db derive.finite_type.db lp:{{
   pred finite-type-done o:gref.
   pred bitset-done o:gref.
+}}.
 
+Elpi File derive.finite_type.elpi lp:{{
   namespace derive.finite_type {
     pred mk-finite-prelim i:string, i:gref, i:gref.
     mk-finite-prelim TypeName TyGR OrigGR :- std.do! [
@@ -51,7 +53,6 @@ Elpi Db derive.finite_type.db lp:{{
 
     pred mk-simple-finite i:string, i:gref, i:gref.
     mk-simple-finite TypeName TyGR OrigGR :- std.do! [
-      derive.if-verbose (coq.say "[derive.finite_type][mk-simple-finite]" TypeName),
       mk-finite-prelim TypeName TyGR OrigGR,
       coq.env.include-module-type {coq.locate-module-type "finite_type_mixin"} coq.inline.default,
       coq.env.end-module MP_,
@@ -59,7 +60,6 @@ Elpi Db derive.finite_type.db lp:{{
 
     pred mk-finite i:string, i:gref, i:gref, i:term.
     mk-finite TypeName TyGR OrigGR ToN :- std.do! [
-      derive.if-verbose (coq.say "[derive.finite_type][mk-finite]" TypeName),
       mk-finite-prelim TypeName TyGR OrigGR,
 
       coq.locate "t" GRTy,
@@ -72,7 +72,9 @@ Elpi Db derive.finite_type.db lp:{{
   }
 }}.
 
-Elpi Accumulate derive lp:{{
+Elpi Accumulate derive File derive.finite_type.elpi.
+Elpi Accumulate derive.finite_type.db File bedrock.typeclass.elpi.
+#[superglobal] Elpi Accumulate derive.finite_type.db lp:{{
   namespace derive.finite_type {
     pred to-N i:term, o:term.
     :name "to-N.typeclass"
@@ -151,4 +153,3 @@ Use an instance of the typeclass `ToN` and #[only(finite_type_to_N)] instead to 
     ).
 
 }}.
-Elpi Typecheck derive.
