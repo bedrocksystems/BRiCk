@@ -326,6 +326,11 @@ public:
 	IGNORE(CXXUnresolvedConstructExpr)
 	IGNORE(SizeOfPackExpr) // used in BHV
 
+	void VisitGNUNullExpr(const GNUNullExpr* expr) {
+		print.ctor("Egnu_null", false);
+		done(expr);
+	}
+
 	void VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr* expr) {
 		if (!print.templates())
 			return unsupported_expr(expr);

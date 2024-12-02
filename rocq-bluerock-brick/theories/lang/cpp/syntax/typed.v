@@ -407,6 +407,18 @@ Module decltype.
         end.
 
       Definition of_cast (c : Cast' lang) (base : decltype) : M decltype :=
+        let require_float t :=
+          match t with
+          | Tfloat_ _ => mret tt
+          | _ => throw ("floating point required"%bs, t)
+          end
+        in
+        let require_integral t :=
+          match t with
+          | Tnum _ _ | Tbool | Tchar_ _ => mret tt
+          | _ => throw ("integral type required"%bs, t)
+          end
+        in
         match c with
         | Cdependent t
         | Cbitcast t
@@ -459,10 +471,27 @@ Module decltype.
 
         | Cintegral t => mret t
         | Cint2bool => mret Tbool
-        | Cfloat2int t
-        | Cint2float t
-        | Cfloat t
-        | Cnull2ptr t
+        | Cnull2ptr t =>
+            let* _ :=
+              match base with
+              | Tnullptr | Tnum _ _ => mret tt
+              | _ => throw ("source of null2ptr cast must be nullptr or integral type"%bs, base)
+              end
+            in
+            let* _ := require_ptr t in
+            mret t
+        | Cfloat2int t =>
+            let* _ := require_float base in
+            let* _ := require_integral t in
+            mret t
+        | Cint2float t =>
+            let* _ := require_integral base in
+            let* _ := require_float t in
+            mret t
+        | Cfloat t =>
+            let* _ := require_float base in
+            let* _ := require_float t in
+            mret t
         | Cnull2memberptr t
         | Cbuiltin2fun t
         | Cctor t => mret t
