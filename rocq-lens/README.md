@@ -1,41 +1,55 @@
-# rocq-lens
-An implementation of lenses in Coq. This package uses [meta-coq](https://github.com/MetaCoq/metacoq) to generate lenses for records.
+Implementation of Lenses in Rocq/Coq Using Elpi
+===============================================
 
-## Use
-See `demo.v` in the `test-suite` directory. A simple example is included below.
+This package uses [coq-elpi](https://github.com/LPCIC/coq-elpi) to generate
+lenses for records.
+
+## Usage
 
 ```coq
-Set Primitive Projections.
+Require Import elpi.apps.derive.derive.
+Require Import Lens.Lens.
+Require Import Lens.Elpi.Elpi.
 
-Record Foo : Set :=
-{ foo : nat
-; bar : bool
+Import LensNotations.
+#[local] Open Scope lens_scope.
+
+#[projections(primitive=yes)]
+Record Foo : Set := {
+  foo : nat;
+  bar : bool;
 }.
-Run TemplateProgram (genLens Foo). (* generates _foo and _bar *)
 
-About _foo. (* : Lens Foo Foo nat nat *)
-About _bar. (* : Lens Foo Foo bool bool *)
+#[only(lens)] derive Foo.
 
-Goal view _foo {| foo := 3 ; bar := true |} = 3.
+About _foo.
+About _bar.
+
+Goal {| foo := 3 ; bar := true |} .^ _foo = 3.
 Proof. reflexivity. Qed.
 
-Goal view _bar {| foo := 3 ; bar := true |} = true.
+Goal {| foo := 3 ; bar := true |} .^ _bar = true.
 Proof. reflexivity. Qed.
 
-Goal set _bar false {| foo := 3 ; bar := true |} = {| foo := 3 ; bar := false |}.
+Goal {| foo := 3 ; bar := true |} &: _bar .= false = {| foo := 3 ; bar := false |}.
 Proof. reflexivity. Qed.
 ```
 
 ## Limitations
-Generation of lenses via template-coq is currently only supports `Record`s defined with `Primitive Projections` enabled. Further, it does not support:
 
-- Polymorphic lenses
-- Universe polymorphic definitions
-- Universe polymorphic lenses
+Generation of lenses currently only supports `Record`s defined with primitive
+projections enabled. Further, it does not support:
+- polymorphic lenses,
+- universe polymorphic definitions,
+- iniverse polymorphic lenses.
 
-### Implementation Note
-Unlike the Haskell implementation, this implementation is significantly more first-order, prefering separate `get` and `set` functions packaged as a record. This has several benefits in Coq.
+## Implementation Notes
 
+This implementation is significantly more first-order than that of Haskell. We
+prefer separate `get` and `set` functions, packaged as a record. This has the
+following benefits in Coq:
 1. We don't need to depend on a `Functor` class.
-2. We don't require extra universes for the types of the universally quantified functor.
-3. Error messages are simpler and type checking does not rely on typeclass inference which is not as robust as it is in Haskell due to the dependent nature of Gallina.
+2. We don't require extra universes for the types of the universally
+   quantified functor.
+3. Error messages are simpler and type checking does not rely on typeclass
+   inference which is not as robust as it is in Haskell due dependent types.

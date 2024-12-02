@@ -9,6 +9,7 @@ authors: [
   "Gregory Malecha <gregory@bluerock.io>"
   "Paolo Giarrusso <paolo@bluerock.io>"
 ]
+license: "BSD-3-Clause"
 homepage: "https://github.com/bedrocksystems/BRiCk"
 bug-reports: "https://github.com/bedrocksystems/BRiCk/issues"
 depends: [

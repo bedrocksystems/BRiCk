@@ -16,19 +16,14 @@
 (package
  (name rocq-lens)
  (synopsis "Generation of lenses for record datatypes")
+ (license BSD-3-Clause)
  (depends
   (coq (>= 8.13.0))))
-
-;(package
-; (name rocq-lens-tc)
-; (synopsis "Generation of lenses for record datatypes")
-; (depends
-;  rocq-lens
-;  coq-metacoq-template))
 
 (package
  (name rocq-lens-elpi)
  (synopsis "Generation of lenses for record datatypes, Elpi backend")
+ (license LGPL-2.1-or-later)
  (depends
   rocq-lens
   coq-elpi))
