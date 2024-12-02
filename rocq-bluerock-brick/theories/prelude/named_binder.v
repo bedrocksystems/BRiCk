@@ -6,9 +6,13 @@
  *)
 
 Require Import iris.proofmode.tactics.
-Require Import bedrock.prelude.bytestring.
+Require Import Stdlib.Strings.PrimString.
 Require Export bedrock.prelude.tactics.base_dbs.
+
+Export PStringNotations.
+
 Require Ltac2.Ltac2.
+Require Ltac2.Pstring.
 
 (** NamedBinder is a type wrapper that can be used to record the name
     of a binder in a persistent way that is not affected by any computation.
@@ -16,7 +20,7 @@ Require Ltac2.Ltac2.
     Existentials/universals of type [NamedBinder A str] are always
     eliminated/introduced directly as an assumption named [str] of type [A].
  *)
-Definition NamedBinder (A:Type) (name : BS.t) := A.
+Definition NamedBinder (A:Type) (name : string) := A.
 #[global] Arguments NamedBinder : simpl never.
 #[global] Hint Opaque NamedBinder : typeclass_instances br_opacity.
 
@@ -25,27 +29,9 @@ Module Binder.
   Import Ltac2.Printf.
   Import Ltac2.Constr.
   Import Ltac2.Constr.Unsafe.
+  Import Ltac2.Pstring.
 
   Ltac2 Type exn ::= [Impossible].
-
-  Ltac2 to_bs (s : string) :=
-    let cons := constr:(@BS.String) in
-    let univs := match kind constr:(Byte.x00) with | Constructor _ univs => univs | _ => Control.throw Impossible end in
-    let byte :=
-      match Option.get (Env.get (Env.path reference:(Byte.byte))) with
-      | Std.IndRef ind => ind
-      | _ => Control.throw Impossible
-      end
-    in
-    let rec go i acc : constr :=
-      let i := Int.sub i 1 in
-      if Int.lt i 0 then acc else
-      let c := String.get s i in
-      let c := Char.to_int c in
-      let acc := make (App cons [|make (Constructor (Constr.Unsafe.constructor byte c) univs); acc|]) in
-      go i acc
-    in
-    go (String.length s) constr:(BS.EmptyString).
 
   Ltac2 binder (p : Ltac1.t) :=
     let p := Option.get (Ltac1.to_constr p) in
@@ -55,31 +41,22 @@ Module Binder.
         (Option.default (@anon) (Constr.Binder.name b))
     | _ => @anon
     end in
-    refine (to_bs (Ident.to_string id)).
-
-  Ltac2 int_of_byte (b : constr) :=
-    match kind b with
-    | Constructor c _ => Constructor.index c
-    | _ => Control.throw (Invalid_argument (Some (Message.of_constr b)))
-    end.
-
-  Ltac2 str_of_bs (bs : constr) : string :=
-    let rec go bs n acc :=
-      lazy_match! bs with
-      | BS.EmptyString => (n, acc)
-      | BS.String ?b ?bs =>
-        let char := Char.of_int (int_of_byte b) in
-        go bs (Int.add n 1) (char :: acc)
+    let str :=
+      match Pstring.of_string (Ident.to_string id) with
+      | Some s => s
+      | None => Option.get (Pstring.of_string "anon")
       end
     in
-    let (len, chars) := go bs 0 [] in
-    let str := String.make len (Char.of_int 0) in
-    let n := Int.sub len 1 in
-    List.iteri (fun i char => String.set str (Int.sub n i) char) chars;
-    str.
+    refine (Unsafe.make (String str)).
 
-  Ltac2 to_id_fun (bs : constr) : unit :=
-    let str := str_of_bs bs in
+  (* Solve the goal with [fun (x : s) => x] *)
+  Ltac2 to_id_fun (s : constr) : unit :=
+    let str :=
+      match kind s with
+      | String s => Pstring.to_string s
+      | _ => Control.throw (Invalid_argument None)
+      end
+    in
     let id := Ident.of_string str in
     let binder := Constr.Binder.make id 'unit in
     let f := Constr.Unsafe.make (
@@ -88,7 +65,7 @@ Module Binder.
     in
     refine f.
 
-  Ltac id_of_bs := ltac2:(bs |- to_id_fun (Option.get (Ltac1.to_constr bs))).
+  Ltac id_of := ltac2:(str |- to_id_fun (Option.get (Ltac1.to_constr str))).
 End Binder.
 
 (* [TCForceEq] disregards typeclass_instances opacity.  *)
@@ -96,12 +73,12 @@ Inductive TCForceEq {A : Type} (x : A) : A → Prop :=  TCForceEq_refl : TCForce
 Existing Class TCForceEq.
 #[global] Hint Extern 100 (TCForceEq ?x _) => refine (TCForceEq_refl x) : typeclass_instances.
 
-Class IdOfBS (name : BS.t) (ident : () -> ()) := ID_OF_BS {}.
-#[global] Arguments IdOfBS name%_bs_scope _%_function_scope.
+Class IdOfBS (name : string) (ident : () -> ()) := ID_OF_BS {}.
+#[global] Arguments IdOfBS name _%_function_scope.
 #[global] Hint Mode IdOfBS ! - : typeclass_instances.
 
 #[global] Hint Extern 100 (IdOfBS ?name _) =>
-  refine (@ID_OF_BS name ltac:(Binder.id_of_bs name)) : typeclass_instances.
+  refine (@ID_OF_BS name ltac:(Binder.id_of name)) : typeclass_instances.
 
 #[global] Instance from_forall_named_binder {PROP:bi} {A} {name} {id}
   {Φ : NamedBinder A name -> PROP}
@@ -122,7 +99,7 @@ Proof. move => _ ->. by rewrite /IntoExist. Qed.
 Module Type Test.
   Tactic Notation "test" ident(name) := (assert (name = ()) by (destruct name; reflexivity)).
 
-  Goal forall {PROP:bi}, ⊢@{PROP} ∀ x : NamedBinder unit "name"%bs, False.
+  Goal forall {PROP:bi}, ⊢@{PROP} ∀ x : NamedBinder unit "name", False.
   Proof.
     intros PROP.
     (* The name returned in [FromForall] is only honored if we explicitly introduce [(?)] *)
@@ -130,7 +107,7 @@ Module Type Test.
     assert_succeeds (iIntros (?); test name).
   Abort.
 
-  Goal forall {PROP:bi}, (∃ x : NamedBinder unit "name"%bs, False) ⊢@{PROP} False.
+  Goal forall {PROP:bi}, (∃ x : NamedBinder unit "name", False) ⊢@{PROP} False.
   Proof.
     intros PROP.
     assert_succeeds (iIntros "[% ?]"; test name).
@@ -143,7 +120,7 @@ Section Binder.
   #[local] Set Typeclasses Unique Instances.
   #[local] Set Typeclasses Strict Resolution.
   (** [Binder (fun x => _)] resolves to the bytestring "x". *)
-  Class Binder {P : Type} (p : P) := binder : BS.t.
+  Class Binder {P : Type} (p : P) := binder : string.
 End Binder.
 
 Hint Opaque Binder : typeclass_instances.

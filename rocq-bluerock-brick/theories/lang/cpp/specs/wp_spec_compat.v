@@ -4,7 +4,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import iris.proofmode.tactics.
-Require Import bedrock.prelude.bytestring.
 Require Import bedrock.prelude.named_binder.
 Require Import bedrock.lang.algebra.telescopes.
 Require Import bedrock.lang.bi.telescopes.
@@ -316,7 +315,7 @@ Section with_AR.
   #[local] Notation WPP := (WpSpec PROP A R).
 
   (** [add_with T wpp] adds [T] as logical variable to [wpp] *)
-  #[program] Definition add_with {T : Type@{universes.Quant}} (wpp : T -> WPP) (name : BS.t) : WPP :=
+  #[program] Definition add_with {T : Type@{universes.Quant}} (wpp : T -> WPP) (name : PrimString.string) : WPP :=
     {| spec_internal := funI args' P Q args K => ∃ x : NamedBinder T name, (wpp x).(spec_internal) args' P Q args K |}.
   Next Obligation.
     intros. simpl.
@@ -521,7 +520,7 @@ Section post_val.
 
   (* We opt to reify this to avoid adding extra equalities when we do not actually need them. arguments that are awkward *)
   Inductive _post : Type :=
-  | WITH [t : Type@{universes.Quant}] (_ : t -> _post) (_ : BS.t)
+  | WITH [t : Type@{universes.Quant}] (_ : t -> _post) (_ : PrimString.string)
   | DONE (_ : RESULT) (_ : PROP).
 
   Fixpoint _postD (p : _post) (ls : list (RESULT -> PROP)) (K : RESULT -> PROP) : PROP :=
