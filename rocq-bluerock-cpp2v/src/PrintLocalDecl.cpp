@@ -45,6 +45,14 @@ private:
 	}
 
 public:
+	bool Visit(const Decl* decl) {
+		if (decl->isInvalidDecl()) {
+			print.output() << "Derror";
+			return true;
+		} else
+			return ConstDeclVisitorArgs<PrintLocalDecl, bool>::Visit(decl);
+	}
+
 	bool VisitVarDecl(const VarDecl* decl) {
 		// TODO: The following seems to be unsupported by parser.v
 		if (decl->hasExternalStorage()) {

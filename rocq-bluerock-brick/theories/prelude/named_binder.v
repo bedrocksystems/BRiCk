@@ -152,4 +152,4 @@ Ltac binder p :=
   f p.
 #[global] Hint Extern 0 (Binder ?p) => binder p : typeclass_instances.
 
-#[global] Notation "'[binder' x ]" := (_ :> @Binder (forall x, True) (fun x => I)) (at level 0, x binder).
+#[global] Notation "'[binder' x ]" := (_ :> @Binder (forall x, True) (fun x => I)) (at level 0, x binder, only parsing).

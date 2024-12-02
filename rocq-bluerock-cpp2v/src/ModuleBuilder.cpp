@@ -175,7 +175,7 @@ public:
 	}
 
 	void VisitFunctionDecl(const FunctionDecl *decl, Flags flags) {
-		if (!templates_ && decl->isDependentContext())
+		if (decl->isDependentContext() and not templates_)
 			return;
 
 		// TODO: in some instances, clang does not link all definitions together

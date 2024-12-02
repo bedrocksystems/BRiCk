@@ -297,6 +297,20 @@ public:
 		done(expr, Done::DT);
 	}
 
+	void Visit(const Expr* expr) {
+		if (expr->containsErrors()) {
+			auto loc = loc::of(expr);
+			print.ctor("Eerror", false);
+			std::string coqmsg;
+			llvm::raw_string_ostream os{coqmsg};
+			os << loc::describe(loc, cprint.getContext());
+			print.str(coqmsg) << fmt::nbsp;
+			print.end_ctor();
+		} else {
+			ConstStmtVisitor<PrintExpr, void>::Visit(expr);
+		}
+	}
+
 	void VisitExpr(const Expr* expr) {
 		unsupported_expr(expr);
 	}
@@ -325,6 +339,11 @@ public:
 	// These are template TODOs
 	IGNORE(CXXUnresolvedConstructExpr)
 	IGNORE(SizeOfPackExpr) // used in BHV
+
+	void VisitGNUNullExpr(const GNUNullExpr* expr) {
+		print.ctor("Egnu_null", false);
+		done(expr);
+	}
 
 	void VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr* expr) {
 		if (!print.templates())
@@ -903,6 +922,22 @@ public:
 							 loc::of(expr));
 		} else {
 			always_assert(false && "string literal does not have array type");
+		}
+	}
+
+	void VisitSourceLocExpr(const SourceLocExpr* expr) {
+		guard::ctor _{print, "Esource_loc"};
+		print.str(expr->getBuiltinStr()) << fmt::nbsp;
+		auto val = expr->EvaluateInContext(cprint.getContext(), nullptr);
+		if (expr->isIntType()) {
+			print.ctor("Eint");
+			print.output() << fmt::Z(val.getInt(), false) << fmt::nbsp;
+			done(expr);
+		} else {
+			// this is actually an LValue
+			auto base = val.getLValueBase();
+			always_assert(base.is<const Expr*>());
+			cprint.printExpr(print, base.get<const Expr*>(), names);
 		}
 	}
 
