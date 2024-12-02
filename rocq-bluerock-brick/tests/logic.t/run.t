@@ -7,6 +7,7 @@
   Arguments mpred_sep {thread_info _Σ} (P Q)%bi_scope
   mpred_sep is transparent
   Expands to: Constant test.test.mpred_sep
+  Declared in library test.test, line 6, characters 15-24
   rep_sep :
   ∀ {thread_info : biIndex} {_Σ : gFunctors} {Σ : cpp_logic thread_info _Σ},
     Rep → Rep → RepI
@@ -15,6 +16,7 @@
   Arguments rep_sep {thread_info _Σ Σ} (P Q)%bi_scope
   rep_sep is transparent
   Expands to: Constant test.test.rep_sep
+  Declared in library test.test, line 7, characters 15-22
   _at
        : ptrA → Rep → AT_Result ptrA
   p |-> R

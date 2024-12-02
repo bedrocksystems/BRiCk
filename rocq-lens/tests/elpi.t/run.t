@@ -5,16 +5,19 @@
   _field is not universe polymorphic
   _field is transparent
   Expands to: Constant test.demo._field
+  Declared in library test.demo, line 11, characters 0-26
   _foo : Foo -l> nat
   
   _foo is not universe polymorphic
   _foo is transparent
   Expands to: Constant test.demo._foo
+  Declared in library test.demo, line 21, characters 0-25
   _bar : Foo -l> bool
   
   _bar is not universe polymorphic
   _bar is transparent
   Expands to: Constant test.demo._bar
+  Declared in library test.demo, line 21, characters 0-25
   1 goal
     
     r : Foo
