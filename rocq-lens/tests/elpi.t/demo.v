@@ -1,7 +1,3 @@
-(* TODO: copyright header. *)
-(* From https://github.com/bedrocksystems/coq-lens/blob/master/test-suite/demo.v *)
-Require Import Stdlib.Strings.String.
-Require Import elpi.elpi.
 Require Import elpi.apps.derive.derive.
 Require Import Lens.Lens.
 Require Import Lens.Elpi.Elpi.
@@ -10,16 +6,17 @@ Import LensNotations.
 #[local] Open Scope lens_scope.
 
 #[projections(primitive=no)]
-Record Oops : Set :=
-{ oops1 : nat }.
+Record NoPP : Set := { field : nat }.
 
-#[only(lens)] derive Oops.
+#[only(lens)] derive NoPP.
+
+About _field.
 
 #[projections(primitive=yes)]
-Record Foo : Set :=
-{ foo : nat
-; bar : bool }.
-
+Record Foo : Set := {
+  foo : nat;
+  bar : bool;
+}.
 
 #[only(lens)] derive Foo.
 
@@ -32,21 +29,19 @@ Proof. reflexivity. Qed.
 Goal {| foo := 3 ; bar := true |} .^ _bar = true.
 Proof. reflexivity. Qed.
 
-
-Goal {| foo := 3 ; bar := true |} &: _bar .= false = {| foo := 3 ; bar := false |}.
+Goal {| foo := 3 ; bar := true |} &: _bar .= false =
+     {| foo := 3 ; bar := false |}.
 Proof. reflexivity. Qed.
 
 Set Printing All.
 
 (* Test for https://github.com/LPCIC/coq-elpi/pull/521 *)
-Lemma prim_proj_fold_test r :
-  foo r = 0 ->
-  view _foo r = foo r.
+Goal forall r, foo r = 0 -> view _foo r = foo r.
 Proof.
+  intros r H.
   simpl.
-  intros Hpr.
   Show.
-  rewrite Hpr.
+  rewrite H.
   Show.
   reflexivity.
 Qed.
