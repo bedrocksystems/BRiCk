@@ -1,5 +1,10 @@
   $ . ../setup-project.sh
   $ dune build demo.vo
+  _field : NoPP -l> nat
+  
+  _field is not universe polymorphic
+  _field is transparent
+  Expands to: Constant test.demo._field
   _foo : Foo -l> nat
   
   _foo is not universe polymorphic
@@ -13,13 +18,13 @@
   1 goal
     
     r : Foo
-    Hpr : @eq nat (foo r) O
+    H : @eq nat (foo r) O
     ============================
     @eq nat (foo r) (foo r)
   1 goal
     
     r : Foo
-    Hpr : @eq nat (foo r) O
+    H : @eq nat (foo r) O
     ============================
     @eq nat O O
   $ dune build test.vo 2>&1 | grep -v 'Derivation.*took'
@@ -30,6 +35,14 @@
        Record State : Set := MkState { value : N }.
        Definition value : State → N.
        Definition _value : Lens.Lens State State N N.
+     End
+  Derivation lens on indt «Val»
+  Module
+  polymorphic
+  := Struct
+       Record Val (T : Type) : Type := Build_Val { value : T }.
+       Definition value : ∀ T : Type, Val → T.
+       Definition _value : ∀ T : Type, Lens.Lens Val Val T T.
      End
   Derivation lens on indt «State»
   Module
