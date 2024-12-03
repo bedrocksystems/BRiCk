@@ -121,8 +121,14 @@ public:
 	}
 
 	void VisitTypedefNameDecl(const TypedefNameDecl *decl, Flags flags) {
-		if (isCanonical(decl))
-			go(decl, flags);
+		if (decl->getAnonDeclWithTypedefName(true)) {
+			// these [typedef]s become the name of the anonymous struct, so we
+			// ignore them.
+			return;
+		}
+		if (not decl->isCanonicalDecl())
+			return;
+		go(decl, flags);
 	}
 
 	void VisitTypeAliasTemplateDecl(const TypeAliasTemplateDecl *decl,

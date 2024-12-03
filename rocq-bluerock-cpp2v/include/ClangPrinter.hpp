@@ -113,11 +113,12 @@ private:
 	const Trace::Mask trace_;
 	const clang::DeclContext* decl_{nullptr};
 	const bool comment_{false};
+	const bool typedefs_;
 
 	ClangPrinter(const ClangPrinter& from, const clang::DeclContext* decl)
 		: compiler_(from.compiler_), context_(from.context_),
 		  mangleContext_(from.mangleContext_), trace_(from.trace_), decl_{decl},
-		  comment_{from.comment_} {}
+		  comment_{from.comment_}, typedefs_{from.typedefs_} {}
 
 public:
 	// Silence some warnings until we can improve our diagnostics
@@ -127,7 +128,7 @@ public:
 	static inline constexpr bool debug = false;
 
 	ClangPrinter(clang::CompilerInstance* compiler, clang::ASTContext* context,
-				 Trace::Mask trace, bool comment);
+				 Trace::Mask trace, bool comment, bool typdefs = false);
 
 	/*
     This declaration provides context for resolving template
@@ -156,6 +157,10 @@ public:
 
 	clang::MangleContext& getMangleContext() {
 		return *mangleContext_;
+	}
+
+	bool printTypedefs() const {
+		return typedefs_;
 	}
 
 	std::optional<std::pair<const clang::CXXRecordDecl*, clang::Qualifiers>>

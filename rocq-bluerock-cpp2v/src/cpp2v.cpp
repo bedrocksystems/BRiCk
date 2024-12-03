@@ -111,6 +111,11 @@ static cl::bits<Trace::Bit> TraceBits(
 static cl::opt<bool> NoSharing("no-sharing", cl::desc("disable sharing"),
 							   cl::Optional, cl::ValueOptional, cl::cat(Cpp2V));
 
+static cl::opt<bool>
+	PrintAliases("no-aliases",
+				 cl::desc("do not emit typedef and using declarations"),
+				 cl::Optional, cl::ValueOptional, cl::cat(Cpp2V));
+
 class ToCoqAction : public clang::ASTFrontendAction {
 public:
 	virtual std::unique_ptr<clang::ASTConsumer>
@@ -126,11 +131,11 @@ public:
 		llvm::errs() << i << "\n";
 	}
 #endif
-		auto result =
-			new ToCoqConsumer(&Compiler, to_opt(VFileOutput), to_opt(NamesFile),
-							  to_opt(Templates), to_opt(NameTest), !MangledKeys,
-							  Trace::fromBits(TraceBits.getBits()), Comment,
-							  !NoSharing, CheckTypes, !NoElaborate);
+		auto result = new ToCoqConsumer(
+			&Compiler, to_opt(VFileOutput), to_opt(NamesFile),
+			to_opt(Templates), to_opt(NameTest), !MangledKeys,
+			Trace::fromBits(TraceBits.getBits()), Comment, !NoSharing,
+			CheckTypes, !NoElaborate, !PrintAliases);
 		return std::unique_ptr<clang::ASTConsumer>(result);
 	}
 

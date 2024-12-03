@@ -1166,26 +1166,15 @@ public:
 
 	bool VisitTypedefNameDecl(const TypedefNameDecl *decl, CoqPrinter &print,
 							  ClangPrinter &cprint, const ASTContext &ctxt) {
-		/*
-		TODO: Adjust `type_table_le` and the template logic.
-		*/
-		return false;
-
 		if (ClangPrinter::debug && cprint.trace(Trace::Decl))
 			cprint.trace("VisitTypedefNameDecl", loc::of(decl));
 
-		auto go = [&]() { return Dtypedef.print(*decl, print, cprint, ctxt); };
-
-		if (print.templates())
-			return go();
-
-		if (auto t = decl->getUnderlyingType().getTypePtrOrNull())
-			if (!t->isDependentType())
-				return go();
-
-		if (ClangPrinter::warn_well_known)
-			unsupported(cprint, loc::of(decl), "dependent typedef");
-		return false;
+		if (cprint.printTypedefs()) {
+			// TODO: Adjust `type_table_le` and the template logic.
+			return Dtypedef.print(*decl, print, cprint, ctxt);
+		} else {
+			return false;
+		}
 	}
 
 	// Types
