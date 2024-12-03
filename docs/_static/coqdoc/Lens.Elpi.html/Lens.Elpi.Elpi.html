@@ -38,15 +38,31 @@
 <h1 class="libtitle">Lens.Elpi.Elpi</h1>
 
 <div class="code">
-<span class="comment">(*&nbsp;TODO&nbsp;copyright&nbsp;header.&nbsp;*)</span><br/>
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;This&nbsp;file&nbsp;is&nbsp;part&nbsp;of&nbsp;the&nbsp;rocq-lens-elpi&nbsp;package.<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;2021-2022&nbsp;Enrico&nbsp;Tassi<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;2023-2024&nbsp;BlueRock&nbsp;Security,&nbsp;Inc.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;This&nbsp;library&nbsp;is&nbsp;free&nbsp;software;&nbsp;you&nbsp;can&nbsp;redistribute&nbsp;it&nbsp;and/or&nbsp;modify&nbsp;it<br/>
+&nbsp;*&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License&nbsp;as&nbsp;published&nbsp;by<br/>
+&nbsp;*&nbsp;the&nbsp;Free&nbsp;Software&nbsp;Foundation;&nbsp;either&nbsp;version&nbsp;2.1&nbsp;of&nbsp;the&nbsp;License,&nbsp;or&nbsp;(at<br/>
+&nbsp;*&nbsp;your&nbsp;option)&nbsp;any&nbsp;later&nbsp;version.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;This&nbsp;library&nbsp;is&nbsp;distributed&nbsp;in&nbsp;the&nbsp;hope&nbsp;that&nbsp;it&nbsp;will&nbsp;be&nbsp;useful,&nbsp;but&nbsp;WITHOUT<br/>
+&nbsp;*&nbsp;ANY&nbsp;WARRANTY;&nbsp;without&nbsp;even&nbsp;the&nbsp;implied&nbsp;warranty&nbsp;of&nbsp;MERCHANTABILITY&nbsp;or<br/>
+&nbsp;*&nbsp;FITNESS&nbsp;FOR&nbsp;A&nbsp;PARTICULAR&nbsp;PURPOSE.&nbsp;See&nbsp;the&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License<br/>
+&nbsp;*&nbsp;for&nbsp;more&nbsp;details.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;You&nbsp;should&nbsp;have&nbsp;received&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License<br/>
+&nbsp;*&nbsp;along&nbsp;with&nbsp;this&nbsp;library;&nbsp;if&nbsp;not,&nbsp;write&nbsp;to&nbsp;the&nbsp;Free&nbsp;Software&nbsp;Foundation,<br/>
+&nbsp;*&nbsp;Inc.,&nbsp;51&nbsp;Franklin&nbsp;Street,&nbsp;Fifth&nbsp;Floor,&nbsp;Boston,&nbsp;MA&nbsp;02110-1301&nbsp;USAQ<br/>
+&nbsp;*)</span><br/>
+
+<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Lens.Lens</span>.<br/>
 
 <br/>
-<span class="comment">(*&nbsp;A&nbsp;lens,&nbsp;to&nbsp;see&nbsp;better.<br/>
-<br/>
-&nbsp;&nbsp;&nbsp;license:&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License&nbsp;Version&nbsp;2.1&nbsp;or&nbsp;later<br/>
-&nbsp;&nbsp;&nbsp;-------------------------------------------------------------------------&nbsp;*)</span><br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">elpi.apps.derive.elpi</span> <span class="id" title="var">Extra</span> <span class="id" title="var">Dependency</span> "lens.elpi" <span class="id" title="keyword">as</span> <span class="id" title="var">lens</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">elpi.apps.derive.elpi</span> <span class="id" title="constructor">Extra</span> <span class="id" title="constructor">Dependency</span> "lens.elpi" <span class="id" title="keyword">as</span> <span class="id" title="var">lens</span>.<br/>
 <span class="id" title="keyword">From</span> <span class="id" title="var">elpi.apps.derive.elpi</span> <span class="id" title="var">Extra</span> <span class="id" title="var">Dependency</span> "derive_hook.elpi" <span class="id" title="keyword">as</span> <span class="id" title="var">derive_hook</span>.<br/>
 
 <br/>
@@ -70,11 +86,11 @@
 
 <br/>
 <span class="comment">(*&nbsp;standalone&nbsp;command&nbsp;*)</span><br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="var">Command</span> <a id="r:3" class="idref" href="#r:3"><span class="id" title="binder">derive.lens</span></a>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Command</span> <span class="id" title="var">derive.lens</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">Db</span> <span class="id" title="var">Header</span> <span class="id" title="var">derive.lens.db</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">derive_hook</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">File</span> <span class="id" title="var">lens</span>.<br/>
-<span class="id" title="var">Elpi</span> <span class="id" title="constructor">Accumulate</span> <span class="id" title="constructor">Db</span> <span class="id" title="constructor">derive.lens.db</span>.<br/>
+<span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.lens.db</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">lp</span>:{{<br/>
 &nbsp;&nbsp;<span class="id" title="var">main</span> [<span class="id" title="var">str</span> <span class="id" title="var">I</span>, <span class="id" title="var">str</span> <span class="id" title="var">O</span>] :- !, <span class="id" title="var">coq.locate</span> <span class="id" title="var">I</span> (<span class="id" title="var">indt</span> <span class="id" title="var">GR</span>), <span class="id" title="var">derive.lens.main</span> <span class="id" title="var">GR</span> <span class="id" title="var">O</span> <span class="id" title="var">_</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="var">main</span> [<span class="id" title="var">str</span> <span class="id" title="var">I</span>] :- !, <span class="id" title="var">coq.locate</span> <span class="id" title="var">I</span> (<span class="id" title="var">indt</span> <span class="id" title="var">GR</span>), <span class="id" title="var">derive.lens.main</span> <span class="id" title="var">GR</span> "_" <span class="id" title="var">_</span>.<br/>
@@ -94,7 +110,8 @@
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">Db</span> <span class="id" title="var">derive.lens.db</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">File</span> <span class="id" title="var">lens</span>.<br/>
 <span class="id" title="var">Elpi</span> <span class="id" title="var">Accumulate</span> <span class="id" title="var">derive</span> <span class="id" title="var">lp</span>:{{<br/>
-&nbsp;&nbsp;<span class="id" title="var">derivation</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">_Prefix</span> <span class="id" title="var">ff</span> (<span class="id" title="var">derive</span> "lens" (<span class="id" title="var">derive.lens.main</span> <span class="id" title="var">T</span> <span class="id" title="var">N</span>) (<span class="id" title="var">lens</span>-<span class="id" title="var">db</span> <span class="id" title="var">T</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)) :- <span class="id" title="var">N</span> <span class="id" title="keyword">is</span> "_".<br/>
+&nbsp;&nbsp;<span class="id" title="var">derivation</span> (<span class="id" title="var">indt</span> <span class="id" title="var">T</span>) <span class="id" title="var">_Prefix</span> <span class="id" title="var">ff</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">derive</span> "lens" (<span class="id" title="var">derive.lens.main</span> <span class="id" title="var">T</span> <span class="id" title="var">N</span>) (<span class="id" title="var">lens</span>-<span class="id" title="var">db</span> <span class="id" title="var">T</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)) :- <span class="id" title="var">N</span> <span class="id" title="keyword">is</span> "_".<br/>
 }}.<br/>
 </div>
 <!--

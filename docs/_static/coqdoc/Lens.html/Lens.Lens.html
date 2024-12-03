@@ -38,15 +38,33 @@
 <h1 class="libtitle">Lens.Lens</h1>
 
 <div class="code">
-<span class="id" title="keyword">Set</span> <span class="id" title="var">Primitive</span> <span class="id" title="var">Projections</span>.<br/>
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;This&nbsp;file&nbsp;is&nbsp;part&nbsp;of&nbsp;the&nbsp;rocq-lens&nbsp;package.<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;2020-2024&nbsp;BlueRock&nbsp;Security,&nbsp;Inc.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;This&nbsp;library&nbsp;is&nbsp;free&nbsp;software;&nbsp;you&nbsp;can&nbsp;redistribute&nbsp;it&nbsp;and/or&nbsp;modify&nbsp;it<br/>
+&nbsp;*&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License&nbsp;as&nbsp;published&nbsp;by<br/>
+&nbsp;*&nbsp;the&nbsp;Free&nbsp;Software&nbsp;Foundation;&nbsp;either&nbsp;version&nbsp;2.1&nbsp;of&nbsp;the&nbsp;License,&nbsp;or&nbsp;(at<br/>
+&nbsp;*&nbsp;your&nbsp;option)&nbsp;any&nbsp;later&nbsp;version.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;This&nbsp;library&nbsp;is&nbsp;distributed&nbsp;in&nbsp;the&nbsp;hope&nbsp;that&nbsp;it&nbsp;will&nbsp;be&nbsp;useful,&nbsp;but&nbsp;WITHOUT<br/>
+&nbsp;*&nbsp;ANY&nbsp;WARRANTY;&nbsp;without&nbsp;even&nbsp;the&nbsp;implied&nbsp;warranty&nbsp;of&nbsp;MERCHANTABILITY&nbsp;or<br/>
+&nbsp;*&nbsp;FITNESS&nbsp;FOR&nbsp;A&nbsp;PARTICULAR&nbsp;PURPOSE.&nbsp;See&nbsp;the&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License<br/>
+&nbsp;*&nbsp;for&nbsp;more&nbsp;details.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;You&nbsp;should&nbsp;have&nbsp;received&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;GNU&nbsp;Lesser&nbsp;General&nbsp;Public&nbsp;License<br/>
+&nbsp;*&nbsp;along&nbsp;with&nbsp;this&nbsp;library;&nbsp;if&nbsp;not,&nbsp;write&nbsp;to&nbsp;the&nbsp;Free&nbsp;Software&nbsp;Foundation,<br/>
+&nbsp;*&nbsp;Inc.,&nbsp;51&nbsp;Franklin&nbsp;Street,&nbsp;Fifth&nbsp;Floor,&nbsp;Boston,&nbsp;MA&nbsp;02110-1301&nbsp;USAQ<br/>
+&nbsp;*)</span><br/>
+
+<br/>
+#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Set</span> <span class="id" title="var">Primitive</span> <span class="id" title="var">Projections</span>.<br/>
 
 <br/>
 <span class="id" title="keyword">Record</span> <a id="Lens" class="idref" href="#Lens"><span class="id" title="record">Lens</span></a> (<a id="a:1" class="idref" href="#a:1"><span class="id" title="binder">a</span></a> <a id="b:2" class="idref" href="#b:2"><span class="id" title="binder">b</span></a> <a id="c:3" class="idref" href="#c:3"><span class="id" title="binder">c</span></a> <a id="d:4" class="idref" href="#d:4"><span class="id" title="binder">d</span></a> : <span class="id" title="keyword">Type</span>) : <span class="id" title="keyword">Type</span> :=<br/>
 { <a id="view" class="idref" href="#view"><span class="id" title="projection">view</span></a> : <a class="idref" href="Lens.Lens.html#a:1"><span class="id" title="variable">a</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="Lens.Lens.html#c:3"><span class="id" title="variable">c</span></a><br/>
 ; <a id="over" class="idref" href="#over"><span class="id" title="projection">over</span></a> : <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">(</span></a><a class="idref" href="Lens.Lens.html#c:3"><span class="id" title="variable">c</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="Lens.Lens.html#d:4"><span class="id" title="variable">d</span></a><a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="Lens.Lens.html#a:1"><span class="id" title="variable">a</span></a> <a class="idref" href="http://coq.inria.fr/doc/V9.0+alpha/stdlib//Stdlib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="Lens.Lens.html#b:2"><span class="id" title="variable">b</span></a><br/>
 }.<br/>
-
-<br/>
 <span class="id" title="keyword">Arguments</span> <a class="idref" href="Lens.Lens.html#over"><span class="id" title="projection">over</span></a> {<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
 <span class="id" title="keyword">Arguments</span> <a class="idref" href="Lens.Lens.html#view"><span class="id" title="projection">view</span></a> {<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
 
@@ -75,8 +93,6 @@
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="LensNotations.::type_scope:x_'-l&gt;'_x" class="idref" href="#LensNotations.::type_scope:x_'-l&gt;'_x"><span class="id" title="notation">&quot;</span></a>X -l&gt; Y" := (<a class="idref" href="Lens.Lens.html#Lens"><span class="id" title="record">Lens</span></a> <span class="id" title="var">X</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Y</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 99, <span class="id" title="var">Y</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">type_scope</span>.<br/>
-&nbsp;&nbsp;#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="20240514",<span class="id" title="var">note</span>="use &amp;: instead")]<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> "a &amp; b" := (<span class="id" title="var">b</span> <span class="id" title="var">a</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50, <span class="id" title="var">only</span> <span class="id" title="var">parsing</span>, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">lens_scope</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="LensNotations.::lens_scope:x_'&amp;:'_x" class="idref" href="#LensNotations.::lens_scope:x_'&amp;:'_x"><span class="id" title="notation">&quot;</span></a>a &amp;: b" := (<span class="id" title="var">b</span> <span class="id" title="var">a</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50, <span class="id" title="var">only</span> <span class="id" title="var">parsing</span>, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">lens_scope</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="0740ee2e45638dd37ff2ec8fac8996db" class="idref" href="#0740ee2e45638dd37ff2ec8fac8996db"><span class="id" title="notation">&quot;</span></a>a %= f" := (<a class="idref" href="Lens.Lens.html#over"><span class="id" title="projection">Lens.over</span></a> <span class="id" title="var">a</span> <span class="id" title="var">f</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 49, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">lens_scope</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <a id="6fb92b1cc0767d1e7aa1412dec5d5a8a" class="idref" href="#6fb92b1cc0767d1e7aa1412dec5d5a8a"><span class="id" title="notation">&quot;</span></a>a .= b" := (<a class="idref" href="Lens.Lens.html#set"><span class="id" title="definition">Lens.set</span></a> <span class="id" title="var">a</span> <span class="id" title="var">b</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 49, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">lens_scope</span>.<br/>
