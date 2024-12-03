@@ -1,10 +1,25 @@
-(* TODO copyright header. *)
+(*
+ * This file is part of the rocq-lens-elpi package.
+ * Copyright (C) 2021-2022 Enrico Tassi
+ * Copyright (C) 2023-2024 BlueRock Security, Inc.
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or (at
+ * your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USAQ
+ *)
+
 Require Import Lens.Lens.
 
-(* A lens, to see better.
-
-   license: GNU Lesser General Public License Version 2.1 or later
-   ------------------------------------------------------------------------- *)
 From elpi.apps.derive.elpi Extra Dependency "lens.elpi" as lens.
 From elpi.apps.derive.elpi Extra Dependency "derive_hook.elpi" as derive_hook.
 
@@ -45,5 +60,6 @@ Elpi Accumulate lp:{{
 Elpi Accumulate derive Db derive.lens.db.
 Elpi Accumulate derive File lens.
 Elpi Accumulate derive lp:{{
-  derivation (indt T) _Prefix ff (derive "lens" (derive.lens.main T N) (lens-db T _ _)) :- N is "_".
+  derivation (indt T) _Prefix ff
+    (derive "lens" (derive.lens.main T N) (lens-db T _ _)) :- N is "_".
 }}.
