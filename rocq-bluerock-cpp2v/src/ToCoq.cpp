@@ -155,10 +155,10 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 				for (auto decl : mod.definitions()) {
 					preprint(decl);
 				}
+				print.output() << fmt::line;
 			}
 
-			print.output() << fmt::line
-						   << "Definition module : translation_unit := "
+			print.output() << "Definition module : translation_unit := "
 						   << fmt::indent << fmt::line
 						   << "translation_unit.check " << fmt::nbsp;
 
