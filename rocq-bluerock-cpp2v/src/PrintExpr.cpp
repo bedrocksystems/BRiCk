@@ -280,14 +280,11 @@ public:
 						  bool well_known = false) {
 		auto loc = loc::of(expr);
 		if (!well_known || ClangPrinter::warn_well_known) {
-			auto fullmsg = Twine("unsupported expression");
-			if (msg) {
-				fullmsg.concat(Twine(": "));
-				fullmsg.concat(Twine(*msg));
-			}
 			cprint.error_prefix(logging::unsupported(), loc)
-				<< "warning: " << fullmsg << "\n";
-			cprint.debug_dump(loc);
+				<< "warning: unsupported expression";
+			if (msg)
+				logging::unsupported() << ": " << *msg;
+			logging::unsupported() << "\n";
 		}
 		print.ctor("Eunsupported", false);
 		std::string coqmsg;
