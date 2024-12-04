@@ -1482,15 +1482,9 @@ public:
 	}
 
 	void VisitMaterializeTemporaryExpr(const MaterializeTemporaryExpr* expr) {
-		if (expr->getExtendingDecl() != nullptr) {
-			using namespace logging;
-			fatal() << "Error: binding a reference to a temporary is not "
-					   "(yet?) supported "
-					   "(scope extrusion)"
-					<< expr->getSourceRange().printToString(
-						   ctxt.getSourceManager())
-					<< "\n";
-			die();
+		if (expr->getExtendingDecl()) {
+			// BRiCk does not currently support scope-extruded temporaries
+			return unsupported_expr(expr, "scope-extruded temporary");
 		}
 
 		print.ctor("Ematerialize_temp");
