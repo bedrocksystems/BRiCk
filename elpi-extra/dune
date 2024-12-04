@@ -5,9 +5,4 @@
    (../../fm-ci-tools/coqc-tools/bin/coqdep_werr.exe as coqdep)
    (./extra/elpidep.sh as elpidep))
   (coq
-   (flags
-    (:standard
-     -w +deprecated-hint-without-locality
-     -w +deprecated-instance-without-locality
-     -w +unknown-option
-     -w +future-coercion-class-field)))))
+   (flags (:standard %{read-lines:../flags/coqc})))))

@@ -6,34 +6,9 @@
 ; See the LICENSE-BedRock file in the repository root for details.
 
 (env
- ; settings for both dev and release mode.
- ; Beware that "_" is really a wildcard rule. Placing rules later gives this error:
- ; > Error: This env stanza contains rules after a wildcard rule. These are going
- ; > to be ignored.
  (_
   (binaries
    (../scripts/dummy-gen.awk as dummy-gen))
   (coq
-   (flags
-    (:standard
-      ; temporarily disable verbose incompatible prefix warnings
-      -w -notation-incompatible-prefix
-      ;see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/_CoqProject
-      -w -notation-overridden
-      ; Similar to notation warnings.
-      -w -custom-entry-overridden
-      -w -redundant-canonical-projection
-      -w -ambiguous-paths
-      ; Turn warning on hints into error:
-      -w +automatic-prop-lowering
-      -w +deprecated-hint-without-locality
-      -w +deprecated-instance-without-locality
-      -w +unknown-option
-      -w +future-coercion-class-field))
-   (coqdoc_flags
-    --toc --toc-depth 2 --interpolate
-    --index indexpage --no-lib-name --parse-comments
-    --external https://plv.mpi-sws.org/coqdoc/iris/ iris
-    --external https://plv.mpi-sws.org/coqdoc/stdpp/ stdpp
-    --with-header /tmp/coqdocjs/extra/header.html
-    --with-footer /tmp/coqdocjs/extra/footer.html))))
+   (flags (:standard %{read-lines:../flags/coqc}))
+   (coqdoc_flags %{read-lines:../flags/coqdoc}))))
