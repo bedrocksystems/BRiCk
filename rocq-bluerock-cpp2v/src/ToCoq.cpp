@@ -124,7 +124,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 		output_file_, [&](Formatter& fmt) {
 			Cache cache;
 			CoqPrinter print(fmt, /*templates*/ false, structured_keys_, cache);
-			ClangPrinter cprint(compiler_, ctxt, trace_, comment_);
+			ClangPrinter cprint(compiler_, ctxt, trace_, comment_, typedefs_);
 
 			parser(print);
 			bytestring(print) << fmt::line;
@@ -197,13 +197,12 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 		});
 
 	with_open_file(notations_file_, [&](Formatter& spec_fmt) {
-		auto& ctxt = decl->getASTContext();
 		Cache c;
 		CoqPrinter print(spec_fmt, /*templates*/ false, structured_keys_, c);
-		ClangPrinter cprint(compiler_, &ctxt, trace_, comment_);
+		ClangPrinter cprint(compiler_, ctxt, trace_, comment_, typedefs_);
 		// PrintSpec printer(ctxt);
 
-		NoInclude source(ctxt.getSourceManager());
+		NoInclude source(ctxt->getSourceManager());
 
 		parser(print);
 
@@ -214,7 +213,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext* ctxt,
 	with_open_file(templates_file_, [&](Formatter& fmt) {
 		Cache c;
 		CoqPrinter print(fmt, /*templates*/ true, structured_keys_, c);
-		ClangPrinter cprint(compiler_, ctxt, trace_, comment_);
+		ClangPrinter cprint(compiler_, ctxt, trace_, comment_, typedefs_);
 
 		parser(print);
 		bytestring(print) << fmt::line;
