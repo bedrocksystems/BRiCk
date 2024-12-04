@@ -1,10 +1,4 @@
 (env
  (_
   (coq
-   (coqdoc_flags
-    --toc --toc-depth 2 --interpolate
-    --index indexpage --no-lib-name --parse-comments
-    --external https://plv.mpi-sws.org/coqdoc/iris/ iris
-    --external https://plv.mpi-sws.org/coqdoc/stdpp/ stdpp
-    --with-header /tmp/coqdocjs/extra/header.html
-    --with-footer /tmp/coqdocjs/extra/footer.html))))
+   (coqdoc_flags %{read-lines:../flags/coqdoc}))))
