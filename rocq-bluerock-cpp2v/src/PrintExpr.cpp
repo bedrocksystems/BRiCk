@@ -280,14 +280,11 @@ public:
 						  bool well_known = false) {
 		auto loc = loc::of(expr);
 		if (!well_known || ClangPrinter::warn_well_known) {
-			auto fullmsg = Twine("unsupported expression");
-			if (msg) {
-				fullmsg.concat(Twine(": "));
-				fullmsg.concat(Twine(*msg));
-			}
 			cprint.error_prefix(logging::unsupported(), loc)
-				<< "warning: " << fullmsg << "\n";
-			cprint.debug_dump(loc);
+				<< "warning: unsupported expression";
+			if (msg)
+				logging::unsupported() << ": " << *msg;
+			logging::unsupported() << "\n";
 		}
 		print.ctor("Eunsupported", false);
 		std::string coqmsg;
@@ -1485,15 +1482,9 @@ public:
 	}
 
 	void VisitMaterializeTemporaryExpr(const MaterializeTemporaryExpr* expr) {
-		if (expr->getExtendingDecl() != nullptr) {
-			using namespace logging;
-			fatal() << "Error: binding a reference to a temporary is not "
-					   "(yet?) supported "
-					   "(scope extrusion)"
-					<< expr->getSourceRange().printToString(
-						   ctxt.getSourceManager())
-					<< "\n";
-			die();
+		if (expr->getExtendingDecl()) {
+			// BRiCk does not currently support scope-extruded temporaries
+			return unsupported_expr(expr, "scope-extruded temporary");
 		}
 
 		print.ctor("Ematerialize_temp");
