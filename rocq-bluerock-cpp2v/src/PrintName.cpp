@@ -1332,13 +1332,8 @@ ClangPrinter::printName(CoqPrinter& print, const Decl& decl, bool full) {
 	if (trace(Trace::Name))
 		trace("printName", loc::of(decl));
 	if (full) {
-		if (auto dc = dyn_cast<DeclContext>(&decl)) {
-			auto temp = withDeclContext(dc);
-			return structured::printName(print, decl, temp);
-		} else
-			return structured::printName(print, decl, *this);
-
-		//		return structured::printName(print, decl, *this);
+		auto temp = withDecl(&decl);
+		return structured::printName(print, decl, temp);
 	} else
 		return structured::printAtomicName(*(decl.getDeclContext()), decl,
 										   print, *this);
