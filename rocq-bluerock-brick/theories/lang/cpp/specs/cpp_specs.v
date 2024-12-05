@@ -3,12 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.prelude.bytestring.
 Require Import bedrock.prelude.telescopes.
 Require Import bedrock.lang.cpp.semantics.values.
 Require Import bedrock.lang.cpp.logic.pred.
 Require Import bedrock.lang.cpp.specs.spec_notations.
-Require Import bedrock.lang.cpp.specs.classy.
+Require Export bedrock.lang.cpp.specs.classy.
 
 Require Import bedrock.lang.cpp.specs.wp_spec_compat.
 

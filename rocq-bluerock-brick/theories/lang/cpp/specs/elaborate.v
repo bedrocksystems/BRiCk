@@ -11,7 +11,7 @@ Require Import bedrock.lang.proofmode.proofmode.
 Require Import bedrock.lang.cpp.syntax.
 Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.cpp.semantics.
-Require Import bedrock.lang.cpp.specs.cpp_specs.
+Require Export bedrock.lang.cpp.specs.cpp_specs.
 Require Import bedrock.lang.cpp.specs.wp_spec_compat.
 
 Section with_cpp.

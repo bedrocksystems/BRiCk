@@ -14,7 +14,7 @@
 
 Require Import iris.bi.bi.
 Require Import bedrock.prelude.bytestring_core.
-Require Import bedrock.prelude.named_binder.
+Require Export bedrock.prelude.named_binder.
 Require Import bedrock.lang.bi.only_provable.
 Require Import bedrock.lang.cpp.specs.spec_notations.
 
@@ -24,7 +24,7 @@ Section with_prop.
   Class SpecGen : Type :=
     { add_pre : PROP -> spec_car -> spec_car
     ; add_post : PROP -> spec_car -> spec_car
-    ; add_with : forall {T : Type@{universes.Quant}}, (T -> spec_car) -> BS.t -> spec_car
+    ; add_with : forall {T : Type@{universes.Quant}}, (T -> spec_car) -> PrimString.string -> spec_car
     ; add_prepost (P : PROP) (S : spec_car) : spec_car :=
       add_pre P (add_post P S)
     ; add_require (P : Prop) : spec_car -> spec_car :=
@@ -41,7 +41,7 @@ Section with_prop.
   Class WithPost {RESULT : Type} : Type :=
     { post_car : Type
     ; start_post : post_car -> spec_car
-    ; post_with : forall T : Type@{universes.Quant}, (T -> post_car) -> BS.t -> post_car
+    ; post_with : forall T : Type@{universes.Quant}, (T -> post_car) -> PrimString.string -> post_car
     ; post_ret : RESULT -> PROP -> post_car
     }.
 
