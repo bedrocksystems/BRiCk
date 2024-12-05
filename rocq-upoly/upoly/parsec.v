@@ -10,20 +10,25 @@ Require Import bedrock.upoly.upoly.
 Require Import bedrock.upoly.optionT.
 Require Import bedrock.upoly.stateT.
 
+Import UPoly.
+
+Class Next (STREAM TKN : Type) := {
+  next : STREAM -> option (TKN * STREAM);
+}.
+
 (** ** parsec
     Simple implementation of a parser combinator library.
 
     NOTE: [M] is a monad transformer so additional state can be
           threaded through the parsing.
  *)
-Import UPoly.
 Section parsec.
-  Context {TKN : Type} {F : Type -> Type} {MR : MRet F} {FM : FMap F} {MB : MBind F}.
+  Context `{N : Next STREAM TKN} {F : Type -> Type} {MR : MRet F} {FM : FMap F} {MB : MBind F}.
 
   Definition M (T : Type) : Type :=
-    stateT.M (list TKN) (optionT.M F) T.
+    stateT.M STREAM (optionT.M F) T.
 
-  Definition run {T} (m : M T) : list TKN -> F _ :=
+  Definition run {T} (m : M T) : STREAM -> F _ :=
     fun str => optionT.run (stateT.run m str).
 
   #[global] Instance MRet_M : MRet M := @stateT.ret _ _ _.
@@ -41,23 +46,23 @@ Section parsec.
 
   Definition any : M TKN :=
     let* l := stateT.get in
-    match l with
-    | nil => mfail
-    | b :: bs => const b <$> stateT.put bs
+    match next l with
+    | None => mfail
+    | Some (b, bs) => const b <$> stateT.put bs
     end.
 
   (* end-of-stream *)
   Definition eos : M unit :=
     let* l := stateT.get in
-    match l with
-    | nil => mret tt
+    match next l with
+    | None => mret tt
     | _ => mfail
     end.
 
-  Definition run_full {T} (m : M T) : list TKN -> F (option T) :=
+  Definition run_full {T} (m : M T) : STREAM -> F (option T) :=
     fun str =>
       (fun x => match x with
-             | Some (nil, x) => Some x
+             | Some (l, x) => match next l with None => Some x | Some _ => None end
              | _ => None
              end) <$> optionT.run (stateT.run ((fun x _ => x) <$> m <*> eos) str).
 
@@ -104,9 +109,9 @@ Section parsec.
 
   Definition peek : M (option TKN) :=
     let k l :=
-      match l with
-      | nil => None
-      | x :: _ => Some x
+      match next l with
+      | None => None
+      | Some (x, _) => Some x
       end
     in
     k <$> stateT.get.
@@ -115,16 +120,17 @@ Section parsec.
     (cons <$> p <*> (star ((fun _ x => x) <$> sep <*> p))) <|> mret nil.
 
   #[local]
-  Fixpoint exact_ {_ : EqDecision TKN} (b : list TKN) (input : list TKN) {struct b} : optionT.M F (UTypes.prod (list TKN) unit) :=
+  Fixpoint exact_ {_ : EqDecision TKN} (b : list TKN) (input : STREAM) {struct b}
+      : optionT.M F (UTypes.prod STREAM unit) :=
     match b with
     | nil => mret (UTypes.pair input tt)
     | x :: xs =>
-        match input with
-        | y :: ys =>
+        match next input with
+        | Some (y, ys) =>
             if bool_decide (x = y) then
               exact_ xs ys
             else mfail
-        | nil => mfail
+        | None => mfail
         end
     end.
 

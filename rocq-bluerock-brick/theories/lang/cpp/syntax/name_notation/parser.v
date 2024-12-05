@@ -38,7 +38,7 @@ Module parser.
     Context {Mbase : Type -> Type}.
     Context {RET : MRet Mbase} {FMAP : FMap Mbase} {AP : Ap Mbase} {MBIND : MBind Mbase}.
 
-    Notation M := (parsec.M@{Set _ _ _ _ _ _} Byte.byte Mbase).
+    Notation M := (parsec.M@{Set _ _ _ _ _ _ _} bs Mbase).
 
     Definition digit_char (b : Byte.byte) : bool :=
       bool_decide (Byte.to_N "0" ≤ Byte.to_N b ≤ Byte.to_N "9")%N.
@@ -195,7 +195,7 @@ Module parser.
 
   End with_M.
 
-  #[local] Definition M := (parsec.M Byte.byte (eta option)).
+  #[local] Definition M := (parsec.M bs (eta option)).
 
   #[local] Instance M_ret : MRet M := _.
   #[local] Instance M_map : FMap M := _.

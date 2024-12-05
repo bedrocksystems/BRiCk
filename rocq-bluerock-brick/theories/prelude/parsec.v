@@ -16,13 +16,19 @@ Require Export bedrock.upoly.parsec.
 Import UPoly.
 Section char_parsec.
   Context {F : Type -> Type} {MR : MRet F} {FM : FMap F} {MB : MBind F}.
-  Notation M := (M Byte.byte F).
+  Notation M := (M bs F).
 
-  Definition run_bs {T} (p : M T) (b : bs) : F (option (bs * T)) :=
-    fmap (M:=eta option) (fun '(a,b) => (BS.parse a, b)) <$> run p (BS.print b).
+  #[global] Instance bs_next : Next bs Byte.byte := {|
+    next bs :=
+      match bs with
+      | BS.EmptyString => None
+      | BS.String x bs => Some (x, bs)
+      end
+  |}.
 
-  Definition run_full_bs {T} (p : M T) (b : bs) : F (option T) :=
-    run_full p (BS.print b).
+  Definition run_bs {T} (p : M T) (b : bs) : F (option (bs * T)) := run p b.
+
+  Definition run_full_bs {T} (p : M T) (b : bs) : F (option T) := run_full p b.
 
   Definition digit : M Byte.byte :=
     char (fun x => bool_decide (Byte.to_N "0" ≤ Byte.to_N x ≤ Byte.to_N "9")%N).
