@@ -473,12 +473,17 @@ Module decltype.
         | Cint2bool => mret Tbool
         | Cnull2ptr t =>
             let* _ :=
-              match base with
+              match (to_exprtype base).2 with
               | Tnullptr | Tnum _ _ => mret tt
               | _ => throw ("source of null2ptr cast must be nullptr or integral type"%bs, base)
               end
             in
-            let* _ := require_ptr t in
+            let* _ :=
+              match t with
+              | Tptr _ | Tnullptr => mret ()
+              | _ => throw ("destination of null2ptr cast must be a pointer"%bs, t)
+              end
+            in
             mret t
         | Cfloat2int t =>
             let* _ := require_float base in
