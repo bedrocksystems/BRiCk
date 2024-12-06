@@ -1,0 +1,20 @@
+(lang dune 3.16)
+(using ctypes 0.3)
+(name swipl)
+
+(generate_opam_files)
+
+(maintainers
+ "Jan-Oliver Kaiser <janno@bluerock.io>")
+
+(authors
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Rodolphe Lepigre")
+
+(license LicenseRef-BedRock)
+
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name swipl)
+ (synopsis "Low-level bindings to SWI-Prolog"))

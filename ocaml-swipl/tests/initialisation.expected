@@ -1,0 +1,8 @@
+BUILT_IN: not initialised yet
+Initialised? false
+Initialised? true
+Initialising ...
+Initialised.
+Initialised? true
+Initialised with argv = ./initialisation.exe -q
+BUILT_IN: initialised

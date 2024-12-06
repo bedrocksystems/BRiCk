@@ -1,0 +1,40 @@
+RUN NUMBER 1
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 2
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 3
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 4
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 5
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 6
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 7
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 8
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 9
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
+RUN NUMBER 10
+Solution: kind=cancel, index=0, pids=[151], cids=[151]
+Solution: kind=cancel, index=0, pids=[152], cids=[152]
+Solution: kind=cancel, index=0, pids=[153], cids=[153]
