@@ -1139,20 +1139,6 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 
 static fmt::Formatter& printName(CoqPrinter&, const Decl&, ClangPrinter&);
 
-static bool
-printTemplateSpecialization(CoqPrinter& print, const Decl& decl,
-							ClangPrinter& cprint) {
-	if (auto sd = recoverSpecialization(decl)) {
-		if (ClangPrinter::debug && cprint.trace(Trace::Name))
-			cprint.trace("printTemplateSpecialization", loc::of(decl));
-		guard::ctor _(print, "Ninst", false);
-		printName(print, sd->temp, cprint) << fmt::line;
-		printTemplateArgumentList(print, sd->args, cprint, loc::of(decl));
-		return true;
-	} else
-		return false;
-}
-
 static fmt::Formatter&
 printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 	if (ClangPrinter::debug && cprint.trace(Trace::Name))
@@ -1166,9 +1152,14 @@ printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 		always_assert(false);
 	}
 
-	if (printTemplateSpecialization(print, decl, cprint))
-		return print.output();
-	else {
+	if (auto sd = recoverSpecialization(decl)) {
+		// Printing template specializations should print
+		// <<Ninst (templated-name) [template-arguments]>>
+		guard::ctor _(print, "Ninst", false);
+		printName(print, sd->temp, cprint) << fmt::line;
+		return printTemplateArgumentList(print, sd->args, cprint,
+										 loc::of(decl));
+	} else {
 		auto ctx = getNonIgnorableAncestor(decl, cprint);
 		auto atomic = [&]() -> auto& {
 			return printAtomicName(ctx, decl, print, cprint);
@@ -1178,13 +1169,8 @@ printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 			return atomic();
 		} else {
 			guard::ctor _(print, "Nscoped", false);
-			structured::printName(print, toDecl(ctx, cprint, loc::of(decl)),
-								  cprint)
+			cprint.printName(print, toDecl(ctx, cprint, loc::of(decl)))
 				<< fmt::nbsp;
-
-			//			cprint.printName(toDecl(ctx, cprint, loc::of(decl)), print)
-			//				<< fmt::nbsp;
-			//			printName(toDecl(ctx, cprint, loc::of(decl)), print, cprint) << fmt::nbsp;
 			return atomic();
 		}
 	}
