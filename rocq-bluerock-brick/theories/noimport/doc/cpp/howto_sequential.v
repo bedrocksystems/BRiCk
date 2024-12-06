@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2020-2024 BedRock Systems, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0

@@ -1,0 +1,21 @@
+(lang dune 3.16)
+(using coq 0.8)
+(name ltac2-logger)
+
+(generate_opam_files)
+
+(maintainers
+ "Jan-Oliver Kaiser <janno@bluerock.io>")
+
+(authors
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Rodolphe Lepigre")
+
+(license LicenseRef-BedRock)
+
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name ltac2-logger)
+ (synopsis "Logging library for Ltac2 (Rocq theories)")
+ (depends coq-core stdlib-extra rocq-extra logger-lib coq-stdlib))

@@ -1,4 +1,4 @@
-(lang dune 3.14)
+(lang dune 3.16)
 (using coq 0.8)
 (name rocq-bluerock-cpp2v)
 
@@ -6,14 +6,18 @@
 
 (maintainers
  "Gregory Malecha <gregory@bluerock.io>")
+
 (authors
  "Gregory Malecha <gregory@bluerock.io>"
  "David Swasey"
  "Paolo Giarrusso <paolo@bluerock.io>")
+
+(license LicenseRef-BedRock)
+
 (source (github bedrocksystems/cpp2v))
 
 (package
  (name rocq-bluerock-cpp2v)
- (synopsis "Code generator for BRiCk program logic for C++.")
+ (synopsis "Code generator for BRiCk program logic for C++")
  (depends
   conf-clang))

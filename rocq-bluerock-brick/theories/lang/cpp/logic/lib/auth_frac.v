@@ -1,5 +1,5 @@
 (**
- * Copyright (C) 2022 BedRock Systems, Inc.
+ * Copyright (C) 2022 BlueRock Security, Inc.
  * All rights reserved.
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.

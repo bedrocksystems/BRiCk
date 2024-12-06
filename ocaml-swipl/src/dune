@@ -1,0 +1,26 @@
+(library
+ (name swipl)
+ (public_name swipl)
+ (flags (:standard -ccopt -Wl,-rpath,%{read:lib_path}))
+ (private_modules internal)
+ (ctypes
+  (external_library_name swipl)
+  (build_flags_resolver pkg_config)
+  (headers (include "SWI-Prolog.h"))
+  (type_description
+   (instance T)
+   (functor C_types))
+  (function_description
+   (concurrency sequential)
+   (instance F)
+   (functor C_funcs))
+  (generated_types Generated_C_types)
+  (generated_entry_point C)))
+
+(rule
+ (targets lib_path dummy_version.ml)
+ (deps
+  swipl-config.sh
+  (universe))
+ (action
+  (run ./swipl-config.sh %{targets})))

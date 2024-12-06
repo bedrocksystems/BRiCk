@@ -1,0 +1,22 @@
+(lang dune 3.16)
+(using coq 0.8)
+(name ltac2-extra)
+
+(generate_opam_files)
+
+(maintainers
+ "Jan-Oliver Kaiser <janno@bluerock.io>")
+
+(authors
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Rodolphe Lepigre"
+ "David Swasey")
+
+(license LicenseRef-BedRock)
+
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name ltac2-extra)
+ (synopsis "Extension of the Ltac2 standard library")
+ (depends coq-core stdlib-extra coq-stdlib))

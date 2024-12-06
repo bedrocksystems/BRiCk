@@ -1,0 +1,6 @@
+(include_subdirs qualified)
+(coq.theory
+ (name bedrock.ltac2.extra)
+ (package ltac2-extra)
+ (theories Ltac2)
+ (plugins ltac2-extra.plugin))

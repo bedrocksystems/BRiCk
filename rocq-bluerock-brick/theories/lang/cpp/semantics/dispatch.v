@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-2022
+ * Copyright (C) BlueRock Security Inc. 2020-2022
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)

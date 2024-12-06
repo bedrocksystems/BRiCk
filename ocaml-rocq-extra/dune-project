@@ -1,0 +1,22 @@
+(lang dune 3.16)
+(name rocq-extra)
+
+(generate_opam_files)
+
+(maintainers
+ "Jan-Oliver Kaiser <janno@bluerock.io>")
+
+(authors
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Rodolphe Lepigre")
+
+(license LicenseRef-BedRock)
+
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name rocq-extra)
+ (synopsis "Extensions to the Coq API")
+ (depends
+  coq-core
+  stdlib-extra))

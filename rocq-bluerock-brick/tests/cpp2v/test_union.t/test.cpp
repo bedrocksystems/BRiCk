@@ -1,5 +1,5 @@
 /*
- * Copyright (C) BedRock Systems Inc. 2019-20
+ * Copyright (C) BlueRock Security Inc. 2019-20
  *
  * SPDX-License-Identifier:MIT-0
  */

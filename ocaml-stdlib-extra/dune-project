@@ -1,0 +1,22 @@
+(lang dune 3.16)
+(name stdlib-extra)
+
+(generate_opam_files)
+
+(maintainers
+ "Jan-Oliver Kaiser <janno@bluerock.io>")
+
+(authors
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Rodolphe Lepigre")
+
+(license LicenseRef-BedRock)
+
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name stdlib-extra)
+ (synopsis "Extension of the OCaml standard library")
+ (depends
+  (yojson (= 2.2.2))
+  (mtime (= 2.1.0))))

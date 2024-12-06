@@ -1,0 +1,21 @@
+(lang dune 3.16)
+(name logger-lib)
+
+(generate_opam_files)
+
+(maintainers
+ "Jan-Oliver Kaiser <janno@bluerock.io>")
+
+(authors
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Rodolphe Lepigre")
+
+(license LicenseRef-BedRock)
+
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name logger-lib)
+ (synopsis "Generic logging library with efficient event recording")
+ (depends
+  stdlib-extra))

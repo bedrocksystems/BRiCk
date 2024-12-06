@@ -1,0 +1,71 @@
+(test
+ (name version_info)
+ (modules version_info)
+ (libraries swipl))
+
+(test
+ (name initialisation)
+ (modules initialisation)
+ (libraries swipl))
+
+; FIXME broken due to https://github.com/SWI-Prolog/swipl/issues/24. 
+;(test
+; (name cleanup_1)
+; (modules cleanup_1)
+; (libraries swipl))
+
+; FIXME broken due to https://github.com/SWI-Prolog/swipl/issues/24. 
+;(test
+; (name cleanup_2)
+; (modules cleanup_2)
+; (libraries swipl))
+
+(test
+ (name toplevel)
+ (modules toplevel)
+ (libraries swipl)
+ (action (pipe-stdout (echo "true.") (run %{test}))))
+
+(test
+ (name atoms)
+ (modules atoms)
+ (libraries swipl))
+
+(test
+ (name load_prolog)
+ (modules load_prolog)
+ (libraries swipl))
+
+(test
+ (name lists)
+ (modules lists)
+ (libraries swipl))
+
+(rule
+ (target dnet_v1_static.ml)
+ (deps (:file dnet_v1.pl))
+ (action
+  (with-stdout-to %{target}
+   (progn
+    (echo "(* Contents of [%{file}]. *)\nlet contents = {xxx|\n")
+    (cat %{file})
+    (echo "|xxx}")))))
+
+(test
+ (name dnet_v1)
+ (modules dnet_v1 dnet_v1_static)
+ (libraries swipl))
+
+(rule
+ (targets dnet_v1_test.output)
+ (deps dnet_v1.pl dnet_v1_test.pl)
+ (action
+  (with-stdout-to %{targets}
+   (pipe-outputs
+    (cat dnet_v1_test.pl)
+    (run swipl --quiet)))))
+
+(rule
+ (alias runtest)
+ (deps dnet_v1_test.output dnet_v1_test.expected)
+ (action (diff dnet_v1_test.output dnet_v1_test.expected)))

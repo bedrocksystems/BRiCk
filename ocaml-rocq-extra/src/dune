@@ -1,0 +1,4 @@
+(library
+ (name rocq_extra)
+ (public_name rocq-extra)
+ (libraries coq-core.lib coq-core.pretyping stdlib-extra))

@@ -1,0 +1,24 @@
+(library
+ (name logger_lib)
+ (public_name logger-lib)
+ (libraries stdlib-extra))
+
+(rule
+ (target static_css.ml)
+ (deps (:file static/main.css))
+ (action
+  (with-stdout-to %{target}
+   (progn
+    (echo "(* Contents of [%{file}]. *)\nlet contents = {xxx|\n")
+    (cat %{file})
+    (echo "|xxx}")))))
+
+(rule
+ (target static_js.ml)
+ (deps (:file static/main.js))
+ (action
+  (with-stdout-to %{target}
+   (progn
+    (echo "(* Contents of [%{file}]. *)\nlet contents = {xxx|\n")
+    (cat %{file})
+    (echo "|xxx}")))))
