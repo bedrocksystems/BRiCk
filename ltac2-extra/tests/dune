@@ -1,0 +1,4 @@
+(include_subdirs qualified)
+(coq.theory
+ (name bedrock_tests.ltac2.extra)
+ (theories bedrock.ltac2.extra))
