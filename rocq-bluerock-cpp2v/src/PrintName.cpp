@@ -1112,6 +1112,8 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 
 	case Decl::Kind::TypeAliasTemplate:
 	case Decl::Kind::VarTemplate:
+	case Decl::Kind::VarTemplateSpecialization:
+	case Decl::Kind::VarTemplatePartialSpecialization:
 		return ident_or_anon("anonymous template");
 
 	case Decl::Kind::Var:
