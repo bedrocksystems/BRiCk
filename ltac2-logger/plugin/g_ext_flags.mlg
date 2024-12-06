@@ -1,0 +1,26 @@
+DECLARE PLUGIN "ltac2-logger.plugin"
+
+{
+
+[@@@ocaml.warning "-27-33"]
+
+open Stdarg
+open Flags
+
+let gram_update = Vernacextend.(VtSideff ([], VtNow))
+let just_query  = Vernacextend.classify_as_query
+
+}
+
+VERNAC COMMAND EXTEND Ltac2_log_extension
+| ["Ltac2" "Dev" "Log" "Flag" ident(id) ] => { gram_update } -> {
+    Flags.declare_ltac2_log_flag id true
+  }
+| ["Ltac2" "Log" "Flag" ident(id)       ] => { gram_update } -> {
+    Flags.declare_ltac2_log_flag id false
+  }
+| ["Print" "Ltac2" "Log" "Flags"        ] => { just_query  }  -> {
+    Flags.print_ltac2_log_flags ()
+  }
+END
+
