@@ -154,7 +154,7 @@ ClangPrinter::printTypeTemplateParam(CoqPrinter &print, unsigned depth,
 			for (auto i : psd->getTemplateParameters()->asArray()) {
 				if (auto tpd = dyn_cast<TemplateTypeParmDecl>(i)) {
 					if (tpd->getDepth() != depth)
-						break;
+						continue;
 					if (tpd->getIndex() == index) {
 						guard::ctor _{print, "Tparam", false};
 						return print.str(tpd->getName());
@@ -164,14 +164,28 @@ ClangPrinter::printTypeTemplateParam(CoqPrinter &print, unsigned depth,
 		} else if (auto fd = dyn_cast<FunctionDecl>(d)) {
 			if (auto y = fd->getTemplateSpecializationArgs()) {
 				auto ary = y->asArray();
-				always_assert(index < ary.size());
-				return printQualType(print, ary[index].getAsType(), loc);
+				if (index >= ary.size()) {
+					llvm::errs() << "Looking for depth=" << depth
+								 << " index=" << index << "\n";
+					for (auto xx = d; xx; xx = xx->getLexicalParent()) {
+						llvm::errs() << xx->getDeclKindName();
+						if (auto nd = dyn_cast<NamedDecl>(xx))
+							llvm::errs() << " " << nd->getNameAsString();
+						llvm::errs() << "\n";
+					}
+					always_assert(false);
+				} else {
+					always_assert(ary[index].getKind() ==
+									  TemplateArgument::ArgKind::Type &&
+								  "template argument is a type");
+					return printQualType(print, ary[index].getAsType(), loc);
+				}
 
 			} else if (auto x = fd->getDescribedTemplateParams())
 				for (auto i : x->asArray()) {
 					if (auto tpd = dyn_cast<TemplateTypeParmDecl>(i)) {
 						if (tpd->getDepth() != depth)
-							break;
+							continue;
 						if (tpd->getIndex() == index) {
 							always_assert(print.templates());
 							guard::ctor _{print, "Tparam", false};
@@ -180,11 +194,11 @@ ClangPrinter::printTypeTemplateParam(CoqPrinter &print, unsigned depth,
 					}
 				}
 		} else if (auto rd = dyn_cast<CXXRecordDecl>(d)) {
-			if (auto x = rd->getDescribedTemplateParams())
+			if (auto x = rd->getDescribedTemplateParams()) {
 				for (auto i : x->asArray()) {
 					if (auto tpd = dyn_cast<TemplateTypeParmDecl>(i)) {
 						if (tpd->getDepth() != depth)
-							break;
+							continue;
 						if (tpd->getIndex() == index) {
 							always_assert(print.templates());
 							guard::ctor _{print, "Tparam", false};
@@ -192,6 +206,7 @@ ClangPrinter::printTypeTemplateParam(CoqPrinter &print, unsigned depth,
 						}
 					}
 				}
+			}
 		}
 	}
 
