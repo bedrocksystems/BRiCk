@@ -1,4 +1,4 @@
-(lang dune 3.14)
+(lang dune 3.16)
 (using coq 0.8)
 (name rocq-bluerock-brick)
 
@@ -6,17 +6,26 @@
 
 (maintainers
  "Gregory Malecha <gregory@bluerock.io>")
+
 (authors
  "Gregory Malecha <gregory@bluerock.io>"
  "Paolo Giarrusso <paolo@bluerock.io>"
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Hai Dang <hai@bluerock.io>"
+ "Simon Hudon <simon@bluerock.io>"
  "Abhishek Anand"
  "Gordon Stewart"
- "David Swasey")
+ "David Swasey"
+ "František Farka"
+ "Rodolphe Lepigre")
+
+(license LicenseRef-BedRock)
+
 (source (github bedrocksystems/cpp2v))
 
 (package
  (name rocq-bluerock-brick)
- (synopsis "Frontend and program logic for C++.")
+ (synopsis "Frontend and program logic for C++")
  (depends
   coq
   rocq-upoly
