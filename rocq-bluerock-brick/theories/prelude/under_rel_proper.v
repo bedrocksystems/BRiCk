@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2022
+ * Copyright (C) BlueRock Security Inc. 2022
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
