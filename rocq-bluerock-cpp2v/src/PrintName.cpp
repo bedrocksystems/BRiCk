@@ -1163,6 +1163,7 @@ printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 	} else {
 		llvm::errs() << "not a named decl\n";
 		decl.dump();
+		always_assert(false);
 	}
 
 	if (printTemplateSpecialization(print, decl, cprint))
