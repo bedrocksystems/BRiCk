@@ -231,6 +231,45 @@ Module Log.
         be the string value [v]. *)
     Ltac2 @ external add_string_metadata : t -> string -> string -> unit :=
       "br.log" "add_span_metadata_string".
+
+    (** [with_status name tac] runs the tactic surrounded by the span and appends
+        '+success' or '+failure' to log whether [tac] succeeded or failed. *)
+    Ltac2 with_status name tac :=
+      let span := Log.Span.push name in
+      let run () :=
+        let res := tac () in
+        Log.Span.add_string_metadata span "status" "success";
+        Log.Span.pop span; res
+      in
+      let handle e bt :=
+        let log_and_pop () :=
+          Log.Span.add_string_metadata span "status" "failure";
+          log[tac] "[mwith_span '%s'] raised an exception:\n%a" name Log.pp_exn e;
+          Log.Span.pop_until span
+        in
+        Control.without_focus log_and_pop;
+        Control.zero_bt e bt
+      in
+      Control.once_plus_bt run handle.
+
+    (** same as [with_status] but supports multiple goals. *)
+    Ltac2 mwith_status name tac :=
+      let span := Log.Span.mpush name in
+      let run () :=
+        let res := tac () in
+        Log.Span.add_string_metadata span "status" "success";
+        Log.Span.mpop span; res
+      in
+      let handle e bt :=
+        let log_and_pop () :=
+          Log.Span.add_string_metadata span "status" "failure";
+          log[tac] "[mwith_span '%s'] raised an exception:\n%a" name Log.pp_exn e;
+          Log.Span.mpop_until span
+        in
+        Control.without_focus log_and_pop;
+        Control.zero_bt e bt
+      in
+      Control.once_plus_bt run handle.
   End Span.
 
   (** Internal logger state manipulation. *)
