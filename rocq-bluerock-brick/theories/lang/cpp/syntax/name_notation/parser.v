@@ -335,7 +335,7 @@ Module parser.
        specialization after them. They are complex because function names include their
        arguments.
      *)
-    Definition parse_name_component' : M (atomic_name' lang * option (list (temp_arg' _))) :=
+    Definition parse_name_component' : M (atomic_name' lang * option (list (temp_arg' lang))) :=
       let* (nm : name_type) :=
         let* op := optional (keyword "operator") in
         match op with

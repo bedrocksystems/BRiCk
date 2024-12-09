@@ -182,13 +182,14 @@ Section with_lang.
     end.
 
   Section printTA.
-    Context (printT : type -> bs) (printE : Expr -> bs).
+    Context (printN : name -> bs) (printT : type -> bs) (printE : Expr -> bs).
 
-    Fixpoint printTA (ta : temp_arg_ type Expr) : list bs :=
+    Fixpoint printTA (ta : temp_arg_ name type Expr) : list bs :=
       match ta with
       | Atype t => [printT t]
       | Avalue e => [printE e]
       | Apack ls => concat (List.map printTA ls)
+      | Atemplate n => ["<>" ++ printN n]
       | Aunsupported note => [note]
       end.
   End printTA.
@@ -200,7 +201,7 @@ Section with_lang.
     | Nscoped base Nanonymous => printN base
     | Nscoped base n => printN base ++ "::" ++ printAN printT (topName base) n
     | Ninst base i =>
-        printN base ++ angles (BS.concat ", " $ concat (List.map (printTA printT printE) i))
+        printN base ++ angles (BS.concat ", " $ concat (List.map (printTA printN printT printE) i))
     | Nunsupported note => "?" ++ note
     end
 

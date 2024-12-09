@@ -800,7 +800,16 @@ printTemplateArgument(CoqPrinter& print, const TemplateArgument& arg,
 			printTemplateArgument(print, value, cprint, loc);
 		});
 	}
-
+	case TemplateArgument::ArgKind::Template: {
+		auto templ = arg.getAsTemplate();
+		if (auto dt = templ.getAsTemplateDecl()) {
+			guard::ctor _(print, "Atemplate", false);
+			return cprint.printName(print, *dt);
+		} /* else if (auto qtn = templ.getAsQualifiedTemplateName()) {
+			return cprint.printName(print, qtn->getQualifier(), qtn->get)
+		} */
+		[[fallthrough]];
+	}
 	default: {
 		auto k = templateArgumentKindName(kind);
 		if (cprint.warn_well_known) {

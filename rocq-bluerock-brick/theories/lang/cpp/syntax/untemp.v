@@ -68,13 +68,13 @@ End internal.
 Definition untempN := M2S MTraverse.traverseN.
 Definition untempT := M2S MTraverse.traverseT.
 Definition untempE := M2S MTraverse.traverseE.
-Definition untempTA := temp_arg.traverse untempT untempE.
+Definition untempTA := temp_arg.traverse untempN untempT untempE.
 Definition untempTP := temp_param.traverse untempT.
 Definition untempGD := MTraverse.traverseGD (M2S MTraverse.mk_core_traversal).
 
 Definition totempN := S2M MTraverse.traverseN.
 Definition totempT := S2M MTraverse.traverseT.
 Definition totempE := S2M MTraverse.traverseE.
-Definition totempTA := temp_arg.traverse totempT totempE.
+Definition totempTA := temp_arg.traverse totempN totempT totempE.
 Definition totempTP := temp_param.traverse totempT.
 Definition totempGD := MTraverse.traverseGD (S2M MTraverse.mk_core_traversal).
