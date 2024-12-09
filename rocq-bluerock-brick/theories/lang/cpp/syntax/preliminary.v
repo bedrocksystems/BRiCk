@@ -609,7 +609,6 @@ Variant BuiltinFn : Set :=
 | Bin_bswap16
 | Bin_bswap32
 | Bin_bswap64
-| Bin_bswap128
 | Bin_bzero
 | Bin_ffs
 | Bin_ffsl
@@ -622,6 +621,8 @@ Variant BuiltinFn : Set :=
 | Bin_ctzll
 | Bin_popcount
 | Bin_popcountl
+| Bin_memcmp
+| Bin_memset
 | Bin_unknown (_ : bs)
 .
 #[global] Instance: EqDecision BuiltinFn.

@@ -519,8 +519,9 @@ Module ExprNotations.
   Notation "'__builtin_bswap16'" := (Bin_bswap16) ( in custom CPP_expr at level 0, only printing).
   Notation "'__builtin_bswap32'" := (Bin_bswap32) ( in custom CPP_expr at level 0, only printing).
   Notation "'__builtin_bswap64'" := (Bin_bswap64) ( in custom CPP_expr at level 0, only printing).
-  Notation "'__builtin_bswap128'" := (Bin_bswap128) ( in custom CPP_expr at level 0, only printing).
   Notation "'__builtin_bzero'" := (Bin_bzero) ( in custom CPP_expr at level 0, only printing).
+  Notation "'__builtin_memcmp'" := (Bin_memcmp) ( in custom CPP_expr at level 0, only printing).
+  Notation "'__builtin_memset'" := (Bin_memset) ( in custom CPP_expr at level 0, only printing).
   Notation "'__builtin_ffs'" := (Bin_ffs) ( in custom CPP_expr at level 0, only printing).
   Notation "'__builtin_ffsl'" := (Bin_ffsl) ( in custom CPP_expr at level 0, only printing).
   Notation "'__builtin_ffsll'" := (Bin_ffsll) ( in custom CPP_expr at level 0, only printing).
