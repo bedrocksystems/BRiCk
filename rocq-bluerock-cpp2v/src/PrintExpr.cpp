@@ -771,7 +771,7 @@ public:
 			CASE_WITH_TYPE(BitCast, Cbitcast)
 			CASE_WITH_TYPE(LValueBitCast, Clvaluebitcast)
 			CASE_NO_TYPE(LValueToRValue, Cl2r)
-			CASE_NO_TYPE(LValueToRValueBitCast, Cl2r_bitcast)
+			CASE_WITH_TYPE(LValueToRValueBitCast, Cl2r_bitcast)
 			CASE_WITH_TYPE(NoOp, Cnoop)
 			CASE_NO_TYPE(ArrayToPointerDecay, Carray2ptr)
 			CASE_NO_TYPE(FunctionToPointerDecay, Cfun2ptr)
