@@ -403,6 +403,57 @@ Exception raised by <span class="inlinecode"><span class="id" title="var">pop</s
 <div class="code">
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Ltac</span>2 @ <span class="id" title="var">external</span> <span class="id" title="var">add_string_metadata</span> : <span class="id" title="var">t</span> -&gt; <span class="id" title="var">string</span> -&gt; <span class="id" title="var">string</span> -&gt; <span class="id" title="var">unit</span> :=<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"br.log" "add_span_metadata_string".<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">with_status</span></span> <span class="inlinecode"><span class="id" title="var">name</span></span> <span class="inlinecode"><span class="id" title="var">tac</span></span> runs the tactic surrounded by the span and appends
+        '+success' or '+failure' to log whether <span class="inlinecode"><span class="id" title="var">tac</span></span> succeeded or failed. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">with_status</span> <span class="id" title="var">name</span> <span class="id" title="var">tac</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">span</span> := <span class="id" title="var">Log.Span.push</span> <span class="id" title="var">name</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">run</span> () :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">res</span> := <span class="id" title="var">tac</span> () <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.add_string_metadata</span> <span class="id" title="var">span</span> "status" "success";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.pop</span> <span class="id" title="var">span</span>; <span class="id" title="var">res</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">handle</span> <span class="id" title="var">e</span> <span class="id" title="var">bt</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">log_and_pop</span> () :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.add_string_metadata</span> <span class="id" title="var">span</span> "status" "failure";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">log</span>[<span class="id" title="var">tac</span>] "[mwith_span '%s'] raised an exception:\n%a" <span class="id" title="var">name</span> <span class="id" title="var">Log.pp_exn</span> <span class="id" title="var">e</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.pop_until</span> <span class="id" title="var">span</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Control.without_focus</span> <span class="id" title="var">log_and_pop</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Control.zero_bt</span> <span class="id" title="var">e</span> <span class="id" title="var">bt</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Control.once_plus_bt</span> <span class="id" title="var">run</span> <span class="id" title="var">handle</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+same as <span class="inlinecode"><span class="id" title="var">with_status</span></span> but supports multiple goals. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">mwith_status</span> <span class="id" title="var">name</span> <span class="id" title="var">tac</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">span</span> := <span class="id" title="var">Log.Span.mpush</span> <span class="id" title="var">name</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">run</span> () :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">res</span> := <span class="id" title="var">tac</span> () <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.add_string_metadata</span> <span class="id" title="var">span</span> "status" "success";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.mpop</span> <span class="id" title="var">span</span>; <span class="id" title="var">res</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">handle</span> <span class="id" title="var">e</span> <span class="id" title="var">bt</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">log_and_pop</span> () :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.add_string_metadata</span> <span class="id" title="var">span</span> "status" "failure";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">log</span>[<span class="id" title="var">tac</span>] "[mwith_span '%s'] raised an exception:\n%a" <span class="id" title="var">name</span> <span class="id" title="var">Log.pp_exn</span> <span class="id" title="var">e</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Log.Span.mpop_until</span> <span class="id" title="var">span</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Control.without_focus</span> <span class="id" title="var">log_and_pop</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Control.zero_bt</span> <span class="id" title="var">e</span> <span class="id" title="var">bt</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Control.once_plus_bt</span> <span class="id" title="var">run</span> <span class="id" title="var">handle</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.ltac2.logger.logger.html#Log.Span"><span class="id" title="module">Span</span></a>.<br/>
 
 <br/>
