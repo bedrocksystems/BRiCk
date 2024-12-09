@@ -1352,8 +1352,10 @@ public:
 					<< expr->getSourceRange().printToString(
 						   ctxt.getSourceManager())
 					<< "\n";
-			expr->dump();
-			die();
+			print.ctor("Eunsupported");
+			print.output() << "\"UnaryExprOrTypeTraitExpr(" << expr->getKind()
+						   << "\")" << fmt::nbsp;
+			done(expr);
 		}
 		}
 	}
