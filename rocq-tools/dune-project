@@ -1,0 +1,20 @@
+(lang dune 3.16)
+(name rocq-tools)
+
+(generate_opam_files)
+
+(maintainers
+ "Jan-Oliver Kaiser <janno@bluerock.io>")
+
+(authors
+ "Jan-Oliver Kaiser <janno@bluerock.io>"
+ "Rodolphe Lepigre")
+
+(license LGPL-2.1-only)
+
+(source (github bedrocksystems/cpp2v))
+
+(package
+ (name rocq-tools)
+ (synopsis "Instrumentation for the Rocq compiler")
+ (depends yojson camlzip))

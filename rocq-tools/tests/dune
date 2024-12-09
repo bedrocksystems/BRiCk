@@ -1,0 +1,8 @@
+(cram
+ (applies_to :whole_subtree)
+ (enabled_if (<> %{system} "macosx"))
+ (deps
+  (package coq-core)
+  (package coq-stdlib)
+  (package rocq-tools)
+  setup.sh))
