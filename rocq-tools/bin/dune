@@ -1,0 +1,124 @@
+; Wrapper for "coqc" that records data into the ".glob" file.
+(executable
+ (name coqc_perf)
+ (public_name coqc-perf)
+ (modules coqc_perf)
+ (package rocq-tools)
+ (libraries rocq_tools camlzip))
+
+; Program generating an HTML performance diff.
+(executable
+ (name html_diff)
+ (public_name coqc-perf.html-diff)
+ (modules html_diff)
+ (package rocq-tools)
+ (libraries yojson rocq_tools))
+
+; Program generating an index for HTML performance diffs.
+(executable
+ (name html_index)
+ (public_name coqc-perf.html-index)
+ (modules html_index)
+ (package rocq-tools)
+ (libraries rocq_tools))
+
+; Program turning "coqc -profile" profiling data into our custom data format.
+(executable
+ (name analyse)
+ (public_name coqc-perf.analyse)
+ (modules analyse)
+ (package rocq-tools)
+ (libraries yojson rocq_tools))
+
+; Debugging tool: adding noise to profiling data.
+(executable
+ (name add_noise)
+ (public_name coqc-perf.add-noise)
+ (modules add_noise)
+ (package rocq-tools)
+ (libraries rocq_tools camlzip))
+
+; Program generating a whole-project performance diff summary from CSV files.
+(executable
+ (name summary_diff)
+ (public_name coqc-perf.summary-diff)
+ (modules summary_diff)
+ (package rocq-tools))
+
+; Program gathering hint data from logs or hint data files.
+(executable
+ (name gather_hint_data)
+ (public_name coqc-perf.gather-hint-data)
+ (modules gather_hint_data)
+ (package rocq-tools)
+ (libraries rocq_tools))
+
+; Program extracting span data from full hint/span data.
+(executable
+ (name span_data)
+ (public_name coqc-perf.span-data)
+ (modules span_data)
+ (package rocq-tools)
+ (libraries rocq_tools))
+
+; Program diffing hint data.
+(executable
+ (name hint_data_diff)
+ (public_name coqc-perf.hint-data-diff)
+ (modules hint_data_diff)
+ (package rocq-tools)
+ (libraries rocq_tools))
+
+; Wrapper for "coqdep" that turn all warnings into errors.
+(executable
+ (name coqdep_werr)
+ (public_name coqdep-werr)
+ (modules coqdep_werr)
+ (package rocq-tools)
+ (libraries rocq_tools))
+
+; Glob file "file system" utility.
+(executable
+ (name glob_fs)
+ (public_name globfs)
+ (modules glob_fs)
+ (package rocq-tools)
+ (libraries rocq_tools))
+
+; Build a GitLab code quality report.
+(executable
+ (name code_quality_report)
+ (public_name coqc-perf.code-quality-report)
+ (modules code_quality_report)
+ (package rocq-tools)
+ (libraries rocq_tools str yojson))
+
+; Extract instruction counts per command type.
+(executable
+ (name cmd_data)
+ (public_name coqc-perf.cmd-data)
+ (modules cmd_data)
+ (package rocq-tools)
+ (libraries rocq_tools str))
+
+; Generate a perf script file from a JSON log.
+(executable
+ (name perf_script)
+ (public_name coqc-perf.perf-script)
+ (modules perf_script)
+ (package rocq-tools)
+ (libraries rocq_tools yojson))
+
+; Generate a dummy Coq file with hashes for dependencies.
+(executable
+ (name dummy_gen)
+ (public_name coq-dummy-gen)
+ (modules dummy_gen)
+ (package rocq-tools))
+
+; Filter dune output for cache store error.
+(executable
+ (name filter_dune_output)
+ (public_name filter-dune-output)
+ (modules filter_dune_output)
+ (package rocq-tools))

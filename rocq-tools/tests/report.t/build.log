@@ -1,0 +1,17 @@
+File "./dir/file.v", line 42, characters 6-7:
+Warning: Unused variable: f. [ltac2-unused-variable,ltac2,default]
+This is junk, and an empty line next.
+
+This is more junk.
+File "dir1/dir2/tests.v", line 0, characters 0-0:
+Warning: Non-empty stdout when building using coqc.
+[non-empty-stdout,dummy]
+File "./dir/other_file.v", line 28, characters 4-17:
+Warning:
+This is a very
+long warning on several lines.
+[long-warning,default]
+Junk line terminated with a closing bracket ]
+File "./dir/nested_dir/file.v", line 54, characters 4-17:
+Warning: Some warning. [some-warning,group,default]
+Junk at the end with an opening bracket. [

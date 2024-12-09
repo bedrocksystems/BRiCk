@@ -1,0 +1,57 @@
+(rule
+ (package rocq-tools)
+ (target deps_ready.txt)
+ (action
+  (progn
+   (ignore-outputs (with-accepted-exit-codes 1 (run globfs)))
+   (ignore-outputs (with-accepted-exit-codes 1 (run coqc-perf.html-diff)))
+   (ignore-outputs (with-accepted-exit-codes 1 (run coqc-perf.html-index)))
+   (ignore-outputs (with-accepted-exit-codes 0 (run coqc-perf.gather-hint-data)))
+   (with-stdout-to %{target} (echo "OK")))))
+
+(rule
+ (package rocq-tools)
+ (target globfs-extract-all)
+ (deps (:src globfs-extract-all.sh) deps_ready.txt)
+ (action (copy %{src} %{target})))
+
+(rule
+ (package rocq-tools)
+ (target csv-summary)
+ (deps (:src csv-summary.sh) deps_ready.txt)
+ (action (copy %{src} %{target})))
+
+(rule
+ (package rocq-tools)
+ (target extract-all)
+ (deps (:src extract-all.sh) deps_ready.txt)
+ (action (copy %{src} %{target})))
+
+(rule
+ (package rocq-tools)
+ (target report)
+ (deps (:src report.sh) deps_ready.txt)
+ (action (copy %{src} %{target})))
+
+(rule
+ (package rocq-tools)
+ (target hint-data-extract-all)
+ (deps (:src hint-data-extract-all.sh) deps_ready.txt)
+ (action (copy %{src} %{target})))
+
+(rule
+ (package rocq-tools)
+ (target html-diff-all)
+ (deps (:src html-diff-all.sh) deps_ready.txt)
+ (action (copy %{src} %{target})))
+
+(install
+ (package rocq-tools)
+ (section bin)
+ (files
+  (globfs-extract-all as globfs.extract-all)
+  (csv-summary as coqc-perf.csv-summary)
+  (extract-all as coqc-perf.extract-all)
+  (report as coqc-perf.report)
+  (hint-data-extract-all as hint-data.extract-all)
+  (html-diff-all as coqc-perf.html-diff-all)))

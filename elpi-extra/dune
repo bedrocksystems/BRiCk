@@ -1,8 +1,8 @@
 (env
  (_
   (binaries
-   (../../fm-ci-tools/coqc-tools/bin/coqc_perf.exe as coqc)
-   (../../fm-ci-tools/coqc-tools/bin/coqdep_werr.exe as coqdep)
+   (../rocq-tools/bin/coqc_perf.exe as coqc)
+   (../rocq-tools/bin/coqdep_werr.exe as coqdep)
    (./extra/elpidep.sh as elpidep))
   (coq
    (flags (:standard %{read-lines:../flags/coqc})))))
