@@ -792,6 +792,8 @@ public:
 
 			CASE_NO_TYPE(ToVoid, C2void)
 
+			CASE_WITH_TYPE(Dynamic, Cdynamic)
+
 			// floating point casts
 			CASE_WITH_TYPE(FloatingToIntegral, Cfloat2int)
 			CASE_WITH_TYPE(IntegralToFloating, Cint2float)
