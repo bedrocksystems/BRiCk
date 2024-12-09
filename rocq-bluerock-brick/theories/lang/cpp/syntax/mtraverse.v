@@ -347,6 +347,7 @@ Module MTraverse.
       | C2void => mret C2void
       | Cuser => mret Cuser
       | Cdynamic gn => Cdynamic <$> traverseT gn
+      | Cunsupported msg t => Cunsupported msg <$> traverseT t
       end.
 
     Definition traverseCN : classname' lang1 -> F (classname' lang2) :=

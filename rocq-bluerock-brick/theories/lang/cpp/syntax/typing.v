@@ -150,6 +150,7 @@ Module decltype.
         | C2void => mret Tvoid
         | Cuser => mret base
         | Cdynamic to => mret to
+        | Cunsupported _ t => mret t
         end.
 
       Definition of_binop (op : BinOp) (l : Expr) (t : exprtype) : M decltype :=

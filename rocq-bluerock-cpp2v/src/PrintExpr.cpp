@@ -835,7 +835,9 @@ public:
 			logging::unsupported()
 				<< "unsupported cast kind \"" << ce->getCastKindName() << "\""
 				<< " (at " << cprint.sourceRange(ce->getSourceRange()) << ")\n";
-			print.output() << "Cunsupported";
+			print.ctor("Cunsupported", false);
+			print.str(ce->getCastKindName()) << fmt::nbsp;
+			done(ce, Done::DT);
 		}
 	}
 
