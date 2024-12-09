@@ -1009,7 +1009,7 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 		// the name of the struct is essentially [decltype(x)].
 		for (auto by_decl = decl->getNextDeclInContext(); by_decl;
 			 by_decl->getNextDeclInContext()) {
-			if (auto vd = dyn_cast<VarDecl>(by_decl)) {
+			if (auto vd = dyn_cast<ValueDecl>(by_decl)) {
 				auto type = vd->getType().getTypePtr();
 				if (type->getAsTagDecl() == decl && vd->getIdentifier()) {
 					guard::ctor _(print, "Nby_first_decl", false);
