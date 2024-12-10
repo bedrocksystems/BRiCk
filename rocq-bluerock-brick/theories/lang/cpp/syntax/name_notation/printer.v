@@ -279,15 +279,15 @@ Section with_lang.
 
 End with_lang.
 
-Definition print_name (input : name) : option (list Byte.byte) :=
-  BS.print <$> printN "" input.
+Definition print_name (input : name) : option bs :=
+  printN "" input.
 
-Definition print_type (input : type) : option (list Byte.byte) :=
-  BS.print <$> printT input.
+Definition print_type (input : type) : option bs :=
+  printT input.
 
 Module Type TESTS.
   #[local] Definition TEST (input : bs) (nm : name) : Prop :=
-    (BS.parse <$> print_name nm) = Some input.
+    print_name nm = Some input.
 
   #[local] Definition Msg : name := Nglobal $ Nid "Msg".
 

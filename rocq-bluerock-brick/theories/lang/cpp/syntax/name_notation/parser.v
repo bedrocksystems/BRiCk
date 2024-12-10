@@ -38,7 +38,7 @@ Module parser.
     Context {Mbase : Type -> Type}.
     Context {RET : MRet Mbase} {FMAP : FMap Mbase} {AP : Ap Mbase} {MBIND : MBind Mbase}.
 
-    Notation M := (parsec.M@{Set _ _ _ _ _ _ _} bs Mbase).
+    Notation M := (parsec.M@{Set _ _ _ _ _ _ _ _} bs Mbase).
 
     Definition digit_char (b : Byte.byte) : bool :=
       bool_decide (Byte.to_N "0" ≤ Byte.to_N b ≤ Byte.to_N "9")%N.
@@ -466,15 +466,15 @@ Module parser.
 
 End parser.
 
-Definition parse_name (input : list Byte.byte) : option name :=
-  parser.run_full (parser.parse_name 1000) $ BS.parse input.
+Definition parse_name (input : bs) : option name :=
+  parser.run_full (parser.parse_name 1000) input.
 
-Definition parse_type (input : list Byte.byte) : option type :=
-  parser.run_full (parser.parse_type 1000) $ BS.parse input.
+Definition parse_type (input : bs) : option type :=
+  parser.run_full (parser.parse_type 1000) input.
 
 Module Type TESTS.
   #[local] Definition TEST (input : bs) (nm : name) : Prop :=
-    (parse_name $ BS.print input) = Some nm.
+    (parse_name input) = Some nm.
 
   #[local] Definition Msg : name := Nglobal $ Nid "Msg".
 

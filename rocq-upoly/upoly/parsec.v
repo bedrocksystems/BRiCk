@@ -10,10 +10,23 @@ Require Import bedrock.upoly.upoly.
 Require Import bedrock.upoly.optionT.
 Require Import bedrock.upoly.stateT.
 
+(** ** Universes
+
+    The parser definitions in this file use a mixture of universe-polymorphic
+    datastructures and Coq's template-polymorphic standard library data
+    structures. We generally use universe-polymorphic types for internal
+    definitions and Coq standard library types for client-facing definitions.
+    This is done to ease friction in clients which have to interoperate with
+    other code that uses Coq's standard library.
+ *)
+
 Import UPoly.
 
 Class Next (STREAM TKN : Type) := {
-  next : STREAM -> option (TKN * STREAM);
+  next_token : STREAM -> option (TKN * STREAM);
+}.
+Class ParseString (STREAM STR : Type) := {
+  parse_string : STR -> STREAM -> option (STREAM)
 }.
 
 (** ** parsec
@@ -23,7 +36,9 @@ Class Next (STREAM TKN : Type) := {
           threaded through the parsing.
  *)
 Section parsec.
-  Context `{N : Next STREAM TKN} {F : Type -> Type} {MR : MRet F} {FM : FMap F} {MB : MBind F}.
+  Context `{N : Next STREAM TKN}.
+  Context `{P : ParseString STREAM STR}.
+  Context {F : Type -> Type} {MR : MRet F} {FM : FMap F} {MB : MBind F}.
 
   Definition M (T : Type) : Type :=
     stateT.M STREAM (optionT.M F) T.
@@ -46,7 +61,7 @@ Section parsec.
 
   Definition any : M TKN :=
     let* l := stateT.get in
-    match next l with
+    match next_token l with
     | None => mfail
     | Some (b, bs) => const b <$> stateT.put bs
     end.
@@ -54,7 +69,7 @@ Section parsec.
   (* end-of-stream *)
   Definition eos : M unit :=
     let* l := stateT.get in
-    match next l with
+    match next_token l with
     | None => mret tt
     | _ => mfail
     end.
@@ -62,7 +77,7 @@ Section parsec.
   Definition run_full {T} (m : M T) : STREAM -> F (option T) :=
     fun str =>
       (fun x => match x with
-             | Some (l, x) => match next l with None => Some x | Some _ => None end
+             | Some (l, x) => match next_token l with None => Some x | Some _ => None end
              | _ => None
              end) <$> optionT.run (stateT.run ((fun x _ => x) <$> m <*> eos) str).
 
@@ -109,7 +124,7 @@ Section parsec.
 
   Definition peek : M (option TKN) :=
     let k l :=
-      match next l with
+      match next_token l with
       | None => None
       | Some (x, _) => Some x
       end
@@ -120,21 +135,14 @@ Section parsec.
     (cons <$> p <*> (star ((fun _ x => x) <$> sep <*> p))) <|> mret nil.
 
   #[local]
-  Fixpoint exact_ {_ : EqDecision TKN} (b : list TKN) (input : STREAM) {struct b}
+  Definition exact_ (b : STR) (input : STREAM)
       : optionT.M F (UTypes.prod STREAM unit) :=
-    match b with
-    | nil => mret (UTypes.pair input tt)
-    | x :: xs =>
-        match next input with
-        | Some (y, ys) =>
-            if bool_decide (x = y) then
-              exact_ xs ys
-            else mfail
-        | None => mfail
-        end
+    match parse_string b input with
+    | Some input => mret (UTypes.pair input tt)
+    | None => mfail
     end.
 
-  Definition exact {_ : EqDecision TKN} (b : list TKN) : M unit :=
+  Definition exact (b : STR) : M unit :=
     stateT.mk $ exact_ b.
 
    Definition not {T} (p : M T) : M unit :=

@@ -19,11 +19,24 @@ Section char_parsec.
   Notation M := (M bs F).
 
   #[global] Instance bs_next : Next bs Byte.byte := {|
-    next bs :=
+    next_token bs :=
       match bs with
       | BS.EmptyString => None
       | BS.String x bs => Some (x, bs)
       end
+  |}.
+  #[global] Instance bs_parse_string : ParseString bs bs := {|
+    parse_string :=
+      fix go str bs {struct str} :=
+        match str, bs with
+        | BS.EmptyString, _ => Some bs
+        | BS.String x str, BS.String y bs =>
+            if bool_decide (x = y) then
+              go str bs
+            else
+              None
+        | BS.String _ _, BS.EmptyString => None
+        end
   |}.
 
   Definition run_bs {T} (p : M T) (b : bs) : F (option (bs * T)) := run p b.
@@ -34,7 +47,7 @@ Section char_parsec.
     char (fun x => bool_decide (Byte.to_N "0" ≤ Byte.to_N x ≤ Byte.to_N "9")%N).
 
   Definition exact_bs (b : bs) : M unit :=
-    exact $ BS.print b.
+    exact $ b.
 
   Definition exact_char (b : Byte.byte) : M unit :=
     fmap (fun _ => ()) $ char (fun b' => bool_decide (b = b')).
