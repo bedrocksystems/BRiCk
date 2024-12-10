@@ -221,8 +221,13 @@ public:
 								   loc::loc);
 
 	// Print all parameters in scope; for example, with
-	// `template<typename T> struct s{ int x; template<typename U> void
-	// f(T, U); };`, emits roughly `<T>` for `s` and `<T,U>` for `s::f`.
+	// ```
+	// template<typename T> struct  s{
+	//   int x;
+	//   template<typename U> void f(T, U);
+	// };
+	// ```
+	// emits roughly `<T>` for `s` and `<T,U>` for `s::f`.
 	// With `as_arg`, print template arguments synthesized from parameters.
 	fmt::Formatter& printTemplateParameters(
 		CoqPrinter&, const clang::Decl&,
