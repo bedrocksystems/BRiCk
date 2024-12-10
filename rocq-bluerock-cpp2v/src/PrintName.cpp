@@ -875,28 +875,27 @@ printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 		always_assert(false);
 	}
 
-	if (auto sd = recoverSpecialization(decl)) {
-		// Printing template specializations should print
-		// <<Ninst (templated-name) [template-arguments]>>
-		guard::ctor _(print, "Ninst", false);
-		printName(print, sd->temp, cprint) << fmt::line;
-		return printTemplateArgumentList(print, sd->args, cprint,
-										 loc::of(decl));
+	auto sd = recoverSpecialization(decl);
+	if (sd)
+		print.ctor("Ninst", false);
+
+	auto ctx = getNonIgnorableAncestor(decl, cprint);
+	if (ctx->isTranslationUnit()) {
+		guard::ctor _(print, "Nglobal", false);
+		printAtomicName(ctx, decl, print, cprint);
 	} else {
-		auto ctx = getNonIgnorableAncestor(decl, cprint);
-		auto atomic = [&]() -> auto& {
-			return printAtomicName(ctx, decl, print, cprint);
-		};
-		if (ctx->isTranslationUnit()) {
-			guard::ctor _(print, "Nglobal", false);
-			return atomic();
-		} else {
-			guard::ctor _(print, "Nscoped", false);
-			cprint.printName(print, toDecl(ctx, cprint, loc::of(decl)))
-				<< fmt::nbsp;
-			return atomic();
-		}
+		guard::ctor _(print, "Nscoped", false);
+		cprint.printName(print, toDecl(ctx, cprint, loc::of(decl)))
+			<< fmt::nbsp;
+		printAtomicName(ctx, decl, print, cprint);
 	}
+
+	if (sd) {
+		print.output() << fmt::nbsp;
+		printTemplateArgumentList(print, sd->args, cprint, loc::of(decl));
+		print.end_ctor();
+	}
+	return print.output();
 }
 
 #if 0
