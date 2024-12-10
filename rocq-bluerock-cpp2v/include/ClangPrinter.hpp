@@ -200,7 +200,7 @@ public:
 								  const clang::CXXRecordDecl&); // name
 
 	fmt::Formatter& printUnqualifiedName(CoqPrinter&,
-										 const clang::NamedDecl&); // : bs
+										 const clang::NamedDecl&); // : ident
 	fmt::Formatter& printUnqualifiedName(CoqPrinter&, const clang::NamedDecl*,
 										 loc::loc);
 

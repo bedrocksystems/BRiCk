@@ -1071,11 +1071,10 @@ ClangPrinter::printName(CoqPrinter& print, const NestedNameSpecifier* spec,
 
 		guard::ctor _(print, is_global ? "Nglobal" : "Nscoped", false);
 		if (not is_global) {
-			printName(print, spec->getPrefix(), loc);
-			print.output() << fmt::nbsp;
+			printName(print, spec->getPrefix(), loc) << fmt::nbsp;
 		}
 		guard::ctor __(print, "Nid", false);
-		print.output() << "\"" << id->getName() << "\"";
+		print.str(id->getName());
 	} else {
 		llvm::errs() << "unknown NestedNameSpecifier(" << spec->getKind()
 					 << ")\n";
