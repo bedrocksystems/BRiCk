@@ -110,7 +110,8 @@ public:
 		} else {
 			guard::ctor _{print, "Tnamed"};
 			cprint.printUnresolvedName(print, type->getQualifier(),
-									   *type->getIdentifier(), loc::of(type));
+									   DeclarationName{type->getIdentifier()},
+									   {}, loc::of(type));
 			//type->dump();
 			// unsupported_type(print, cprint, type, true);
 		}

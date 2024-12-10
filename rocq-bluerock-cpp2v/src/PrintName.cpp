@@ -1208,11 +1208,15 @@ printDeclarationName(CoqPrinter& print, const DeclarationName& name,
 }
 
 fmt::Formatter&
-ClangPrinter::printUnresolvedName(
-	CoqPrinter& print, const NestedNameSpecifier* nn,
-	const DeclarationName& name,
-	llvm::ArrayRef<clang::TemplateArgumentLoc> template_args, loc::loc loc) {
-	if (not nn or nn->getKind() == NestedNameSpecifier::Global) {
+ClangPrinter::printUnresolvedName(CoqPrinter& print,
+								  const NestedNameSpecifier* nn,
+								  const DeclarationName& name, loc::loc loc) {
+
+	if (not nn) {
+		// There is no prefix. Incomplete!
+		guard::ctor _(print, "Nlocal", false);
+		return printDeclarationName(print, name, *this);
+	} else if (nn->getKind() == NestedNameSpecifier::Global) {
 		guard::ctor _(print, "Nglobal", false);
 		return printDeclarationName(print, name, *this);
 	} else {
@@ -1223,20 +1227,15 @@ ClangPrinter::printUnresolvedName(
 }
 
 fmt::Formatter&
-ClangPrinter::printUnresolvedName(CoqPrinter& print,
-								  const NestedNameSpecifier* nn,
-								  const IdentifierInfo& name, loc::loc loc) {
-	if (not nn or nn->getKind() == NestedNameSpecifier::Global) {
-		guard::ctor _(print, "Nglobal", false);
-		print.str(name.getName());
-		return print.output();
-	} else {
-		guard::ctor _(print, "Nscoped", false);
-		printName(print, nn, loc) << fmt::nbsp;
-		{
-			guard::ctor __{print, "Nid", false};
-			print.str(name.getName());
-		}
-		return print.output();
+ClangPrinter::printUnresolvedName(
+	CoqPrinter& print, const NestedNameSpecifier* nn,
+	const DeclarationName& name,
+	llvm::ArrayRef<clang::TemplateArgumentLoc> template_args, loc::loc loc) {
+	if (template_args.empty())
+		return printUnresolvedName(print, nn, name, loc);
+	else {
+		guard::ctor _(print, "Ninst", false);
+		printUnresolvedName(print, nn, name, loc) << fmt::nbsp;
+		return printTemplateArgumentList(print, template_args);
 	}
 }

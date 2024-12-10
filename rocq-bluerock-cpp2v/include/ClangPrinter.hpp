@@ -191,7 +191,7 @@ public:
 	fmt::Formatter&
 	printUnresolvedName(CoqPrinter&,
 						const clang::NestedNameSpecifier* /* optional */,
-						const clang::IdentifierInfo&, loc::loc);
+						const clang::DeclarationName&, loc::loc);
 
 	// TODO: Can we drop these?
 	fmt::Formatter& printUnsupportedName(CoqPrinter&, llvm::StringRef); // name
