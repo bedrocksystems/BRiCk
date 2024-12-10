@@ -92,19 +92,6 @@ struct OpaqueNames;
 
 bool is_dependent(const clang::Expr*);
 
-/**
-If `decl` is a template, produce its template declaration.
-*/
-const clang::TemplateDecl* recoverTemplate(const clang::Decl&);
-
-/**
-Find the declaration that was specialized to produced `decl`, avoiding
-intermediate template specializations.
-
-This can fail for special member functions.
-*/
-const clang::NamedDecl* recoverPattern(const clang::Decl&);
-
 class ClangPrinter {
 private:
 	clang::CompilerInstance* compiler_;
