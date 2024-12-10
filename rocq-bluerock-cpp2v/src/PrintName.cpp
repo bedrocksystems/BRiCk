@@ -1212,10 +1212,7 @@ ClangPrinter::printUnresolvedName(
 	CoqPrinter& print, const NestedNameSpecifier* nn,
 	const DeclarationName& name,
 	llvm::ArrayRef<clang::TemplateArgumentLoc> template_args, loc::loc loc) {
-	if (not nn) {
-		guard::ctor _(print, "Nglobal", false);
-		return printDeclarationName(print, name, *this);
-	} else if (nn->getKind() == NestedNameSpecifier::Global) {
+	if (not nn or nn->getKind() == NestedNameSpecifier::Global) {
 		guard::ctor _(print, "Nglobal", false);
 		return printDeclarationName(print, name, *this);
 	} else {
@@ -1229,13 +1226,9 @@ fmt::Formatter&
 ClangPrinter::printUnresolvedName(CoqPrinter& print,
 								  const NestedNameSpecifier* nn,
 								  const IdentifierInfo& name, loc::loc loc) {
-	if (not nn) {
+	if (not nn or nn->getKind() == NestedNameSpecifier::Global) {
 		guard::ctor _(print, "Nglobal", false);
-		print.output() << '\"' << name.getName() << '\n';
-		return print.output();
-	} else if (nn->getKind() == NestedNameSpecifier::Global) {
-		guard::ctor _(print, "Nglobal", false);
-		print.output() << '\"' << name.getName() << '\n';
+		print.str(name.getName());
 		return print.output();
 	} else {
 		guard::ctor _(print, "Nscoped", false);
