@@ -130,8 +130,8 @@ public:
 private:
 	const clang::Decl* getDecl() const;
 
-	fmt::Formatter& printName(CoqPrinter&, const clang::NestedNameSpecifier*,
-							  loc::loc);
+	fmt::Formatter&
+	printNestedName(CoqPrinter&, const clang::NestedNameSpecifier*, loc::loc);
 
 public:
 	clang::ASTContext& getContext() {

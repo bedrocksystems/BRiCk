@@ -1002,35 +1002,6 @@ ClangPrinter::printName(CoqPrinter& print, const Decl* p, loc::loc loc,
 }
 
 fmt::Formatter&
-ClangPrinter::printName(CoqPrinter& print, const NestedNameSpecifier* spec,
-						loc::loc loc) {
-	if (auto ns = spec->getAsNamespace()) {
-		printName(print, ns, loc);
-	} else if (auto nsa = spec->getAsNamespaceAlias()) {
-		printName(print, nsa, loc);
-	} else if (auto type = spec->getAsType()) {
-		guard::ctor _(print, "Ndependent", false);
-		printType(print, type, loc);
-	} else if (auto id = spec->getAsIdentifier()) {
-		bool is_global = not spec->getPrefix() ||
-						 spec->getPrefix()->getKind() ==
-							 NestedNameSpecifier::SpecifierKind::Global;
-
-		guard::ctor _(print, is_global ? "Nglobal" : "Nscoped", false);
-		if (not is_global) {
-			printName(print, spec->getPrefix(), loc) << fmt::nbsp;
-		}
-		guard::ctor __(print, "Nid", false);
-		print.str(id->getName());
-	} else {
-		llvm::errs() << "unknown NestedNameSpecifier(" << spec->getKind()
-					 << ")\n";
-		llvm::errs().flush();
-	}
-	return print.output();
-}
-
-fmt::Formatter&
 ClangPrinter::printUnsupportedName(CoqPrinter& print, StringRef msg) {
 	guard::ctor _(print, "Nunsupported", false);
 	return print.str(msg);
@@ -1138,6 +1109,37 @@ printDeclarationName(CoqPrinter& print, const DeclarationName& name,
 }
 
 fmt::Formatter&
+ClangPrinter::printNestedName(CoqPrinter& print,
+							  const NestedNameSpecifier* spec, loc::loc loc) {
+	if (auto ns = spec->getAsNamespace()) {
+		printName(print, ns, loc);
+	} else if (auto nsa = spec->getAsNamespaceAlias()) {
+		printName(print, nsa, loc);
+	} else if (auto type = spec->getAsType()) {
+		guard::ctor _(print, "Ndependent", false);
+		printType(print, type, loc);
+	} else if (auto id = spec->getAsIdentifier()) {
+		bool is_global = not spec->getPrefix() ||
+						 spec->getPrefix()->getKind() ==
+							 NestedNameSpecifier::SpecifierKind::Global;
+
+		guard::ctor _(print, is_global ? "Nglobal" : "Nscoped", false);
+		if (not is_global) {
+			printNestedName(print, spec->getPrefix(), loc) << fmt::nbsp;
+		}
+		// TODO: this is incorrect. i need to print an atomic name, possibly with specializations.
+		guard::ctor __(print, "Nid", false);
+		print.str(id->getName());
+	} else {
+		unsupported(*this, loc, true)
+			<< "unsupported NestedNameSpecifier " << spec->getKind() << "\n";
+		guard::ctor _{print, "Nunsupported", false};
+		print.output() << "\"NestedNameSpecifier(" << spec->getKind() << ")\"";
+	}
+	return print.output();
+}
+
+fmt::Formatter&
 ClangPrinter::printUnresolvedName(CoqPrinter& print,
 								  const NestedNameSpecifier* nn,
 								  const DeclarationName& name, loc::loc loc) {
@@ -1151,7 +1153,7 @@ ClangPrinter::printUnresolvedName(CoqPrinter& print,
 		return printDeclarationName(print, name, *this);
 	} else {
 		guard::ctor _(print, "Nscoped", false);
-		printName(print, nn, loc) << fmt::nbsp;
+		printNestedName(print, nn, loc) << fmt::nbsp;
 		return printDeclarationName(print, name, *this);
 	}
 }
