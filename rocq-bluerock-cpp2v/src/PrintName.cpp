@@ -800,7 +800,16 @@ printTemplateArgument(CoqPrinter& print, const TemplateArgument& arg,
 			printTemplateArgument(print, value, cprint, loc);
 		});
 	}
-
+	case TemplateArgument::ArgKind::Template: {
+		auto templ = arg.getAsTemplate();
+		if (auto dt = templ.getAsTemplateDecl()) {
+			guard::ctor _(print, "Atemplate", false);
+			return cprint.printName(print, *dt);
+		} /* else if (auto qtn = templ.getAsQualifiedTemplateName()) {
+			return cprint.printName(print, qtn->getQualifier(), qtn->get)
+		} */
+		[[fallthrough]];
+	}
 	default: {
 		auto k = templateArgumentKindName(kind);
 		if (cprint.warn_well_known) {
@@ -999,8 +1008,8 @@ printAtomicName(const DeclContext& ctx, const Decl& decl, CoqPrinter& print,
 		//
 		// the name of the struct is essentially [decltype(x)].
 		for (auto by_decl = decl->getNextDeclInContext(); by_decl;
-			 by_decl->getNextDeclInContext()) {
-			if (auto vd = dyn_cast<VarDecl>(by_decl)) {
+			 by_decl = by_decl->getNextDeclInContext()) {
+			if (auto vd = dyn_cast<ValueDecl>(by_decl)) {
 				auto type = vd->getType().getTypePtr();
 				if (type->getAsTagDecl() == decl && vd->getIdentifier()) {
 					guard::ctor _(print, "Nby_first_decl", false);

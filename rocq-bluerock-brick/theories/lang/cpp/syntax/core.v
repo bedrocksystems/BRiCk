@@ -115,13 +115,14 @@ Module temp_param.
 
 End temp_param.
 
-Inductive temp_arg_ {decltype Expr : Set} : Set :=
+Inductive temp_arg_ {name decltype Expr : Set} : Set :=
 | Atype (_ : decltype)
 | Avalue (_ : Expr)
 | Apack (_ : list temp_arg_)
+| Atemplate (_ : name)
 | Aunsupported (_ : bs).
 Arguments temp_arg_ : clear implicits.
-#[global] Instance temp_arg__inhabited {A B : Set} {_ : Inhabited A} : Inhabited (temp_arg_ A B).
+#[global] Instance temp_arg__inhabited {A B C : Set} {_ : Inhabited A} : Inhabited (temp_arg_ A B C).
 Proof. solve_inhabited. Qed.
 (*
 #[global] Instance temp_arg__eq_dec {A B : Set} {_ : EqDecision A} {_ : EqDecision B} : EqDecision (temp_arg_ A B).
@@ -131,30 +132,32 @@ Proof. solve_decision. Defined.
 Module temp_arg.
   Import UPoly.
   Section existsb.
-    Context {type Expr : Set} (f : type -> bool) (g : Expr -> bool).
+    Context {name type Expr : Set} (e : name -> bool) (f : type -> bool) (g : Expr -> bool).
 
-    Fixpoint existsb (a : temp_arg_ type Expr) : bool :=
+    Fixpoint existsb (a : temp_arg_ name type Expr) : bool :=
       match a with
       | Atype t => f t
       | Avalue e => g e
       | Apack ls => List.existsb existsb ls
+      | Atemplate n => e n
       | Aunsupported _ => false
       end.
   End existsb.
 
   Section fmap.
-    Context {type type' Expr Expr' : Set}
-      (f : type -> type') (g : Expr -> Expr').
+    Context {name name' type type' Expr Expr' : Set}
+      (e : name -> name') (f : type -> type') (g : Expr -> Expr').
 
-    Fixpoint fmap (a : temp_arg_ type Expr) : temp_arg_ type' Expr' :=
+    Fixpoint fmap (a : temp_arg_ name type Expr) : temp_arg_ name' type' Expr' :=
       match a with
       | Atype t => Atype (f t)
       | Avalue e => Avalue (g e)
       | Apack ls => Apack $ fmap <$> ls
+      | Atemplate n => Atemplate $ e n
       | Aunsupported msg => Aunsupported msg
       end.
   End fmap.
-  #[global] Arguments fmap _ _ _ _ _ _ & _ : assert.
+  #[global] Arguments fmap _ _ _ _ _ _ _ _ _ & _ : assert.
 
   Section traverse.
     #[local] Set Universe Polymorphism.
@@ -162,14 +165,16 @@ Module temp_arg.
     #[local] Unset Universe Minimization ToSet.
     Universe u.
     Context {F : Set -> Type@{u}} `{!FMap F, !MRet F, AP : !Ap F}.
-    Context {type type' Expr Expr' : Set} (f : type -> F type')
+    Context {name name' type type' Expr Expr' : Set}
+      (e : name -> F name') (f : type -> F type')
       (g : Expr -> F Expr').
 
-    Fixpoint traverse (a : temp_arg_ type Expr) : F (temp_arg_ type' Expr') :=
+    Fixpoint traverse (a : temp_arg_ name type Expr) : F (temp_arg_ name' type' Expr') :=
       match a with
       | Atype t => Atype <$> f t
       | Avalue e => Avalue <$> g e
       | Apack ls => Apack <$> UPoly.traverse (T:=eta list) (F:=F) traverse ls
+      | Atemplate n => Atemplate <$> e n
       | Aunsupported msg => mret $ Aunsupported msg
       end.
     #[global] Arguments traverse & _ : assert.
@@ -416,7 +421,7 @@ End cast_style.
 
 (** ** Structured names *)
 Inductive name' {lang : lang.t} : Set :=
-| Ninst (c : name') (_ : list (temp_arg_ type' Expr'))
+| Ninst (c : name') (_ : list (temp_arg_ name' type' Expr'))
 | Nglobal (c : atomic_name_ type')	(* <<::c>> *)
 | Ndependent (t : type') (* <<typename t>> *)
 | Nscoped (n : name') (c : atomic_name_ type')	(* <<n::c>> *)
@@ -674,7 +679,7 @@ with Cast' {lang : lang.t} : Set :=
      A cast from <<A>> to <<D>> will be [Cbase2derived ["C";"B"] "D"].
      - <<A>> comes from the type of the sub-expression.
  *)
-
+| Cunsupported (_ : bs) (_ : type')
 .
 #[global] Arguments Cast' : clear implicits.
 #[global] Arguments name' : clear implicits.
@@ -763,6 +768,7 @@ Module Cast.
     | C2void => false
     | Cuser => false
     | Cdynamic t => T t
+    | Cunsupported _ t => T t
     end.
 
 End Cast.
@@ -793,7 +799,7 @@ Notation MethodRef' lang := (MethodRef_ (obj_name' lang) (functype' lang) (Expr'
 Notation function_type' lang := (function_type_ (decltype' lang)).
 Notation function_name' lang := (function_name_ (decltype' lang)).
 Notation temp_param' lang := (temp_param_ (type' lang)).
-Notation temp_arg' lang := (temp_arg_ (decltype' lang) (Expr' lang)).
+Notation temp_arg' lang := (temp_arg_ (name' lang) (decltype' lang) (Expr' lang)).
 Notation atomic_name' lang := (atomic_name_ (type' lang)).
 
 (**
@@ -992,7 +998,7 @@ Notation Tbyte := (Tnum int_rank.Ichar Unsigned) (only parsing).
 
 Fixpoint is_dependentN {lang} (n : name' lang) : bool :=
   match n with
-  | Ninst n xs => is_dependentN n || existsb (temp_arg.existsb is_dependentT is_dependentE) xs
+  | Ninst n xs => is_dependentN n || existsb (temp_arg.existsb is_dependentN is_dependentT is_dependentE) xs
   | Nglobal c => atomic_name.existsb is_dependentT c
   | Ndependent t => is_dependentT t
   | Nscoped n c => is_dependentN n || atomic_name.existsb is_dependentT c

@@ -163,6 +163,7 @@ Section with_lang.
           | Atype t => printT t
           | Avalue e => printE e
           | Apack _ => mfail
+          | Atemplate _ => mfail
           | Aunsupported note => mfail
           end
         in

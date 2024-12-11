@@ -31,3 +31,16 @@ arguments. This does not account for "untemplated" declarations in
 templated scopes.
 */
 SDeclO recoverSpecialization(const clang::Decl &);
+
+/**
+If `decl` is a template, produce its template declaration.
+*/
+const clang::TemplateDecl *recoverTemplate(const clang::Decl &);
+
+/**
+Find the declaration that was specialized to produced `decl`, avoiding
+intermediate template specializations.
+
+This can fail for special member functions.
+*/
+const clang::NamedDecl *recoverPattern(const clang::Decl &);

@@ -74,7 +74,7 @@ Module ParserExpr (Import Lang : PARSER_LANG).
   Definition Egnu_null (t : type) : Expr :=
     Ecast (Cptr2int t) Enull.
 
-  Definition Ealignof_preferred (e : Expr) (t : type) :=
+  Definition Ealignof_preferred (e : type + Expr) (t : type) :=
     Eunsupported "alignof_preferred" t.
 
   Definition Eoperator_member_call (oo : OverloadableOperator) (nm : obj_name) (ct : dispatch_type) (ft : type) (obj : Expr) (es : list Expr) : Expr :=

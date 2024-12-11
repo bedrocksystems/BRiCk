@@ -140,7 +140,7 @@ Module MTraverse.
 
     Fixpoint traverseN (n : name' lang1) : F (name' lang2) :=
       match n with
-      | Ninst n xs => Ninst <$> traverseN n <*> traverse (T:=eta list) (temp_arg.traverse traverseT traverseE) xs
+      | Ninst n xs => Ninst <$> traverseN n <*> traverse (T:=eta list) (temp_arg.traverse traverseN traverseT traverseE) xs
       | Nglobal c => Nglobal <$> atomic_name.traverse traverseT c
       | Ndependent t => Ndependent <$> traverseT t
       | Nscoped n c => Nscoped <$> traverseN n <*> atomic_name.traverse traverseT c
@@ -347,6 +347,7 @@ Module MTraverse.
       | C2void => mret C2void
       | Cuser => mret Cuser
       | Cdynamic gn => Cdynamic <$> traverseT gn
+      | Cunsupported msg t => Cunsupported msg <$> traverseT t
       end.
 
     Definition traverseCN : classname' lang1 -> F (classname' lang2) :=

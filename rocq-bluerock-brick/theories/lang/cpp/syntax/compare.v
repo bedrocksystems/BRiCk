@@ -624,23 +624,26 @@ End temp_param.
 
 Module temp_arg.
   Section compare.
-    Context {type Expr : Set}.
+    Context {name type Expr : Set}.
+    Context (compareN : name -> name -> comparison).
     Context (compareT : type -> type -> comparison).
     Context (compareE : Expr -> Expr -> comparison).
-    #[local] Notation temp_arg := (temp_arg_ type Expr).
+    #[local] Notation temp_arg := (temp_arg_ name type Expr).
 
     Definition tag (p : temp_arg) : positive :=
       match p with
       | Atype _ => 1
       | Avalue _ => 2
       | Apack _ => 3
-      | Aunsupported _ => 4
+      | Atemplate _ => 4
+      | Aunsupported _ => 5
       end.
     Definition car (t : positive) : Set :=
       match t with
       | 1 => type
       | 2 => Expr
-      | 3 => list (temp_arg_ type Expr)
+      | 3 => list (temp_arg_ name type Expr)
+      | 4 => name
       | _ => bs
       end.
     Definition data (p : temp_arg) : car (tag p) :=
@@ -648,6 +651,7 @@ Module temp_arg.
       | Atype t => t
       | Avalue e => e
       | Apack ls => ls
+      | Atemplate n => n
       | Aunsupported msg => msg
       end.
     Definition compare_data (ta_compare : temp_arg -> temp_arg -> comparison)
@@ -656,6 +660,7 @@ Module temp_arg.
       | 1 => compareT
       | 2 => compareE
       | 3 => List.compare ta_compare
+      | 4 => compareN
       | _ => bs_cmp
       end.
 
@@ -666,12 +671,13 @@ Module temp_arg.
       | Atype t => compare_ctor compare (Reduce (tag (Atype t))) (fun _ => Reduce (data (Atype t)))
       | Avalue e => compare_ctor compare (Reduce (tag (Avalue e))) (fun _ => Reduce (data (Avalue e)))
       | Apack ls => compare_ctor compare (Reduce (tag (Apack ls))) (fun _ => Reduce (data (Apack ls)))
+      | Atemplate n => compare_ctor compare (Reduce (tag (Atemplate n))) (fun _ => Reduce (data (Atemplate n)))
       | Aunsupported msg => compare_ctor compare (Reduce (tag (Aunsupported msg))) (fun _ => Reduce (data (Aunsupported msg)))
       end.
   End compare.
 
 End temp_arg.
-#[global] Instance temp_arg_compare {A B : Set} `{!Compare A, !Compare B} : Compare (temp_arg_ A B) := temp_arg.compare compare compare.
+#[global] Instance temp_arg_compare {A B C : Set} `{!Compare A, !Compare B, !Compare C} : Compare (temp_arg_ A B C) := temp_arg.compare compare compare compare.
 
 Module OverloadableOperator.
   #[prefix="", only(tag)] derive OverloadableOperator.
@@ -921,6 +927,7 @@ Module Cast.
       | Cdynamic _ => 20
       | Cderived2base _ _ => 21
       | Cbase2derived _ _ => 22
+      | Cunsupported _ _ => 26
       end.
     Definition car (t : positive) : Set :=
       match t with
@@ -937,6 +944,7 @@ Module Cast.
       | 20 => type
       | 21 | 22 => list type * type
       | 23 | 24 | 25 => type
+      | 26 => bs * type
       | _ => unit
       end.
     Definition data (c : Cast) : car (tag c) :=
@@ -964,6 +972,7 @@ Module Cast.
       | Cctor t => t
       | Cuser => tt
       | Cdynamic t => t
+      | Cunsupported err t => (err, t)
       | _ => ()
       end.
     Definition compare_data (t : positive) : car t -> car t -> comparison :=
@@ -982,6 +991,7 @@ Module Cast.
       | 21 => _compare | 22 => _compare
       | 23 => _compare | 24 => _compare
       | 25 => _compare
+      | 26 => _compare
       | _ => compare_unit
       end.
 
@@ -1017,6 +1027,7 @@ Module Cast.
       | C2void => compare_tag (Reduce (TAG C2void))
       | Cuser => COMP (Cuser : Cast)
       | Cdynamic cls => COMP (Cdynamic cls : Cast)
+      | Cunsupported err t => COMP (Cunsupported err t : Cast)
       end.
   End compare.
 
@@ -1039,7 +1050,7 @@ Module name.
     }.
     Definition box_Ninst_compare (b1 b2 : box_Ninst) : comparison :=
       compare_lex (compareN b1.(box_Ninst_0) b2.(box_Ninst_0)) $ fun _ =>
-      List.compare (temp_arg.compare compareT compareE) b1.(box_Ninst_1) b2.(box_Ninst_1).
+      List.compare (temp_arg.compare compareN compareT compareE) b1.(box_Ninst_1) b2.(box_Ninst_1).
 
     Record box_Nscoped : Set := Box_Nscoped {
       box_Nscoped_0 : name;
@@ -2458,7 +2469,7 @@ End compare_instances.
 #[global] Declare Instance Stmt_comparison {lang} :
   Comparison (compareS (lang:=lang)). (* TODO *)
 #[global] Declare Instance temp_arg_comparison {lang} :
-  Comparison (temp_arg.compare (compareT (lang:=lang)) (compareE (lang:=lang))). (* TODO *)
+  Comparison (temp_arg.compare (compareN (lang:=lang)) (compareT (lang:=lang)) (compareE (lang:=lang))). (* TODO *)
 
 
 #[global] Declare Instance name_leibniz_comparison {lang} :
@@ -2472,7 +2483,7 @@ End compare_instances.
 #[global] Declare Instance Stmt_leibniz_comparison {lang} :
   LeibnizComparison (compareS (lang:=lang)). (* TODO *)
 #[global] Declare Instance temp_arg_leibniz_comparison {lang} :
-  LeibnizComparison (temp_arg.compare (compareT (lang:=lang)) (compareE (lang:=lang))). (* TODO *)
+  LeibnizComparison (temp_arg.compare (compareN (lang:=lang)) (compareT (lang:=lang)) (compareE (lang:=lang))). (* TODO *)
 
 
 #[global] Instance name_eq_dec {lang} : EqDecision (name' lang) :=

@@ -41,19 +41,20 @@ Section with_monad.
     end.
 
   Section temp_arg.
-    Context (type : type' lang -> M) (expr : Expr' lang -> M).
+    Context (name : name' lang -> M) (type : type' lang -> M) (expr : Expr' lang -> M).
     Fixpoint temp_arg  (a : temp_arg' lang) : M :=
       match a with
       | Atype t => type t
       | Avalue e => expr e
       | Apack xs => List.forallb temp_arg xs
+      | Atemplate n => name n
       | Aunsupported _ => FAIL
       end.
   End temp_arg.
 
   Fixpoint name (n : name' lang) : M :=
     match n with
-    | Ninst n ii => name n <+> lst (temp_arg type expr) ii
+    | Ninst n ii => name n <+> lst (temp_arg name type expr) ii
     | Nglobal an => atomic_name type an
     | Nscoped n s => name n <+> atomic_name type s
     | Ndependent t => type t

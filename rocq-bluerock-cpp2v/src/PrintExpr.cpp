@@ -771,7 +771,7 @@ public:
 			CASE_WITH_TYPE(BitCast, Cbitcast)
 			CASE_WITH_TYPE(LValueBitCast, Clvaluebitcast)
 			CASE_NO_TYPE(LValueToRValue, Cl2r)
-			CASE_NO_TYPE(LValueToRValueBitCast, Cl2r_bitcast)
+			CASE_WITH_TYPE(LValueToRValueBitCast, Cl2r_bitcast)
 			CASE_WITH_TYPE(NoOp, Cnoop)
 			CASE_NO_TYPE(ArrayToPointerDecay, Carray2ptr)
 			CASE_NO_TYPE(FunctionToPointerDecay, Cfun2ptr)
@@ -835,7 +835,9 @@ public:
 			logging::unsupported()
 				<< "unsupported cast kind \"" << ce->getCastKindName() << "\""
 				<< " (at " << cprint.sourceRange(ce->getSourceRange()) << ")\n";
-			print.output() << "Cunsupported";
+			print.ctor("Cunsupported", false);
+			print.str(ce->getCastKindName()) << fmt::nbsp;
+			done(ce, Done::DT);
 		}
 	}
 
@@ -1350,8 +1352,10 @@ public:
 					<< expr->getSourceRange().printToString(
 						   ctxt.getSourceManager())
 					<< "\n";
-			expr->dump();
-			die();
+			print.ctor("Eunsupported");
+			print.output() << "\"UnaryExprOrTypeTraitExpr(" << expr->getKind()
+						   << "\")" << fmt::nbsp;
+			done(expr);
 		}
 		}
 	}
