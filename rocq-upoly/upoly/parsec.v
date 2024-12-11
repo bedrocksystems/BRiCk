@@ -22,9 +22,18 @@ Require Import bedrock.upoly.stateT.
 
 Import UPoly.
 
+(** [Next STREAM TKN] provides the [next] function to advance a stream of type
+    [STREAM] and produce a single token of type [TKN] and an updated stream. If
+    the stream reached its end, [next] returns [None]. *)
 Class Next (STREAM TKN : Type) := {
   next_token : STREAM -> option (TKN * STREAM);
 }.
+
+(** [ParseString STREAM STR] provides the [parse_string] function which parses a
+    string of type [STR] from a stream of type [STREAM] and returns the suffix
+    of the stream. Here, "parsing" means that the string "matches" a prefix of
+    the stream for some notion of "matching". In practice, most instances are
+    going to correspond to some kind of prefix equality matching scheme. *)
 Class ParseString (STREAM STR : Type) := {
   parse_string : STR -> STREAM -> option (STREAM)
 }.
