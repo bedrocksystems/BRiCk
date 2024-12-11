@@ -875,20 +875,51 @@ printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 		always_assert(false);
 	}
 
-	auto sd = recoverSpecialization(decl);
-	if (sd)
-		print.ctor("Ninst", false);
+	auto name = [&]() {
+		auto ctx = getNonIgnorableAncestor(decl, cprint);
+		if (ctx->isTranslationUnit()) {
+			guard::ctor _(print, "Nglobal", false);
+			printAtomicName(ctx, decl, print, cprint);
+		} else {
+			guard::ctor _(print, "Nscoped", false);
+			cprint.printName(print, toDecl(ctx, cprint, loc::of(decl)))
+				<< fmt::nbsp;
+			printAtomicName(ctx, decl, print, cprint);
+		}
+	};
+	auto parameters = [&](auto dct) {
+		print.list(dct->getTemplateParameters()->asArray(),
+				   [&](const clang::NamedDecl* p) {
+					   guard::ctor _(print, "Atype", false);
+					   guard::ctor __(print, "Tparam", false);
+					   print.str(p->getNameAsString());
+				   });
+	};
 
-	auto ctx = getNonIgnorableAncestor(decl, cprint);
-	if (ctx->isTranslationUnit()) {
-		guard::ctor _(print, "Nglobal", false);
-		printAtomicName(ctx, decl, print, cprint);
-	} else {
-		guard::ctor _(print, "Nscoped", false);
-		cprint.printName(print, toDecl(ctx, cprint, loc::of(decl)))
-			<< fmt::nbsp;
-		printAtomicName(ctx, decl, print, cprint);
+	if (auto cd = dyn_cast<CXXRecordDecl>(&decl)) {
+		if (auto dct = cd->getDescribedClassTemplate()) {
+			guard::ctor _(print, "Ninst", true);
+			name();
+			print.output() << fmt::nbsp;
+			parameters(dct);
+			return print.output();
+		}
+	} else if (auto fd = dyn_cast<FunctionDecl>(&decl)) {
+		if (auto dct = fd->getDescribedFunctionTemplate()) {
+			guard::ctor _(print, "Ninst", true);
+			name();
+			print.output() << fmt::nbsp;
+			parameters(dct);
+			return print.output();
+		}
 	}
+
+	auto sd = recoverSpecialization(decl);
+	if (sd) {
+		print.ctor("Ninst", false);
+	}
+
+	name();
 
 	if (sd) {
 		print.output() << fmt::nbsp;
@@ -897,89 +928,6 @@ printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 	}
 	return print.output();
 }
-
-#if 0
-template<typename DERIVED, typename RetTy>
-struct NameVisitor {
-	RetTy Visit(const Decl* decl) {
-		auto self = static_cast<DERIVED*>(this);
-		if (auto sd = recoverSpecialization(decl)) {
-			return self->VisitInst(decl, sd->temp, sd->args);
-		}
-		auto ctx = getNonIgnorableAncestor(decl);
-		if (auto nd = dyn_cast<NamedDecl>(decl)) {
-			if (ctx->isTranslationUnit()) {
-				return self->VisitScoped(ctx, decl, true);
-			} else {
-				return self->VisitScoped(ctx, decl, false);
-			}
-		} else {
-			llvm::errs() << "decl is not named (" << decl->getDeclKindName()
-						 << ")\n";
-			always_assert(false && "unnamed decl");
-		}
-	}
-
-	RetTy Visit(const DeclContext* dc) {
-		auto self = static_cast<DERIVED*>(this);
-		if (auto tu = dyn_cast<TranslationUnitDecl>(dc))
-			return self->VisitTU(tu);
-		if (auto d = dyn_cast<Decl>(dc)) {
-			return self->Visit(d);
-		} else
-			return self->Visit(dc->getParent())
-	}
-
-	// For override
-	RetTy VisitName(const NamedDecl*) {
-		return RetTy{};
-	}
-
-	RetTy VisitTU(const TranslationUnitDecl*) {
-		return Ty{};
-	}
-
-	RetTy VisitInst(const Decl* whole, const TemplateDecl*,
-					TemplateArgumentList&) {
-		return VisitName(whole);
-	}
-	RetTy VisitScoped(const DeclContext*, const NamedDecl* decl, bool global) {
-		return VisitName(decl);
-	}
-
-	ClangPrinter& cprint_;
-};
-
-struct PrintName : NameVisitor<PrintName, void> {
-
-	void VisitScoped(const DeclContext* ctx, const NamedDecl* decl,
-					 bool global) {
-		auto atomic = [&]() -> auto {
-			printAtomicName(*ctx, *decl, print, cprint);
-		};
-		if (global) {
-			guard::ctor _(print, "Nglobal", false);
-			return atomic();
-		} else {
-			guard::ctor _(print, "Nscoped", false);
-			Visit(ctx);
-			print.output() << fmt::nbsp;
-			return atomic();
-		}
-	}
-
-	void VisitInst(const Decl* whole, const TemplateDecl* temp,
-				   TemplateArgumentList& args) {
-		guard::ctor _(print, "Ninst", false);
-		Visit(temp);
-		print.output() << fmt::nbsp;
-		printTemplateArgumentList(print, args, cprint, loc::of(decl));
-	}
-
-	ClangPrinter& cprint;
-	CoqPrinter& print;
-};
-#endif
 
 static fmt::Formatter&
 printDtorName(CoqPrinter& print, const CXXRecordDecl& decl,
@@ -1174,24 +1122,8 @@ printDeclarationName(CoqPrinter& print, const DeclarationName& name,
 		*/
 	switch (name.getNameKind()) {
 	case DeclarationName::NameKind::Identifier: {
-		/*
-			Example: A function name that couldn't be resolved due to an
-			argument depending on a template parameter.
-			*/
-
-		auto atomic = [&]() -> fmt::Formatter& {
-			{
-				guard::ctor _(print, "Nfunction", false);
-				print.output() << "function_qualifiers.N" << fmt::nbsp;
-				{
-					guard::ctor _(print, "Nf", false);
-					print.str(name.getAsString());
-				}
-				return print.output() << fmt::nbsp << "nil";
-			}
-		};
-
-		atomic();
+		guard::ctor _(print, "Nid", false);
+		print.str(name.getAsString());
 		break;
 	}
 
