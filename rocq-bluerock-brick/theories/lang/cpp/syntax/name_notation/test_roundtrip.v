@@ -15,12 +15,12 @@ Module Type TEST.
   { input : IN ; expected : OUT ; observed : OUT }.
 
   Definition print_parse (nm : name) (str : bs) : list (RESULT _ _) :=
-    let result : option (list Byte.byte)  := print_name nm in
-    if bool_decide (result = Some (BS.print str)) then nil
-    else {| input := nm ; expected := Some str ; observed := BS.parse <$> result |} :: nil.
+    let result : option bs  := print_name nm in
+    if bool_decide (result = Some str) then nil
+    else {| input := nm ; expected := Some str ; observed := result |} :: nil.
 
   Definition parse_print (nm : name) (str : bs) : list (RESULT _ _) :=
-    let result : option name := parse_name (BS.print str) in
+    let result : option name := parse_name str in
     if bool_decide (result = Some nm) then nil
     else {| input := str ; expected := Some nm ; observed := result |} :: nil.
 
