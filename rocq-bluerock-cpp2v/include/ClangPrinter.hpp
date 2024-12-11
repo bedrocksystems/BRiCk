@@ -188,6 +188,11 @@ public:
 		CoqPrinter&, const clang::NestedNameSpecifier* /* optional */,
 		const clang::DeclarationName&,
 		llvm::ArrayRef<clang::TemplateArgumentLoc> /* optional */, loc::loc);
+	fmt::Formatter& printUnresolvedName(
+		CoqPrinter&, const clang::NestedNameSpecifier* /* optional */,
+		const clang::DeclarationName&,
+		llvm::ArrayRef<clang::TemplateArgument> /* optional */, loc::loc);
+
 	fmt::Formatter&
 	printUnresolvedName(CoqPrinter&,
 						const clang::NestedNameSpecifier* /* optional */,

@@ -1171,3 +1171,17 @@ ClangPrinter::printUnresolvedName(
 		return printTemplateArgumentList(print, template_args);
 	}
 }
+
+fmt::Formatter&
+ClangPrinter::printUnresolvedName(
+	CoqPrinter& print, const NestedNameSpecifier* nn,
+	const DeclarationName& name,
+	llvm::ArrayRef<clang::TemplateArgument> template_args, loc::loc loc) {
+	if (template_args.empty())
+		return printUnresolvedName(print, nn, name, loc);
+	else {
+		guard::ctor _(print, "Ninst", false);
+		printUnresolvedName(print, nn, name, loc) << fmt::nbsp;
+		return printTemplateArgumentList(print, template_args);
+	}
+}

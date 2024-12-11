@@ -1596,6 +1596,29 @@ public:
 		print.end_ctor();
 	}
 
+	void VisitConceptSpecializationExpr(const ConceptSpecializationExpr* expr) {
+		print.ctor("Econcept_specialization");
+#if CLANG_VERSION_MAJOR <= 17
+		auto cr = static_cast<const ConceptReference*>(expr);
+#else
+		auto cr = expr->getConceptReference();
+#endif
+
+		cprint.printUnresolvedName(
+			print, cr->getNestedNameSpecifierLoc().getNestedNameSpecifier(),
+			cr->getConceptNameInfo().getName(), expr->getTemplateArguments(),
+			loc::of(expr))
+			<< fmt::nbsp;
+
+		if (expr->getDependence()) {
+			guard::ctor _{print, "Some", false};
+			print.boolean(expr->isSatisfied());
+		} else
+			print.none();
+
+		print.end_ctor();
+	}
+
 	void VisitCXXScalarValueInitExpr(const CXXScalarValueInitExpr* expr) {
 		print.ctor("Eimplicit_init");
 		cprint.printQualType(print, expr->getType(), loc::of(expr));

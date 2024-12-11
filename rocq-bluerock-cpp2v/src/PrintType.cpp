@@ -111,7 +111,8 @@ public:
 			guard::ctor _{print, "Tnamed"};
 			cprint.printUnresolvedName(print, type->getQualifier(),
 									   DeclarationName{type->getIdentifier()},
-									   {}, loc::of(type));
+									   ArrayRef<TemplateArgument>{},
+									   loc::of(type));
 			//type->dump();
 			// unsupported_type(print, cprint, type, true);
 		}
