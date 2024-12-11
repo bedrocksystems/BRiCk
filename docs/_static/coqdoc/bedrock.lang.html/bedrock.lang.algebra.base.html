@@ -35,16 +35,25 @@
 </div>
     <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
     <div id="main">
-<h1 class="libtitle">bedrock.lang.prelude.addr</h1>
+<h1 class="libtitle">bedrock.lang.algebra.base</h1>
 
 <div class="code">
 <span class="comment">(*<br/>
-&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;BlueRock&nbsp;Security&nbsp;Inc.&nbsp;2021<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;2024&nbsp;BlueRock&nbsp;Security,&nbsp;Inc.<br/>
 &nbsp;*<br/>
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="library">bedrock.prelude.addr</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;This&nbsp;exports&nbsp;basic&nbsp;facilities&nbsp;for&nbsp;defining&nbsp;CMRAs&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.cmra.html#"><span class="id" title="library">iris.algebra.cmra</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.updates.html#"><span class="id" title="library">iris.algebra.updates</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.local_updates.html#"><span class="id" title="library">iris.algebra.local_updates</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.excl.html#"><span class="id" title="library">iris.algebra.excl</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.auth.html#"><span class="id" title="library">iris.algebra.auth</span></a>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
