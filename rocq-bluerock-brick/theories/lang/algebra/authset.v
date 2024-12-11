@@ -5,15 +5,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import stdpp.base.
-Require Import stdpp.sets.
-Require Import stdpp.propset.
-Require Export iris.algebra.cmra.
-Require Export iris.algebra.excl.
-Require Export iris.algebra.local_updates.
-Require Export iris.algebra.auth.
+Require Export stdpp.propset.
 
-Require Import iris.base_logic.base_logic.
+Require Export bedrock.lang.algebra.base.
 Require Import bedrock.lang.algebra.restrict.
 
 Set Default Proof Using "Type".

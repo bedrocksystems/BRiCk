@@ -5,12 +5,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import stdpp.list.
-Require Export iris.algebra.cmra.
-Require Export iris.algebra.excl.
-Require Export iris.algebra.local_updates.
-Require Export iris.algebra.auth.
 Require Export bedrock.prelude.base.
+Require Export bedrock.lang.algebra.base.
 
 #[local] Definition resource' (A : Type) : cmra := exclR (leibnizO A).
 #[global] Notation resource A := (Reduce (resource' A)) (only parsing).
