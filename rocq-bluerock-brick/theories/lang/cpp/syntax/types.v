@@ -74,19 +74,6 @@ Fixpoint drop_qualifiers (t : type) : type :=
   | _ => t
   end.
 
-(**
-[drop_reference] removes any leading reference types.
-*)
-Fixpoint drop_reference (t : type) : exprtype' lang :=
-  match drop_qualifiers t with
-  | Tref u | Trv_ref u => drop_reference u
-  | _ => t	(* We do not normalize qualifiers here to promote sharing *)
-  end.
-
-Succeed Example TEST_drop_reference : drop_reference (Tconst Tint) = Tconst Tint := eq_refl.
-Succeed Example TEST_drop_reference : drop_reference (Tconst (Tref Tint)) = Tint := eq_refl.
-Succeed Example TEST_drop_reference : drop_reference (Tconst (Tref (Tconst Tint))) = Tconst Tint := eq_refl.
-
 (** ** Smart constructors *)
 
 (**
@@ -710,6 +697,10 @@ Inductive tref_spec : type_qualifiers -> type -> type -> Prop :=
 Lemma tref_ok q t : tref_spec q t (tref q t).
 Proof. revert q. induction t; auto. Qed.
 
+Lemma tref_nonref_unqual cv (t : type' lang) :
+  ~~ is_ref t -> ~~ is_qualified t -> tref cv t = Tref $ tqualified cv t.
+Proof. by destruct t. Qed.
+
 (*
 Lemma tref_equiv' q t : tref q t ≡ Tref (Tqualified q t).
 Proof.
@@ -740,7 +731,7 @@ Proof. move: q. by induction t; cbn. Qed.
 (** [trv_ref] *)
 
 Inductive trv_ref_spec : type_qualifiers -> type -> type -> Prop :=
-| trv_ref_nonref_unqual q t : ~~ is_ref t -> ~~ is_qualified t -> trv_ref_spec q t (Trv_ref $ tqualified q t)
+| trv_ref_spec_nonref_unqual q t : ~~ is_ref t -> ~~ is_qualified t -> trv_ref_spec q t (Trv_ref $ tqualified q t)
 | trv_ref_spec_ref q t : trv_ref_spec q (Tref t) (tref QM t)
 | trv_ref_spec_rv_ref q t ret : trv_ref_spec QM t ret -> trv_ref_spec q (Trv_ref t) ret
 | trv_ref_spec_qual q q' t ret : trv_ref_spec (merge_tq q q') t ret -> trv_ref_spec q (Tqualified q' t) ret
@@ -749,6 +740,10 @@ Inductive trv_ref_spec : type_qualifiers -> type -> type -> Prop :=
 
 Lemma trv_ref_ok q t : trv_ref_spec q t (trv_ref q t).
 Proof. revert q; induction t; auto. Qed.
+
+Lemma trv_ref_nonref_unqual cv (t : type' lang) :
+  ~~ is_ref t -> ~~ is_qualified t -> trv_ref cv t = Trv_ref $ tqualified cv t.
+Proof. by destruct t. Qed.
 
 (*
 Lemma trv_ref_equiv' q t : trv_ref q t ≡ Trv_ref (Tqualified q t).
@@ -1155,6 +1150,41 @@ Lemma decompose_type_erase_qualifiers ty
   : decompose_type (erase_qualifiers ty) = (QM, erase_qualifiers ty).
 Proof.
   induction ty; simpl; intros; eauto.
+Qed.
+
+(**
+[drop_reference] removes any leading reference types.
+*)
+Fixpoint drop_reference (t : type) : exprtype' lang :=
+  match drop_qualifiers t with
+  | Tref u | Trv_ref u => drop_reference u
+  | _ => t	(* We do not normalize qualifiers here to promote sharing *)
+  end.
+
+Succeed Example TEST_drop_reference : drop_reference (Tconst Tint) = Tconst Tint := eq_refl.
+Succeed Example TEST_drop_reference : drop_reference (Tconst (Tref Tint)) = Tint := eq_refl.
+Succeed Example TEST_drop_reference : drop_reference (Tconst (Tref (Tconst Tint))) = Tconst Tint := eq_refl.
+
+Lemma drop_reference_ref (t : type' lang) u :
+  drop_qualifiers t = Tref u -> drop_reference t = drop_reference u.
+Proof.
+  destruct t; first [done|cbn].
+  { (* [Tref] *) by move=>[->]. }
+  { (* [Tqualified] *) by move=>->. }
+Qed.
+
+Lemma drop_reference_rv_ref (t : type' lang) u :
+  drop_qualifiers t = Trv_ref u -> drop_reference t = drop_reference u.
+Proof.
+  destruct t; first [done|cbn].
+  { (* [Trv_ref] *) by move=>[->]. }
+  { (* [Tqualified] *) by move=>->. }
+Qed.
+
+Lemma drop_reference_non_ref (t : type' lang) u :
+  drop_qualifiers t = u -> ~~ is_ref u -> drop_reference t = t.
+Proof.
+  move=><-. destruct t; first [done|cbn]. by case_match.
 Qed.
 
 (** ** Heap Types
