@@ -110,7 +110,9 @@ public:
 		} else {
 			guard::ctor _{print, "Tnamed"};
 			cprint.printUnresolvedName(print, type->getQualifier(),
-									   *type->getIdentifier(), loc::of(type));
+									   DeclarationName{type->getIdentifier()},
+									   ArrayRef<TemplateArgument>{},
+									   loc::of(type));
 			//type->dump();
 			// unsupported_type(print, cprint, type, true);
 		}
@@ -398,6 +400,7 @@ public:
 		} else if (type->isSugared()) {
 			cprint.printQualType(print, type->desugar(), loc::of(type));
 		} else {
+
 			/*
 			TODO: See the comment in VisitInjectedClassNameType. We
 			probably have to print the entire specialized scope, and not
@@ -408,7 +411,8 @@ public:
 			if (temp) {
 				printRiskyTypeComment(print, type, cprint) << fmt::nbsp;
 				guard::ctor _1(print, "Tnamed", false);
-				guard::ctor _2(print, "Ninst", false);
+				guard::ctor _2(print, "Ninst (* TemplateSpecializationType *)",
+							   false);
 				cprint.printName(print, *temp) << fmt::nbsp;
 				cprint.printTemplateArgumentList(print, args);
 			} else
@@ -468,9 +472,9 @@ public:
 			*/
 			printRiskyTypeComment(print, type, cprint) << fmt::nbsp;
 			guard::ctor _1(print, "Tnamed", false);
-			guard::ctor _2(print, "Ninst", false);
+			// guard::ctor _2(print, "Ninst{InjectedClassNameType}", false);
 			cprint.printName(print, *decl) << fmt::nbsp;
-			cprint.printTemplateParameters(print, *decl, true);
+			// cprint.printTemplateParameters(print, *decl, true);
 		} else {
 			unsupported(print, cprint, loc::of(type),
 						"injected class name without declaration");

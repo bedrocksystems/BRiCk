@@ -33,4 +33,7 @@ Module ParserName (Import Lang : PARSER_LANG).
     | _ => Ndependent t
     end.
 
+  Definition Nlocal (n : atomic_name' parser_lang) :=
+    Nglobal n. (* TODO: this is incorrect *)
+
 End ParserName.

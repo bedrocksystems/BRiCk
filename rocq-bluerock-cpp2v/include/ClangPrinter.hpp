@@ -130,8 +130,8 @@ public:
 private:
 	const clang::Decl* getDecl() const;
 
-	fmt::Formatter& printName(CoqPrinter&, const clang::NestedNameSpecifier*,
-							  loc::loc);
+	fmt::Formatter&
+	printNestedName(CoqPrinter&, const clang::NestedNameSpecifier*, loc::loc);
 
 public:
 	clang::ASTContext& getContext() {
@@ -188,10 +188,15 @@ public:
 		CoqPrinter&, const clang::NestedNameSpecifier* /* optional */,
 		const clang::DeclarationName&,
 		llvm::ArrayRef<clang::TemplateArgumentLoc> /* optional */, loc::loc);
+	fmt::Formatter& printUnresolvedName(
+		CoqPrinter&, const clang::NestedNameSpecifier* /* optional */,
+		const clang::DeclarationName&,
+		llvm::ArrayRef<clang::TemplateArgument> /* optional */, loc::loc);
+
 	fmt::Formatter&
 	printUnresolvedName(CoqPrinter&,
 						const clang::NestedNameSpecifier* /* optional */,
-						const clang::IdentifierInfo&, loc::loc);
+						const clang::DeclarationName&, loc::loc);
 
 	// TODO: Can we drop these?
 	fmt::Formatter& printUnsupportedName(CoqPrinter&, llvm::StringRef); // name
@@ -200,7 +205,7 @@ public:
 								  const clang::CXXRecordDecl&); // name
 
 	fmt::Formatter& printUnqualifiedName(CoqPrinter&,
-										 const clang::NamedDecl&); // : bs
+										 const clang::NamedDecl&); // : ident
 	fmt::Formatter& printUnqualifiedName(CoqPrinter&, const clang::NamedDecl*,
 										 loc::loc);
 

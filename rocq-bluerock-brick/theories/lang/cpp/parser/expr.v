@@ -126,4 +126,10 @@ Module ParserExpr (Import Lang : PARSER_LANG).
   Notation Ecapture_this qual lambda_class capture_field_type :=
     (Ecast Cl2r (Ecapture qual field_name.CaptureThis lambda_class capture_field_type)) (only parsing).
 
+  Definition Econcept_specialization (nm : name) (val : option bool) : Expr :=
+    match val with
+    | None => Eunsupported "unresolved concept specialization" Tbool
+    | Some val => Ebool val
+    end.
+
 End ParserExpr.

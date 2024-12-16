@@ -201,292 +201,6 @@ toDecl(const DeclContext& ctx, ClangPrinter& cprint, loc::loc loc) {
 	}
 }
 
-namespace mangled {
-
-/*
-This mangler is incomplete but handles a large
-enough fragment of C++ to be useful in the short term.
-
-NOTE: The existing ItaniumMangler does *almost* what we want
-except it does not produce cross-translation unit unique names
-for anonymous types which renders it largely unusable for
-modular verification purposes.
-
-TODO:
-- Cover all declarations, not just named declarations
-
-- Move away from Itanium mangling (which can crash on template
-parameters and which does not cover enough names for verification
-and which assigns disambiguating numbers different from those used
-in `Nanon` and which does not lend itself to efficient demangling)
-*/
-
-static GlobalDecl
-to_gd(const NamedDecl* decl) {
-	if (auto ct = dyn_cast<CXXConstructorDecl>(decl)) {
-		return GlobalDecl(ct, CXXCtorType::Ctor_Complete);
-	} else if (auto dt = dyn_cast<CXXDestructorDecl>(decl)) {
-		return GlobalDecl(dt, CXXDtorType::Dtor_Deleting);
-	} else {
-		return GlobalDecl(decl);
-	}
-}
-
-static size_t
-printSimpleContext(const DeclContext* dc, CoqPrinter& print,
-				   ClangPrinter& cprint, size_t remaining = 0) {
-	auto loc = loc::of(dc);
-	auto unsupported = [&](StringRef what) {
-		if (ClangPrinter::warn_well_known)
-			::unsupported(cprint, loc) << what << "\n";
-	};
-	auto& mangle = cprint.getMangleContext();
-	if (dc == nullptr or dc->isTranslationUnit()) {
-		print.output() << "_Z" << (1 < remaining ? "N" : "");
-		return 0;
-	} else if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(dc)) {
-		if (auto dtor = ts->getDestructor()) {
-			// HACK: this mangles an aggregate name by mangling
-			// the destructor and then doing some string manipulation
-			std::string sout;
-			llvm::raw_string_ostream out(sout);
-			mangle.mangleName(to_gd(dtor), out);
-			out.flush();
-			always_assert(3 < sout.length() &&
-						  "mangled string length is too small");
-			sout =
-				sout.substr(0, sout.length() - 4); // cut off the final 'DnEv'
-			if (not ts->getDeclContext()->isTranslationUnit() or
-				0 < remaining) {
-				print.output() << sout << (remaining == 0 ? "E" : "");
-				return 2; // we approximate the whole string by 2
-			} else {
-				print.output() << "_Z" << sout.substr(3, sout.length() - 3);
-				return 1;
-			}
-		} else {
-			unsupported("ClassTemplateSpecializationDecl for simple contexts");
-			std::string sout;
-			{
-				llvm::raw_string_ostream out(sout);
-#if 18 <= CLANG_VERSION_MAJOR
-				mangle.mangleCanonicalTypeName(
-					QualType(ts->getTypeForDecl(), 0), out);
-#else
-				mangle.mangleTypeName(QualType(ts->getTypeForDecl(), 0), out);
-#endif
-			}
-
-			if (sout.substr(0, 4) == "_ZTS") {
-				print.output() << "_Z" << sout.substr(4);
-			} else {
-				print.output() << sout;
-			}
-			return 2;
-		}
-	} else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
-		auto parent = ns->getDeclContext();
-		auto compound =
-			printSimpleContext(parent, print, cprint, remaining + 1);
-		if (not ns->isAnonymousNamespace()) {
-			auto name = ns->getNameAsString();
-			print.output() << name.length() << name;
-		} else if (not ns->decls_empty()) {
-			// a proposed scheme is to use the name of the first declaration.
-			print.output() << "~<TODO>";
-			// TODO
-			// ns->field_begin()->printName(print.output().nobreak());
-		} else {
-			unsupported("empty anonymous namespace");
-			print.output() << "~<empty>";
-		}
-		if (remaining == 0 && 0 < compound)
-			print.output() << "E";
-		return compound + 1;
-	} else if (auto rd = dyn_cast<RecordDecl>(dc)) {
-		// NOTE: this occurs when you have a forward declaration,
-		// e.g. [struct C;], or when you have a compiler builtin.
-		// We need to mangle the name, but we can't really get any help
-		// from clang.
-
-		auto parent = rd->getDeclContext();
-		auto compound =
-			printSimpleContext(parent, print, cprint, remaining + 1);
-		if (rd->getIdentifier()) {
-			auto name = rd->getNameAsString();
-			print.output() << name.length() << name;
-		} else if (auto tdn = rd->getTypedefNameForAnonDecl()) {
-			auto s = tdn->getNameAsString();
-			print.output() << s.length() << s;
-			//tdn->printName(print.output().nobreak());
-		} else if (not rd->field_empty()) {
-			auto s = rd->field_begin()->getName();
-			print.output() << s.size() + 1 << "."
-						   << rd->field_begin()->getName();
-		} else {
-			// TODO this isn't technically sound
-			unsupported("empty anonymous record");
-			print.output() << "8~<empty>";
-		}
-		if (remaining == 0 && 0 < compound)
-			print.output() << "E";
-		return compound + 1;
-	} else if (auto ed = dyn_cast<EnumDecl>(dc)) {
-		auto parent = ed->getDeclContext();
-		auto compound =
-			printSimpleContext(parent, print, cprint, remaining + 1);
-		if (ed->getIdentifier()) {
-			auto name = ed->getNameAsString();
-			print.output() << name.length() << name;
-			//} else if (auto tdn = rd->getTypedefNameForAnonDecl()) {
-			//    llvm::errs() << "typedef name not null " << tdn << "\n";
-			//    tdn->printName(print.output().nobreak());
-		} else {
-			if (ed->enumerators().empty()) {
-				// no idea what to do
-				unsupported("unnamed, empty enumeration");
-				print.output() << "13~<empty-enum>";
-			} else {
-				std::string out_s{};
-				llvm::raw_string_ostream out{out_s};
-				ed->enumerators().begin()->printName(out);
-				out.flush();
-				print.output() << out_s.size() + 1 << "~" << out_s;
-			}
-		}
-		if (remaining == 0 && 0 < compound)
-			print.output() << "E";
-		return compound + 1;
-	} else if (auto fd = dyn_cast<FunctionDecl>(dc)) {
-		std::string sout;
-		llvm::raw_string_ostream out(sout);
-		mangle.mangleName(to_gd(fd), out);
-		out.flush();
-		always_assert(3 < sout.length() &&
-					  "mangled string length is too small");
-		if (not fd->getDeclContext()->isTranslationUnit()) {
-			print.output() << sout << (remaining == 0 ? "E" : "");
-			return 2; // we approximate the whole string by 2
-		} else {
-			print.output() << sout;
-			return 1;
-		}
-	} else if (auto ls = dyn_cast<LinkageSpecDecl>(dc)) {
-		auto parent = ls->getDeclContext();
-		return printSimpleContext(parent, print, cprint, remaining);
-	} else {
-		fatal(cprint, loc)
-			<< "unexpected declaration context in [printSimplContext]\n";
-		logging::die();
-	}
-}
-
-static fmt::Formatter&
-printQualifiedName(const NamedDecl& decl, CoqPrinter& print,
-				   ClangPrinter& cprint) {
-	print.output() << '\"';
-	auto& os = print.output().nobreak();
-	decl.printQualifiedName(os);
-	return print.output() << '\"';
-}
-
-static fmt::Formatter&
-printTypeName(CoqPrinter& print, const TypeDecl& decl, ClangPrinter& cprint) {
-	switch (decl.getKind()) {
-	case Decl::Kind::CXXRecord:
-	case Decl::Kind::ClassTemplateSpecialization:
-	case Decl::Kind::Enum:
-		print.output() << "\"";
-		printSimpleContext(cast<DeclContext>(&decl), print, cprint);
-		return print.output() << "\"";
-
-	case Decl::Kind::Record:
-		// NOTE: this only matches C records, not C++ records
-		// therefore, we do not perform any mangling.
-	case Decl::Kind::Typedef:
-	case Decl::Kind::TypeAlias:
-		return printQualifiedName(decl, print, cprint);
-
-	default:
-		if (ClangPrinter::warn_well_known)
-			unsupported(cprint, loc::of(decl)) << "type in [printTypeName]\n";
-		return print.str("~<unsupported-type>");
-	}
-}
-
-// NOTE we implement our own destructor mangling because we are not
-// guaranteed to be able to generate the destructor for every aggregate
-// and our current setup requires that all aggregates have named
-// destructors.
-//
-// An alternative (cleaner) solution is to extend the type of names to
-// introduce a distinguished name for destructors. Doing this is a bit
-// more invasive.
-static fmt::Formatter&
-printDtorName(CoqPrinter& print, const CXXRecordDecl& decl,
-			  ClangPrinter& cprint) {
-	guard::ctor _(print, "DTOR", false);
-	return mangled::printTypeName(print, decl, cprint);
-}
-
-static fmt::Formatter&
-printObjName(CoqPrinter& print, const ValueDecl& decl, ClangPrinter& cprint) {
-	// All enumerations introduce types, but only some of them have names.
-	// While positional names work in scoped contexts, they generally
-	// do not work in extensible contexts (e.g. the global context)
-	//
-	// To address this, we use the name of their first declation.
-	// To avoid potential clashes (since the first declaration might be
-	// a term name and not a type name), we prefix the symbol with a dot,
-	// e.g.
-	// [enum { X , Y , Z };] -> [.X]
-	// note that [MangleContext::mangleTypeName] does *not* follow this
-	// strategy.
-
-	auto& mangle = cprint.getMangleContext();
-	if (auto ecd = dyn_cast<EnumConstantDecl>(&decl)) {
-		// While they are values, they are not mangled because they do
-		// not end up in the resulting binary. Therefore, we need a special
-		// case.
-		if (auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext())) {
-			guard::ctor _(print, "Nenum_const", false);
-			printTypeName(print, *ed, cprint) << fmt::nbsp;
-			return cprint.printUnqualifiedName(print, *ecd);
-		} else {
-			unsupported(cprint, loc::of(decl))
-				<< "enumeration constant without declaration context\n";
-			return print.output() << "~<bad enum constant>";
-		}
-	} else if (auto dd = dyn_cast<CXXDestructorDecl>(&decl)) {
-		if (auto cls = dd->getParent()) {
-			return printDtorName(print, *cls, cprint);
-		} else {
-			unsupported(cprint, loc::of(decl)) << "destructor without parent\n";
-			return print.output() << "~<bad destructor>";
-		}
-	} else if (mangle.shouldMangleDeclName(&decl)) {
-		print.output() << "\"";
-		mangle.mangleName(to_gd(&decl), print.output().nobreak());
-		return print.output() << "\"";
-	} else {
-		return cprint.printUnqualifiedName(print, decl);
-	}
-}
-
-static fmt::Formatter&
-printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
-	if (isa<TypeDecl>(decl))
-		return printTypeName(print, cast<TypeDecl>(decl), cprint);
-	else if (isa<ValueDecl>(decl))
-		return printObjName(print, cast<ValueDecl>(decl), cprint);
-	else {
-		unsupported(cprint, loc::of(decl)) << "cannot mangle declarations\n";
-		return print.output() << "~<bad named declaration>";
-	}
-}
-
-} // namespace mangled
-
 namespace structured {
 
 /*
@@ -1161,112 +875,59 @@ printName(CoqPrinter& print, const Decl& decl, ClangPrinter& cprint) {
 		always_assert(false);
 	}
 
-	if (auto sd = recoverSpecialization(decl)) {
-		// Printing template specializations should print
-		// <<Ninst (templated-name) [template-arguments]>>
-		guard::ctor _(print, "Ninst", false);
-		printName(print, sd->temp, cprint) << fmt::line;
-		return printTemplateArgumentList(print, sd->args, cprint,
-										 loc::of(decl));
-	} else {
+	auto name = [&]() {
 		auto ctx = getNonIgnorableAncestor(decl, cprint);
-		auto atomic = [&]() -> auto& {
-			return printAtomicName(ctx, decl, print, cprint);
-		};
 		if (ctx->isTranslationUnit()) {
 			guard::ctor _(print, "Nglobal", false);
-			return atomic();
+			printAtomicName(ctx, decl, print, cprint);
 		} else {
 			guard::ctor _(print, "Nscoped", false);
 			cprint.printName(print, toDecl(ctx, cprint, loc::of(decl)))
 				<< fmt::nbsp;
-			return atomic();
+			printAtomicName(ctx, decl, print, cprint);
 		}
-	}
-}
+	};
+	auto parameters = [&](auto dct) {
+		print.list(dct->getTemplateParameters()->asArray(),
+				   [&](const clang::NamedDecl* p) {
+					   guard::ctor _(print, "Atype", false);
+					   guard::ctor __(print, "Tparam", false);
+					   print.str(p->getNameAsString());
+				   });
+	};
 
-#if 0
-template<typename DERIVED, typename RetTy>
-struct NameVisitor {
-	RetTy Visit(const Decl* decl) {
-		auto self = static_cast<DERIVED*>(this);
-		if (auto sd = recoverSpecialization(decl)) {
-			return self->VisitInst(decl, sd->temp, sd->args);
-		}
-		auto ctx = getNonIgnorableAncestor(decl);
-		if (auto nd = dyn_cast<NamedDecl>(decl)) {
-			if (ctx->isTranslationUnit()) {
-				return self->VisitScoped(ctx, decl, true);
-			} else {
-				return self->VisitScoped(ctx, decl, false);
-			}
-		} else {
-			llvm::errs() << "decl is not named (" << decl->getDeclKindName()
-						 << ")\n";
-			always_assert(false && "unnamed decl");
-		}
-	}
-
-	RetTy Visit(const DeclContext* dc) {
-		auto self = static_cast<DERIVED*>(this);
-		if (auto tu = dyn_cast<TranslationUnitDecl>(dc))
-			return self->VisitTU(tu);
-		if (auto d = dyn_cast<Decl>(dc)) {
-			return self->Visit(d);
-		} else
-			return self->Visit(dc->getParent())
-	}
-
-	// For override
-	RetTy VisitName(const NamedDecl*) {
-		return RetTy{};
-	}
-
-	RetTy VisitTU(const TranslationUnitDecl*) {
-		return Ty{};
-	}
-
-	RetTy VisitInst(const Decl* whole, const TemplateDecl*,
-					TemplateArgumentList&) {
-		return VisitName(whole);
-	}
-	RetTy VisitScoped(const DeclContext*, const NamedDecl* decl, bool global) {
-		return VisitName(decl);
-	}
-
-	ClangPrinter& cprint_;
-};
-
-struct PrintName : NameVisitor<PrintName, void> {
-
-	void VisitScoped(const DeclContext* ctx, const NamedDecl* decl,
-					 bool global) {
-		auto atomic = [&]() -> auto {
-			printAtomicName(*ctx, *decl, print, cprint);
-		};
-		if (global) {
-			guard::ctor _(print, "Nglobal", false);
-			return atomic();
-		} else {
-			guard::ctor _(print, "Nscoped", false);
-			Visit(ctx);
+	if (auto cd = dyn_cast<CXXRecordDecl>(&decl)) {
+		if (auto dct = cd->getDescribedClassTemplate()) {
+			guard::ctor _(print, "Ninst", true);
+			name();
 			print.output() << fmt::nbsp;
-			return atomic();
+			parameters(dct);
+			return print.output();
+		}
+	} else if (auto fd = dyn_cast<FunctionDecl>(&decl)) {
+		if (auto dct = fd->getDescribedFunctionTemplate()) {
+			guard::ctor _(print, "Ninst", true);
+			name();
+			print.output() << fmt::nbsp;
+			parameters(dct);
+			return print.output();
 		}
 	}
 
-	void VisitInst(const Decl* whole, const TemplateDecl* temp,
-				   TemplateArgumentList& args) {
-		guard::ctor _(print, "Ninst", false);
-		Visit(temp);
-		print.output() << fmt::nbsp;
-		printTemplateArgumentList(print, args, cprint, loc::of(decl));
+	auto sd = recoverSpecialization(decl);
+	if (sd) {
+		print.ctor("Ninst", false);
 	}
 
-	ClangPrinter& cprint;
-	CoqPrinter& print;
-};
-#endif
+	name();
+
+	if (sd) {
+		print.output() << fmt::nbsp;
+		printTemplateArgumentList(print, sd->args, cprint, loc::of(decl));
+		print.end_ctor();
+	}
+	return print.output();
+}
 
 static fmt::Formatter&
 printDtorName(CoqPrinter& print, const CXXRecordDecl& decl,
@@ -1314,10 +975,7 @@ fmt::Formatter&
 ClangPrinter::printNameAsKey(CoqPrinter& print, const Decl& decl) {
 	if (trace(Trace::Name))
 		trace("printNameAsKey", loc::of(decl));
-	if (print.structured_keys())
-		return printName(print, decl);
-	else
-		return mangled::printName(print, decl, *this);
+	return printName(print, decl);
 }
 
 fmt::Formatter&
@@ -1341,36 +999,6 @@ fmt::Formatter&
 ClangPrinter::printName(CoqPrinter& print, const Decl* p, loc::loc loc,
 						bool full) {
 	return printName(print, deref(print, *this, "printName", p, loc), full);
-}
-
-fmt::Formatter&
-ClangPrinter::printName(CoqPrinter& print, const NestedNameSpecifier* spec,
-						loc::loc loc) {
-	if (auto ns = spec->getAsNamespace()) {
-		printName(print, ns, loc);
-	} else if (auto nsa = spec->getAsNamespaceAlias()) {
-		printName(print, nsa, loc);
-	} else if (auto type = spec->getAsType()) {
-		guard::ctor _(print, "Ndependent", false);
-		printType(print, type, loc);
-	} else if (auto id = spec->getAsIdentifier()) {
-		bool is_global = not spec->getPrefix() ||
-						 spec->getPrefix()->getKind() ==
-							 NestedNameSpecifier::SpecifierKind::Global;
-
-		guard::ctor _(print, is_global ? "Nglobal" : "Nscoped", false);
-		if (not is_global) {
-			printName(print, spec->getPrefix(), loc);
-			print.output() << fmt::nbsp;
-		}
-		guard::ctor __(print, "Nid", false);
-		print.output() << "\"" << id->getName() << "\"";
-	} else {
-		llvm::errs() << "unknown NestedNameSpecifier(" << spec->getKind()
-					 << ")\n";
-		llvm::errs().flush();
-	}
-	return print.output();
 }
 
 fmt::Formatter&
@@ -1465,24 +1093,8 @@ printDeclarationName(CoqPrinter& print, const DeclarationName& name,
 		*/
 	switch (name.getNameKind()) {
 	case DeclarationName::NameKind::Identifier: {
-		/*
-			Example: A function name that couldn't be resolved due to an
-			argument depending on a template parameter.
-			*/
-
-		auto atomic = [&]() -> fmt::Formatter& {
-			{
-				guard::ctor _(print, "Nfunction", false);
-				print.output() << "function_qualifiers.N" << fmt::nbsp;
-				{
-					guard::ctor _(print, "Nf", false);
-					print.str(name.getAsString());
-				}
-				return print.output() << fmt::nbsp << "nil";
-			}
-		};
-
-		atomic();
+		guard::ctor _(print, "Nid", false);
+		print.str(name.getAsString());
 		break;
 	}
 
@@ -1497,42 +1109,79 @@ printDeclarationName(CoqPrinter& print, const DeclarationName& name,
 }
 
 fmt::Formatter&
-ClangPrinter::printUnresolvedName(
-	CoqPrinter& print, const NestedNameSpecifier* nn,
-	const DeclarationName& name,
-	llvm::ArrayRef<clang::TemplateArgumentLoc> template_args, loc::loc loc) {
-	if (not nn) {
-		guard::ctor _(print, "Nglobal", false);
-		return printDeclarationName(print, name, *this);
-	} else if (nn->getKind() == NestedNameSpecifier::Global) {
-		guard::ctor _(print, "Nglobal", false);
-		return printDeclarationName(print, name, *this);
+ClangPrinter::printNestedName(CoqPrinter& print,
+							  const NestedNameSpecifier* spec, loc::loc loc) {
+	if (auto ns = spec->getAsNamespace()) {
+		printName(print, ns, loc);
+	} else if (auto nsa = spec->getAsNamespaceAlias()) {
+		printName(print, nsa, loc);
+	} else if (auto type = spec->getAsType()) {
+		guard::ctor _(print, "Ndependent", false);
+		printType(print, type, loc);
+	} else if (auto id = spec->getAsIdentifier()) {
+		bool is_global = not spec->getPrefix() ||
+						 spec->getPrefix()->getKind() ==
+							 NestedNameSpecifier::SpecifierKind::Global;
+
+		guard::ctor _(print, is_global ? "Nglobal" : "Nscoped", false);
+		if (not is_global) {
+			printNestedName(print, spec->getPrefix(), loc) << fmt::nbsp;
+		}
+		// TODO: this is incorrect. i need to print an atomic name, possibly with specializations.
+		guard::ctor __(print, "Nid", false);
+		print.str(id->getName());
 	} else {
-		guard::ctor _(print, "Nscoped", false);
-		printName(print, nn, loc) << fmt::nbsp;
-		return printDeclarationName(print, name, *this);
+		unsupported(*this, loc, true)
+			<< "unsupported NestedNameSpecifier " << spec->getKind() << "\n";
+		guard::ctor _{print, "Nunsupported", false};
+		print.output() << "\"NestedNameSpecifier(" << spec->getKind() << ")\"";
 	}
+	return print.output();
 }
 
 fmt::Formatter&
 ClangPrinter::printUnresolvedName(CoqPrinter& print,
 								  const NestedNameSpecifier* nn,
-								  const IdentifierInfo& name, loc::loc loc) {
+								  const DeclarationName& name, loc::loc loc) {
+
 	if (not nn) {
-		guard::ctor _(print, "Nglobal", false);
-		print.output() << '\"' << name.getName() << '\n';
-		return print.output();
+		// There is no prefix. Incomplete!
+		guard::ctor _(print, "Nlocal", false);
+		return printDeclarationName(print, name, *this);
 	} else if (nn->getKind() == NestedNameSpecifier::Global) {
 		guard::ctor _(print, "Nglobal", false);
-		print.output() << '\"' << name.getName() << '\n';
-		return print.output();
+		return printDeclarationName(print, name, *this);
 	} else {
 		guard::ctor _(print, "Nscoped", false);
-		printName(print, nn, loc) << fmt::nbsp;
-		{
-			guard::ctor __{print, "Nid", false};
-			print.str(name.getName());
-		}
-		return print.output();
+		printNestedName(print, nn, loc) << fmt::nbsp;
+		return printDeclarationName(print, name, *this);
+	}
+}
+
+fmt::Formatter&
+ClangPrinter::printUnresolvedName(
+	CoqPrinter& print, const NestedNameSpecifier* nn,
+	const DeclarationName& name,
+	llvm::ArrayRef<clang::TemplateArgumentLoc> template_args, loc::loc loc) {
+	if (template_args.empty())
+		return printUnresolvedName(print, nn, name, loc);
+	else {
+		guard::ctor _(print, "Ninst", false);
+		printUnresolvedName(print, nn, name, loc) << fmt::nbsp;
+		return printTemplateArgumentList(print, template_args);
+	}
+}
+
+fmt::Formatter&
+ClangPrinter::printUnresolvedName(
+	CoqPrinter& print, const NestedNameSpecifier* nn,
+	const DeclarationName& name,
+	llvm::ArrayRef<clang::TemplateArgument> template_args, loc::loc loc) {
+	if (template_args.empty())
+		return printUnresolvedName(print, nn, name, loc);
+	else {
+		guard::ctor _(print, "Ninst", false);
+		printUnresolvedName(print, nn, name, loc) << fmt::nbsp;
+		return printTemplateArgumentList(print, template_args);
 	}
 }
