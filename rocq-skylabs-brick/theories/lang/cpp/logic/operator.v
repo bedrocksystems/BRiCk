@@ -182,16 +182,15 @@ End comparable.
 (** ** Alignment is preserved by pointer arithmetic
 
     [alignof(T)] divides [sizeof(T)] ([align_of_size_of']), so offsetting a
-    [ty]-aligned pointer by whole [ty] elements preserves [ty]-alignment.
-    Running off the object is ruled out by [valid_ptr] on the *result*, which
-    the rules below already require. This is what keeps the typed premises of
-    those rules from costing their callers anything for [p + n]. *)
+    valid [ty]-aligned pointer by whole [ty] elements preserves [ty]-alignment.
+    Alignment does not require the result to be valid. The typing rules below
+    separately require result validity to rule out running off the object. *)
 Section aligned_sub.
   Context `{cpp_logic} {σ}.
 
   Lemma aligned_ptr_ty_sub (p : ptr) (n : Z) ty :
     is_Some (size_of σ ty) ->
-    [| aligned_ptr_ty ty p |] ∗ valid_ptr (p ,, _sub ty n)
+    [| aligned_ptr_ty ty p |] ∗ valid_ptr p
     ⊢ [| aligned_ptr_ty ty (p ,, _sub ty n) |].
   Proof.
     intros [sz Hsz].
@@ -226,8 +225,8 @@ Section aligned_sub.
     ⊢ has_type (Vptr (p ,, _sub ty n)) (Tptr ty).
   Proof.
     intros Hsz. rewrite !has_type_ptr'.
-    iIntros "[[_ #A] #V]". iFrame "V".
-    by iApply (aligned_ptr_ty_sub p n ty Hsz); iFrame "A V".
+    iIntros "[[#Vp #A] #V]". iFrame "V".
+    by iApply (aligned_ptr_ty_sub p n ty Hsz); iFrame "A Vp".
   Qed.
 
   (** [eval_ptr_int_op] offsets by the qualifier-erased type while still typing
@@ -241,10 +240,10 @@ Section aligned_sub.
     have Hsz' : is_Some (size_of σ (erase_qualifiers ty)).
     { by rewrite (size_of_erase_qualifiers σ ty). }
     rewrite !has_type_ptr'.
-    iIntros "[[_ %A] #V]". iFrame "V".
+    iIntros "[[#Vp %A] #V]". iFrame "V".
     iAssert [| aligned_ptr_ty (erase_qualifiers ty) (p ,, _sub (erase_qualifiers ty) n) |]%I
       as %A'.
-    { iApply (aligned_ptr_ty_sub p n (erase_qualifiers ty) Hsz'). iFrame "V".
+    { iApply (aligned_ptr_ty_sub p n (erase_qualifiers ty) Hsz'). iFrame "Vp".
       iPureIntro. by rewrite -aligned_ptr_ty_erase_qualifiers. }
     iPureIntro. by rewrite aligned_ptr_ty_erase_qualifiers.
   Qed.
