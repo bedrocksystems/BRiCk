@@ -934,11 +934,18 @@ Module SimpleCPP.
           | _ => False
           end
         | Tbool =>
-          if decide (v = Vint 0) then vs = [Rval 0%N]
-          else if decide (v = Vint 1) then vs = [Rval 1%N]
-          else False
+          match v with
+          | Vundef => vs = [Rundef]
+          | _ =>
+              if decide (v = Vint 0) then vs = [Rval 0%N]
+              else if decide (v = Vint 1) then vs = [Rval 1%N]
+              else False
+          end
         | Tnullptr =>
-          vs = cptr 0 /\ v = Vptr nullptr
+          match v with
+          | Vundef => pure_encodes_undef POINTER_BITSZ vs
+          | _ => vs = cptr 0 /\ v = Vptr nullptr
+          end
         | Tfloat_ ft =>
           match v with
           | Vfloat ft' f =>
@@ -956,6 +963,7 @@ Module SimpleCPP.
               vs = cptr 0
             else
               vs = aptr p
+          | Vundef => pure_encodes_undef POINTER_BITSZ vs
           | _ => False
           end
         | Tfunction _
