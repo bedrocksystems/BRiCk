@@ -379,15 +379,17 @@ Section compare.
     compare_antisym (x y : A) : f x y = CompOpp (f y x);
     compare_trans (x y z : A) c : f x y = c -> f y z = c -> f x z = c;
   }.
-  #[global] Hint Mode Comparison + - : typeclass_instances.
-  #[global] Hint Mode Comparison - + : typeclass_instances.
+  (** Laws apply to an existing operation; search must not synthesize one. *)
+  #[global] Hint Mode Comparison - ! : typeclass_instances.
   #[global] Hint Opaque compare_antisym compare_trans : typeclass_instances.
 
   Class Compare A := compare : A -> A -> comparison.
   #[global] Hint Mode Compare ! : typeclass_instances.
   #[global] Instance: Params (@compare) 2 := {}.
   #[global] Hint Opaque compare : typeclass_instances.
-  #[global] Arguments compare : simpl never.
+  (** Compute on constructor operands without exposing symbolic matches.
+  Typeclass search retains the opacity declared above. *)
+  #[global] Arguments compare {_ _} !_ !_ / : simpl nomatch, assert.
 
   Lemma comparison_refl `{!Comparison (A := A) cmp} {a : A} : cmp a a = Eq.
   Proof. pose proof (compare_antisym (f:=cmp) a a). by destruct (cmp a a). Qed.
@@ -399,6 +401,8 @@ Module LeibnizComparison.
   Class C {T} (cmp : T -> T -> comparison) : Prop :=
     cmp_eq : forall a b, cmp a b = Eq -> a = b.
   #[global] Arguments cmp_eq {_} _ {_} _ _.
+  (** As for [Comparison], the comparator head must already be known. *)
+  #[global] Hint Mode C - ! : typeclass_instances.
 
   Section with_A.
     Context {A : Type}.
@@ -419,6 +423,25 @@ Module LeibnizComparison.
       Next Obligation. intros ** ->. by rewrite -> comparison_refl in *. Qed.
     End with_Comparison.
   End with_A.
+
+  Section decision.
+    Context {A : Type} `{cmp : !Compare A,
+      Hcmp : !Comparison (compare (A:=A)), Hlc : !C (compare (A:=A))}.
+
+    (** An explicit factory avoids overlapping the usual [EqDecision] instances. *)
+    #[program] Definition from_compare : EqDecision A := fun x y =>
+      match cmp x y as c return cmp x y = c -> _ with
+      | Eq => fun H => left (@cmp_eq A (compare (A:=A)) Hlc x y H)
+      | Lt => fun H => right _
+      | Gt => fun H => right _
+      end eq_refl.
+    Next Obligation.
+      intros ** ->. by rewrite -> (@comparison_refl A cmp Hcmp) in *.
+    Qed.
+    Next Obligation.
+      intros ** ->. by rewrite -> (@comparison_refl A cmp Hcmp) in *.
+    Qed.
+  End decision.
 
 End LeibnizComparison.
 Notation LeibnizComparison := LeibnizComparison.C.
