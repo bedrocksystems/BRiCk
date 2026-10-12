@@ -120,8 +120,7 @@ Practical and Sound Equality Tests, Automatically: Deriving eqType
 Instances for Jasmin's Data Types with Coq-Elpi.
 CPP 2023.
 *)
-Section compare.
-  #[local] Open Scope positive.
+Section with_EqNotations.
   Import EqNotations.
 
   (**
@@ -147,18 +146,52 @@ Section compare.
     | Lt => fun _ => Gt
     | Gt => fun _ => Lt
     end eq_refl.
+End with_EqNotations.
 
-  (**
-  Compare tags (for trivial constructors)
-  *)
-  Definition compare_tag {A : Type}
-      (tag : A -> positive)
-      (t : positive)
-      (a : A) : comparison :=
-    Pos.compare t (tag a).
+(**
+Compare tags (for trivial constructors).
+TODO: this is compare_on.
+*)
+Definition compare_tag {A : Type}
+    (tag : A -> positive)
+    (t : positive)
+    (a : A) : comparison :=
+  Pos.compare t (tag a).
 
-End compare.
+(* TODO: not yet used. *)
+Definition by_tag_comparison {T} (f : T -> positive)
+  : Comparison (fun a b => Pos.compare (f a) (f b)).
+Proof. exact: comparison_pullback. Qed.
 
+(**
+Compare primitive tags (for trivial constructors).
+*)
+
+#[global] Instance prim_int63_comparison : Comparison PrimInt63.compare.
+Proof.
+  constructor; intros *.
+  - apply PString.char63_compare_antisym.
+  - apply PString.char63_compare_trans.
+Qed.
+
+#[global] Instance prim_int63_leibniz_comparison : LeibnizComparison PrimInt63.compare.
+Proof.
+  intros ?? E. apply Uint63.eqb_spec.
+  rewrite Uint63Axioms.compare_def_spec /Uint63Axioms.compare_def in E.
+  by repeat case_match.
+Qed.
+
+Definition by_prim_tag_comparison {T} (f : T -> _)
+  : Comparison (fun a b => PrimInt63.compare (f a) (f b)).
+Proof. exact: comparison_pullback. Qed.
+
+Definition by_prim_tag_leibniz {T} (f : T -> PrimInt63.int) {Hinj : Inj eq eq f}
+  : LeibnizComparison (fun a b => PrimInt63.compare (f a) (f b)).
+Proof. apply: leibniz_comparison_pullback. Qed.
+
+(** Helper to build lexicographic comparisons.
+We thunk the second argument to speed up CBV evaluation.
+*)
 Definition compare_lex (a : comparison) (b : unit -> comparison) : comparison :=
   match a with
   | Eq => b ()
@@ -426,23 +459,6 @@ Module compare.
 
 End compare.
 
-NES.Begin LeibnizComparison.
-  Lemma PrimInt63_int_compare_eq (x y : PrimInt63.int) :
-    PrimInt63.compare x y = Eq ->
-    PrimInt63.eqb x y = true.
-  Proof.
-    rewrite Uint63Axioms.compare_def_spec /Uint63Axioms.compare_def.
-    repeat case_match; congruence.
-  Qed.
-
-  Definition by_prim_tag {T} (f : T -> PrimInt63.int) {Hinj : Inj eq eq f}
-    : C (fun a b => PrimInt63.compare (f a) (f b)).
-  Proof.
-    move=> a b E. apply (inj f), Uint63.eqb_spec, PrimInt63_int_compare_eq, E.
-  Qed.
-
-NES.End LeibnizComparison.
-
 Module sorted.
 Section sorted.
   Context {A} `{!Compare A}.
@@ -585,6 +601,3 @@ Proof.
   destruct (cmp x y) eqn:E; try discriminate.
   f_equal; [by apply Hcmp | by apply IH].
 Qed.
-
-#[global] Instance primitive_integer_comparison : Comparison PrimInt63.compare.
-Proof. constructor; intros; [apply PString.char63_compare_antisym | eapply PString.char63_compare_trans; eassumption]. Qed.
