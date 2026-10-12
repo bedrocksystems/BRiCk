@@ -6,7 +6,6 @@
 
 (** "Prelude" for available-everywhere dependencies. *)
 
-Require Import elpi.apps.NES.NES.
 Require Import Stdlib.Structures.OrderedType.
 Require Export stdpp.prelude.
 Require Export stdpp.countable.
@@ -396,7 +395,7 @@ End compare.
 
 (** Equality reflected by a comparison function.  The class lives here so
 that libraries can provide instances without importing comparison theory. *)
-NES.Begin LeibnizComparison.
+Module LeibnizComparison.
   Class C {T} (cmp : T -> T -> comparison) : Prop :=
     cmp_eq : forall a b, cmp a b = Eq -> a = b.
   #[global] Arguments cmp_eq {_} _ {_} _ _.
@@ -421,5 +420,5 @@ NES.Begin LeibnizComparison.
     End with_Comparison.
   End with_A.
 
-NES.End LeibnizComparison.
+End LeibnizComparison.
 Notation LeibnizComparison := LeibnizComparison.C.

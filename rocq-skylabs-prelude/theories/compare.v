@@ -5,7 +5,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import elpi.apps.NES.NES.
 Require Export skylabs.prelude.base.
 Require Import skylabs.prelude.numbers.
 Require Import skylabs.prelude.list.
