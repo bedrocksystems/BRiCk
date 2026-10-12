@@ -150,7 +150,7 @@ Section alignment_source_validity.
   Proof.
     iIntros "[A D]".
     iEval (rewrite -_at_offsetR -(aligned_ofR_byte_sub t sz i Hsz)
-      !_at_sep _at_offsetR _at_validR).
+      !_at_sep _at_validR).
     Fail solve [iFrame].
   Abort.
 
@@ -162,7 +162,7 @@ Section alignment_source_validity.
   Proof.
     iIntros "(A & V & D)".
     iEval (rewrite -_at_offsetR -(aligned_ofR_byte_sub t sz i Hsz)
-      !_at_sep _at_offsetR _at_validR).
+      !_at_sep _at_validR).
     by iFrame.
   Qed.
 End alignment_source_validity.
