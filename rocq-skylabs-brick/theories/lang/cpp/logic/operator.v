@@ -183,20 +183,19 @@ End comparable.
 
     [alignof(T)] divides [sizeof(T)] ([align_of_size_of']), so offsetting a
     valid [ty]-aligned pointer by whole [ty] elements preserves [ty]-alignment.
-    Running off the object is ruled out by [valid_ptr] on the *result*, which
-    the rules below already require. This is what keeps the typed premises of
-    those rules from costing their callers anything for [p + n]. *)
+    Alignment does not require the result to be valid. The typing rules below
+    separately require result validity to rule out running off the object. *)
 Section aligned_sub.
   Context `{cpp_logic} {σ}.
 
   Lemma aligned_ptr_ty_sub (p : ptr) (n : Z) ty :
     is_Some (size_of σ ty) ->
-    [| aligned_ptr_ty ty p |] ∗ valid_ptr p ∗ valid_ptr (p ,, _sub ty n)
+    [| aligned_ptr_ty ty p |] ∗ valid_ptr p
     ⊢ [| aligned_ptr_ty ty (p ,, _sub ty n) |].
   Proof.
     intros [sz Hsz].
     destruct (align_of_size_of' _ _ Hsz) as (al & Hal & Hal0 & Hdvd).
-    iIntros "(%Hp & V & _)".
+    iIntros "[%Hp V]".
     destruct (ptr_vaddr (p ,, _sub ty n)) as [va'|] eqn:Hva'.
     2: { iPureIntro. exists al. split; first done. by right. }
     iDestruct (offset_inv_pinned_ptr_pure (_sub ty n) (Z.of_N sz * n) va' p
@@ -227,7 +226,7 @@ Section aligned_sub.
   Proof.
     intros Hsz. rewrite !has_type_ptr'.
     iIntros "[[#Vp #A] #V]". iFrame "V".
-    by iApply (aligned_ptr_ty_sub p n ty Hsz); iFrame "A Vp V".
+    by iApply (aligned_ptr_ty_sub p n ty Hsz); iFrame "A Vp".
   Qed.
 
   (** [eval_ptr_int_op] offsets by the qualifier-erased type while still typing
@@ -244,7 +243,7 @@ Section aligned_sub.
     iIntros "[[#Vp %A] #V]". iFrame "V".
     iAssert [| aligned_ptr_ty (erase_qualifiers ty) (p ,, _sub (erase_qualifiers ty) n) |]%I
       as %A'.
-    { iApply (aligned_ptr_ty_sub p n (erase_qualifiers ty) Hsz'). iFrame "Vp V".
+    { iApply (aligned_ptr_ty_sub p n (erase_qualifiers ty) Hsz'). iFrame "Vp".
       iPureIntro. by rewrite -aligned_ptr_ty_erase_qualifiers. }
     iPureIntro. by rewrite aligned_ptr_ty_erase_qualifiers.
   Qed.

@@ -54,3 +54,29 @@ Section core.
     lia.
   Qed.
 End core.
+
+Require Import skylabs.lang.cpp.logic.operator.
+
+Section alignment_without_validity.
+  Context `{cpp_logic} {σ : genv}.
+
+  (* Address alignment is preserved even when the result cannot be valid. *)
+  Example null_offset_aligned (n : Z) :
+    |-- ([| aligned_ptr_ty "unsigned char"%cpp_type
+              (nullptr ,, o_sub σ "unsigned char"%cpp_type n) |] : mpred).
+  Proof.
+    have Hsize : is_Some (size_of σ "unsigned char"%cpp_type) by eexists.
+    iApply (aligned_ptr_ty_sub nullptr n "unsigned char"%cpp_type Hsize).
+    iSplit; last by iApply valid_ptr_nullptr.
+    iPureIntro.
+    destruct Hsize as [sz Hsz].
+    destruct (align_of_size_of' _ _ Hsz) as (al & Hal & _).
+    exists al. split; first done.
+    left. exists 0%N. split; first exact ptr_vaddr_nullptr.
+    apply N.divide_0_r.
+  Qed.
+
+  Example null_offset_invalid (n : Z) (Hn : n <> 0) :
+    valid_ptr (nullptr ,, o_sub σ "unsigned char"%cpp_type n) |-- False.
+  Proof. by apply _valid_ptr_nullptr_sub_false. Qed.
+End alignment_without_validity.
