@@ -20,8 +20,9 @@ Not an instance because this is a degenerate case.
 Lemma anti_symm_refl {A} (R : relation A) : AntiSymm R R.
 Proof. by intros x y. Qed.
 
-Lemma comparison_refl `{!Comparison (A := A) cmp} {a : A} : cmp a a = Eq.
-Proof. pose proof (compare_antisym (f:=cmp) a a). by destruct (cmp a a). Qed.
+Definition compare_on {A} `{!Compare A} {B} (f : B -> A) : Compare B :=
+  fun x y => compare (f x) (f y).
+#[global] Hint Opaque compare_on : typeclass_instances.
 
 (** Laws for arbitrary comparison functions, including comparisons whose
 [Eq] result identifies an equivalence class rather than Leibniz equality. *)
@@ -67,6 +68,27 @@ Lemma leibniz_comparison_ext {A : Type} (cmp cmp' : A -> A -> comparison)
   LeibnizComparison cmp'.
 Proof. intros x y Hxy. apply (LeibnizComparison.cmp_eq cmp). by rewrite Hcmp. Qed.
 
+(** Pulling a comparison back along a function needs no injectivity. *)
+Lemma comparison_pullback {A B : Type} (f : A -> B) (cmp : B -> B -> comparison)
+    `{!Comparison cmp} : Comparison (fun x y => cmp (f x) (f y)).
+Proof. constructor; intros; [apply compare_antisym | eapply compare_trans; eassumption]. Qed.
+
+(** Injectivity is needed only when pulling back Leibniz equality. *)
+Lemma leibniz_comparison_pullback {A B : Type} (f : A -> B)
+    (cmp : B -> B -> comparison) `{!Inj (=) (=) f, !LeibnizComparison cmp} :
+  LeibnizComparison (fun x y => cmp (f x) (f y)).
+Proof. intros x y Hxy. apply (inj f), (LeibnizComparison.cmp_eq cmp), Hxy. Qed.
+
+#[global] Instance compare_on_comparison {A B : Type} `{!Compare A}
+    (f : B -> A) `{!Comparison (compare (A:=A))} :
+    Comparison (@compare B (compare_on f)).
+Proof. exact: comparison_pullback. Qed.
+
+#[global] Instance compare_on_leibniz_comparison {A B : Type} `{!Compare A}
+    (f : B -> A) `{!Inj (=) (=) f, !LeibnizComparison (compare (A:=A))} :
+    LeibnizComparison (@compare B (compare_on f)).
+Proof. exact: leibniz_comparison_pullback. Qed.
+
 (** A comparator inherits the comparison laws from finite approximations when
     each pair eventually has a stable result. No uniform convergence bound or
     equality reflection is required. *)
@@ -88,17 +110,6 @@ Proof.
     rewrite -(Hp (n + m + p)%nat ltac:(lia)).
     exact: (compare_trans _ _ _ _ Hxy Hyz).
 Qed.
-
-(** Pulling a comparison back along a function needs no injectivity. *)
-Lemma comparison_pullback {A B : Type} (f : A -> B) (cmp : B -> B -> comparison)
-    `{!Comparison cmp} : Comparison (fun x y => cmp (f x) (f y)).
-Proof. constructor; intros; [apply compare_antisym | eapply compare_trans; eassumption]. Qed.
-
-(** Injectivity is needed only when pulling back Leibniz equality. *)
-Lemma leibniz_comparison_pullback {A B : Type} (f : A -> B)
-    (cmp : B -> B -> comparison) `{!Inj (=) (=) f, !LeibnizComparison cmp} :
-  LeibnizComparison (fun x y => cmp (f x) (f y)).
-Proof. intros x y Hxy. apply (inj f), (LeibnizComparison.cmp_eq cmp), Hxy. Qed.
 
 (** ** Generic comparison *)
 (**
@@ -416,26 +427,6 @@ Module compare.
 End compare.
 
 NES.Begin LeibnizComparison.
-  Section with_A.
-    Context {A : Type}.
-    Implicit Type (a b : A).
-
-    Section with_Comparison.
-      Context `{Comp : !Comparison (A := A) cmp}.
-      #[local] Set Default Proof Using "Comp".
-
-      (* TODO: make instance? *)
-      #[program] Definition from_comparison {LC : C cmp} : EqDecision A := fun l r =>
-        match cmp l r as C return cmp l r = C -> _ with
-        | Eq => fun pf => left (LC _ _ pf)
-        | Lt => fun pf => right _
-        | Gt => fun pf => right _
-        end eq_refl.
-      Next Obligation. intros ** ->. by rewrite -> comparison_refl in *. Qed.
-      Next Obligation. intros ** ->. by rewrite -> comparison_refl in *. Qed.
-    End with_Comparison.
-  End with_A.
-
   Lemma PrimInt63_int_compare_eq (x y : PrimInt63.int) :
     PrimInt63.compare x y = Eq ->
     PrimInt63.eqb x y = true.
@@ -451,26 +442,6 @@ NES.Begin LeibnizComparison.
   Qed.
 
 NES.End LeibnizComparison.
-
-Section comparison.
-  Context {A} `{!Compare A}.
-
-  Definition compare_on {B} (f : B -> A) : Compare B :=
-    fun x y => compare (f x) (f y).
-
-End comparison.
-
-#[global] Instance compare_on_comparison {A B : Type} `{!Compare A}
-    (f : B -> A) `{!Comparison (compare (A:=A))} :
-    Comparison (@compare B (compare_on f)).
-Proof. exact (comparison_pullback f (compare (A:=A))). Qed.
-
-#[global] Instance compare_on_leibniz_comparison {A B : Type} `{!Compare A}
-    (f : B -> A) `{!Inj (=) (=) f, !LeibnizComparison (compare (A:=A))} :
-    LeibnizComparison (@compare B (compare_on f)).
-Proof. exact (leibniz_comparison_pullback f (compare (A:=A))). Qed.
-
-#[global] Hint Opaque compare_on : typeclass_instances.
 
 Module sorted.
 Section sorted.

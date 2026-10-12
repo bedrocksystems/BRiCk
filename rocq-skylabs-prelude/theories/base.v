@@ -389,6 +389,9 @@ Section compare.
   #[global] Instance: Params (@compare) 2 := {}.
   #[global] Hint Opaque compare : typeclass_instances.
   #[global] Arguments compare : simpl never.
+
+  Lemma comparison_refl `{!Comparison (A := A) cmp} {a : A} : cmp a a = Eq.
+  Proof. pose proof (compare_antisym (f:=cmp) a a). by destruct (cmp a a). Qed.
 End compare.
 
 (** Equality reflected by a comparison function.  The class lives here so
@@ -397,5 +400,26 @@ NES.Begin LeibnizComparison.
   Class C {T} (cmp : T -> T -> comparison) : Prop :=
     cmp_eq : forall a b, cmp a b = Eq -> a = b.
   #[global] Arguments cmp_eq {_} _ {_} _ _.
+
+  Section with_A.
+    Context {A : Type}.
+    Implicit Type (a b : A).
+
+    Section with_Comparison.
+      Context `{Comp : !Comparison (A := A) cmp}.
+      #[local] Set Default Proof Using "Comp".
+
+      (* TODO: make instance? *)
+      #[program] Definition from_comparison {LC : C cmp} : EqDecision A := fun l r =>
+        match cmp l r as C return cmp l r = C -> _ with
+        | Eq => fun pf => left (LC _ _ pf)
+        | Lt => fun pf => right _
+        | Gt => fun pf => right _
+        end eq_refl.
+      Next Obligation. intros ** ->. by rewrite -> comparison_refl in *. Qed.
+      Next Obligation. intros ** ->. by rewrite -> comparison_refl in *. Qed.
+    End with_Comparison.
+  End with_A.
+
 NES.End LeibnizComparison.
 Notation LeibnizComparison := LeibnizComparison.C.
