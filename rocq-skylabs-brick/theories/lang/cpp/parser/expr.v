@@ -68,8 +68,21 @@ Module ParserExpr.
    *)
   Definition Eextension (e : Expr) : Expr := e.
 
+  (** GNU <<__null>>, the <<NULL>> of GNU C++'s <<stddef.h>>: "a null pointer
+      constant that has integral type (e.g., int or long) and is the same size
+      and alignment as a pointer"
+      (<https://clang.llvm.org/doxygen/classclang_1_1GNUNullExpr.html#details>);
+      g++ agrees.  We model it as the integer literal 0 of that type [t], which
+      is a null pointer constant (<https://eel.is/c++draft/conv.ptr#1>) and a
+      valid <<NULL>>, like <<0L>>
+      (<https://eel.is/c++draft/support.types.nullptr#2>).  Where a pointer is
+      expected, clang wraps it in [Cnull2ptr], which yields [nullptr].
+
+      NOTE: this used to be [Ecast (Cptr2int t) Enull], which has no semantics:
+      [wp_operand_ptr2int] requires an operand of pointer type, not
+      [Tnullptr]. *)
   Definition Egnu_null (t : type) : Expr :=
-    Ecast (Cptr2int t) Enull.
+    Eint 0 t.
 
   Definition Enoexcept (_ : Expr) (val : bool) : Expr :=
     Ebool val.
