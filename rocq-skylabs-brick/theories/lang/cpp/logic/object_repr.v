@@ -765,15 +765,12 @@ Section typed_array_blocks.
     { by rewrite !aligned_ofR.unlock align_of_array. }
     iEval (rewrite HAarray) in "A".
     rewrite /tblockR Hsz Hal !_at_sep. setoid_rewrite <- HA.
-    iSplit.
-    - iIntros "[B _]". iFrame "EA". by iApply "C".
-    - iIntros "[B _]".
-      iDestruct ("C" with "B") as "B".
-      iDestruct (observe (p .[ Tbyte ! Z.of_N (i * sz) ] |-> validR) with "B") as "#V".
-      iFrame "B".
-      iDestruct (type_ptr_valid with "T") as "#Vp".
-      iEval (rewrite -_at_offsetR -(aligned_ofR_byte_sub ty sz i Hsz) !_at_sep _at_offsetR _at_validR).
-      by iFrame "A Vp V".
+    iSplit; iIntros "[B _]".
+    - iFrame "EA". by iApply "C".
+    - iDestruct ("C" with "B") as "$".
+      iEval (rewrite -_at_offsetR -(aligned_ofR_byte_sub ty sz i Hsz) !_at_sep _at_validR).
+      iFrame "A".
+      iApply (type_ptr_valid with "T").
   Qed.
 
   (** Typed offsets require evidence for an array object. In particular,
