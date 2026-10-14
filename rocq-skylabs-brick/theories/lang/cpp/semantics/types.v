@@ -64,6 +64,12 @@ Qed.
     Void call results use a one-byte logical storage cell. This models
     their existing [primR Tvoid] representation; it does not make [void]
     a complete C++ object type.
+    This is safe because clang rejects every sized use of [void] in C++
+    (<<sizeof(void)>>, <<alignof(void)>>, arithmetic on or subtraction of
+    <<void*>>, dereferencing or subscripting <<void*>>, arrays of [void]),
+    so [wp_operand_sizeof] and pointer arithmetic never observe this size.
+    If cpp2v ever accepted GNU C's <<void*>> arithmetic, this size would
+    become its semantics, matching GNU's one-byte stride.
 
     Also, [size_of] is well-defined even in case of overflow, so many users need
     bound-checking; see for instance [wp_operand_sizeof].
