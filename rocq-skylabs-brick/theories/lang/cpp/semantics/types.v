@@ -496,6 +496,11 @@ Section with_genv.
     destruct (align_of_size_of' Tschar 1 (size_of_int _ _)) as [?[->[?Hd]]].
     by f_equal; eapply N.divide_1_r.
   Qed.
+  Lemma align_of_void : align_of Tvoid = Some 1%N.
+  Proof.
+    destruct (align_of_size_of' Tvoid 1 size_of_void) as [?[->[?Hd]]].
+    by f_equal; eapply N.divide_1_r.
+  Qed.
 
   (* NOTE: the following three axioms equate the size and alignment of
      certain fundamental types. This does not seem to be sanctioned by
