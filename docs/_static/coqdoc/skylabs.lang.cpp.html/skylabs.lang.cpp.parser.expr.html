@@ -128,8 +128,26 @@ TODO: Upstream?
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ParserExpr.Eextension" class="idref" href="#ParserExpr.Eextension"><span class="id" title="definition">Eextension</span></a> (<a id="e:14" class="idref" href="#e:14"><span class="id" title="binder">e</span></a> : <a class="idref" href="skylabs.lang.cpp.syntax.core.html#Expr"><span class="id" title="inductive">Expr</span></a>) : <a class="idref" href="skylabs.lang.cpp.syntax.core.html#Expr"><span class="id" title="inductive">Expr</span></a> := <a class="idref" href="skylabs.lang.cpp.parser.expr.html#e:14"><span class="id" title="variable">e</span></a>.<br/>
 
 <br/>
+</div>
+
+<div class="doc">
+GNU <code>__null</code>, the <code>NULL</code> of GNU C++'s <code>stddef.h</code>: "a null pointer
+      constant that has integral type (e.g., int or long) and is the same size
+      and alignment as a pointer"
+      (&lt;https://clang.llvm.org/doxygen/classclang_1_1GNUNullExpr.htmldetails>);
+      g++ agrees.  We model it as the integer literal 0 of that type [t], which
+      is a null pointer constant (<https://eel.is/c++draft/conv.ptr1&gt;) and a
+      valid <code>NULL</code>, like <code>0L</code>
+      (&lt;https://eel.is/c++draft/support.types.nullptr2>).  Where a pointer is
+      expected, clang wraps it in [Cnull2ptr], which yields [nullptr].
+
+      NOTE: this used to be [Ecast (Cptr2int t) Enull], which has no semantics:
+      [wp_operand_ptr2int] requires an operand of pointer type, not
+      [Tnullptr]. 
+</div>
+<div class="code">
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ParserExpr.Egnu_null" class="idref" href="#ParserExpr.Egnu_null"><span class="id" title="definition">Egnu_null</span></a> (<a id="t:15" class="idref" href="#t:15"><span class="id" title="binder">t</span></a> : <a class="idref" href="skylabs.lang.cpp.syntax.core.html#type"><span class="id" title="inductive">type</span></a>) : <a class="idref" href="skylabs.lang.cpp.syntax.core.html#Expr"><span class="id" title="inductive">Expr</span></a> :=<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="skylabs.lang.cpp.syntax.core.html#Ecast"><span class="id" title="constructor">Ecast</span></a> (<a class="idref" href="skylabs.lang.cpp.syntax.core.html#Cptr2int"><span class="id" title="constructor">Cptr2int</span></a> <a class="idref" href="skylabs.lang.cpp.parser.expr.html#t:15"><span class="id" title="variable">t</span></a>) <a class="idref" href="skylabs.lang.cpp.syntax.core.html#Enull"><span class="id" title="constructor">Enull</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="skylabs.lang.cpp.syntax.core.html#Eint"><span class="id" title="constructor">Eint</span></a> 0 <a class="idref" href="skylabs.lang.cpp.parser.expr.html#t:15"><span class="id" title="variable">t</span></a>.<br/>
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ParserExpr.Enoexcept" class="idref" href="#ParserExpr.Enoexcept"><span class="id" title="definition">Enoexcept</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="skylabs.lang.cpp.syntax.core.html#Expr"><span class="id" title="inductive">Expr</span></a>) (<a id="val:16" class="idref" href="#val:16"><span class="id" title="binder">val</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>) : <a class="idref" href="skylabs.lang.cpp.syntax.core.html#Expr"><span class="id" title="inductive">Expr</span></a> :=<br/>
