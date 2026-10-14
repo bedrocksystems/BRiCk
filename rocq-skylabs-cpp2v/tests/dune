@@ -7,4 +7,6 @@
   (package rocq-stdlib)
   (package rocq-upoly)
   (package rocq-skylabs-brick)
-  (package rocq-skylabs-cpp2v)))
+  (package rocq-skylabs-cpp2v)
+  ; [cpp.prog], used by the generated ASTs
+  (package rocq-skylabs-brick-cpp-prog)))
