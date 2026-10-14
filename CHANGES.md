@@ -10,6 +10,10 @@ of the release, and introduce a new heading.
 
 ## Since Last Release
 
+2026.10.13: `Egnu_null t` (GNU `__null`, i.e. `NULL` in GNU C++) is now
+`Eint 0 t` instead of `Ecast (Cptr2int t) Enull`, which had no semantics, so
+every use of `NULL` was unprovable.
+
 2026.07.29: Add support for clang's `CXXStdInitializerListExpr`, i.e. the
 implicit construction of a `std::initializer_list<E>` from a braced-init-list
 (<http://eel.is/c++draft/dcl.init.list#5>).
