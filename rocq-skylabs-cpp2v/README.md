@@ -6,7 +6,7 @@ Code generator for the BRiCk program logic for C++
 The dependencies for the code generator are the following:
 - A C++ compiler
 - The `cmake` tool
-- LLVM 16 or greater (the tool is well tested up to version 18)
+- LLVM 16 or greater (CI builds and tests LLVM 18 through 22)
 
 ### Native dependencies: Linux (Ubuntu)
 
