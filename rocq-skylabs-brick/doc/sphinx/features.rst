@@ -66,9 +66,6 @@ Unsupported Features
      - Typed pointers in |project| imply natural alignment. Packed records
        whose fields are all bytes, or whose fields are explicitly aligned,
        are supported.
-   * - Template specializations that ``cpp2v`` cannot relate to their pattern
-     - Unsupported declaration
-     -
    * - Template parameter packs, unresolved concept specializations
      - Unsupported syntax
      - Pack *arguments* and :cpp:`sizeof...` are supported.
@@ -89,8 +86,7 @@ Unsupported Features
        (``__vector_size__``), block pointers
      - Unsupported syntax
      -
-   * - :cpp:`offsetof` with more than one component, unknown cast kinds,
-       non-default calling conventions
+   * - Unknown cast kinds, non-default calling conventions
      - Unsupported syntax
      -
    * - Labeled statements and :cpp:`goto`
@@ -105,9 +101,13 @@ Unsupported Features
    * - Defining variadic functions (:cpp:`va_arg`)
      - No semantics
      - *Calling* variadic functions, e.g. :cpp:`printf`, is supported.
-   * - GNU statement expressions (``({ ... })``), :cpp:`offsetof`
+   * - GNU statement expressions (``({ ... })``)
      - No semantics
      -
+   * - :cpp:`offsetof`
+     - No semantics
+     - Single-field :cpp:`offsetof` is translated but has no rule; other forms
+       (nested members, array elements, bases) are unsupported syntax.
    * - :cpp:`dynamic_cast`
      - No semantics
      -
