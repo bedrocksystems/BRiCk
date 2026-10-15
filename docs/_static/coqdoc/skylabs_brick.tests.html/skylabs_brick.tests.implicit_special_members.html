@@ -225,14 +225,14 @@ clang declares an implicit special member only once something uses it, and
     corresponding member of <span class="inlinecode"><span class="id" title="var">T</span></span>'s subobject <span class="inlinecode"><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a></span> is user-declared (here,
     explicitly defaulted).  Otherwise it is left to a placeholder.  So each
     header below has, for each of <span class="inlinecode"><span class="id" title="var">T</span></span>'s copy members, either clang's declaration
-    (exception specification <span class="inlinecode"><span class="id" title="var">NoThrow</span></span>) or a placeholder (<span class="inlinecode"><span class="id" title="constructor">Unknown</span></span>), and
-    comparing headers compares the two.  <span class="inlinecode"><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a></span>'s own copy members are <span class="inlinecode"><span class="id" title="var">NoThrow</span></span> in
+    (exception specification <span class="inlinecode"><span class="id" title="constructor">NoThrow</span></span>) or a placeholder (<span class="inlinecode"><span class="id" title="constructor">Unknown</span></span>), and
+    comparing headers compares the two.  <span class="inlinecode"><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a></span>'s own copy members are <span class="inlinecode"><span class="id" title="constructor">NoThrow</span></span> in
     all of them.
 
 <div class="paragraph"> </div>
 
     The <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a></span> examples hold only because a placeholder's exception
-    specification over-approximates as <span class="inlinecode"><span class="id" title="constructor">Unknown</span></span>: <span class="inlinecode"><span class="id" title="var">NoThrow</span></span> is not <span class="inlinecode">⊆</span> <span class="inlinecode"><span class="id" title="constructor">Unknown</span></span>.
+    specification over-approximates as <span class="inlinecode"><span class="id" title="constructor">Unknown</span></span>: <span class="inlinecode"><span class="id" title="constructor">NoThrow</span></span> is not <span class="inlinecode">⊆</span> <span class="inlinecode"><span class="id" title="constructor">Unknown</span></span>.
     They would flip if placeholders carried a precise specification. 
 </div>
 <div class="code">

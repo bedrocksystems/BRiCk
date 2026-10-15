@@ -1,0 +1,9 @@
+/*
+Copyright (c) 2026 SkyLabs AI, Inc.
+This software is distributed under the terms of the BedRock Open-Source License.
+See the LICENSE-BedRock file in the repository root for details.
+*/
+/* sphinx_rtd_theme keeps table cells on one line, which hides most of a wide
+   table behind a horizontal scrollbar. */
+.wy-table-responsive table td,
+.wy-table-responsive table th { white-space: normal; }
