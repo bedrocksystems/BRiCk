@@ -698,7 +698,10 @@ Module decltype.
         | Efloat ft _ => mret $ Tfloat_ ft
         | Eunop op e t =>
             let* et := of_expr e >>= requirePR in
-            let* t' := of_unop op et >>= requirePR in
+            (* Like [Bunsupported] in [of_binop], an unsupported operator has
+               the type cpp2v recorded; whether it is supported is not a
+               typing question (see [supported.v]). *)
+            let* t' := if op is Uunsupported _ then mret t else of_unop op et >>= requirePR in
             let* _ := guard (t = t') in
             mret t
         | Ebinop op l r t =>
@@ -1169,7 +1172,10 @@ Module decltype.
             let* _ := traverse (T:=eta list) (fun ab => of_expr ab.2) ins in
             let* _ := traverse (T:=eta list) (fun ab => of_expr ab.2) outs in
             mret (∅, None)
-        | Sunsupported _ => mfail
+        (* Not a typing question, like [Eunsupported] (see [supported.v]). It
+           binds nothing, so a declaration it stands for leaves later uses of
+           the variable unbound. *)
+        | Sunsupported _ => mret (∅, None)
         end.
     End stmt.
 

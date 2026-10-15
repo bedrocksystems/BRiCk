@@ -99,3 +99,21 @@ Proof. vm_compute. reflexivity. Qed.
 Goal trace.runO (typed.decltype.of_expr source
        (Econstructor C_ctor_int (Eint 0 Tint :: nil) (Tnamed D_name))) = None.
 Proof. vm_compute. reflexivity. Qed.
+
+(** Unsupported placeholders are not a typing question (see [supported.v]):
+    each has the type cpp2v recorded, and a statement binds nothing. *)
+Goal trace.runO (typed.decltype.of_expr source
+       (Eunop (Uunsupported "op") (Eint 0 Tint) Tint)) = Some Tint.
+Proof. vm_compute. reflexivity. Qed.
+
+Definition with_unsupported_stmt : translation_unit :=
+  Eval vm_compute in
+    fst (parser.translation_unit.list_decls
+      (parser.Dfunction (Nglobal (Nfunction function_qualifiers.N "f" nil))
+         (Build_Func Tvoid nil CC_C Ar_Definite exception_spec.NoThrow
+            (Some (Impl (Sseq (Sunsupported "stmt" :: Sreturn None :: nil))))) ::
+       nil)
+      abi.abi_default).
+
+Goal trace.runO (typed.decltype.check_tu with_unsupported_stmt) = Some tt.
+Proof. vm_compute. reflexivity. Qed.
