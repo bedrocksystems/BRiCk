@@ -15,19 +15,20 @@ Install the dependencies:
 sudo apt install cmake build-essential
 ```
 
-Install LLVM 18 following [these directions](https://apt.llvm.org/):
+Install LLVM 22 following [these directions](https://apt.llvm.org/):
 ```sh
 wget https://apt.llvm.org/llvm.sh
 chmod +x llvm.sh
-sudo ./llvm.sh 18 all
+sudo ./llvm.sh 22 all
+export PATH=/usr/lib/llvm-22/bin:${PATH}
 ```
 
 ### Native dependencies: OSX
 
-For OSX we recommend clang 18:
+For OSX we recommend clang 22:
 ```sh
-brew install llvm@18 cmake opam
-export PATH=/usr/local/opt/llvm@18/bin:${PATH}
+brew install llvm@22 cmake opam
+export PATH=$(brew --prefix llvm@22)/bin:${PATH}
 ```
 
 ## Building
