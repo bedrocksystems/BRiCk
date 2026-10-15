@@ -236,8 +236,8 @@ In certain instances, |project|'s semantics deviates from the C++ standard.
 Toolchain Requirements
 ======================
 
-* ``cpp2v`` requires LLVM 16 or later. CI builds and tests LLVM 18 through 22;
-  the release images use LLVM 22.
+* ``cpp2v`` requires LLVM 16 or later. CI tests LLVM 20 through 22; other
+  versions are untested. The release images use LLVM 22.
 * Generate the AST with the same Clang flags as your build (see
   *Defaulted functions* above).
 
