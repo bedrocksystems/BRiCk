@@ -71,7 +71,7 @@
    (source_tree ../src)
    (env_var PATH)
    (env_var LLVM_DIR)
-   (env_var CLANG_DIR)
+   (env_var Clang_DIR)
    (env_var BUILD_TYPE)
    (env_var BUILD_ARGS))
   (package rocq-skylabs-cpp2v)
