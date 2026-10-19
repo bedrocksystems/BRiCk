@@ -10,6 +10,13 @@ of the release, and introduce a new heading.
 
 ## Since Last Release
 
+2026.10.19: cpp2v puts template patterns reached outside their template (e.g.
+local types in out-of-line member definitions of class templates, or
+out-of-line static data members of class templates) in the template part of
+the AST instead of the static one. The static part of a translation unit no
+longer depends on `--no-templates`, so units generated with and without
+templates are `sub_module`s of each other.
+
 2026.10.13: `Egnu_null t` (GNU `__null`, i.e. `NULL` in GNU C++) is now
 `Eint 0 t` instead of `Ecast (Cptr2int t) Enull`, which had no semantics, so
 every use of `NULL` was unprovable.
