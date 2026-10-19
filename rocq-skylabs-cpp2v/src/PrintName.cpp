@@ -1020,6 +1020,7 @@ static fmt::Formatter &printAtomicName(const DeclContext &ctx, const Decl &decl,
 
     switch (decl.getKind()) {
     case Decl::Kind::Namespace:
+    case Decl::Kind::NamespaceAlias:
     case Decl::Kind::Record:
     case Decl::Kind::CXXRecord:
     case Decl::Kind::Enum:
