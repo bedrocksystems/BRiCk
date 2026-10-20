@@ -1300,6 +1300,14 @@ public:
         });
         const auto *dtor = decl.getDestructor();
 
+        /*
+        Skip members that would be defined as deleted, which elaboration does
+        not emit either. clang records this on the class for the cases that
+        need no overload resolution, and declares the member eagerly for the
+        others, so the getters below are only called when they are valid.
+        The default constructor is the exception: clang decides it only when
+        declaring the member, so we only catch reference members.
+        */
         bool printed = false;
         auto nextImplicit = [&] {
             if (printed && print.templates())
@@ -1307,37 +1315,43 @@ public:
             printed = true;
         };
 
-        if (!default_ctor && decl.needsImplicitDefaultConstructor()) {
+        if (!default_ctor && decl.needsImplicitDefaultConstructor() &&
+            !decl.hasUninitializedReferenceMember()) {
             nextImplicit();
             guard::ctor _{print, "Oimplicit_default_ctor"};
             cprint.printName(print, decl);
         }
         if (!copy_ctor && decl.needsImplicitCopyConstructor() &&
-            !decl.hasUserDeclaredCopyAssignment()) {
+            !decl.hasUserDeclaredCopyAssignment() &&
+            !decl.defaultedCopyConstructorIsDeleted()) {
             nextImplicit();
             guard::ctor _{print, "Oimplicit_copy_ctor"};
             cprint.printName(print, decl) << fmt::nbsp;
             print.boolean(decl.hasCopyConstructorWithConstParam());
         }
-        if (!move_ctor && decl.needsImplicitMoveConstructor()) {
+        if (!move_ctor && decl.needsImplicitMoveConstructor() &&
+            !decl.defaultedMoveConstructorIsDeleted()) {
             nextImplicit();
             guard::ctor _{print, "Oimplicit_move_ctor"};
             cprint.printName(print, decl) << fmt::nbsp;
             print.boolean(false);
         }
         if (!copy_assign && decl.needsImplicitCopyAssignment() &&
-            !decl.hasUserDeclaredCopyConstructor()) {
+            !decl.hasUserDeclaredCopyConstructor() &&
+            decl.hasSimpleCopyAssignment()) {
             nextImplicit();
             guard::ctor _{print, "Oimplicit_copy_assign"};
             cprint.printName(print, decl) << fmt::nbsp;
             print.boolean(decl.hasCopyAssignmentWithConstParam());
         }
-        if (!move_assign && decl.needsImplicitMoveAssignment()) {
+        if (!move_assign && decl.needsImplicitMoveAssignment() &&
+            decl.hasSimpleMoveAssignment()) {
             nextImplicit();
             guard::ctor _{print, "Oimplicit_move_assign"};
             cprint.printName(print, decl);
         }
-        if (!dtor && decl.needsImplicitDestructor()) {
+        if (!dtor && decl.needsImplicitDestructor() &&
+            !decl.defaultedDestructorIsDeleted()) {
             nextImplicit();
             guard::ctor _{print, "Oimplicit_dtor"};
             cprint.printName(print, decl);
