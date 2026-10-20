@@ -251,11 +251,13 @@ let cpp_prog_warn : ?loc:Loc.t -> Pp.t -> unit =
 
 let generated_filenames (loc : Loc.t) =
   match loc.Loc.fname with
-  | Loc.ToplevelInput -> None
+  | Loc.ToplevelInput ->
+      let prefix = "cpp.prog_" in
+      Filename.(temp_file prefix ".cpp", temp_file prefix ".v")
   | Loc.InFile({file; _ }) ->
-  let col = loc.Loc.bp - loc.Loc.bol_pos in
-  let stem = Printf.sprintf "%s.%d_%d" file loc.Loc.line_nb col in
-  Some(stem ^ ".cpp", stem ^ ".v")
+      let col = loc.Loc.bp - loc.Loc.bol_pos in
+      let stem = Printf.sprintf "%s.%d_%d" file loc.Loc.line_nb col in
+      (stem ^ ".cpp", stem ^ ".v")
 
 let warn_about_relative_paths flags =
   match has_relative_path_flag flags with false -> () | true ->
@@ -348,12 +350,17 @@ let load_generated_file file =
   ignore (Vernacinterp.interp ~intern:Vernacinterp.fs_intern ~st command)
 
 let cpp_command_prog (attrs : attrs) name flags prog =
-  let loc = Loc.get_current_command_loc () in
-  match Option.bind loc generated_filenames with
+  match Loc.get_current_command_loc () with
   | None ->
-      CErrors.user_err ?loc Pp.(str "cpp.prog needs a Rocq source file \
-        location to generate stable filenames.")
-  | Some(cpp_file, v_file) ->
+      CErrors.user_err Pp.(str "cpp.prog needs a Rocq source file location \
+        to generate stable filenames.")
+  | Some(loc) ->
+      let (cpp_file, v_file) = generated_filenames loc in
+      let finally () =
+        let remove file = try Sys.remove file with Sys_error(_) -> () in
+        remove cpp_file; remove v_file
+      in
+      Fun.protect ~finally @@ fun _ ->
       write_cpp cpp_file prog;
       run_cpp2v (cpp2v_arguments attrs name cpp_file v_file flags);
       load_generated_file v_file
