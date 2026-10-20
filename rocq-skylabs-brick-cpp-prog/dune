@@ -13,11 +13,13 @@
    (flags :standard %{read-lines:flags/coqc})
    (rocqdoc_flags %{read-lines:flags/coqdoc})
    (rocqdoc_header flags/header.html)
-   (rocqdoc_footer flags/footer.html)))
+   (rocqdoc_footer flags/footer.html))
+  (flags :standard %{dune-warnings}))
  ; Same, but without rocq_perf.
  (_
   (rocq
    (flags :standard %{read-lines:flags/coqc})
    (rocqdoc_flags %{read-lines:flags/coqdoc})
    (rocqdoc_header flags/header.html)
-   (rocqdoc_footer flags/footer.html))))
+   (rocqdoc_footer flags/footer.html))
+  (flags :standard %{dune-warnings})))

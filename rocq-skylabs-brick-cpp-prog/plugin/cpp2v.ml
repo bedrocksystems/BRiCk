@@ -1,10 +1,8 @@
 (*
  * Copyright (c) 2025 BlueRock Security, Inc.
- * This software is distributed under the terms of the BedRock Open-Source License.
- * See the LICENSE-BedRock file in the repository root for details.
+ * This software is distributed under the terms of the BedRock Open-Source
+ * License. See the LICENSE-BedRock file in the repository root for details.
  *)
-open Procq.Constr
-open Stdarg
 
 (* Disable exception backtraces, overriding effects of the Base library.
    Backtraces affect all Rocq user errors, not just anomalies. *)
@@ -54,7 +52,8 @@ let lib_ref t =
 let (cpp2v_category, cpp2v_warning) =
   CWarnings.create_hybrid ~name:"cpp2v" ()
 
-let duplicate_symbols : (Environ.env * Evd.evar_map * Evd.econstr) CWarnings.msg = CWarnings.create_msg cpp2v_warning ()
+let duplicate_symbols : (Environ.env * Evd.evar_map * Evd.econstr) CWarnings.msg =
+  CWarnings.create_msg cpp2v_warning ()
 
 let duplicate_symbols_printer (env, evd, err) =
   Pp.(str "Duplicate symbols found!" ++ fnl () ++ Printer.pr_econstr_env env evd err ++ str ".")
@@ -69,7 +68,7 @@ let to_econstr t =
   | Names.GlobRef.IndRef ind ->
     EConstr.mkIndU (ind, EConstr.EInstance.empty)
   | _ ->
-    Feedback.msg_debug Pp.(Names.GlobRef.print t) ;
+    Feedback.msg_debug (Names.GlobRef.print t) ;
     assert false
 
 let decl_of_ref t =
@@ -157,34 +156,6 @@ let cpp_command (attrs : attrs) name (abi : Constrexpr.constr_expr option) (defn
     CErrors.user_err Pp.(str "cpp.prog failed to return a head constructor. Please report!" ++ fnl () ++
                         Printer.pr_econstr_env env evd body)
 
-let temp_file ?(prefix="ocaml_temp_") ?(suffix=".tmp") content =
-    (* Generate a unique temporary file name *)
-    let temp_file = Filename.temp_file prefix suffix in
-
-    (* Open the file for writing *)
-    let oc = open_out temp_file in
-
-    try
-      (* Write the content to the file *)
-      output_string oc content;
-
-      (* Flush and close the file *)
-      flush oc;
-      close_out oc;
-
-      let unlink () =
-        try Sys.remove temp_file
-        with _ -> ()
-      in
-
-      (* Return the path to the created temporary file *)
-      temp_file , unlink
-    with e ->
-      (* Clean up in case of an exception *)
-      close_out_noerr oc;
-      let _ = try Sys.remove temp_file with _ -> () in
-      raise e
-
 let flags_separator = Str.regexp "[ \n\r\x0c\t]+"
 
 let separated_path_option =
@@ -246,8 +217,12 @@ let cpp_prog_warn : ?loc:Loc.t -> Pp.t -> unit =
 
 let cpp_command_prog (attrs : attrs) name flags prog =
   let { check_duplicates; elaborate; check_types; with_templates } = attrs in
-  let temp_cpp , unlink = temp_file ~suffix:".cpp" prog in
+  let temp_cpp = Filename.temp_file "_" ".cpp" in
   let temp_v = Filename.temp_file "_" ".v" in
+  let _ =
+    Out_channel.with_open_text temp_cpp @@ fun oc ->
+    Out_channel.output_string oc prog
+  in
   let flags =
     let flags =
       match flags with
@@ -315,11 +290,11 @@ let cpp_command_prog (attrs : attrs) name flags prog =
     in
     if not success then
       if Buffer.length stderr_buffer = 0 then
-        CErrors.user_err Pp.(msg_text Pp.(str process_failure_str ++ str " with no error message!") "")
+        CErrors.user_err (msg_text Pp.(str process_failure_str ++ str " with no error message!") "")
       else
-        CErrors.user_err Pp.(msg_text Pp.(str process_failure_str ++ str " with the following warnings/errors!") (Buffer.contents stderr_buffer))
+        CErrors.user_err (msg_text Pp.(str process_failure_str ++ str " with the following warnings/errors!") (Buffer.contents stderr_buffer))
     else if Buffer.length stderr_buffer > 0 then
-      cpp_prog_warn Pp.(msg_text Pp.(str "produced the following warnings!") (Buffer.contents stderr_buffer));
+      cpp_prog_warn (msg_text Pp.(str "produced the following warnings!") (Buffer.contents stderr_buffer));
 
     (* this might have problems with coq-lsp if the required file has its own requires *)
     let current_state = Vernacstate.freeze_full_state () in
