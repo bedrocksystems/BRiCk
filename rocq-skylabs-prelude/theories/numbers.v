@@ -743,10 +743,13 @@ Proof. by case: b. Qed.
 
 (** ** Alignment to powers of two *)
 
-(** Round [n] down to a multiple of [2^bits] *)
-Definition align_dn (n bits : Z) : Z := ((n ≫ bits) ≪ bits)%Z.
+(** Round [n] down to a multiple of [2^bits], such that
+    [align_dn n bits = 2 ^ bits * n `div` 2 ^ bits] (see[align_dn_pow2]).
+    To ensure this holds even for [bits < 0], we return zero in that case. *)
+Definition align_dn (n bits : Z) : Z :=
+  if bool_decide (0 ≤ bits)%Z then ((n ≫ bits) ≪ bits)%Z else 0%Z.
 
-(** Round [n] up to a multiple of [2^bits] *)
+(** Round [n] up to a multiple of [2^bits], returning zero when [bits < 0]. *)
 Definition align_up (n bits : Z) : Z := align_dn (n + Z.ones bits) bits.
 
 (** [round_down n m d] means that [m] is the result of rounding [n]
@@ -775,6 +778,11 @@ Section with_Z.
   (** Properties of [Z.ones] *)
   Lemma Z_ones_pow2 n : Z.ones n = 2 ^ n - 1.
   Proof. by rewrite Z.ones_equiv Z.sub_1_r. Qed.
+  Lemma N2Z_ones (bits : N) : Z.of_N (N.ones bits) = Z.ones bits.
+  Proof.
+    rewrite N.ones_equiv N2Z.inj_pred; last lia.
+    by rewrite N2Z.inj_pow Z_ones_pow2.
+  Qed.
   Lemma Z_ones_nonneg n : 0 ≤ n → 0 ≤ Z.ones n.
   Proof.
     intros. rewrite Z_ones_pow2 Z.sub_1_r -Z.lt_le_pred.
@@ -799,14 +807,47 @@ Section with_Z.
   Qed.
 
   (** Properties of [align_dn] and [align_up] *)
+
+  (** Alignment with a nonnegative bit count, and computation on [N] inputs. *)
+  Lemma align_dn_N_bits (n : Z) (bits : N) :
+    align_dn n bits = (n ≫ Z.of_N bits) ≪ Z.of_N bits.
+  Proof. rewrite /align_dn bool_decide_true; [done|lia]. Qed.
+
+  Lemma align_up_N_bits (n : Z) (bits : N) :
+    align_up n bits = align_dn (n + Z.of_N (N.ones bits)) bits.
+  Proof. by rewrite /align_up N2Z_ones. Qed.
+
+  Lemma align_dn_of_N (n bits : N) :
+    align_dn n bits = Z.of_N ((n ≫ bits) ≪ bits)%N.
+  Proof. by rewrite align_dn_N_bits N2Z_shiftr N2Z_shiftl. Qed.
+
+  Lemma align_up_of_N (n bits : N) :
+    align_up n bits = Z.of_N (((n + N.ones bits) ≫ bits) ≪ bits)%N.
+  Proof. by rewrite align_up_N_bits -N2Z.inj_add align_dn_of_N. Qed.
+
+  Lemma align_dn_neg n bits : bits < 0 → align_dn n bits = 0.
+  Proof. intros. rewrite /align_dn bool_decide_false; lia. Qed.
+  Lemma align_up_neg n bits : bits < 0 → align_up n bits = 0.
+  Proof. apply align_dn_neg. Qed.
+
   Lemma align_dn_pow2 n bits :
-    0 ≤ bits → align_dn n bits = 2 ^ bits * n `div` 2 ^ bits.
+    align_dn n bits = 2 ^ bits * (n `div` 2 ^ bits).
   Proof.
-    intros. rewrite/align_dn.
-    rewrite Z.shiftl_mul_pow2// Z.shiftr_div_pow2//. lia.
+    rewrite /align_dn. case_bool_decide.
+    - rewrite Z.shiftl_mul_pow2// Z.shiftr_div_pow2//. lia.
+    - rewrite Z.pow_neg_r; lia.
   Qed.
-  Lemma align_dn_divide n bits : 0 ≤ bits → (2 ^ bits | align_dn n bits).
-  Proof. eexists. by apply Z.shiftl_mul_pow2. Qed.
+  Lemma align_dn_mod n bits :
+    align_dn n bits = n - n `mod` (2 ^ bits).
+  Proof.
+    rewrite align_dn_pow2. destruct (decide (0 ≤ bits)).
+    - have Hnz : 2 ^ bits ≠ 0 by apply Z.pow_nonzero; lia.
+      have := Z.div_mod n (2 ^ bits) Hnz. lia.
+    - rewrite Z.pow_neg_r; try lia. rewrite Z.mod_0_r. lia.
+  Qed.
+
+  Lemma align_dn_divide n bits : (2 ^ bits | align_dn n bits).
+  Proof. rewrite align_dn_pow2. exists (n `div` 2 ^ bits). ring. Qed.
   Lemma align_dn_below n bits : 0 ≤ bits → align_dn n bits ≤ n.
   Proof.
     intros. rewrite align_dn_pow2//. by apply Z.mul_div_le, Z.pow_pos_nonneg.
@@ -820,11 +861,13 @@ Section with_Z.
     by apply Z.pow_pos_nonneg.
   Qed.
   Lemma align_dn_mono n m bits :
-    0 ≤ bits → n ≤ m → align_dn n bits ≤ align_dn m bits.
+    n ≤ m → align_dn n bits ≤ align_dn m bits.
   Proof.
-    intros. do 2!rewrite align_dn_pow2//.
-    apply Z.mul_le_mono_nonneg_l; first by apply Z.pow_nonneg.
-    apply Z.div_le_mono. by apply Z.pow_pos_nonneg. done.
+    intros. destruct (decide (0 ≤ bits)).
+    - rewrite !align_dn_pow2.
+      apply Z.mul_le_mono_nonneg_l; first by apply Z.pow_nonneg.
+      apply Z.div_le_mono. by apply Z.pow_pos_nonneg. done.
+    - rewrite !align_dn_neg; lia.
   Qed.
   Lemma round_down_align_dn n bits :
     0 ≤ bits → round_down n (align_dn n bits) (2 ^ bits).
@@ -833,7 +876,12 @@ Section with_Z.
     split_and?; auto using align_dn_divide, align_dn_below, align_dn_above.
   Qed.
 
-  Lemma align_up_divide n bits : 0 ≤ bits → (2 ^ bits | align_up n bits).
+  Lemma align_up_mod n bits :
+    align_up n bits =
+      (n + (2 ^ bits - 1)) - (n + (2 ^ bits - 1)) `mod` (2 ^ bits).
+  Proof. by rewrite /align_up align_dn_mod Z_ones_pow2. Qed.
+
+  Lemma align_up_divide n bits : (2 ^ bits | align_up n bits).
   Proof. apply align_dn_divide. Qed.
   Lemma align_up_below n bits : 0 ≤ bits → n ≤ align_up n bits.
   Proof.
@@ -846,7 +894,7 @@ Section with_Z.
     intros Hbits. rewrite/align_up. have := align_dn_below (n + Z.ones bits) _ Hbits.
     rewrite Z_ones_pow2. have ? : 2 ^ bits ≠ 0 by exact: Z.pow_nonzero. lia.
   Qed.
-  Lemma align_up_mono n m bits : 0 ≤ bits → n ≤ m → align_up n bits ≤ align_up m bits.
+  Lemma align_up_mono n m bits : n ≤ m → align_up n bits ≤ align_up m bits.
   Proof. intros. apply align_dn_mono; lia. Qed.
   Lemma round_up_align_up n bits : 0 ≤ bits → round_up n (align_up n bits) (2 ^ bits).
   Proof.
@@ -854,19 +902,27 @@ Section with_Z.
     split_and?; auto using align_up_divide, align_up_below, align_up_above.
   Qed.
 
-  Lemma align_dn_le_up n bits : 0 ≤ bits → align_dn n bits ≤ align_up n bits.
+  Lemma align_dn_le_up n bits : align_dn n bits ≤ align_up n bits.
   Proof.
-    intros Hbits. rewrite/align_up. apply align_dn_mono; first done.
-    have := Z_ones_nonneg _ Hbits. lia.
+    destruct (decide (0 ≤ bits)) as [Hbits|Hbits].
+    - rewrite /align_up. apply align_dn_mono.
+      have := Z_ones_nonneg _ Hbits. lia.
+    - have Hneg : bits < 0 by lia.
+      rewrite (align_dn_neg _ _ Hneg) (align_up_neg _ _ Hneg). lia.
   Qed.
 
-  Lemma align_dn_nonneg n bits : 0 ≤ align_dn n bits ↔ 0 ≤ n.
-  Proof. rewrite /align_dn Z.shiftl_nonneg Z.shiftr_nonneg; lia. Qed.
-
-  Lemma align_up_nonneg n bits : 0 ≤ n -> 0 ≤ bits -> 0 ≤ align_up n bits.
+  Lemma align_dn_nonneg n bits : 0 ≤ n → 0 ≤ align_dn n bits.
   Proof.
-    intros; rewrite /align_up Z.shiftl_nonneg Z.shiftr_nonneg.
-    apply Z.add_nonneg_nonneg, Z_ones_nonneg; lia.
+    intros. rewrite /align_dn. case_bool_decide; last lia.
+    rewrite Z.shiftl_nonneg Z.shiftr_nonneg; lia.
+  Qed.
+
+  Lemma align_up_nonneg n bits : 0 ≤ n → 0 ≤ align_up n bits.
+  Proof.
+    intros. destruct (decide (0 ≤ bits)).
+    - apply align_dn_nonneg.
+      apply Z.add_nonneg_nonneg, Z_ones_nonneg; lia.
+    - rewrite align_up_neg; lia.
   Qed.
 End with_Z.
 
