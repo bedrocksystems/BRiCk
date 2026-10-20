@@ -110,6 +110,13 @@ public:
     void Visit(const Decl *d, Flags flags) {
         if (visited_.find(d->getID()) == visited_.end()) {
             visited_.insert(d->getID());
+            // Declarations in the scope of template parameters are patterns,
+            // also when they are reached outside of their template, e.g.
+            // through the out-of-line definition of a member of a class
+            // template. [TemplateDecl]s set the flag for their own patterns
+            // and not for their specializations.
+            if (not isa<TemplateDecl>(d) and d->isTemplated())
+                flags = flags.set_template();
             Visitor::Visit(d, flags);
         }
     }
