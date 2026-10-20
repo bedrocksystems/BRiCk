@@ -1,10 +1,8 @@
 (*
  * Copyright (c) 2025 BlueRock Security, Inc.
- * This software is distributed under the terms of the BedRock Open-Source License.
- * See the LICENSE-BedRock file in the repository root for details.
+ * This software is distributed under the terms of the BedRock Open-Source
+ * License. See the LICENSE-BedRock file in the repository root for details.
  *)
-open Procq.Constr
-open Stdarg
 
 (* Disable exception backtraces, overriding effects of the Base library.
    Backtraces affect all Rocq user errors, not just anomalies. *)
@@ -29,24 +27,26 @@ let attributes =
   let open Attributes.Notations in
   let name = "duplicates" in
   let duplicates =
-    Attributes.qualify_attribute "duplicates"
-    @@ attribute_of_list [
+    qualify_attribute "duplicates" @@ attribute_of_list [
       ("warn", single_key_parser ~name ~key:"warn" Warn);
       ("error", single_key_parser ~name ~key:"error" Error);
       ("ignore", single_key_parser ~name ~key:"ignore" Ignore);
     ]
   in
-  let bool_attribute name =
-    map (fun x -> x = Some true) (Attributes.bool_attribute ~name)
+  let bool_attr name = map (fun v -> v = Some true) (bool_attribute ~name) in
+  let make ((args, with_templates), no_templates) =
+    let ((check_duplicates, elaborate), check_types) = args in
+    let with_templates = with_templates || not no_templates in
+    {check_duplicates; elaborate; check_types; with_templates}
   in
-  map (fun ((((check_duplicates, elaborate), check_types), with_templates), no_templates) ->
-      let with_templates =
-        with_templates || not no_templates
-      in
-      { check_duplicates; elaborate; check_types;
-        with_templates })
-    (((duplicates ++ bool_attribute "elaborate") ++ bool_attribute "check_types") ++
-     bool_attribute "with_templates" ++ bool_attribute "no_templates")
+  let attrs =
+    duplicates ++
+    bool_attr "elaborate" ++
+    bool_attr "check_types" ++
+    bool_attr "with_templates" ++
+    bool_attr "no_templates"
+  in
+  map make attrs
 
 let lib_ref t =
   Rocqlib.lib_ref ("skylabs.lang.cpp.parser.translation_unit." ^ t)
@@ -54,10 +54,13 @@ let lib_ref t =
 let (cpp2v_category, cpp2v_warning) =
   CWarnings.create_hybrid ~name:"cpp2v" ()
 
-let duplicate_symbols : (Environ.env * Evd.evar_map * Evd.econstr) CWarnings.msg = CWarnings.create_msg cpp2v_warning ()
+let duplicate_symbols =
+  CWarnings.create_msg cpp2v_warning ()
 
 let duplicate_symbols_printer (env, evd, err) =
-  Pp.(str "Duplicate symbols found!" ++ fnl () ++ Printer.pr_econstr_env env evd err ++ str ".")
+  let open Pp in
+  str "Duplicate symbols found!" ++ fnl () ++
+  Printer.pr_econstr_env env evd err ++ str "."
 
 let _ =
   CWarnings.register_printer duplicate_symbols duplicate_symbols_printer
@@ -69,7 +72,7 @@ let to_econstr t =
   | Names.GlobRef.IndRef ind ->
     EConstr.mkIndU (ind, EConstr.EInstance.empty)
   | _ ->
-    Feedback.msg_debug Pp.(Names.GlobRef.print t) ;
+    Feedback.msg_debug (Names.GlobRef.print t) ;
     assert false
 
 let decl_of_ref t =
@@ -84,47 +87,60 @@ let force_body (t : _ Declarations.pconstant_body) =
   | Declarations.Def d -> d
   | _ -> assert false
 
-let cpp_command (attrs : attrs) name (abi : Constrexpr.constr_expr option) (defns : Constrexpr.constr_expr list) =
+let report_duplicates check_duplicates env evd err =
+  match EConstr.kind evd err with
+  | Constr.App (hd, [| _ |]) when EConstr.isConstruct evd hd ->
+    ()
+  | _ ->
+    begin
+    match check_duplicates with
+    | Some Error ->
+      CErrors.user_err @@ duplicate_symbols_printer (env, evd, err)
+    | Some Warn -> CWarnings.warn duplicate_symbols (env, evd, err)
+    | Some Ignore | None -> ()
+    end
+
+let cpp_command (attrs : attrs) name (abi : Constrexpr.constr_expr option)
+    (defns : Constrexpr.constr_expr list) =
   (* Create the definition *)
-  let { check_duplicates; _ } = attrs in
+  let {check_duplicates; _} = attrs in
   let env = Global.env() in
   let e_decl = to_econstr (lib_ref "t") in
   let e_decl_skip = to_econstr (lib_ref "skip") in
   let inst =
-    match Constr.kind (decl_of_ref "empty_array").const_type with
-    | Constr.App (f, _) ->
-      begin
-        match Constr.kind f with
-        | Constr.Const (_, univs) -> univs
-        | _ -> assert false
-      end
-    | _ -> assert false
+    let t = Constr.kind (decl_of_ref "empty_array").const_type in
+    let h = match t with Constr.App(h, _) -> h | _ -> assert false in
+    match Constr.kind h with Constr.Const(_,inst) -> inst | _ -> assert false
   in
   let evd = Evd.from_env env in
-  let abi , evd =
+  let (abi, evd) =
     match abi with
+    | None -> (to_econstr (lib_ref "abi_default"), evd)
     | Some abi ->
-      let expected_type = Pretyping.OfType (to_econstr (lib_ref "abi_type")) in
-      let abi , ustate = Constrintern.interp_constr ~expected_type env evd abi in
-      (abi, Evd.from_ctx ustate)
-    | None ->
-      (to_econstr (lib_ref "abi_default"), evd)
+    let expected_type = Pretyping.OfType (to_econstr (lib_ref "abi_type")) in
+    let (abi, ustate) =
+      Constrintern.interp_constr ~expected_type env evd abi
+    in
+    (abi, Evd.from_ctx ustate)
   in
-  let body , evd =
+  let (body, evd) =
     let expected_type = Pretyping.OfType e_decl in
-    List.fold_left (fun (acc, evd) defn ->
-        (* TODO: the docs say that i should not use this function,
-           but it doesn't seem like i can give an expected type to
-           [Constrintern.interp_constr_evars] *)
-        let body, ustate = Constrintern.interp_constr ~expected_type env evd defn in
-        (body :: acc, Evd.from_ctx ustate)) ([], evd) defns
+    let f (acc, evd) defn =
+      (* TODO: the docs say that i should not use this function,
+         but it doesn't seem like i can give an expected type to
+         [Constrintern.interp_constr_evars] *)
+      let (body, ustate) =
+        Constrintern.interp_constr ~expected_type env evd defn
+      in
+      (body :: acc, Evd.from_ctx ustate)
+    in
+    List.fold_left f ([], evd) defns
   in
   let body =
-    EConstr.mkArray (EConstr.EInstance.make inst, Array.of_list (List.rev body), e_decl_skip, e_decl)
+    let inst = EConstr.EInstance.make inst in
+    EConstr.mkArray (inst, Array.of_list (List.rev body), e_decl_skip, e_decl)
   in
-  let body =
-    EConstr.mkApp (to_econstr (lib_ref "decls"), [| body ; abi |])
-  in
+  let body = EConstr.mkApp (to_econstr (lib_ref "decls"), [|body; abi|]) in
   let body =
     let rt = force_body (decl_of_ref "result_type") in
     Vnorm.cbv_vm env evd body (EConstr.of_constr rt)
@@ -133,73 +149,57 @@ let cpp_command (attrs : attrs) name (abi : Constrexpr.constr_expr option) (defn
      where <<dup_info>> is a list.
    *)
   match EConstr.kind evd body with
-  | Constr.App (hd, [| _ ; _ ; body ; err |]) when EConstr.isConstruct evd hd ->
-    let _ =
-      match EConstr.kind evd err with
-      | Constr.App (hd, [| _ |]) when EConstr.isConstruct evd hd ->
-        (* This is matching for [nil] *)
-        ()
-      | _ ->
-        begin
-        match check_duplicates with
-        | Some Error -> CErrors.user_err @@ duplicate_symbols_printer (env, evd, err)
-        | Some Warn -> CWarnings.warn duplicate_symbols (env, evd, err)
-        | Some Ignore | None -> ()
-        end
-    in
-    let cinfo = Declare.CInfo.make ~name ~typ:None () in
-    let info = Declare.Info.make () in
-    let _ =
-      Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd
-    in
-    ()
+  | Constr.App (hd, [|_ ;_ ;body; err|]) when EConstr.isConstruct evd hd ->
+      report_duplicates check_duplicates env evd err;
+      let cinfo = Declare.CInfo.make ~name ~typ:None () in
+      let info = Declare.Info.make () in
+      ignore (Declare.declare_definition ~info ~cinfo ~opaque:false ~body evd)
   | _ ->
-    CErrors.user_err Pp.(str "cpp.prog failed to return a head constructor. Please report!" ++ fnl () ++
-                        Printer.pr_econstr_env env evd body)
-
-let temp_file ?(prefix="ocaml_temp_") ?(suffix=".tmp") content =
-    (* Generate a unique temporary file name *)
-    let temp_file = Filename.temp_file prefix suffix in
-
-    (* Open the file for writing *)
-    let oc = open_out temp_file in
-
-    try
-      (* Write the content to the file *)
-      output_string oc content;
-
-      (* Flush and close the file *)
-      flush oc;
-      close_out oc;
-
-      let unlink () =
-        try Sys.remove temp_file
-        with _ -> ()
-      in
-
-      (* Return the path to the created temporary file *)
-      temp_file , unlink
-    with e ->
-      (* Clean up in case of an exception *)
-      close_out_noerr oc;
-      let _ = try Sys.remove temp_file with _ -> () in
-      raise e
+      CErrors.user_err Pp.(str "cpp.prog failed to return a head \
+        constructor. Please report!" ++ fnl () ++
+        Printer.pr_econstr_env env evd body)
 
 let flags_separator = Str.regexp "[ \n\r\x0c\t]+"
 
+let option_regexp options suffix =
+  let alternatives = String.concat "\\|" (List.map Str.quote options) in
+  Str.regexp ("^\\(" ^ alternatives ^ "\\)" ^ suffix ^ "$")
+
 let separated_path_option =
-  Str.regexp "^\\(-F\\|-I\\|-idirafter\\|-iframework\\|-iframeworkwithsysroot\\|-imacros\\|-include\\|-include-pch\\|-iquote\\|-isysroot\\|-isystem\\|-ivfsoverlay\\|-resource-dir\\|--sysroot\\)$"
+  option_regexp [
+    "-F";
+    "-I";
+    "-idirafter";
+    "-iframework";
+    "-iframeworkwithsysroot";
+    "-imacros";
+    "-include";
+    "-include-pch";
+    "-iquote";
+    "-isysroot";
+    "-isystem";
+    "-ivfsoverlay";
+    "-resource-dir";
+    "--sysroot";
+  ] ""
 
 let joined_path_option =
-  Str.regexp "^\\(-F\\|-I\\|-idirafter\\|-iframeworkwithsysroot\\|-iframework\\|-iquote\\|-isysroot\\|-isystem\\)\\(.+\\)$"
+  option_regexp [
+    "-F";
+    "-I";
+    "-idirafter";
+    "-iframeworkwithsysroot";
+    "-iframework";
+    "-iquote";
+    "-isysroot";
+    "-isystem";
+  ] "\\(.+\\)"
 
 let joined_sysroot_option =
   Str.regexp "^--sysroot=\\(.+\\)$"
 
-let should_warn (flags : string) : bool =
-  let is_relative_path path =
-    path <> "" && Filename.is_relative path
-  in
+let has_relative_path_flag (flags : string) : bool =
+  let is_relative_path path = path <> "" && Filename.is_relative path in
   let joined_path flag =
     if Str.string_match joined_path_option flag 0 then
       Some (Str.matched_group 2 flag)
@@ -208,141 +208,152 @@ let should_warn (flags : string) : bool =
     else
       None
   in
-  let rec go = function
+  let rec go flags =
+    match flags with
     | [] -> false
-    | flag :: path :: rest when Str.string_match separated_path_option flag 0 ->
-      is_relative_path path || go rest
+    | flag :: path :: rest
+      when Str.string_match separated_path_option flag 0 ->
+        is_relative_path path || go rest
     | flag :: rest ->
-      match joined_path flag with
-      | Some path -> is_relative_path path || go rest
-      | None -> go rest
+        match joined_path flag with
+        | Some path -> is_relative_path path || go rest
+        | None -> go rest
   in
   go (Str.split flags_separator flags)
 
-let%test "should_warn ignores flags without paths" =
-  not (should_warn "-std=c++23 -Wall -DNAME=value")
+let%test "flags without paths are ignored" =
+  not (has_relative_path_flag "-std=c++23 -Wall -DNAME=value")
 
-let%test "should_warn ignores absolute separated path flags" =
-  not (should_warn "-I /usr/include -isystem /opt/include --sysroot /opt/sysroot")
+let%test "absolute separated path flags are ignored" =
+  not (has_relative_path_flag
+      "-I /usr/include -isystem /opt/include --sysroot /opt/sysroot")
 
-let%test "should_warn ignores absolute joined path flags" =
-  not (should_warn "-I/usr/include -isystem/usr/include --sysroot=/opt/sysroot")
+let%test "absolute joined path flags are ignored" =
+  not (has_relative_path_flag
+      "-I/usr/include -isystem/usr/include --sysroot=/opt/sysroot")
 
-let%test "should_warn detects separated relative path flags" =
-  should_warn "-I include" &&
-  should_warn "-isystem ../include" &&
-  should_warn "-include header.hpp" &&
-  should_warn "--sysroot sysroot"
+let%test "relative separated path flags are detected" =
+  has_relative_path_flag "-I include" &&
+  has_relative_path_flag "-isystem ../include" &&
+  has_relative_path_flag "-include header.hpp" &&
+  has_relative_path_flag "--sysroot sysroot"
 
-let%test "should_warn detects joined relative path flags" =
-  should_warn "-Iinclude" &&
-  should_warn "-isystem../include" &&
-  should_warn "--sysroot=sysroot"
-
+let%test "relative joined path flags are detected" =
+  has_relative_path_flag "-Iinclude" &&
+  has_relative_path_flag "-isystem../include" &&
+  has_relative_path_flag "--sysroot=sysroot"
 
 let cpp_prog_warn : ?loc:Loc.t -> Pp.t -> unit =
+  let name = "cpp.prog" in
   let category = CWarnings.create_category ~name:"brick" () in
-  CWarnings.create ~name:"cpp.prog" ~category ~default:CWarnings.Enabled Pp.(fun x -> x ++ fnl ())
+  let default = CWarnings.Enabled in
+  CWarnings.create ~name ~category ~default Pp.(fun x -> x ++ fnl ())
 
-let cpp_command_prog (attrs : attrs) name flags prog =
-  let { check_duplicates; elaborate; check_types; with_templates } = attrs in
-  let temp_cpp , unlink = temp_file ~suffix:".cpp" prog in
-  let temp_v = Filename.temp_file "_" ".v" in
-  let flags =
-    let flags =
-      match flags with
-      | None -> []
-      | Some flags ->
-        if should_warn flags then
-          Feedback.msg_notice Pp.(str "Note that cpp.prog does not guarantee the working directory," ++ Pp.brk (0,0) ++
-                                  str "so relative paths may yield inconsistent results between different editors." ++ fnl () ++
-                                 str "Current working directory: " ++ str (Unix.getcwd ())) ;
-        Str.split flags_separator flags
-    in
-    ["cpp2v";
-    "-for-interactive"; Names.Id.to_string name;
-    "--no-sharing"; (* to avoid polluting the namespace. It would be better to put this in a [Module]
-                         if we are not in a [Section] *)
-    "-o"; temp_v;
-    temp_cpp] @
+let generated_filenames (loc : Loc.t) =
+  match loc.Loc.fname with
+  | Loc.ToplevelInput -> None
+  | Loc.InFile({file; _ }) ->
+  let col = loc.Loc.bp - loc.Loc.bol_pos in
+  let stem = Printf.sprintf "%s.%d_%d" file loc.Loc.line_nb col in
+  Some(stem ^ ".cpp", stem ^ ".v")
+
+let warn_about_relative_paths flags =
+  match has_relative_path_flag flags with false -> () | true ->
+  let msg =
+    let open Pp in
+    str "Note that cpp.prog does not guarantee the working directory," ++
+    brk (0,0) ++
+    str "so relative paths may yield inconsistent results between " ++
+    str "different editors." ++ fnl () ++
+    str "Current working directory: " ++ str (Unix.getcwd ())
+  in
+  Feedback.msg_notice msg
+
+let parse_flags flags =
+  match flags with
+  | None -> []
+  | Some flags ->
+    warn_about_relative_paths flags;
+    Str.split flags_separator flags
+
+let duplicate_arguments check_duplicates =
+  match check_duplicates with
+  | None -> []
+  | Some Error -> ["-attributes"; "duplicates(error)"]
+  | Some Warn -> ["-attributes"; "duplicates(warn)"]
+  | Some Ignore -> ["-attributes"; "duplicates(ignore)"]
+
+let cpp2v_arguments (attrs : attrs) name cpp_file v_file flags =
+  let {check_duplicates; elaborate; check_types; with_templates} = attrs in
+  let name = Names.Id.to_string name in
+  let argv =
+    ["cpp2v"; "-for-interactive"; name; "--no-sharing"] @
+    ["-o"; v_file; cpp_file] @
     (if with_templates then [] else ["--no-templates"]) @
     (if elaborate then ["--elaborate"] else ["--no-elaborate"]) @
     (if check_types then ["--check-types"] else []) @
-    (match check_duplicates with
-     | None -> []
-     | Some Error -> ["-attributes";"duplicates(error)"]
-     | Some Warn -> ["-attributes";"duplicates(warn)"]
-     | Some Ignore -> ["-attributes";"duplicates(ignore)"]) @
-    ("--" :: flags)
+    duplicate_arguments check_duplicates @
+    ("--" :: parse_flags flags)
   in
-  match Unix.open_process_args_full "cpp2v" (Array.of_list flags) (Unix.environment ()) with
-  | exception Unix.Unix_error (err, _, _) ->
-    CErrors.user_err Pp.(str "Running command `cpp2v` exited with error: " ++ str (Unix.error_message err))
+  Array.of_list argv
 
-  | streams ->
-    let stdin , stdout , stderr = streams in
+let write_cpp file prog =
+  Out_channel.with_open_text file @@ fun oc ->
+  Out_channel.output_string oc prog
 
-    (* Read all output *)
-    let rec read_all channel buffer =
-      try
-        let line = input_line channel in
-        Buffer.add_string buffer line;
-        Buffer.add_char buffer '\n';
-        read_all channel buffer
-      with End_of_file -> buffer
-    in
+let cpp2v_message flags outcome stderr =
+  let open Pp in
+  str "Invoking cpp2v " ++ outcome ++ fnl () ++ str stderr ++ fnl () ++
+  str "cpp2v command line:" ++ fnl () ++
+  str "  " ++ prvecti_with_sep (fun () -> str " ") (fun _ -> str) flags
 
-    (* Capture stdout and stderr *)
-    let stderr_buffer = Buffer.create 4096 |> read_all stderr in
-    let msg_text (warn_err : Pp.t) (cpp2v_stderr : string) =
-      Pp.(
-        str "Invoking cpp2v " ++ warn_err ++ fnl() ++
-        str cpp2v_stderr ++ fnl() ++
-        str "cpp2v command line:" ++ fnl() ++ str "  " ++ prlist_with_sep (fun () -> str " ") str flags)
-    in
-    let process_status = Unix.close_process_full streams in
-    let success =
-      match process_status with
-      | WEXITED 0 -> true
-      | _ -> false
-    in
-    let process_failure_str =
-      match process_status with
-      | WEXITED 0 -> ""
-      | WEXITED n -> Printf.sprintf "exited with code %d" n
-      | WSIGNALED n -> Printf.sprintf "killed by signal %d" n
-      | WSTOPPED n -> Printf.sprintf "stopped by signal %d" n
-    in
-    if not success then
-      if Buffer.length stderr_buffer = 0 then
-        CErrors.user_err Pp.(msg_text Pp.(str process_failure_str ++ str " with no error message!") "")
-      else
-        CErrors.user_err Pp.(msg_text Pp.(str process_failure_str ++ str " with the following warnings/errors!") (Buffer.contents stderr_buffer))
-    else if Buffer.length stderr_buffer > 0 then
-      cpp_prog_warn Pp.(msg_text Pp.(str "produced the following warnings!") (Buffer.contents stderr_buffer));
+let process_failure (status : Unix.process_status) =
+  match status with
+  | WEXITED n -> Printf.sprintf "exited with code %d" n
+  | WSIGNALED n -> Printf.sprintf "killed by signal %d" n
+  | WSTOPPED n -> Printf.sprintf "stopped by signal %d" n
 
-    (* this might have problems with coq-lsp if the required file has its own requires *)
-    let current_state = Vernacstate.freeze_full_state () in
-    let _new_state =
-      Vernacinterp.interp ~intern:Vernacinterp.fs_intern ~st:current_state
-        (CAst.make Vernacexpr.{ control = [] ;
-                                attrs = [] ;
-                                expr = VernacSynterp (VernacLoad (false (* not verbose *),
-                                                                  temp_v (* filename *)))  })
-    in
-    ()
+let report_cpp2v_result flags stderr (status : Unix.process_status) =
+  match status with
+  | WEXITED 0 when stderr = "" -> ()
+  | WEXITED 0 ->
+      let msg = Pp.str "produced the following warnings!" in
+      cpp_prog_warn (cpp2v_message flags msg stderr)
+  | status ->
+      let failure = process_failure status in
+      let outcome =
+        match stderr with
+        | "" -> Pp.(str failure ++ str " with no error message!")
+        | _  -> Pp.(str failure ++ str " with the following warnings/errors!")
+      in
+      CErrors.user_err (cpp2v_message flags outcome stderr)
 
-(*
-   If we need to avoid using <<Load>>, e.g. to suport coq-lsp, then we can use
-   this structure.
+let run_cpp2v flags =
+  match Unix.open_process_args_full "cpp2v" flags (Unix.environment ()) with
+  | exception Unix.Unix_error(e,_,_) ->
+      CErrors.user_err Pp.(str "Running command `cpp2v` exited with error: "
+        ++ str (Unix.error_message e))
+  | (_, _, stderr) as streams ->
+  let stderr = In_channel.input_all stderr in
+  let status = Unix.close_process_full streams in
+  report_cpp2v_result flags stderr status
 
-  see: toplevel/vernac.ml:105
-  let source = Option.default (Loc.InFile {dirpath=None; file}) source in
-  let in_pa = Procq.Parsable.make ~loc:Loc.(initial source)
-      (Gramlib.Stream.of_channel stdout) in
+let load_generated_file file =
+  (* Might lead to issues with rocq-lsp if the loaded file has requires. *)
+  let st = Vernacstate.freeze_full_state () in
+  let command =
+    let expr = Vernacexpr.(VernacSynterp (VernacLoad (false, file))) in
+    CAst.make Vernacexpr.{control = []; attrs = []; expr}
+  in
+  ignore (Vernacinterp.interp ~intern:Vernacinterp.fs_intern ~st command)
 
-  (* I can loop this until it says None *)
-  Procq.Entry.parse (Pvernac.main_entry None) in_pa
-
-  assert false
-*)
+let cpp_command_prog (attrs : attrs) name flags prog =
+  let loc = Loc.get_current_command_loc () in
+  match Option.bind loc generated_filenames with
+  | None ->
+      CErrors.user_err ?loc Pp.(str "cpp.prog needs a Rocq source file \
+        location to generate stable filenames.")
+  | Some(cpp_file, v_file) ->
+      write_cpp cpp_file prog;
+      run_cpp2v (cpp2v_arguments attrs name cpp_file v_file flags);
+      load_generated_file v_file
