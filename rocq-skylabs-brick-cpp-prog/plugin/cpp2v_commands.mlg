@@ -14,28 +14,23 @@ open Procq.Prim
 let pr_cpp_string _ _ _ (s : string) =
   Pp.(str "cpp:{{" ++ fnl () ++ str s ++ fnl () ++ str "}}")
 
-let pr_cpp_flags _ _ _ = function
-| None -> Pp.str ""
-| Some s -> Pp.(str "flags \"" ++ str s ++ str "\"")
+let pr_cpp_flags _ _ _ flags =
+  match flags with
+  | None -> Pp.str ""
+  | Some s -> Pp.(str "flags \"" ++ str s ++ str "\"")
 
-let trim_loc loc n =
-  let open Loc in
-  { loc with bp = loc.bp + n; ep = loc.ep - n }
-
-let rec strip_each ch loc str n =
+let rec strip_each ch str n =
   if n < String.length str && str.[n] = ch then
-    strip_each ch loc str (n + 1)
+    strip_each ch str (n + 1)
   else
-    trim_loc loc n , String.(sub str n (length str - n - n))
+    String.(sub str n (length str - n - n))
 
-let strip_braces loc str =
-  if str.[0] = '\123' then strip_each '\123' loc str 1
-  else if str.[0] = '(' then strip_each '(' loc str 1
-  else if str.[0] = '[' then strip_each '[' loc str 1
-  else loc , str
-
-let any_attribute : Attributes.vernac_flags Attributes.attribute =
-  Attributes.make_attribute (fun x -> [],x)
+let strip_braces str =
+  if String.length str = 0 then str
+  else if str.[0] = '\123' then strip_each '\123' str 1
+  else if str.[0] = '(' then strip_each '(' str 1
+  else if str.[0] = '[' then strip_each '[' str 1
+  else str
 }
 
 ARGUMENT EXTEND cpp_string PRINTED BY { pr_cpp_string }
@@ -43,11 +38,8 @@ END
 
 GRAMMAR EXTEND Gram GLOBAL: cpp_string;
 cpp_string : FIRST [
-  [ s = QUOTATION "cpp:" -> {
-    let loc = { loc with Loc.bp = loc.Loc.bp + 4 } in
-    snd @@ strip_braces loc s
-  }
-]];
+  [ s = QUOTATION "cpp:" -> { strip_braces s } ]
+];
 END
 
 ARGUMENT EXTEND cpp_flags TYPED AS string option PRINTED BY { pr_cpp_flags }
