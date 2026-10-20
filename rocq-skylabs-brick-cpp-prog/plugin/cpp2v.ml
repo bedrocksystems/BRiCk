@@ -215,12 +215,25 @@ let cpp_prog_warn : ?loc:Loc.t -> Pp.t -> unit =
   let category = CWarnings.create_category ~name:"brick" () in
   CWarnings.create ~name:"cpp.prog" ~category ~default:CWarnings.Enabled Pp.(fun x -> x ++ fnl ())
 
+let generated_filenames (loc : Loc.t) =
+  match loc.Loc.fname with
+  | Loc.InFile { file; _ } ->
+    let column = loc.Loc.bp - loc.Loc.bol_pos in
+    let stem = Printf.sprintf "%s.%d_%d" file loc.Loc.line_nb column in
+    Some (stem ^ ".cpp", stem ^ ".v")
+  | Loc.ToplevelInput -> None
+
 let cpp_command_prog (attrs : attrs) name flags prog =
   let { check_duplicates; elaborate; check_types; with_templates } = attrs in
-  let temp_cpp = Filename.temp_file "_" ".cpp" in
-  let temp_v = Filename.temp_file "_" ".v" in
+  let loc = Loc.get_current_command_loc () in
+  match Option.bind loc generated_filenames with
+  | None ->
+      CErrors.user_err ?loc
+        Pp.(str "cpp.prog needs a Rocq source file location to generate \
+          stable filenames.")
+  | Some(cpp_file, v_file) ->
   let _ =
-    Out_channel.with_open_text temp_cpp @@ fun oc ->
+    Out_channel.with_open_text cpp_file @@ fun oc ->
     Out_channel.output_string oc prog
   in
   let flags =
@@ -238,8 +251,8 @@ let cpp_command_prog (attrs : attrs) name flags prog =
     "-for-interactive"; Names.Id.to_string name;
     "--no-sharing"; (* to avoid polluting the namespace. It would be better to put this in a [Module]
                          if we are not in a [Section] *)
-    "-o"; temp_v;
-    temp_cpp] @
+    "-o"; v_file;
+    cpp_file] @
     (if with_templates then [] else ["--no-templates"]) @
     (if elaborate then ["--elaborate"] else ["--no-elaborate"]) @
     (if check_types then ["--check-types"] else []) @
@@ -303,7 +316,7 @@ let cpp_command_prog (attrs : attrs) name flags prog =
         (CAst.make Vernacexpr.{ control = [] ;
                                 attrs = [] ;
                                 expr = VernacSynterp (VernacLoad (false (* not verbose *),
-                                                                  temp_v (* filename *)))  })
+                                                                  v_file (* filename *)))  })
     in
     ()
 
