@@ -1347,9 +1347,11 @@ Section with_cpp.
     apply type_ptr_valid.
   Qed.
 
+  (*
   #[global] Instance type_ptr_size_observe ty p :
     Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
   Proof. rewrite type_ptr_size. apply _. Qed.
+  *)
 
   #[global] Instance valid_ptr_sub_0 (p : ptr) ty :
     HasSize ty ->
