@@ -340,10 +340,16 @@ let run_cpp2v flags =
   let status = Unix.close_process_full streams in
   report_cpp2v_result flags stderr status
 
+let make_explicit file =
+  match Filename.is_implicit file with
+  | true -> Filename.concat Filename.current_dir_name file
+  | false -> file
+
 let load_generated_file file =
   (* Might lead to issues with rocq-lsp if the loaded file has requires. *)
   let st = Vernacstate.freeze_full_state () in
   let command =
+    let file = make_explicit file in
     let expr = Vernacexpr.(VernacSynterp (VernacLoad (false, file))) in
     CAst.make Vernacexpr.{control = []; attrs = []; expr}
   in
