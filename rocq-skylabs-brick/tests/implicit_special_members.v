@@ -382,3 +382,212 @@ Eval vm_compute in get template_header "W<int>::~W()".
 Example template_header_sub_module_template_use :
   bool_decide (sub_module template_header template_use) = true.
 Proof. vm_compute. reflexivity. Qed.
+
+(** * No placeholders for deleted members
+
+    Some members' implicit special members are defined as deleted: a reference
+    member deletes the default constructor (unless it has a default member
+    initializer) and both assignments, an rvalue reference member also deletes
+    the copy constructor, and a [const] member of non-class type deletes both
+    assignments (https://eel.is/c++draft/class.default.ctor#2,
+    https://eel.is/c++draft/class.copy.ctor#10,
+    https://eel.is/c++draft/class.copy.assign#7).  clang records all but the
+    default constructor's case on the class without declaring anything, and an
+    elaborated translation unit, where clang declares every implicit member,
+    has no declarations for deleted members.  So the header must have no
+    placeholders for them. *)
+
+#[duplicates(error)]
+cpp.prog deleted_header prog cpp:{{
+  int g;
+  struct R { int& r; };
+  struct RR { int&& r; };
+  struct C { const int c = 0; };
+  struct I { int& r = g; };     // the default constructor is not deleted
+}}.
+
+#[duplicates(error), elaborate]
+cpp.prog deleted_elaborated prog cpp:{{
+  int g;
+  struct R { int& r; };
+  struct RR { int&& r; };
+  struct C { const int c = 0; };
+  struct I { int& r = g; };
+}}.
+
+Eval vm_compute in get deleted_header "R::R()".
+Eval vm_compute in get deleted_header "R::R(const R&)".
+Eval vm_compute in get deleted_header "R::operator=(const R&)".
+Eval vm_compute in get deleted_header "R::operator=(R&&)".
+Eval vm_compute in get deleted_header "RR::RR(const RR&)".
+Eval vm_compute in get deleted_header "RR::RR(RR&&)".
+Eval vm_compute in get deleted_header "C::operator=(const C&)".
+Eval vm_compute in get deleted_header "C::operator=(C&&)".
+Eval vm_compute in get deleted_header "I::I()".
+
+Example deleted_header_sub_module_deleted_elaborated :
+  bool_decide (sub_module deleted_header deleted_elaborated) = true.
+Proof. vm_compute. reflexivity. Qed.
+
+(** * Agreement with elaboration
+
+    A regression test for the deletion checks above, which rely on clang
+    keeping its per-class "defaulted member is deleted" bits exact for every
+    member it has not declared yet
+    (<<CXXRecordDecl::hasSimpleCopyAssignment>> and friends).  The classes
+    below cover each rule of https://eel.is/c++draft/class.copy.assign#7,
+    https://eel.is/c++draft/class.copy.ctor#10,
+    https://eel.is/c++draft/class.dtor#7 and
+    https://eel.is/c++draft/class.default.ctor#2, plus cases that must not be
+    deleted.  The header must have a placeholder exactly for each implicit
+    member that elaboration declares and does not delete, so a rule that clang
+    stops recording (e.g. after an LLVM upgrade) shows up here.
+
+    Known gap: clang decides whether a default constructor is deleted only
+    when declaring it, so the header still has placeholders for the deleted
+    default constructors that are not due to reference members (marked [gap]
+    below). *)
+
+#[duplicates(error)]
+cpp.prog agree_header prog cpp:{{
+  int g;
+
+  // Copy and move assignment
+  struct A1 { int& r = g; };                     // reference member
+  struct A2 { const int c = 0; };                // const non-class member
+  struct A3 { const int a[2] = {1, 2}; };        // ... or array thereof
+  struct P0 { int x; };
+  struct A4 { const P0 p = {}; };                // const class member: eager
+  struct A5 { A1 m; };                           // member with deleted assignment
+  struct B6 {
+    B6() = default;
+    B6(const B6&) = default;
+  private:
+    B6& operator=(const B6&);
+  };
+  struct A6 : B6 { };                            // inaccessible base assignment
+  struct A7 { A7() = default; A7(A7&&) = default; };  // user-declared move
+  struct NT { NT& operator=(const NT&) { return *this; } };
+  union A8 { NT n; int i; };                     // non-trivial variant member
+  struct A9 { union { NT n; int i; }; };         // ... in an anonymous union
+  template <class T> struct W { T t; };
+  static_assert(sizeof(W<int&>) > 0, "");        // implicit instantiation
+  struct Q { const Q& operator=(const Q&) const { return *this; } };
+  struct A13 { const Q q{}; };                   // const member, not deleted
+  struct A15 : A1 { };                           // base with deleted assignment
+  struct A16 { mutable P0 p; };                  // mutable member, not deleted
+  inline auto mk(int x) { return [x] { return x; }; }
+  using L1 = decltype(mk(0));                    // capturing lambda
+  inline auto mk0() { return [] { return 0; }; }
+  using L0 = decltype(mk0());                    // non-capturing lambda
+
+  // Copy and move constructors, destructor
+  struct RR { int&& r; };                        // rvalue reference member
+  struct NC { NC() = default; NC(const NC&) = delete; };
+  struct C2 { NC n; };                           // member with deleted copy
+  struct M1 { M1() = default; M1(const M1&) = default; M1(M1&&) = delete; };
+  struct MV { M1 m; };                           // member with deleted move
+  struct DD { ~DD() = delete; };
+  struct X1 { DD d; };                           // member with deleted destructor;
+                                                 // gap: its default ctor too
+  struct ND { ~ND() {} };
+  union X2 { ND n; int i; };                     // non-trivial variant destructor
+
+  // Default constructor
+  struct D1 { int& r; };                         // reference member
+  struct D4 { D1 m; };                           // ... in a member
+  struct R2 { int& r; R2() : r(g) {} };
+  struct D9 { R2 m; };                           // ... bound by R2(): not deleted
+  struct F0 { F0() {} };
+  struct D3b { const F0 f; };                    // const-default-constructible
+  struct D2 { const int c; };                    // gap: const non-class member
+  struct D3 { const P0 p; };                     // gap: not const-default-constructible
+  struct G0 { G0(int); };
+  struct D5 { G0 g; };                           // gap: member without default ctor
+  struct D6 : G0 { };                            // gap: base without default ctor
+  union D7 { const int a; const int b; };        // gap: all variant members const
+  struct H0 { H0() {} };
+  union D8 { H0 h; int i; };                     // gap: non-trivial variant member
+  struct PD { private: ~PD(); };
+  struct D10 { PD p; };                          // gap: inaccessible member dtor
+}}.
+
+#[duplicates(error), elaborate]
+cpp.prog agree_elaborated prog cpp:{{
+  int g;
+
+  // Copy and move assignment
+  struct A1 { int& r = g; };                     // reference member
+  struct A2 { const int c = 0; };                // const non-class member
+  struct A3 { const int a[2] = {1, 2}; };        // ... or array thereof
+  struct P0 { int x; };
+  struct A4 { const P0 p = {}; };                // const class member: eager
+  struct A5 { A1 m; };                           // member with deleted assignment
+  struct B6 {
+    B6() = default;
+    B6(const B6&) = default;
+  private:
+    B6& operator=(const B6&);
+  };
+  struct A6 : B6 { };                            // inaccessible base assignment
+  struct A7 { A7() = default; A7(A7&&) = default; };  // user-declared move
+  struct NT { NT& operator=(const NT&) { return *this; } };
+  union A8 { NT n; int i; };                     // non-trivial variant member
+  struct A9 { union { NT n; int i; }; };         // ... in an anonymous union
+  template <class T> struct W { T t; };
+  static_assert(sizeof(W<int&>) > 0, "");        // implicit instantiation
+  struct Q { const Q& operator=(const Q&) const { return *this; } };
+  struct A13 { const Q q{}; };                   // const member, not deleted
+  struct A15 : A1 { };                           // base with deleted assignment
+  struct A16 { mutable P0 p; };                  // mutable member, not deleted
+  inline auto mk(int x) { return [x] { return x; }; }
+  using L1 = decltype(mk(0));                    // capturing lambda
+  inline auto mk0() { return [] { return 0; }; }
+  using L0 = decltype(mk0());                    // non-capturing lambda
+
+  // Copy and move constructors, destructor
+  struct RR { int&& r; };                        // rvalue reference member
+  struct NC { NC() = default; NC(const NC&) = delete; };
+  struct C2 { NC n; };                           // member with deleted copy
+  struct M1 { M1() = default; M1(const M1&) = default; M1(M1&&) = delete; };
+  struct MV { M1 m; };                           // member with deleted move
+  struct DD { ~DD() = delete; };
+  struct X1 { DD d; };                           // member with deleted destructor;
+                                                 // gap: its default ctor too
+  struct ND { ~ND() {} };
+  union X2 { ND n; int i; };                     // non-trivial variant destructor
+
+  // Default constructor
+  struct D1 { int& r; };                         // reference member
+  struct D4 { D1 m; };                           // ... in a member
+  struct R2 { int& r; R2() : r(g) {} };
+  struct D9 { R2 m; };                           // ... bound by R2(): not deleted
+  struct F0 { F0() {} };
+  struct D3b { const F0 f; };                    // const-default-constructible
+  struct D2 { const int c; };                    // gap: const non-class member
+  struct D3 { const P0 p; };                     // gap: not const-default-constructible
+  struct G0 { G0(int); };
+  struct D5 { G0 g; };                           // gap: member without default ctor
+  struct D6 : G0 { };                            // gap: base without default ctor
+  union D7 { const int a; const int b; };        // gap: all variant members const
+  struct H0 { H0() {} };
+  union D8 { H0 h; int i; };                     // gap: non-trivial variant member
+  struct PD { private: ~PD(); };
+  struct D10 { PD p; };                          // gap: inaccessible member dtor
+}}.
+
+Definition only_in (tu tu' : translation_unit) : list name :=
+  List.filter (fun n => match tu'.(symbols) !! n with Some _ => false | None => true end)
+    (map fst (NM.elements tu.(symbols))).
+
+(* No placeholder is missing *)
+Example agree_elaborated_only :
+  only_in agree_elaborated agree_header = [].
+Proof. vm_compute. reflexivity. Qed.
+
+(* The only extra placeholders are the known gaps *)
+Example agree_header_only :
+  only_in agree_header agree_elaborated =
+  ["D10::D10()"; "D2::D2()"; "D3::D3()"; "D5::D5()"; "D6::D6()"; "D7::D7()";
+   "D8::D8()"; "X1::X1()"]%cpp_name.
+Proof. vm_compute. reflexivity. Qed.
