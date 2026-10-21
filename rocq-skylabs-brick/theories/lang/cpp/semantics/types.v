@@ -13,6 +13,7 @@ Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   match g with
   | Gstruct s => Some s.(s_size)
   | Gunion u => Some u.(u_size)
+  | Gopaque_record r => Some r.(or_size)
   | Genum t _ =>
     match drop_qualifiers t with
     | Tchar_ sz => Some $ char_type.bytesN sz
@@ -26,6 +27,7 @@ Definition GlobDecl_align_of (g : GlobDecl) : option N :=
   match g with
   | Gstruct s => Some s.(s_alignment)
   | Gunion u => Some u.(u_alignment)
+  | Gopaque_record r => Some r.(or_alignment)
   | Genum t _ =>
     match drop_qualifiers t with
     | Tchar_ sz => Some $ char_type.bytesN sz
@@ -87,6 +89,7 @@ Proof.
   case_bool_decide; subst; eauto. contradiction.
   case_bool_decide; subst; eauto. contradiction.
   case_bool_decide; subst; eauto. case_match; constructor; eauto. contradiction.
+  case_bool_decide; subst; eauto. contradiction.
 Qed.
 #[global] Instance proper_GlobDecl_align_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_align_of.
 Proof.
@@ -95,6 +98,7 @@ Proof.
   case_bool_decide; subst; eauto. contradiction.
   case_bool_decide; subst; eauto. contradiction.
   case_bool_decide; subst; eauto. simpl. case_match; constructor; eauto. contradiction.
+  case_bool_decide; subst; eauto. contradiction.
 Qed.
 
 (** * sizeof *)
@@ -616,9 +620,9 @@ Lemma tu_base_layout_compatible_sound {σ tu} {Hσ : tu ⊧ σ} derived base :
 Proof.
   rewrite /tu_base_layout_compatible.
   destruct (tu.(types) !! derived) as [gd|] eqn:Hd; last discriminate.
-  destruct gd as [| |ds| | | |]; try discriminate.
+  destruct gd as [| |ds| | | | |]; try discriminate.
   destruct (tu.(types) !! base) as [gb|] eqn:Hb; last discriminate.
-  destruct gb as [| |bs| | | |]; try discriminate.
+  destruct gb as [| |bs| | | | |]; try discriminate.
   destruct (parent_offset_tu tu derived base) as [z|] eqn:Hz; last discriminate.
   intros Hcheck. apply bool_decide_eq_true in Hcheck.
   destruct Hcheck as (Hda & Hba & Hdiv & Hdz & Hnonneg & Hstrict & Hbound).

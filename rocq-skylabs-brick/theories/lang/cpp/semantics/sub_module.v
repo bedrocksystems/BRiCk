@@ -82,6 +82,7 @@ Definition GlobDecl_le (a b : GlobDecl) : bool :=
   | Gtype , Genum _ _
   | Gtype , Gunion _
   | Gtype , Gstruct _
+  | Gtype , Gopaque_record _
   | Gtype , Gunsupported _ => true
   | Gunion _ , Gtype
   | Gstruct _ , Gtype => false
@@ -101,6 +102,8 @@ Definition GlobDecl_le (a b : GlobDecl) : bool :=
   | Gtypedef t , Gtypedef t' =>
     bool_decide (t = t')
   | Gunsupported m , Gunsupported m' => bool_decide (m = m')
+  (* No refinement to a visible record definition without a correspondence. *)
+  | Gopaque_record r , Gopaque_record r' => bool_decide (r = r')
   | _ , _ => false
   end.
 Definition GlobDecl_ler := λ g1 g2, Is_true $ GlobDecl_le g1 g2.
