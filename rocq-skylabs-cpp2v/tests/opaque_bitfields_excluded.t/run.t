@@ -10,6 +10,7 @@ Do not synthesize member bodies for these intentionally unsupported records.
   $ grep -Fq '(Dunsupported (Nglobal (Nid "WithVirtual")) "bitfields are not supported")' test_cpp.v
   $ grep -Fq '(Dunsupported (Nglobal (Nid "WithVirtualBase")) "virtual base classes are not supported")' test_cpp.v
   $ grep -Fq '(Dunsupported (Nglobal (Nid "PackedBits")) "bitfields are not supported")' test_cpp.v
+  $ grep -Fq '(Dunsupported (Nglobal (Nid "PackedOffset")) "bitfields are not supported")' test_cpp.v
   $ grep -Fq '(Dunsupported (Nglobal (Nid "PackedPlain")) "under-aligned fields are not supported")' test_cpp.v
   $ grep -c '(Dtemplated_unsupported' test_templates.v
   2

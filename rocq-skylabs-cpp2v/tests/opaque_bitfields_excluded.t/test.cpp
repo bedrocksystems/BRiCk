@@ -21,6 +21,14 @@ struct __attribute__((packed)) PackedBits {
   int unaligned;
 };
 
+// Record alignment is sufficient; only the ordinary field offset is invalid.
+struct __attribute__((packed, aligned(4))) PackedOffset {
+  unsigned bits : 1;
+  unsigned unaligned;
+};
+static_assert(sizeof(PackedOffset) == 8 && alignof(PackedOffset) == 4);
+static_assert(__builtin_offsetof(PackedOffset, unaligned) == 1);
+
 struct __attribute__((packed)) PackedPlain {
   char byte;
   int unaligned;
