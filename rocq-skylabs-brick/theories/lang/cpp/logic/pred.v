@@ -554,13 +554,14 @@ Module Type CPP_LOGIC
     #[global] Declare Instance tptsto_type_ptr : forall ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v).
 
-    (* All objects in the C++ abstract machine have a size
-
-       NOTE to support un-sized objects, we can simply say that the [sizeof] operator
-            in C++ is only a conservative approximation of the true size of an object.
+    (* All objects in the C++ abstract machine have a size;
+       but [size_of] is an approximation to that size and sometimes it is not
+       (yet) defined for some objects.
      *)
+    (*
     Axiom type_ptr_size : forall ty p,
-        type_ptr ty p |-- [| is_Some (size_of σ ty) |].
+      type_ptr ty p |-- [| is_Some (size_of σ ty) |].
+    *)
 
     (**
     Recall that [type_ptr] and [strict_valid_ptr] don't include
