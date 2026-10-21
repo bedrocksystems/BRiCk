@@ -45,6 +45,11 @@ bool cas_int(int *p, int *e, int d) {
 }
 int overloaded(int x) { return x; }
 int overloaded(long x) { return (int)x; }
+int unknown_builtin(unsigned x) { return __builtin_popcount(x); }
+long known_builtin(long x) { return __builtin_expect(x, 0); }
+int flat_switch(int x) { switch (x) { case 0: return 1; default: return 0; } }
+int nested_case(int x) { switch (x) { case 0: { case 1: return 1; } default: return 0; } }
+int case_after_decl(int x) { switch (x) { case 0: int y; y = 1; return y; case 1: return 1; } return 0; }
 }}.
 
 Eval vm_compute in supported.report.run source
@@ -52,6 +57,8 @@ Eval vm_compute in supported.report.run source
   ; "static_local()"; "calls_static_local()"; "use_union(U)"; "arrow_union(U*)"; "arrow_bits(Bits*)"; "address_only()"; "call_through(Bits*)"; "read_volatile(volatile int*)"
   ; "volatile_local()"; "dyn(Base*)"; "inline_asm()"; "cas_ptr(int**, int**, int*)"
   ; "cas_int(int*, int*, int)"; "overloaded(int)"; "overloaded(long)"
+  ; "unknown_builtin(unsigned int)"; "known_builtin(long)"; "flat_switch(int)"
+  ; "nested_case(int)"; "case_after_decl(int)"
   ; "Anon::Anon()"; "Bits"; "HasBits"; "Node"; "U"; "missing()" ]%pstring.
 
 (** [check] keeps only [Unsupported] gaps. *)
@@ -105,6 +112,18 @@ Section stuck.
       (m :: ms) Q
     ⊢ False.
   Proof. rewrite /= bool_decide_true //. apply UNSUPPORTED_elim. Qed.
+
+  (** [switch] bodies that [walk.switch_cases] rejects. *)
+  Lemma switch_cases_stuck Ldef b :
+    walk.switch_cases b = false -> wp_switch_block Ldef b = None.
+  Proof.
+    elim: b Ldef => [//|s b IH] Ldef.
+    destruct s; cbn [walk.switch_cases wp_switch_block]; try destruct Ldef; move=> H.
+    all: try by rewrite IH.
+    all: try by rewrite ?H.
+    all: case_match eqn:Hc; last done.
+    all: apply IH; simpl in *; by rewrite ?Hc in H.
+  Qed.
 
   (** Volatile objects cannot be initialized. *)
   Example volatile_default_init ty p Q :

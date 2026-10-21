@@ -180,6 +180,54 @@
           report.unsupported_refs := []
         |};
         {|
+          report.input := "unknown_builtin(unsigned int)";
+          report.resolved := "unknown_builtin(unsigned int)";
+          report.status := "unsupported";
+          report.unsupported :=
+            ["builtin without semantics: __builtin_popcount"%pstring];
+          report.partial := [];
+          report.blocked_by := [];
+          report.unsupported_refs := []
+        |};
+        {|
+          report.input := "known_builtin(long)";
+          report.resolved := "known_builtin(long)";
+          report.status := "supported";
+          report.unsupported := [];
+          report.partial := [];
+          report.blocked_by := [];
+          report.unsupported_refs := []
+        |};
+        {|
+          report.input := "flat_switch(int)";
+          report.resolved := "flat_switch(int)";
+          report.status := "supported";
+          report.unsupported := [];
+          report.partial := [];
+          report.blocked_by := [];
+          report.unsupported_refs := []
+        |};
+        {|
+          report.input := "nested_case(int)";
+          report.resolved := "nested_case(int)";
+          report.status := "unsupported";
+          report.unsupported :=
+            ["switch: case or default nested in a statement or after a declaration"%pstring];
+          report.partial := [];
+          report.blocked_by := [];
+          report.unsupported_refs := []
+        |};
+        {|
+          report.input := "case_after_decl(int)";
+          report.resolved := "case_after_decl(int)";
+          report.status := "unsupported";
+          report.unsupported :=
+            ["switch: case or default nested in a statement or after a declaration"%pstring];
+          report.partial := [];
+          report.blocked_by := [];
+          report.unsupported_refs := []
+        |};
+        {|
           report.input := "Anon::Anon()";
           report.resolved := "Anon::Anon()";
           report.status := "unsupported";
@@ -237,7 +285,9 @@
      : list report.entry
      = ["bitfields are not supported"%pstring;
         "atomic compare-exchange on non-integer values"%pstring;
+        "switch: case or default nested in a statement or after a declaration"%pstring;
         "dynamic_cast"%pstring; "inline assembly"%pstring;
+        "switch: case or default nested in a statement or after a declaration"%pstring;
         "static local variable"%pstring; "volatile object"%pstring;
         "indirect member initialization"%pstring]
      : check.M

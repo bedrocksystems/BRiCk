@@ -7,6 +7,7 @@
 Require Import stdpp.fin_maps.
 Require Import skylabs.prelude.base.
 Require Import skylabs.lang.cpp.syntax.core.
+Require Import skylabs.lang.cpp.syntax.stmt.
 Require Import skylabs.lang.cpp.syntax.types.
 Require Import skylabs.lang.cpp.syntax.typing.
 Require Import skylabs.lang.cpp.syntax.translation_unit.
@@ -28,8 +29,12 @@ Require skylabs.lang.cpp.syntax.name_notation.printer.
     the names the term needs ([Ref], [Access]). [check] only keeps
     [Unsupported] gaps; [report] answers per C++ entity.
 
-    Each [Gap Unsupported] mirrors a place where the semantics in [logic/] gets
-    stuck: an [UNSUPPORTED] or [ERROR] case, a [False], or a missing [wp]
+    [walk] takes an extension [ext], called on every expression, which adds
+    gaps of a proof tool built on the semantics, e.g. a known automation gap
+    (see [skylabs.auto.cpp.supported]). [check] and [report.run] use none.
+
+    Without an extension, each [Gap Unsupported] mirrors a place where the
+    semantics in [logic/] gets stuck: an [UNSUPPORTED] or [ERROR] case, a [False], or a missing [wp]
     rule. See [tests/supported_report.v].
  *)
 
@@ -158,6 +163,31 @@ Section with_monad.
          end
     else OK.
 
+  (** The builtins with a [wp_builtin] rule (see [logic/builtins.v]). *)
+  Definition known_builtin (b : BuiltinFn) : bool :=
+    bool_decide (b ∈ [ "__builtin_unreachable"; "__builtin_trap"; "__builtin_expect"
+      ; "move"; "forward"; "__builtin_launder"
+      ; "__builtin_ffs"; "__builtin_ffsl"; "__builtin_ffsll"
+      ; "__builtin_ctz"; "__builtin_ctzl"; "__builtin_ctzll"
+      ; "__builtin_clz"; "__builtin_clzl"; "__builtin_clzll"
+      ; "__builtin_bswap16"; "__builtin_bswap32"; "__builtin_bswap64"; "__builtin_bswap128"
+      ]%pstring).
+
+  (** Calls to [b]: a builtin that is only declared is harmless; atomics,
+      for instance, are called through [Eatomic]. *)
+  Definition builtin (b : BuiltinFn) : M :=
+    if known_builtin b then OK else FAIL (PrimString.cat "builtin without semantics: " b).
+
+  (** [wp_switch] needs the [case]s and [default] of a block at its top level,
+      not after a declaration (see [wp_switch_block] in [logic/stmt.v]). *)
+  Fixpoint switch_cases (ls : list Stmt) : bool :=
+    match ls with
+    | (Scase _ | Sdefault) :: ls => switch_cases ls
+    | Sdecl _ :: ls => no_case (Sseq ls)
+    | s :: ls => no_case s && switch_cases ls
+    | [] => true
+    end.
+
   Definition atomic_name (type : type -> M) (an : atomic_name) : M :=
     match an with
     | Nid _ => OK
@@ -199,6 +229,8 @@ Section with_monad.
     Definition temp_param_entry (a : core.temp_param * option core.temp_arg) : M :=
       temp_param a.1 <+> opt (temp_arg name type expr) a.2.
   End temp_param.
+
+  Context (ext : Expr -> M).
 
   (* The types in a name (parameters, template arguments) identify it; they
      are not needed. What a template instance needs comes from its own
@@ -246,6 +278,7 @@ Section with_monad.
     end
 
   with expr (e : Expr) : M :=
+    ext e <+>
     match e with
     | Evar _ t => type t
     | Eenum_const n _ => name n
@@ -337,7 +370,11 @@ Section with_monad.
     | Sdo s e => stmt s <+> expr e
     | Sfor os oe1 oe2 s =>
         opt stmt os <+> opt expr oe1 <+> opt expr oe2 <+> stmt s
-    | Sswitch os ovd e s => opt stmt os <+> opt var_decl ovd <+> expr e <+> stmt s
+    | Sswitch os ovd e s =>
+        (if s is Sseq b then
+           if switch_cases b then OK
+           else FAIL "switch: case or default nested in a statement or after a declaration"
+         else OK) <+> opt stmt os <+> opt var_decl ovd <+> expr e <+> stmt s
     | Scase _ => OK
     | Sdefault | Sbreak | Scontinue => OK
     | Sreturn oe => opt expr oe
@@ -485,6 +522,9 @@ Section with_monad.
     lst symbol (namemap.NM.elements mtu.(msymbols)).
 
 End with_monad.
+
+  (** No extension: the gaps of the semantics only. *)
+  Definition no_ext : Expr -> M := fun _ => OK.
 End walk.
 
 (** [Unsupported] gaps only. *)
@@ -495,26 +535,27 @@ Module check.
   Definition fails (m : walk.M) : M :=
     List.flat_map (fun i => if i is walk.Gap walk.Unsupported msg then [msg] else []) m.
 
-  Definition type t : M := fails (walk.type t).
-  Definition expr e : M := fails (walk.expr e).
-  Definition obj_value o : M := fails (walk.obj_value o).
-  Definition glob_decl gd : M := fails (walk.glob_decl gd).
-  Definition translation_unit tu : M := fails (walk.translation_unit tu).
-  Definition template_unit mtu : M := fails (walk.template_unit mtu).
+  Definition type t : M := fails (walk.type walk.no_ext t).
+  Definition expr e : M := fails (walk.expr walk.no_ext e).
+  Definition obj_value o : M := fails (walk.obj_value walk.no_ext o).
+  Definition glob_decl gd : M := fails (walk.glob_decl walk.no_ext gd).
+  Definition translation_unit tu : M := fails (walk.translation_unit walk.no_ext tu).
+  Definition template_unit mtu : M := fails (walk.template_unit walk.no_ext mtu).
 End check.
 
 (** ** Per-entity report
 
     [report.run tu roots] resolves each root in [tu] (with the [cpp.spec] name
     parser) and returns:
-    - [unsupported]: the entity's own [Unsupported] gaps;
+    - [unsupported]: the entity's own [Unsupported] gaps, including those
+      of the builtins it calls;
     - [partial]: [Partial] gaps in the entity or in the types it needs;
     - [blocked_by]: the types it needs (transitively, through fields and bases)
       with [Unsupported] gaps, and these gaps;
     - [unsupported_refs]: the functions and variables it refers to with
-      [Unsupported] gaps. This is one level only: they do not block the
-      entity, whose proof assumes their specs; query them as roots to go
-      further.
+      [Unsupported] gaps, except builtins. This is one level only: they do
+      not block the entity, whose proof assumes their specs; query them as
+      roots to go further.
 
     Types reached only through pointers or references are not needed. *)
 Module report.
@@ -545,7 +586,7 @@ Module report.
     if check.fails m is [] then [] else [(print n, check.fails m)].
 
   Section with_tu.
-    Context (tu : translation_unit).
+    Context (ext : Expr -> walk.M) (tu : translation_unit).
 
     Definition refs (m : walk.M) : list name :=
       remove_dups (List.flat_map (fun i => if i is walk.Ref n then [n] else []) m).
@@ -572,7 +613,7 @@ Module report.
       end.
 
     Definition walk_type (n : name) : walk.M :=
-      from_option walk.glob_decl [] (tu.(types) !! n).
+      from_option (walk.glob_decl ext) [] (tu.(types) !! n).
 
     (** The types that the definition of type [n] needs. *)
     Definition succs (n : name) : list name := type_refs (walk_type n).
@@ -597,11 +638,20 @@ Module report.
 
     Definition closure_fuel : nat := S (length (map_to_list tu.(types))).
 
+    Definition builtin_of (n : name) : option BuiltinFn :=
+      if tu.(symbols) !! n is Some (Ofunction f) then
+        if f.(f_body) is Some (Builtin b) then Some b else None
+      else None.
+
+    (** A builtin has no spec to assume: its gaps are those of its callers. *)
+    Definition with_builtins (m : walk.M) : walk.M :=
+      m ++ List.flat_map (fun r => from_option walk.builtin [] (builtin_of r)) (refs m).
+
     (** What the entity [n] itself uses. *)
     Definition own (n : name) : option walk.M :=
       match tu.(symbols) !! n, tu.(types) !! n with
-      | Some o, _ => Some (defaulted o ++ walk.obj_value o)
-      | None, gd => walk.glob_decl <$> gd
+      | Some o, _ => Some (with_builtins (defaulted o ++ walk.obj_value ext o))
+      | None, gd => walk.glob_decl ext <$> gd
       end.
 
     (** [fuel] is [closure_fuel], computed once by [run]. *)
@@ -614,7 +664,7 @@ Module report.
         let partial := remove_dups (partials used ++ union_members used) in
         let unsupported_refs :=
           List.flat_map (fun r =>
-            if bool_decide (r = n) then [] else from_option (fun o => named r (walk.obj_value o)) [] (tu.(symbols) !! r))
+            if bool_decide (r = n) || bool_decide (is_Some (builtin_of r)) then [] else from_option (fun o => named r (walk.obj_value ext o)) [] (tu.(symbols) !! r))
             (refs own) in
         let status :=
           match unsupported, blocked_by, partial with
@@ -702,6 +752,10 @@ Module report.
     Qed.
   End with_tu.
 
-  Definition run (tu : translation_unit) (roots : list PrimString.string) : list entry :=
-    List.map (entry_for tu (closure_fuel tu)) roots.
+  (** [ext] adds the gaps of a proof tool, see [walk]. *)
+  Definition run_with (ext : Expr -> walk.M) (tu : translation_unit) (roots : list PrimString.string) : list entry :=
+    List.map (entry_for ext tu (closure_fuel tu)) roots.
+
+  Definition run : translation_unit -> list PrimString.string -> list entry :=
+    run_with walk.no_ext.
 End report.
