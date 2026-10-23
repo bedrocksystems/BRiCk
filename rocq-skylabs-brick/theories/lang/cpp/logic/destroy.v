@@ -527,13 +527,13 @@ Section body.
     | Tqualified q ty => wp_destroy_val tu (merge_tq cv q) ty this Q
 
     | Tnamed cls =>
-      |={top}=> |>
+      |={top}=>
       letI* := if q_const cv then wp_make_mutable tu this rty else id in
       letI* := wp_destroy_named tu cls this in
       Q
 
     | Tarray ety sz =>
-      |={top}=> |> wp_destroy_array tu cv ety sz this Q
+      |={top}=> wp_destroy_array tu cv ety sz this Q
     | Tincomplete_array ety => |={top}=> False
     | Tvariable_array ety _ => |={top}=> False
 
@@ -682,7 +682,7 @@ Section val_array.
   Proof.
     move: tu tu' cv this Q Q'. induction ty=>tu tu' cv this Q Q' Htu.
     all: wp_destroy_val_unfold; auto.
-    all: iIntros "? >wp !> !>"; iRevert "wp"; iStopProof.
+    all: iIntros "? >wp !>"; iRevert "wp"; iStopProof.
     { (* array *) wp_destroy_array_unfold. apply wp_gen_frame; auto. }
     { (* named *) destruct (q_const cv); [rewrite -wp_const_frame|cbn]; auto. }
   Qed.
@@ -705,8 +705,8 @@ Section val_array.
   Proof.
     move: tu cv this Q. induction ty=>tu cv this Q.
     all: wp_destroy_val_unfold; auto using wp_destroy_prim_shift.
-    (* Laters *)
-    all: iIntros ">>wp !> !>".
+    (* Arrays and classes *)
+    all: iIntros ">>wp !>".
     { (* array *)
       wp_destroy_array_unfold.
       iApply (wp_gen_shift with "wp"); auto. intros.
@@ -810,12 +810,11 @@ Section val_array.
       match rty with
       | Tqualified q ty => wp_destroy_val tu (merge_tq cv q) ty this Q
       | Tnamed cls =>
-        |>
         letI* := if q_const cv then wp_make_mutable tu this rty else id in
         letI* := wp_destroy_named tu cls this in
         Q
       | Tarray ety sz =>
-        |> wp_destroy_array tu cv ety sz this Q
+        wp_destroy_array tu cv ety sz this Q
       | Tref r_ty
       | Trv_ref r_ty =>
         wp_destroy_prim tu cv (Tref r_ty) this Q
