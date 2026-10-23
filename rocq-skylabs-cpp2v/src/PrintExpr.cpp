@@ -881,13 +881,10 @@ public:
 
     void VisitIntegerLiteral(const IntegerLiteral *lit) {
         print.ctor("Eint", false);
-        SmallString<32> s;
-        if (lit->getType()->isSignedIntegerOrEnumerationType()) {
-            lit->getValue().toStringSigned(s);
-        } else {
-            lit->getValue().toStringUnsigned(s);
-        }
-        print.output() << s << "%Z";
+        llvm::APSInt value(
+            lit->getValue(),
+            !lit->getType()->isSignedIntegerOrEnumerationType());
+        print.output() << fmt::Z(value);
         done(lit);
     }
 
