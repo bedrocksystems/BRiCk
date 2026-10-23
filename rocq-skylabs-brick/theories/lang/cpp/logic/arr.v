@@ -84,8 +84,8 @@ End validR.
 
 Definition arrR_def `{Σ : cpp_logic} {σ : genv} ty (Rs : list Rep) : Rep :=
   .[ ty ! length Rs ] |-> validR ** [| is_Some (size_of σ ty) |] **
-  (* ^ both of these are only relevant for empty arrays, otherwise, they are implied by the
-     following conjunct *)
+  (* ^ [validR] is only relevant for empty arrays, otherwise, it is implied by
+     the following conjunct *)
   [∗ list] i ↦ Ri ∈ Rs, .[ ty ! Z.of_nat i ] |-> (type_ptrR ty ** Ri).
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
