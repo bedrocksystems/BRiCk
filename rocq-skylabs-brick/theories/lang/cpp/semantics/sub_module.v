@@ -604,6 +604,20 @@ Proof.
   destruct g2 => //=; smash.
 Qed.
 
+Set Default Goal Selector "!".
+
+Lemma sub_module_preserves_gopaque_record m1 m2 gn r :
+  sub_module m1 m2 ->
+  m1.(types) !! gn = Some (Gopaque_record r) ->
+  m2.(types) !! gn = Some (Gopaque_record r).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) [g2 [-> Hle]].
+  destruct g2; cbn in Hle; try contradiction.
+  apply bool_decide_unpack in Hle; subst; reflexivity.
+Qed.
+
+Set Default Goal Selector "1".
+
 (* For enums, [names1] and [names2] need not be related, as specified by [GlobDecl_le].
 TODO: https://eel.is/c++draft/basic.def.odr#13 restricts this to anonymous enums. *)
 Lemma sub_module_preserves_genum m1 m2 gn ty names1 :

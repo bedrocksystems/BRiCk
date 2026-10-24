@@ -101,6 +101,44 @@ Proof.
   case_bool_decide; subst; eauto. contradiction.
 Qed.
 
+Set Default Goal Selector "!".
+
+(** Layout queries computed in a translation unit remain valid after linking.
+    Using declaration refinement avoids duplicating cases in downstream tools. *)
+Lemma glob_def_genv_compat_size {σ tu} {Hσ : tu ⊧ σ} nm sz :
+  tu.(types) !! nm >>= GlobDecl_size_of = Some sz ->
+  glob_def σ nm >>= GlobDecl_size_of = Some sz.
+Proof.
+  destruct (tu.(types) !! nm) as [decl|] eqn:Hdecl; cbn; last discriminate.
+  intros Hsize.
+  destruct (sub_module_preserves_globdecl (genv_compat_submodule tu σ Hσ) Hdecl)
+    as [decl' [Hlookup Hle]].
+  rewrite /glob_def Hlookup /=.
+  have Hpreserve := proper_GlobDecl_size_of _ _ Hle.
+  rewrite (Roption_leq_eq_equiv (R := eq)) in Hpreserve.
+  exact (Hpreserve _ Hsize).
+Qed.
+
+Lemma glob_def_genv_compat_valid_align {σ tu} {Hσ : tu ⊧ σ} nm al :
+  tu.(types) !! nm >>= GlobDecl_valid_align_of = Some al ->
+  glob_def σ nm >>= GlobDecl_valid_align_of = Some al.
+Proof.
+  destruct (tu.(types) !! nm) as [decl|] eqn:Hdecl; cbn; last discriminate.
+  intros Halign.
+  apply GlobDecl_valid_align_of_spec in Halign as [sz [Hsize [Halign Hvalid]]].
+  destruct (sub_module_preserves_globdecl (genv_compat_submodule tu σ Hσ) Hdecl)
+    as [decl' [Hlookup Hle]].
+  have Hpreserve_size := proper_GlobDecl_size_of _ _ Hle.
+  have Hpreserve_align := proper_GlobDecl_align_of _ _ Hle.
+  rewrite (Roption_leq_eq_equiv (R := eq)) in Hpreserve_size.
+  rewrite (Roption_leq_eq_equiv (R := eq)) in Hpreserve_align.
+  rewrite /glob_def Hlookup /= /GlobDecl_valid_align_of
+    (Hpreserve_size _ Hsize) (Hpreserve_align _ Halign).
+  by rewrite bool_decide_true.
+Qed.
+
+Set Default Goal Selector "1".
+
 (** * sizeof *)
 (** The size of a C++ object.
     This is *not* the same as the semantics of the <<sizeof()>> operator

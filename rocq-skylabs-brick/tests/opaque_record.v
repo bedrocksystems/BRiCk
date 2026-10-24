@@ -39,6 +39,24 @@ Example opaque_record_alignment_metadata :
   (Some 8%N, Some 8%N).
 Proof. vm_compute. reflexivity. Qed.
 
+Example opaque_record_linked_metadata (σ : genv) (Hσ : source ⊧ σ) :
+  glob_def σ "Opaque"%cpp_name = Some (Gopaque_record metadata).
+Proof. exact (glob_def_genv_compat_opaque_record metadata opaque_record_lookup). Qed.
+
+Example opaque_record_linked_size (σ : genv) (Hσ : source ⊧ σ) :
+  glob_def σ "Opaque"%cpp_name >>= GlobDecl_size_of = Some 16%N.
+Proof.
+  apply (glob_def_genv_compat_size (tu := source)).
+  vm_compute. reflexivity.
+Qed.
+
+Example opaque_record_linked_alignment (σ : genv) (Hσ : source ⊧ σ) :
+  glob_def σ "Opaque"%cpp_name >>= GlobDecl_valid_align_of = Some 8%N.
+Proof.
+  apply (glob_def_genv_compat_valid_align (tu := source)).
+  vm_compute. reflexivity.
+Qed.
+
 Example opaque_record_invalid_alignment :
   GlobDecl_valid_align_of
     (Gopaque_record (Build_OpaqueRecord "Opaque::~Opaque()"%cpp_name false 16 3)) = None.
