@@ -272,8 +272,8 @@ Section with_monad.
     | Sif_consteval _ _ => FAIL "if consteval"
     | Swhile ovd e s => opt var_decl ovd <+> expr e <+> stmt s
     | Sdo s e => stmt s <+> expr e
-    | Sfor os oe1 oe2 s =>
-        opt stmt os <+> opt expr oe1 <+> opt expr oe2 <+> stmt s
+    | Sfor os ovd oe1 oe2 s =>
+        opt stmt os <+> opt var_decl ovd <+> opt expr oe1 <+> opt expr oe2 <+> stmt s
     | Sswitch os ovd e s => opt stmt os <+> opt var_decl ovd <+> expr e <+> stmt s
     | Scase _ => OK
     | Sdefault | Sbreak | Scontinue => OK
