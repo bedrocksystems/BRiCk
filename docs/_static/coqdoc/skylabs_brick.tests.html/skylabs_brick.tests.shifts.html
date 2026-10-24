@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BlueRock Security, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index for the theory </a>
+      <a href="./toc.html"> Table of contents for the theory </a>
+      <a href="../../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">skylabs_brick.tests.shifts</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2026&nbsp;SkyLabs&nbsp;AI,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">skylabs.lang.cpp.syntax</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">skylabs.lang.cpp.semantics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Set</span> <span class="id" title="var">Default</span> <span class="id" title="keyword">Proof</span> <span class="id" title="var">Using</span> "Type*".<br/>
+#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">Z_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <a id="shift_tu" class="idref" href="#shift_tu"><span class="id" title="definition">shift_tu</span></a> (<a id="ver:1" class="idref" href="#ver:1"><span class="id" title="binder">ver</span></a> : <span class="id" title="inductive">lang_version.t</span>) : <span class="id" title="record">translation_unit</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="definition">empty_tu</span> (<span class="id" title="constructor">abi.mkT</span> <span class="id" title="constructor">int_rank.Ilong</span> <span class="id" title="constructor">Signed</span> <span class="id" title="constructor">Signed</span> <span class="id" title="constructor">Little</span> <a class="idref" href="skylabs_brick.tests.shifts.html#ver:1"><span class="id" title="variable">ver</span></a>).<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="with_genv" class="idref" href="#with_genv"><span class="id" title="section">with_genv</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="ecd91c3bac508d4ee5d884a94dc4786a" class="idref" href="#ecd91c3bac508d4ee5d884a94dc4786a"><span class="id" title="variable">σ</span></a> : <span class="id" title="class">genv</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;The&nbsp;high&nbsp;byte&nbsp;is&nbsp;promoted&nbsp;to&nbsp;signed&nbsp;int&nbsp;before&nbsp;shifting.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="shl_cpp17_high_byte" class="idref" href="#shl_cpp17_high_byte"><span class="id" title="definition">shl_cpp17_high_byte</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" 128 24 (-2147483648).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">change</span> (<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshl</span> "int" "int" "int" 128 24<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="constructor">Vint</span> (<span class="id" title="definition">to_signed</span> (<span class="id" title="definition">int_rank.bitsize</span> <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="definition">Z.shiftl</span> 128 24)))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="axiom">eval_shl</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">w</span> := <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="var">sgn</span> := <span class="id" title="constructor">Signed</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intuition</span> (<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">intuition</span> <span class="id" title="tactic">congruence</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="shl_cpp17_max_byte" class="idref" href="#shl_cpp17_max_byte"><span class="id" title="definition">shl_cpp17_max_byte</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" 255 24 (-16777216).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">change</span> (<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshl</span> "int" "int" "int" 255 24<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="constructor">Vint</span> (<span class="id" title="definition">to_signed</span> (<span class="id" title="definition">int_rank.bitsize</span> <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="definition">Z.shiftl</span> 255 24)))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="axiom">eval_shl</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">w</span> := <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="var">sgn</span> := <span class="id" title="constructor">Signed</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intuition</span> (<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">intuition</span> <span class="id" title="tactic">congruence</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="shl_cpp20_negative" class="idref" href="#shl_cpp20_negative"><span class="id" title="definition">shl_cpp20_negative</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp20</span>) <span class="id" title="constructor">Bshl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" (-1) 1 (-2).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">change</span> (<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp20</span>) <span class="id" title="constructor">Bshl</span> "int" "int" "int" (-1) 1<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="constructor">Vint</span> (<span class="id" title="definition">to_signed</span> (<span class="id" title="definition">int_rank.bitsize</span> <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="definition">Z.shiftl</span> (-1) 1)))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="axiom">eval_shl</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">w</span> := <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="var">sgn</span> := <span class="id" title="constructor">Signed</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intuition</span> (<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">intuition</span> <span class="id" title="tactic">congruence</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="shl_cpp20_wrap" class="idref" href="#shl_cpp20_wrap"><span class="id" title="definition">shl_cpp20_wrap</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp20</span>) <span class="id" title="constructor">Bshl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" 2147483647 2 (-4).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">change</span> (<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp20</span>) <span class="id" title="constructor">Bshl</span> "int" "int" "int" 2147483647 2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="constructor">Vint</span> (<span class="id" title="definition">to_signed</span> (<span class="id" title="definition">int_rank.bitsize</span> <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="definition">Z.shiftl</span> 2147483647 2)))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="axiom">eval_shl</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">w</span> := <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="var">sgn</span> := <span class="id" title="constructor">Signed</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intuition</span> (<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">intuition</span> <span class="id" title="tactic">congruence</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="shr_cpp20_negative" class="idref" href="#shr_cpp20_negative"><span class="id" title="definition">shr_cpp20_negative</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp20</span>) <span class="id" title="constructor">Bshr</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" (-127) 4 (-8).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">change</span> (<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp20</span>) <span class="id" title="constructor">Bshr</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" (-127) 4 (<span class="id" title="constructor">Vint</span> (<span class="id" title="definition">Z.shiftr</span> (-127) 4))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="axiom">eval_shr</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">w</span> := <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="var">sgn</span> := <span class="id" title="constructor">Signed</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intuition</span> (<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">intuition</span> <span class="id" title="tactic">congruence</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="shr_cpp17_nonnegative" class="idref" href="#shr_cpp17_nonnegative"><span class="id" title="definition">shr_cpp17_nonnegative</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshr</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" 255 4 15.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">change</span> (<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshr</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"int" "int" "int" 255 4 (<span class="id" title="constructor">Vint</span> (<span class="id" title="definition">Z.shiftr</span> 255 4))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="axiom">eval_shr</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">w</span> := <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="var">sgn</span> := <span class="id" title="constructor">Signed</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intuition</span> (<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">intuition</span> <span class="id" title="tactic">congruence</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <a id="shl_unsigned_wrap" class="idref" href="#shl_unsigned_wrap"><span class="id" title="definition">shl_unsigned_wrap</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"unsigned int" "long" "unsigned int" 4294967295 1 4294967294.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">change</span> (<span class="id" title="axiom">eval_binop_pure</span> (<a class="idref" href="skylabs_brick.tests.shifts.html#shift_tu"><span class="id" title="definition">shift_tu</span></a> <span class="id" title="constructor">lang_version.Cpp17</span>) <span class="id" title="constructor">Bshl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"unsigned int" "long" "unsigned int" 4294967295 1<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="constructor">Vint</span> (<span class="id" title="definition">trim</span> 32 (<span class="id" title="definition">Z.shiftl</span> 4294967295 1)))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="axiom">eval_shl</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">w</span> := <span class="id" title="constructor">int_rank.Iint</span>) (<span class="id" title="var">sgn</span> := <span class="id" title="constructor">Unsigned</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="lemma">has_int_type</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">intuition</span> <span class="id" title="tactic">congruence</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="skylabs_brick.tests.shifts.html#with_genv"><span class="id" title="section">with_genv</span></a>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BlueRock Security, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>
