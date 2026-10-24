@@ -36,6 +36,69 @@ Definition GlobDecl_align_of (g : GlobDecl) : option N :=
   | _ => None
   end.
 
+(** Layout metadata is untrusted: [genv] does not enforce these invariants.
+    The logarithm formulation makes the power-of-two check decidable by
+    computation and also excludes zero. *)
+Definition valid_alignment (sz al : N) : Prop :=
+  al = (2 ^ N.log2 al)%N /\ (sz mod al = 0)%N.
+
+#[global] Instance valid_alignment_decision (sz al : N) :
+  Decision (valid_alignment sz al).
+Proof. unfold valid_alignment. solve_decision. Defined.
+
+Lemma valid_alignment_spec (sz al : N) :
+  valid_alignment sz al ->
+  al <> 0%N /\ (exists n, al = (2 ^ n)%N) /\ (al | sz)%N.
+Proof.
+  intros [Hpow Hmod].
+  have Hnonzero : al <> 0%N by rewrite Hpow; apply N.pow_nonzero.
+  split; first done. split; first by exists (N.log2 al).
+  by apply N.Lcm0.mod_divide.
+Qed.
+
+
+(** Layout metadata is untrusted: [genv] does not enforce these invariants.
+    The logarithm formulation makes the power-of-two check decidable by
+    computation and also excludes zero. *)
+Definition valid_alignment (sz al : N) : Prop :=
+  al = (2 ^ N.log2 al)%N /\ (sz mod al = 0)%N.
+
+#[global] Instance valid_alignment_decision (sz al : N) :
+  Decision (valid_alignment sz al).
+Proof. unfold valid_alignment. solve_decision. Defined.
+
+Lemma valid_alignment_spec (sz al : N) :
+  valid_alignment sz al ->
+  al <> 0%N /\ (exists n, al = (2 ^ n)%N) /\ (al | sz)%N.
+Proof.
+  intros [Hpow Hmod].
+  have Hnonzero : al <> 0%N by rewrite Hpow; apply N.pow_nonzero.
+  split; first done. split; first by exists (N.log2 al).
+  by apply N.Lcm0.mod_divide.
+Qed.
+
+
+(** Only validated metadata may determine semantic alignment. Invalid or
+    absent metadata leaves [align_of] abstract, just as an incomplete type
+    does; [None] here does not assert that the type has no alignment. *)
+Definition GlobDecl_valid_align_of (g : GlobDecl) : option N :=
+  match GlobDecl_size_of g, GlobDecl_align_of g with
+  | Some sz, Some al =>
+      if bool_decide (valid_alignment sz al) then Some al else None
+  | _, _ => None
+  end.
+
+Lemma GlobDecl_valid_align_of_spec (g : GlobDecl) (al : N) :
+  GlobDecl_valid_align_of g = Some al ->
+  exists sz, GlobDecl_size_of g = Some sz /\
+    GlobDecl_align_of g = Some al /\ valid_alignment sz al.
+Proof.
+  rewrite /GlobDecl_valid_align_of.
+  destruct (GlobDecl_size_of g) as [sz|] eqn:Hsz; cbn; last done.
+  destruct (GlobDecl_align_of g) as [a|] eqn:Hal; cbn; last done.
+  case_bool_decide; naive_solver.
+Qed.
+
 
 (** Layout metadata is untrusted: [genv] does not enforce these invariants.
     The logarithm formulation makes the power-of-two check decidable by
